@@ -44,7 +44,7 @@ alias update-mbp="sudo darwin-rebuild switch --flake ~/code/nix-configs/#mbp"
 alias update-a6mbp="sudo darwin-rebuild switch --flake ~/code/nix-configs/#a6mbp"
 alias update-studio="sudo darwin-rebuild switch --flake ~/code/nix-configs/#studio"
 alias update-gnarbox="sudo nixos-rebuild switch --flake ~/code/nix-configs/#gnarbox"
-alias update-inix="sudo nixos-rebuild switch --flake ~/code/nix-configs/#inix"
+alias update-inix="sudo darwin-rebuild switch --flake ~/code/nix-configs/#inix"
 
 # Nix upgrade aliases (update flake.lock first, then rebuild)
 alias upgrade-mbp="nix-flake-update && update-mbp"
