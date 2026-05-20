@@ -25,6 +25,9 @@ dot-config/containers/
 dot-config/sol/
 dot-config/grafana/
 dot-config/openchamber/
+dot-config/gcloud/
+dot-config/gws/
+dot-config/uv/
 
 # Claude Code - track agents and skills only, ignore local artifacts
 dot-claude/*

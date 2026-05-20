@@ -2,14 +2,17 @@
 .envrc
 .direnv/
 .sisyphus/
+.omc/
 
 # Notes vault - synced via Syncthing, not git
 .notes
 .notes/
 
 # Agent instructions - local context only, not committed
-# To track in a specific repo: add `!AGENTS.md` to that repo's .gitignore
+# To track in a specific repo: add `!AGENTS.md` (or `!CLAUDE.md`) to that repo's .gitignore
 AGENTS.md
+CLAUDE.md
+CLAUDE.local.md
 
 # Claude Code local settings - machine-specific, never committed
 **/.claude/settings.local.json
