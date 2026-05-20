@@ -17,7 +17,13 @@
       "models": {
         "anthropic/claude-opus-4.7": {},
         "anthropic/claude-sonnet-4.6": {},
-        "anthropic/claude-haiku-4.5": {}
+        "anthropic/claude-haiku-4.5": {},
+        "openai/gpt-5.5": {},
+        "openai/gpt-5.4-mini": {},
+        "openai/gpt-5.3-codex": {},
+        "google/gemini-3.1-pro-preview": {},
+        "google/gemini-3-flash-preview": {},
+        "x-ai/grok-code-fast-1": {}
       }
     },
     "ollama": {
@@ -174,10 +180,5 @@
   "plugin": [
     "oh-my-openagent@latest"
   ],
-  "mcp": {
-    "vads": {
-      "type": "remote",
-      "url": "https://vads-mcp.a6lab.ai/sse"
-    }
-  }
+  "mcp": {}
 }
