@@ -17,6 +17,11 @@ key = "N"
 mods = "Control|Shift"
 action = "CreateNewWindow"
 
+[[keyboard.bindings]]
+key = "Return"
+mods = "Shift"
+chars = "\u001B\r"
+
 [font.normal]
 family = "MesloLGS Nerd Font"
 style = "Regular"
