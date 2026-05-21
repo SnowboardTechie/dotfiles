@@ -29,11 +29,18 @@ dot-config/gcloud/
 dot-config/gws/
 dot-config/uv/
 
-# Claude Code - track agents and skills only, ignore local artifacts
+# Claude Code - track personal config and authored content, ignore local artifacts
 dot-claude/*
 !dot-claude/
+!dot-claude/CLAUDE.md
+!dot-claude/settings.json
 !dot-claude/agents/
 !dot-claude/skills/
+!dot-claude/scripts/
+!dot-claude/scheduled-tasks/
+!dot-claude/hud/
+# Runtime log from the SessionStart hook script
+dot-claude/scripts/symlink-worktree-agents-md.log
 
 # GPG - only track gpg-agent.conf, ignore everything else
 dot-gnupg/*
