@@ -20,3 +20,6 @@ CLAUDE.local.md
 
 # GSD planning artifacts - per-project working state, not committed by default
 .planning/
+
+# Superpowers working docs - plans/specs, local context only
+docs/superpowers/
