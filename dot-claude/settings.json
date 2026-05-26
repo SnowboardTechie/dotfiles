@@ -223,7 +223,6 @@
     "slack@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
     "lua-lsp@claude-plugins-official": true,
-    "cairn-notes@cairn-notes": true,
     "context-mode@context-mode": true,
     "claude-mem@thedotmack": true,
     "skill-creator@claude-plugins-official": true,
@@ -240,12 +239,6 @@
       "source": {
         "source": "github",
         "repo": "kepano/obsidian-skills"
-      }
-    },
-    "cairn-notes": {
-      "source": {
-        "source": "github",
-        "repo": "SnowboardTechie/cairn-notes"
       }
     },
     "context-mode": {
