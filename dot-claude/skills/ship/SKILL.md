@@ -48,6 +48,12 @@ If any check fails, report what's wrong and stop.
 
 Ask: "Ready to push and open a draft PR?"
 
+### 3.5. Verify (standalone only, best-effort)
+
+If `ship` was **handed a review/summary artifact** by a caller (the `issue-work` Phase 4.3 path passes `summary.md`), skip this — `issue-work` already verified the branch (its Seam 7) and re-running here just wastes time.
+
+Otherwise (a direct `/ship` invocation), prove the branch is green before pushing: if `superpowers:verification-before-completion` is available, invoke it (the `Skill` tool) to run the project's test / lint / typecheck commands. **Best-effort, not a hard dependency** — if the skill isn't installed, note it in one line (`No verification skill installed; pushing without a pre-push test run.`) and continue. `ship`'s core job doesn't need superpowers; this gate is a bonus. If verification runs and fails, stop and surface the output before pushing.
+
 ### 4. Push
 
 ```bash

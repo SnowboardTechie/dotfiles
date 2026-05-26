@@ -72,6 +72,7 @@ Otherwise treat as `pr-url` mode from here on — same author check, same worktr
 
 Common to all three modes:
 
+- **Required skills.** This skill hard-depends on `superpowers:dispatching-parallel-agents` (Phases 1, 1.2, 2.1) and `superpowers:verification-before-completion` (Phase 3.0). Confirm both appear in your available-skills list; if either is missing, stop and tell the user to install/enable the `superpowers` plugin before re-invoking. (When invoked from `issue-work`, that skill's Phase 0.1 pre-flight already guarantees these — this check is for the standalone `pr-url` / `branch-inference` modes.)
 - `gh auth status` must pass for GitHub PRs; Forgejo needs `FORGEJO_TOKEN` (or `GITEA_TOKEN`) in env, same as `issue-work` Phase 1.5.
 - Working tree must be clean (no modified/staged files; untracked OK). Dirty → **refuse**: "Working tree has uncommitted changes. Commit, stash, or discard before starting a review loop." Do not silently stash.
 - Record mode, owner, repo, PR number (or branch for `pre-pr`), worktree path, and state-dir path in memory for the rest of the run.
@@ -80,7 +81,7 @@ Common to all three modes:
 
 ## Phase 1 — Pre-review context fetch (once per skill run)
 
-Two parallel caches. Populate both in a single message where possible.
+Two parallel caches. Dispatch their population via `superpowers:dispatching-parallel-agents` (the `Skill` tool), which owns the single-message, no-shared-state discipline.
 
 ### 1.1 Related-issues cache
 
@@ -166,7 +167,7 @@ If `.notes/` is present, extract keyword topics from the diff:
 - Top-level directory names of changed files.
 - New exported symbols — `git diff {base}...HEAD` + grep for added lines matching `^\+(export\s+|def |class |function |pub fn )` to pull function/class names. Keep the simplest extraction; do not try to parse ASTs.
 
-Dedupe the topic list. If more than 6 topics result, keep the first 6 ranked by the number of changed files each topic matches (i.e., files whose basename or top-level directory contains the topic token); break ties by alphabetical order for determinism. Then fire parallel archivist calls in **a single message with multiple Task tool calls** (matching the meeting-sync precedent — see [skills/meeting-sync/SKILL.md](../meeting-sync/SKILL.md)):
+Dedupe the topic list. If more than 6 topics result, keep the first 6 ranked by the number of changed files each topic matches (i.e., files whose basename or top-level directory contains the topic token); break ties by alphabetical order for determinism. Then fire the parallel archivist calls via `superpowers:dispatching-parallel-agents` (the `Skill` tool), which owns the single-message, multiple-Task-call discipline (matching the meeting-sync precedent — see [skills/meeting-sync/SKILL.md](../meeting-sync/SKILL.md)):
 
 ```
 Task(
@@ -200,7 +201,7 @@ If every archivist call returns "no matches," write `[]` — do not error.
 
 ### 2.1 Spawn three parallel `diff-reviewer` agents
 
-Single message, three Task calls. Each gets:
+Dispatch the three reviewers via `superpowers:dispatching-parallel-agents` (the `Skill` tool) — it owns the single-message, three-Task-call discipline. Each gets:
 
 - `lens` — `correctness` | `security` | `simplicity`
 - `diff_range` — `{base-branch}...HEAD`
@@ -344,6 +345,12 @@ If no edits were accepted (all push-back / issue / skip / ack), skip the commit 
 
 ## Phase 3 — Summary + exit
 
+### 3.0 Verify the reviewed state
+
+The review loop may have committed accepted fixes across passes — so the current branch state is unverified even if a caller (e.g. `issue-work` Seam 7) verified *before* this skill ran. Before writing the summary, invoke `superpowers:verification-before-completion` (the `Skill` tool) to re-run the project's test / lint / typecheck commands and confirm the post-review state is green.
+
+Feed the result into `summary.md`'s **Ship Readiness** section (3.1): green → the normal readiness verdict; red → "Do not merge — verification failed: {key output}", regardless of how triage went. A clean triage over a red suite is not shippable.
+
 ### 3.1 Write summary.md
 
 At `{state-dir}/summary.md`:
@@ -405,7 +412,7 @@ under `## Acknowledged` below). If none outstanding, write: "None outstanding."}
 
 ## Ship Readiness
 
-{Clear recommendation: "Ready to merge" | "Outstanding criticals — do not merge" | "User opted to exit with open findings"}
+{Clear recommendation, incorporating the 3.0 verification result: "Ready to merge" | "Outstanding criticals — do not merge" | "Verification failed — do not merge: {key output}" | "User opted to exit with open findings"}
 ```
 
 Two-axis shape: the `## Critical Issues` / `## Major Issues` / `## Minor / Nit` sections preserve the `issue-work` Phase 4.3 contract (Phase 4.3 reads these to present outstanding findings before the ship gate). The `## Accepted this session` / `## Pushed back` / `## Filed as issues` / `## Skipped` / `## Acknowledged` sections preserve the triage audit trail unique to this skill. Both belong; don't drop either half.
@@ -465,3 +472,5 @@ Frontmatter `ticket:` field is retained (not renamed) so tools that key on it ke
 - `issue-create` — invoked for `issue` triage action; handles dedup + filing.
 - `ship` — invoked by `issue-work` Phase 4.3 after this skill returns (not by this skill directly).
 - `agent-workspace` — trunk-root resolution for `.notes/` access from a worktree.
+- `superpowers:dispatching-parallel-agents` — Phases 1, 1.2, 2.1 fan-outs.
+- `superpowers:verification-before-completion` — Phase 3.0 pre-summary proof.

@@ -200,3 +200,15 @@ Could not detect forge from remote URL: {remote_url}
 tea CLI not authenticated. Run: tea login add
    Or set FORGEJO_TOKEN environment variable.
 ```
+
+---
+
+## Related
+
+Three skills touch a PR; they don't overlap:
+
+- `ship` — fills the description **at creation** (and refuses if a PR already exists). Create-time only.
+- `update-pr-description` (this skill) — re-syncs an **existing** PR's body to its current diff + template, on demand. The only tool for updating a PR body after it's opened.
+- `pr-self-review` — reviews a PR and writes `summary.md`; it pushes fix commits but never edits the PR body.
+
+No superpowers/GSD delegation — this is a forge-API utility, not a dev-lifecycle skill.

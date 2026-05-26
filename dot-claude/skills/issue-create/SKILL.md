@@ -152,6 +152,8 @@ For Forgejo templates: same as legacy Markdown. Forgejo has no issue-type field,
 
 ## Stage 2 — Clarifying Q&A
 
+> **If this ticket is really a design exploration** — multiple valid approaches, unclear shape, "I'm not sure what we even want yet" — it's worth running `superpowers:brainstorming` first to converge on the design, then returning here to file a crisp issue. This is a soft pointer, not a hard step: the Q&A below handles well-formed tickets fine on its own. Use judgment.
+
 ### 2.1 Four open-ended areas
 
 Ask via conversational turns (open-ended answer space). Use the user's initial framing as the seed — if they already answered an area, skip the question.
