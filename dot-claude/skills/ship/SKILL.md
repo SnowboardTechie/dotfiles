@@ -172,3 +172,10 @@ When in doubt, apply more labels rather than fewer — they're cheap and help wi
 ### 8. Report
 
 Show the PR URL to the user.
+
+---
+
+## Related
+
+- `superpowers:finishing-a-development-branch` — the general-case "branch is done, what now?" menu (Merge / PR / Keep / Discard) for ad-hoc flows. `ship` is the PR-path specialist used by `issue-work` Phase 4.3: forge-aware (GitHub + Forgejo), template-faithful description fill (prefers a handed-in `summary.md` as source-of-truth), domain-mapped labels. When you've already chosen to open a PR, `ship` is the right call; reach for the superpowers skill only when the merge/keep/discard choice is genuinely open.
+- **Future consideration:** if `ship` ever grows worktree cleanup (post-merge teardown, abort-and-rollback), borrow `finishing-a-development-branch`'s provenance-check pattern (only remove a worktree you created). Today `ship` is worktree-agnostic, so there's nothing to guard.

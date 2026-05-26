@@ -31,9 +31,28 @@ This survives worktree teardown. Resume is supported by reading `progress.md` fr
 
 ---
 
-## Phase 0 — Resume Check
+## Phase 0 — Pre-flight
 
-Before anything else, compute the state-dir path from the input. If `~/.claude/issue-work/{owner}-{repo}-{N}/progress.md` exists:
+### 0.1 Required skills check
+
+This skill hard-depends on the `superpowers` plugin. Before doing anything — before computing paths, fetching the ticket, or creating any state — confirm every skill below appears in your available-skills list for this session:
+
+- `superpowers:using-git-worktrees`
+- `superpowers:dispatching-parallel-agents`
+- `superpowers:writing-plans`
+- `superpowers:executing-plans`
+- `superpowers:systematic-debugging`
+- `superpowers:verification-before-completion`
+
+If any are missing, stop immediately and tell the user:
+
+> `issue-work` requires the `superpowers` plugin, but these skills aren't available: {missing list}. Install or enable superpowers, then re-invoke.
+
+There is no inline fallback — the phases below assume these skills are present.
+
+### 0.2 Resume check
+
+Compute the state-dir path from the input. If `~/.claude/issue-work/{owner}-{repo}-{N}/progress.md` exists:
 
 1. Read its frontmatter `status:` field.
 2. Report to the user: "Found existing work on {ticket}. Status: {status}. Resume or refresh?"
@@ -126,25 +145,15 @@ If either auth check fails, stop and surface the error to the user — do not pr
 
 ### 1.6 Create worktree
 
-`EnterWorktree` only accepts `name` or `path` — there is no `base_branch` parameter, and `name`-form always branches off the session's current HEAD. From inside another worktree (the common case), that's the wrong base. Create the worktree with `git worktree add` against the trunk first, then enter it by path.
+Delegate worktree setup to `superpowers:using-git-worktrees` via the `Skill` tool. That skill owns isolation detection (its Step 0 covers the resume case — if we're already in this ticket's worktree it skips creation), native-tool preference (it uses the harness `EnterWorktree`), and the manual `git worktree add` fallback. Don't re-implement the `EnterWorktree` `name`-vs-`path` base-branch footgun here; the skill handles base selection.
 
-Three-step pattern:
+First compute the names the skill needs, then invoke it passing them as declared preferences (it honors a declared directory and branch without re-asking, and skips the consent prompt when a preference is already declared):
 
-1. **Compute the worktree slug and path.** `kebab-slug` = ticket title, lowercased, non-alphanumerics → `-`, collapsed, trimmed. The full worktree directory name is `{repo}.{N}-{kebab-slug}` (cap at 60 chars). The branch name is `issue-{N}-{kebab-slug}` — or match the repo's branch convention if recent branches in `git -C "{TRUNK_ROOT}" for-each-ref --format='%(refname:short)' --count=20 refs/heads/` suggest a different prefix (e.g., `bryan/issue-…`).
+1. **Compute slug, path, branch, base.** `kebab-slug` = ticket title, lowercased, non-alphanumerics → `-`, collapsed, trimmed. Worktree directory name = `{repo}.{N}-{kebab-slug}` (cap at 60 chars). Worktree path = `{TRUNK_ROOT}/.claude/worktrees/{repo}.{N}-{kebab-slug}`. Branch = `issue-{N}-{kebab-slug}` — or match the repo's convention if `git -C "{TRUNK_ROOT}" for-each-ref --format='%(refname:short)' --count=20 refs/heads/` shows a different prefix (e.g., `bryan/issue-…`). Base ref = `origin/$DEFAULT_BRANCH`.
 
-2. **Create the branch + worktree against the trunk.** Pin the base to the remote ref so a stale local default doesn't become the parent commit:
+2. **Invoke `superpowers:using-git-worktrees`** with: worktree-directory preference `{TRUNK_ROOT}/.claude/worktrees/`, the computed branch name, and base ref `origin/$DEFAULT_BRANCH`. Let it create the worktree and enter it.
 
-   ```
-   Bash(command="git -C \"{TRUNK_ROOT}\" worktree add -b issue-{N}-{kebab-slug} \"{TRUNK_ROOT}/.claude/worktrees/{repo}.{N}-{kebab-slug}\" \"origin/$DEFAULT_BRANCH\"")
-   ```
-
-3. **Enter the new worktree by path** (path-form, not name-form):
-
-   ```
-   EnterWorktree(path="{TRUNK_ROOT}/.claude/worktrees/{repo}.{N}-{kebab-slug}")
-   ```
-
-**Resume case** (worktree directory already exists at the target path — e.g., `Phase 0 — Resume Check` flagged this ticket as resumed): skip step 2 entirely and call `EnterWorktree(path: ...)` directly. Do not run `git worktree add` against an existing path; it will error and the desired branch is already in place.
+The resume case needs no special handling here — `using-git-worktrees` Step 0 detects existing isolation and skips creation on its own.
 
 ### 1.7 Write initial progress.md
 
@@ -171,9 +180,9 @@ started: {iso8601}
 
 ### 2.1 Spawn parallel exploration
 
-**Always** spawn one `Explore` agent. **Conditionally** spawn a second `Explore` if the ticket clearly spans two distinct areas (e.g., frontend + backend, API + client SDK).
+Decide how many `Explore` agents to dispatch: **always** at least one; **add a second** if the ticket clearly spans two distinct areas (e.g., frontend + backend, API + client SDK).
 
-Send a **single message with multiple Task tool calls** — do not spawn sequentially.
+Dispatch them via `superpowers:dispatching-parallel-agents` (the `Skill` tool) — it owns the "single message, multiple Task calls, no shared state" discipline, so we don't restate it here. Hand it the agent prompt(s) below plus each agent's distinct output path.
 
 Prompt template for each Explore agent:
 
@@ -210,44 +219,12 @@ Use `WebSearch` + `WebFetch` to look up official docs. Capture findings directly
 
 ### 2.3 Synthesize plan.md
 
-After exploration returns, write `plan.md`:
+After exploration returns, delegate plan authoring to `superpowers:writing-plans` (the `Skill` tool). Give it:
 
-```markdown
----
-status: planned
-ticket: {url}
-updated: {iso8601}
----
+- **Inputs:** `context.md`, the `explore-*.md` outputs from 2.1, and any inline research from 2.2.
+- **Plan-path override:** `~/.claude/issue-work/{owner}-{repo}-{N}/plan.md`. `writing-plans` defaults to `docs/superpowers/plans/…` inside the worktree; override it to the state root so the plan survives worktree teardown (resume reads it there) and never shows up in the worktree's `git status`.
 
-## Problem
-
-{2–3 sentences from context.md + explore-*.md}
-
-## Approach
-
-{high-level strategy}
-
-## Affected Files
-
-- `path/to/file.ts` — {what changes}
-- `path/to/other.ts` — {what changes}
-
-## Test Strategy
-
-{what tests to add, what suites to run, any new fixtures}
-
-## Research
-
-{external docs/references, only if relevant}
-
-## Open Questions
-
-- {items to flag for the user before implementation}
-
-## Non-goals
-
-- {explicit scope boundaries}
-```
+The result is a bite-sized, checkbox-task plan (exact file paths, code, expected command output, commit boundaries) — the shape Phase 3's executor consumes. Make sure its frontmatter carries `status: planned` and `ticket: {url}` so Phase 0.2 resume and the 2.4 approval gate keep working against it.
 
 ### 2.4 Approval checkpoint
 
@@ -279,39 +256,34 @@ After user approval:
 # Set progress.md frontmatter status: implementing
 ```
 
-### 3.2 Re-read plan.md
+### 3.2 Execute the plan
 
-`plan.md` is the source of truth. If anything in the conversation contradicts it, defer to the plan — or stop and ask before diverging.
+`plan.md` (at the state-root path) is the source of truth. Invoke `superpowers:executing-plans` (the `Skill` tool) to walk it task-by-task. Pass it:
 
-### 3.3 Commits
+- **plan_path:** `~/.claude/issue-work/{owner}-{repo}-{N}/plan.md`
+- **worktree path:** the absolute path from `progress.md`
+- **commit rules:** atomic (one logical unit per commit); message style matches `git log --oneline -20` in **this repo** (not global defaults); **never** add `Co-authored-by: Claude` or any AI signature; **never** use `--no-verify`.
+- **failure policy:** hand off the 3.5 escalation rule below — on a task whose tests fail, attempt a direct fix first; on a **second** consecutive failure of the same task, escalate per 3.5; hard cap at 3 attempts, then stop and report.
 
-- Atomic: one logical unit per commit
-- Message style: match `git log --oneline -20` conventions in **this repo** (not global defaults)
-- **Never** add `Co-authored-by: Claude` or any AI signature trailer
-- **Never** use `--no-verify` to skip hooks
+`executing-plans` reads checkbox state, so a resumed run (`status: implementing`) picks up at the first unchecked task automatically — this is the task-level half of the resume protocol.
 
-### 3.4 Test suite detection
+### 3.3 Test / lint / typecheck reference
 
-Run tests after implementation. Detect by manifest:
+`executing-plans` runs each task's own verification commands. When a task doesn't name one, fall back to detection by manifest and hand the detected command to the executor:
 
 | Manifest | Command |
 |---|---|
-| `package.json` with `test` script | `npm test` or `yarn test` or `pnpm test` (match lockfile) |
+| `package.json` with `test` script | `npm test` / `yarn test` / `pnpm test` (match lockfile) |
 | `pyproject.toml` | `pytest` |
 | `Cargo.toml` | `cargo test` |
 | `go.mod` | `go test ./...` |
 | `nx.json` / `turbo.json` | `nx affected -t test` or `turbo test` |
 
-Also run lint + typecheck when configured:
-
-- TypeScript: `tsc --noEmit` or repo script
-- Python: `ruff check` / `mypy`
-- Go: `go vet ./...`
-- Rust: `cargo clippy`
+Lint + typecheck when configured: TypeScript `tsc --noEmit`; Python `ruff check` / `mypy`; Go `go vet ./...`; Rust `cargo clippy`.
 
 ### 3.5 On failure
 
-Loop: diagnose → fix → commit → rerun. **Hard cap at 3 attempts.** On the 4th failure, stop and report the failing output to the user.
+First failure of a task's tests: attempt a direct fix → commit → rerun. **Second consecutive failure of the same task:** escalate to `superpowers:systematic-debugging` (the `Skill` tool) rather than guessing again — it drives a root-cause pass instead of another patch. **Hard cap at 3 attempts total.** On the 4th failure, stop and report the failing output to the user.
 
 ### 3.6 Progress log
 
@@ -327,6 +299,22 @@ Lint/typecheck: {summary}
 ```
 
 Do not advance `status` when tests go green — Phase 4 bumps it to `reviewed` after self-review completes. Leave it at `implementing` until then.
+
+### 3.7 Verify before handing off
+
+Before Phase 4 spawns review, invoke `superpowers:verification-before-completion` (the `Skill` tool) to *prove* the suite is green rather than trust that implementation said so. It re-runs the project's test / lint / typecheck commands and surfaces the actual output.
+
+Append the result to `progress.md` under a `## Verification` heading:
+
+```markdown
+## Verification
+
+- {iso8601}
+- Command(s): {what ran}
+- Result: {pass/fail summary + key output lines}
+```
+
+If verification fails, do **not** advance to Phase 4. Return to Phase 3's failure loop (3.5) with the new output. Phase 4 starts only once verification is green.
 
 ---
 
@@ -373,10 +361,10 @@ Present the review outcome inline in this order:
 
 | Case | Behavior |
 |---|---|
-| Worktree already exists for this ticket | Skip the `git worktree add` step in Phase 1.6; call `EnterWorktree(path: ...)` directly; resume from `progress.md` status |
+| Worktree already exists for this ticket | Handled by `using-git-worktrees` Step 0 (isolation detection skips creation); resume from `progress.md` status |
 | Trunk dirty (modified/staged) | Stop. List files. Offer stash / commit / abort |
 | Ticket is a PR (review work, not new work) | Skip worktree creation; `gh pr checkout {N}` in trunk or fetch branch; swap Phase 3 for "review against plan"; Phase 4 reviewers still run |
-| Tests fail 3× | Stop; surface last failure output; ask user |
+| Tests fail (2nd time on a task) | Escalate to `superpowers:systematic-debugging`; hard cap 3 attempts, then stop and surface output |
 | Critical review findings | Present prominently; recommend fix-before-ship; never auto-ship |
 | User amends plan after approval | Overwrite `plan.md`; reset status `planned`; re-present inline and await approval again (see Phase 2.4) |
 | Repo not cloned locally | Ask before `gh repo clone` to `~/code/{repo}` |
@@ -412,10 +400,16 @@ Detailed recipes that load on demand:
 
 - `pr-self-review` — Phase 4 delegates here for the three-lens review + triage loop.
 - `ship` — Phase 4.3 hands off here on `ship it` for push + PR creation + template fill + label application.
+- `superpowers:using-git-worktrees` — Phase 1.6 worktree setup.
+- `superpowers:dispatching-parallel-agents` — Phase 2.1 Explore fan-out.
+- `superpowers:writing-plans` — Phase 2.3 plan authoring (path-overridden to the state root).
+- `superpowers:executing-plans` — Phase 3 task-by-task execution.
+- `superpowers:systematic-debugging` — Phase 3.5 second-failure escalation.
+- `superpowers:verification-before-completion` — Phase 3.7 pre-handoff proof.
 
 ### Optional Delegation
 
 Soft references — the skill works without them, but if the host environment has them installed they can be invoked on demand during a run:
 
-- `engineering:debug` — optional, when test failures in Phase 3 prove stubborn and you want a structured debug pass
+- `engineering:debug` — optional alternative to `superpowers:systematic-debugging` at Phase 3.5, if that environment-specific debugger is installed and preferred
 - `engineering:testing-strategy` — optional, when Phase 2 exploration surfaces a test-architecture gap deep enough to warrant its own plan
