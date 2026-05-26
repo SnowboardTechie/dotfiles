@@ -175,6 +175,16 @@ Use these rules:
 
 ---
 
+## Step 4b: Fan out parallel diagnosis (Review-manually lane)
+
+The **Review manually** lane (B — red but attributable) is where a deeper look pays off. Rather than inspecting each PR serially, dispatch the diagnosis in parallel via `superpowers:dispatching-parallel-agents` — one subagent per PR (cap ~5; if the lane is larger, take the top N by Step 3 priority). Each subagent runs `dependency-review`'s **read-only analysis** — its Steps 0–4 (metadata, lane, fix-status, CI-log diagnosis, changeset impact) — on its assigned PR and returns the decision + a one-line reason.
+
+**Do NOT fan out local verification.** `dependency-review` Step 5 (`gh pr checkout` + `pnpm ci`) mutates a single shared working tree; running it in parallel corrupts checkouts. Local verification stays serial — after the parallel diagnosis returns, run `dependency-review` Step 5 yourself, one PR at a time, on the candidates the diagnosis greenlit. The fan-out parallelizes the *investigation* (reading CI logs is the slow, context-heavy part), never the build.
+
+The other lanes don't need this: **Merge now** is green (nothing to diagnose), **Hold** / **Close** are deferred by definition. Fold each subagent's verdict into the Review-manually entries of the Step 5 report.
+
+---
+
 ## Step 5: Report
 
 Return a concise triage report in this format:
@@ -209,4 +219,4 @@ Be specific about *why* each PR landed in that bucket.
 - Do not recommend weakening CI just to get dependency PRs merged
 - Do not treat audit exceptions as the default path forward
 - Do not ignore changeset requirements when runtime deps in published packages change
-- Do not hide uncertainty; if a PR needs deeper inspection, say so and hand it to `dependency-review`
+- Do not hide uncertainty; if a PR needs deeper inspection, say so and hand it to `dependency-review` (or, for the whole Review-manually lane at once, fan out parallel read-only diagnosis per Step 4b)

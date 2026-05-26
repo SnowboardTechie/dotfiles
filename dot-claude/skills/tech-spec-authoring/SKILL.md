@@ -132,6 +132,12 @@ For `simpler-grants-protocol` that's:
 - For each **new pattern** → ask "is there an ADR that already settled
   this?" before introducing it.
 
+This pass re-greps the same shape-categories as Phase 1; the same scaling
+judgment applies — for a draft touching many shapes, dispatch the checklist
+via `superpowers:dispatching-parallel-agents` (one agent per category,
+each returning only its divergence flags) to keep the annotation pass out
+of the drafting context. For a small draft, inline greps are fine.
+
 **Citation check:** for every ADR or convention the draft cites, verify
 the draft's shape actually matches what the ADR says. Citing ADR-0011 and
 then specifying cursor pagination is the exact failure mode this gate
