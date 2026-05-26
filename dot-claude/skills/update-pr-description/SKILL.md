@@ -116,13 +116,9 @@ The PR body contains the repository's template. Read it carefully:
 
 ## Step 4: Generate Updated Description
 
-Using the diff to understand what changed:
+Fill the template (read from the PR body in Step 3) following the shared fill discipline in [../ship/references/pr-body-fill.md](../ship/references/pr-body-fill.md) — follow the template's own instructions, strip `>` / `<!-- -->` / placeholder text, fill every section with no empties, check/justify boxes (`[x]` or `_N/A - reason_`), and link issues from the branch name / commits / original body.
 
-1. **Follow the template's own instructions** (delete what it says to delete)
-2. **Fill in all sections** based on the actual changes
-3. **Check relevant boxes** with `[x]` or add justifications like `_N/A - reason_`
-4. **Be specific and factual** - use the diff to inform your answers
-5. **Link to issues** if you find issue numbers in branch name, commits, or original body
+The **source material** here is the diff from Step 2 — this skill has no summary artifact, so drive every section factually from the diff.
 
 ---
 
