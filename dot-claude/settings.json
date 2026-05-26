@@ -99,6 +99,104 @@
             "command": "/Users/bryan/.claude/scripts/symlink-worktree-agents-md.sh"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-check-update.js\""
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"/Users/bryan/.claude/hooks/gsd-session-state.sh\""
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/Users/bryan/.claude/hooks/context-mode-cache-heal.mjs\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit|Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-context-monitor.js\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-read-injection-scanner.js\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"/Users/bryan/.claude/hooks/gsd-phase-boundary.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-prompt-guard.js\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-read-guard.js\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-workflow-guard.js\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"/Users/bryan/.claude/hooks/gsd-validate-commit.sh\"",
+            "timeout": 5
+          }
+        ]
       }
     ]
   },
@@ -125,7 +223,11 @@
     "slack@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
     "lua-lsp@claude-plugins-official": true,
-    "cairn-notes@cairn-notes": true
+    "cairn-notes@cairn-notes": true,
+    "context-mode@context-mode": true,
+    "claude-mem@thedotmack": true,
+    "skill-creator@claude-plugins-official": true,
+    "github@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "superwhisper": {
@@ -144,6 +246,18 @@
       "source": {
         "source": "github",
         "repo": "SnowboardTechie/cairn-notes"
+      }
+    },
+    "context-mode": {
+      "source": {
+        "source": "github",
+        "repo": "mksglu/context-mode"
+      }
+    },
+    "thedotmack": {
+      "source": {
+        "source": "github",
+        "repo": "thedotmack/claude-mem"
       }
     }
   },
