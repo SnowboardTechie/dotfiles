@@ -99,13 +99,13 @@ grep -l "{topic}" .notes/*.md 2>/dev/null
 
 **DO:**
 
-- `vacms-20370-facility-locator.md` (ticket-based)
+- `sgp-412-cli-auth.md` (ticket-based)
 - `jwt-authentication.md` (topic-based)
 - `decision-api-versioning.md` (type + topic)
 
 **DON'T:**
 
-- `2026-01-30-vacms-20370.md` (no date prefixes)
+- `2026-01-30-sgp-412.md` (no date prefixes)
 - `idea-12.md` (not descriptive)
 - `notes.md` (too generic)
 
@@ -242,8 +242,8 @@ refresh token rotation, and the tradeoffs between security and UX.
 | `#area/{domain}` | Domain/topic area | `#area/game-development`, `#area/authentication`, `#area/va-forms` |
 | `#status/{state}` | Current state | `#status/active`, `#status/blocked`, `#status/complete` |
 | `#type/{kind}` | Note type | `#type/exploration`, `#type/decision`, `#type/question` |
-| `#project/{name}` | Project association | `#project/burnt-ice`, `#project/vets-website` |
-| `#ticket/{id}` | Ticket reference | `#ticket/VACMS-20370`, `#ticket/86421` |
+| `#project/{name}` | Project association | `#project/burnt-ice`, `#project/simpler-grants-protocol` |
+| `#ticket/{id}` | Ticket reference | `#ticket/SGP-412`, `#ticket/86421` |
 
 **Placement:**
 

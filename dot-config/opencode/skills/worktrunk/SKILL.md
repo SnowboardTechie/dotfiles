@@ -33,10 +33,10 @@ Worktrunk uses a **sibling directory layout** by default:
 
 ```
 ~/code/org/
-├── vets-website/                # Trunk (main branch)
-├── vets-website.feat-auth/      # Worktree for feat-auth branch
-├── vets-website.fix-nav/        # Worktree for fix-nav branch
-└── vets-website.chore-deps/     # Worktree for chore-deps branch
+├── simpler-grants-protocol/                # Trunk (main branch)
+├── simpler-grants-protocol.feat-auth/      # Worktree for feat-auth branch
+├── simpler-grants-protocol.fix-nav/        # Worktree for fix-nav branch
+└── simpler-grants-protocol.chore-deps/     # Worktree for chore-deps branch
 ```
 
 The pattern is `{repo}.{branch}` as a sibling directory. All worktrees share the same `.git` object store, so commits, stashes, and reflogs are shared.

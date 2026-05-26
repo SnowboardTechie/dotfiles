@@ -249,23 +249,23 @@ Notes live in `~/notes/{project-or-vault}/` and are accessed via `.notes/` in th
 | Mode             | When                                                        | Notes Location                                  |
 | ---------------- | ----------------------------------------------------------- | ----------------------------------------------- |
 | **Direct Vault** | Launched from `~/notes/second-brain/` or `~/notes/workday/` | Write directly to `./`                          |
-| **Project Repo** | Launched from any project (vets-website, burnt-ice, etc.)   | `.notes/` symlinks to `~/notes/{project-name}/` |
+| **Project Repo** | Launched from any project (simpler-grants-protocol, burnt-ice, etc.)   | `.notes/` symlinks to `~/notes/{project-name}/` |
 
 ### What This Means for You
 
 - **Always use `.notes/`** in your invocations to scribe/archivist/pyre
 - **Scribe handles the symlink** - you don't need to worry about it
-- **Each project is isolated** - notes in vets-website don't mix with vets-api
+- **Each project is isolated** - notes in simpler-grants-protocol don't mix with common-grants
 - **Direct vaults** (second-brain, workday) are for cross-project or personal notes
 
 ### Examples
 
 ```
-# In vets-website project:
-.notes/ → ~/notes/vets-website/
+# In simpler-grants-protocol project:
+.notes/ → ~/notes/simpler-grants-protocol/
 
-# In vets-api project:
-.notes/ → ~/notes/vets-api/
+# In common-grants project:
+.notes/ → ~/notes/common-grants/
 
 # Launched directly from ~/notes/second-brain/:
 ./ IS the vault (no symlink)
@@ -291,37 +291,6 @@ Notes live in project-specific vaults (`~/notes/{project}/`), `~/notes/second-br
 **Key principle:** Second-brain is for *connections between things* and personal ideas — not a dumping ground for project-specific notes. When you're in second-brain discussing project X, actively redirect writes to that project's vault.
 
 Don't over-sync — only meaningful insights need routing. Prefer the canonical location.
-
----
-
-## Specialized Agents
-
-Beyond the core Athena system, there are domain-specific agents you can invoke:
-
-### @aria - Accessibility Expert
-
-**Invoke when working on UI/UX in VA projects** (vets-website, etc.)
-
-```
-@aria Review this component for accessibility issues
-@aria What's the accessible pattern for form validation?
-@aria Help me add axe-core testing to my Cypress spec
-@aria What VADS component should I use for alerts?
-```
-
-Aria knows:
-
-- VA accessibility testing requirements (Required/Recommended/Advanced tiers)
-- WCAG 2.2 AA criteria in VA context
-- VADS (VA Design System) accessible patterns
-- Cypress axe-core testing patterns
-
-**Use proactively** when discussing:
-
-- UI components
-- Forms and interactive elements
-- Design patterns with a11y implications
-- Staging review prep
 
 ---
 

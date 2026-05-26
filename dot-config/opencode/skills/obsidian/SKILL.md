@@ -11,7 +11,7 @@ Shared patterns for working with Obsidian vaults.
 
 > **This skill is for DIRECT vault work only.**
 > 
-> If you're in a **project repo** (vets-website, burnt-ice, etc.), use `.notes/` instead.
+> If you're in a **project repo** (simpler-grants-protocol, burnt-ice, etc.), use `.notes/` instead.
 > The `.notes/` symlink automatically maps to the correct vault.
 
 ### Decision Tree
@@ -37,7 +37,7 @@ BASE_PATH="~/notes"
 ```
 | Vault | Path | Purpose |
 |-------|------|---------|
-| Workday | `${BASE_PATH}/workday` | Work - VA.gov development |
+| Workday | `${BASE_PATH}/workday` | Work - Simpler Grants development |
 | Second Brain | `${BASE_PATH}/second-brain` | Personal - vehicles, hobbies, learning |
 | Burnt Ice | `${BASE_PATH}/burnt-ice` | Personal - Game development |
 

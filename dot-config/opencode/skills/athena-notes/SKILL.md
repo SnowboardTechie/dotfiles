@@ -23,7 +23,7 @@ Standardized note types and patterns for the Muse thinking system. This skill de
 
 **Examples:**
 ```bash
-# In vets-website project:
+# In simpler-grants-protocol project:
 .notes/my-note.md  ✅ CORRECT
 ~/Library/Mobile Documents/.../my-note.md  ❌ NEVER
 
@@ -470,7 +470,7 @@ When creating a new note that relates to existing notes:
 ├── 2026-02-10-idea-something.md
 ├── 2026-02-10-exploration-topic.md
 ├── 2026-02-10-decision-choice.md
-├── vacms-20370-facility-locator.md  (task)
+├── sgp-412-cli-auth.md  (task)
 └── ...
 ```
 

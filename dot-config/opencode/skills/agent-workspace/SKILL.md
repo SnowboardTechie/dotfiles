@@ -320,7 +320,7 @@ Or keep in git if you want working state versioned.
 ### Why This Matters
 
 `git rev-parse --show-toplevel` returns the **worktree** path, not the trunk path. Without worktree detection, agents would:
-- Create separate `.notes` per worktree (e.g., `~/notes/vets-website.feat-auth/`)
+- Create separate `.notes` per worktree (e.g., `~/notes/simpler-grants-protocol.feat-auth/`)
 - Lose access to shared project notes
 - Fragment the notes system
 
@@ -366,9 +366,9 @@ PROJECT_NAME=$(basename "$TRUNK_ROOT")
 
 | Scenario | `git rev-parse --show-toplevel` | `resolve_trunk_root` | `.notes` location |
 |----------|-------------------------------|---------------------|-------------------|
-| In trunk `vets-website/` | `~/code/va/vets-website` | `~/code/va/vets-website` | `~/code/va/vets-website/.notes` |
-| In worktree `vets-website.feat-auth/` | `~/code/va/vets-website.feat-auth` | `~/code/va/vets-website` | `~/code/va/vets-website/.notes` |
-| In worktree `vets-website.fix-header/` | `~/code/va/vets-website.fix-header` | `~/code/va/vets-website` | `~/code/va/vets-website/.notes` |
+| In trunk `simpler-grants-protocol/` | `~/code/HHS/simpler-grants-protocol` | `~/code/HHS/simpler-grants-protocol` | `~/code/HHS/simpler-grants-protocol/.notes` |
+| In worktree `simpler-grants-protocol.feat-auth/` | `~/code/HHS/simpler-grants-protocol.feat-auth` | `~/code/HHS/simpler-grants-protocol` | `~/code/HHS/simpler-grants-protocol/.notes` |
+| In worktree `simpler-grants-protocol.fix-header/` | `~/code/HHS/simpler-grants-protocol.fix-header` | `~/code/HHS/simpler-grants-protocol` | `~/code/HHS/simpler-grants-protocol/.notes` |
 
 **Key principle:** `.notes` is ONLY created in the trunk. All worktrees access the trunk's `.notes` by resolving `TRUNK_ROOT`.
 
@@ -392,23 +392,23 @@ For **task-oriented agents** (workday, gamedev) that operate within specific rep
 
 ```
 # Trunk repository
-~/code/va/vets-website/
-├── .notes -> ~/notes/workday/vets-website/  # Symlink (lives here ONLY)
+~/code/HHS/simpler-grants-protocol/
+├── .notes -> ~/notes/workday/simpler-grants-protocol/  # Symlink (lives here ONLY)
 ├── .gitignore                                # Contains ".notes"
 └── ...
 
 # Worktree (sibling) - NO .notes here
-~/code/va/vets-website.feat-auth/
+~/code/HHS/simpler-grants-protocol.feat-auth/
 ├── .git                                      # File (not directory) - worktree marker
 └── ...source files...
-# Agents resolve TRUNK_ROOT → use ~/code/va/vets-website/.notes
+# Agents resolve TRUNK_ROOT → use ~/code/HHS/simpler-grants-protocol/.notes
 
 # Centralized notes (searchable by Archivist)
 ~/notes/
 ├── workday/
-│   ├── vets-website/        # Project-specific workday notes (shared across all worktrees)
-│   ├── vets-api/
-│   └── content-build/
+│   ├── simpler-grants-protocol/        # Project-specific workday notes (shared across all worktrees)
+│   ├── common-grants/
+│   └── commongrants-cli/
 ├── gamedev/
 │   └── burnt-ice/           # Project-specific gamedev notes
 └── ...                      # Muse notes, explorations, etc.
@@ -475,8 +475,8 @@ Notes written by workday/gamedev agents:
 
 ```
 # From Muse
-@archivist Find past notes about vets-website PR reviews
-# → Finds ~/notes/workday/vets-website/prs/*.md
+@archivist Find past notes about simpler-grants-protocol PR reviews
+# → Finds ~/notes/workday/simpler-grants-protocol/prs/*.md
 ```
 
 ### Initialization on First Use

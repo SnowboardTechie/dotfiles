@@ -79,10 +79,6 @@
       "model": "openrouter/anthropic/claude-sonnet-4.6",
       "temperature": 0.4
     },
-    "aria": {
-      "model": "openrouter/anthropic/claude-sonnet-4.6",
-      "temperature": 0.2
-    },
     "calliope": {
       "model": "openrouter/anthropic/claude-sonnet-4.6",
       "temperature": 0.35
