@@ -23,18 +23,7 @@ Accepts either:
 
 ## Step 0: Detect Forge
 
-Determine which forge hosts this repo:
-
-```bash
-remote_url=$(git remote get-url origin 2>/dev/null)
-if [[ "$remote_url" == *"github.com"* ]]; then
-  forge="github"
-elif [[ "$remote_url" == *"forgejo"* || "$remote_url" == *"gitea"* || "$remote_url" == *"codeberg"* || "$remote_url" == *"snowboardtechie"* ]]; then
-  forge="forgejo"
-else
-  forge="unknown"
-fi
-```
+Determine which forge hosts this repo via the shared [forge-detection reference](../ship/references/forge-detection.md) — it sets `forge` to `github`, `forgejo`, or `unknown`. On `unknown`, error out with the supported-forge list (see the "Forge not detected" error below).
 
 ### Forgejo: URL Parsing
 

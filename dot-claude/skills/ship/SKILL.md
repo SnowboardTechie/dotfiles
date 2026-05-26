@@ -23,16 +23,10 @@ Ships WIP as a draft PR by default — self-review and merge-readiness are not t
 
 ### 1. Detect Forge
 
-```bash
-remote_url=$(git remote get-url origin 2>/dev/null)
-if [[ "$remote_url" == *"github.com"* ]]; then
-  forge="github"
-elif [[ "$remote_url" == *"forgejo"* || "$remote_url" == *"gitea"* || "$remote_url" == *"codeberg"* || "$remote_url" == *"snowboardtechie"* ]]; then
-  forge="forgejo"
-else
-  echo "No supported forge detected — use wt merge instead"
-  exit 1
-fi
+Detect the forge per the shared [references/forge-detection.md](references/forge-detection.md). If it returns `forge="unknown"`, stop:
+
+```
+No supported forge detected — use wt merge instead
 ```
 
 ### 2. Pre-flight
@@ -87,10 +81,9 @@ done
 # 2. Parse token (requires PyYAML or grep)
 TOKEN=$(grep 'token:' "$TEA_CONFIG" | head -1 | awk '{print $2}')
 
-# 3. Parse owner/repo from remote
+# 3. Parse owner/repo + instance from remote
+#    (owner_repo and instance per references/forge-detection.md)
 remote_url=$(git remote get-url origin)
-# SSH: ssh://forgejo@git.example.com/owner/repo.git → owner/repo
-# HTTPS: https://git.example.com/owner/repo.git → owner/repo
 owner_repo=$(echo "$remote_url" | sed -E 's|.*[:/]([^/]+/[^/]+?)(\.git)?$|\1|')
 instance=$(echo "$remote_url" | sed -E 's|.*(@\|//)([^:/]+).*|https://\2|')
 

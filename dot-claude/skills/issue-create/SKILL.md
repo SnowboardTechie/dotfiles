@@ -15,16 +15,7 @@ Pairs with `issue-work` — the natural next step after posting is to start impl
 
 ### 1.1 Resolve the target repo
 
-```bash
-remote_url=$(git remote get-url origin 2>/dev/null)
-if [[ "$remote_url" == *"github.com"* ]]; then
-  forge="github"
-elif [[ "$remote_url" == *"forgejo"* || "$remote_url" == *"gitea"* || "$remote_url" == *"codeberg"* || "$remote_url" == *"snowboardtechie"* ]]; then
-  forge="forgejo"
-else
-  forge="unknown"
-fi
-```
+Detect the forge per the shared [forge-detection reference](../ship/references/forge-detection.md) — it sets `forge` to `github`, `forgejo`, or `unknown`.
 
 Branch on the result:
 
@@ -32,13 +23,7 @@ Branch on the result:
 - **Not in a repo / multi-remote / unknown forge** → ask the user which repo to file against. Accept `{owner}/{repo}` shorthand or a full URL.
 - **User's initial message references a different repo** than cwd — ask before assuming. The ticket belongs wherever the idea lives, not necessarily wherever they're currently typing.
 
-Parse `owner` and `repo` from the chosen remote:
-
-```bash
-# SSH: git@github.com:owner/repo.git → owner/repo
-# HTTPS: https://github.com/owner/repo.git → owner/repo
-owner_repo=$(echo "$remote_url" | sed -E 's|.*[:/]([^/]+/[^/]+?)(\.git)?$|\1|')
-```
+Parse `owner` and `repo` from the chosen remote using the `owner_repo` snippet in [../ship/references/forge-detection.md](../ship/references/forge-detection.md).
 
 ### 1.2 Scan for issue templates
 
