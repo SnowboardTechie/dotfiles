@@ -156,6 +156,8 @@ Do not guess. Read the relevant `package.json` or `pyproject.toml` files if need
 
 ## Step 5: Verify Locally Before Recommending Merge
 
+This step is the no-claim-without-evidence discipline that `superpowers:verification-before-completion` formalizes — never say "safe to merge" on the strength of a green PR badge alone; run the commands and read the output. The per-lane matrix below is this skill's domain-specific version of that gate.
+
 Before recommending "safe to merge," check out the branch and run the relevant verification commands:
 
 ```bash

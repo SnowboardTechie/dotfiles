@@ -87,7 +87,7 @@ Run the project's documented verification command. Common shapes:
 
 If the project's verification command isn't obvious: read its `README.md` / `CONTRIBUTING.md` / root `package.json` `scripts` field, **or ask the user**. Don't guess.
 
-Report which packages were exercised and whether they passed. **If verification fails: STOP. Do not push.**
+Report which packages were exercised and whether they passed. **If verification fails: STOP. Do not push.** (This is the same prove-it-before-declaring-done gate that `superpowers:verification-before-completion` formalizes — the synced branch isn't "done" until the build/test actually runs green, badge or no badge.)
 
 **Known false-positive class: gitignored files in the working tree.** Personal files like `AGENTS.md`, `.omc/state/*.json`, or anything in the user's global `~/.config/git/ignore` are invisible to CI but visible to local prettier / eslint / format-check. If verification fails *only* on such files, treat it as local-toolchain noise — not a sync regression — and proceed.
 

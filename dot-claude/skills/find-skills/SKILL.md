@@ -107,7 +107,9 @@ Present the full SKILL.md content to the user for review.
 
 ## Step 3: Adapt to Claude Code Format
 
-If the user wants to add the skill, adapt it:
+If the user wants to add the skill, **delegate the authoring to `superpowers:writing-skills`** (the `Skill` tool) rather than hand-trimming the file. That skill owns the skill-authoring discipline — what belongs in a good `SKILL.md`, how to structure it, and how to confirm it actually works. Hand it the fetched content plus the skills.sh→Claude-Code input cleanups below; it produces the final skill.
+
+The cleanups below are *this* skill's domain knowledge (how skills.sh format differs from Claude Code), so supply them as inputs to `writing-skills`:
 
 ### Skills.sh format (input):
 
@@ -167,6 +169,8 @@ Read(file_path="~/.claude/skills/{skill-name}/SKILL.md")
 ```
 
 If Read returns the content, installation succeeded. The skill becomes available to Claude Code automatically via description-based triggering — no config needed. Start a new session to pick it up.
+
+(If Step 3 was delegated to `superpowers:writing-skills`, its own works-check already covers verification; this Read is just a final existence confirmation. The general "prove it before claiming done" discipline is `superpowers:verification-before-completion`.)
 
 ---
 

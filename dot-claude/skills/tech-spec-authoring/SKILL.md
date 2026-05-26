@@ -55,6 +55,16 @@ Do not synthesize one inline.
 4. Read any ADR the request references before drafting. Citation is not
    satisfaction.
 
+**Scaling the gather (judgment call):** when the spec touches many shape
+categories across a large source tree, dispatch this gather via
+`superpowers:dispatching-parallel-agents` — one `Explore` agent per
+shape-category (routes / models / fields / prior-ADRs), each returning only
+its prior-art-table rows. This isn't about speed so much as **context
+isolation**: Phase 2 drafting wants a clean head, and raw grep output from
+`routes/` + `models/` + `adr/` is noise the drafting context shouldn't carry.
+For a small spec touching a handful of shapes, inline greps are fine — don't
+spin up agents for three lookups.
+
 **Output:** a **prior-art table**. One row per shape the spec needs:
 
 | Shape needed                | Status                 | Source                                          |
