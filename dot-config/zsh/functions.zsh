@@ -1,23 +1,5 @@
 # Custom shell functions
 
-function vets-api-server {
-  # Check if vets-api exists
-  if [ ! -d "$VA_CODE_DIR/vets-api" ]; then
-    echo "Error: vets-api repository not found at $VA_CODE_DIR/vets-api"
-    return 1
-  fi
-
-  cd "$VA_CODE_DIR/vets-api" || return 1
-
-  # Start Redis in the background if not already running
-  if ! redis-server --daemonize yes 2>/dev/null; then
-    echo "Warning: Could not start Redis (it may already be running)"
-  fi
-
-  # Start foreman
-  foreman start -m all=1,clamd=0,freshclam=0
-}
-
 # Git rebase function
 # Defaults to 3 commits back, otherwise use argument passed as:
 # - Count if integer: interactive rebase last N commits

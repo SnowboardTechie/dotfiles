@@ -121,37 +121,6 @@ The `--adopt` flag will move any existing files in your home directory into the 
 
 **Warning**: Be careful with `--adopt` as it will move existing files into the repo. Review changes before committing.
 
-## VA Development Setup
-
-For VA.gov development, use the included setup script to clone repositories:
-
-```bash
-./setup-va-repos.sh
-```
-
-This interactive script will:
-
-- Check which VA repositories already exist
-- Display a summary of what needs to be cloned
-- Ask for confirmation before proceeding
-- Clone missing repositories to `~/code/department-of-veterans-affairs/`
-- Show progress and final summary
-
-**Prerequisites:**
-
-- SSH keys must be configured and added to your GitHub account
-- Test your GitHub connection: `ssh -T git@github.com`
-
-**Repositories cloned:**
-
-- `vets-website` - Frontend application
-- `next-build` - Next.js build
-- `vets-api` - Rails API backend
-- `component-library` - Shared component library
-- `va.gov-cms` - Drupal CMS
-
-After setup completes, you can launch the full development environment with `va-tmux`.
-
 ## Structure
 
 ```text
@@ -167,13 +136,14 @@ dotfiles/
 │   └── zsh/             # Modular zsh configuration (~/.config/zsh/)
 │       ├── aliases.zsh      # All aliases (git, tools, nix, navigation)
 │       ├── env.zsh          # Environment variables
-│       ├── functions.zsh    # Custom shell functions (VA servers, etc.)
+│       ├── functions.zsh    # Custom shell functions (worktree helpers, etc.)
 │       ├── options.zsh      # Zsh options, vi-mode, completion styles
 │       └── plugins.zsh      # Cross-platform plugin loading
 ├── dot-gnupg/           # GPG configuration (~/.gnupg/)
 │   └── gpg-agent.conf   # GPG agent settings
 ├── dot-tmux/            # Tmux session templates (~/.tmux/)
-│   └── va-server-stack.sh # VA server stack (multi-repo dev environment)
+│   ├── code-editor.sh   # Editor session launched by the `code` function
+│   └── second-brain.sh  # Personal notes session
 ├── dot-gitconfig        # Git configuration (~/.gitconfig)
 ├── dot-gitconfig.local  # Git signing key (~/.gitconfig.local, not tracked)
 ├── dot-zshrc            # Zsh shell loader (~/.zshrc) - sources modular configs
@@ -191,7 +161,7 @@ dotfiles/
 - Direnv integration for per-project environments
 - **Modular configuration** in `~/.config/zsh/`:
   - `aliases.zsh` - Git, tools (bat/eza/nvim), Nix rebuild, navigation
-  - `functions.zsh` - VA server scripts, git helpers, `code` launcher
+  - `functions.zsh` - git helpers, worktree (`wcode`) helper, `code` launcher
   - `env.zsh` - EDITOR, GPG_TTY, paths, NODE_OPTIONS
   - `options.zsh` - setopt, vi-mode, completion styles
   - `plugins.zsh` - Cross-platform plugin loading, direnv
@@ -238,42 +208,10 @@ dotfiles/
 
 ### Tmux Session Templates
 
-Pre-configured tmux sessions for common development workflows.
+Pre-configured tmux sessions for common development workflows, in `dot-tmux/`:
 
-#### VA Development Session
-
-Launch a complete VA development environment with one command:
-
-```bash
-~/.tmux/va-server-stack.sh
-```
-
-Or simply use the alias:
-
-```bash
-va-tmux
-```
-
-This creates a tmux session named `va-dev` with 5 windows:
-
-**Windows 1-4** (split panes):
-
-- **Top pane**: Empty terminal in the repo directory
-- **Bottom pane**: Server start command pre-populated (press Enter to execute, selected by default)
-
-**Window 5** (single pane):
-
-- Single terminal with CMS startup command
-
-**Window layout:**
-
-1. `vets-website` - Frontend application (`vets-website-server`)
-2. `next-build` - Next.js build (`yarn dev`)
-3. `vets-api` - Rails API (`vets-api-server`)
-4. `component-library` - Component library storybook (`cl-storybook`)
-5. `va.gov-cms` - CMS environment (`ddev start && ddev status`)
-
-If the session already exists, the script will attach to it instead of creating a new one.
+- `code-editor.sh` — editor session launched by the `code` shell function
+- `second-brain.sh` — personal notes session (`2nd-brain` alias)
 
 ## Updating Configurations
 
@@ -330,7 +268,7 @@ Or manage these via your NixOS system configuration.
 - [nix-configs](https://git.snowboardtechie.com/bryan/nix-configs) - Nix system configuration for both macOS and NixOS
   - macOS: nix-darwin with declarative Homebrew package management
   - NixOS: System configuration with flakes
-  - Development environment shells (vets-api, vets-website, etc.)
+  - Per-project development environment shells (via flakes + direnv)
   - System settings and package management
 
 ### 3 gits, one repo

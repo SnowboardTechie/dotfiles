@@ -2,7 +2,7 @@
 # Stowed to ~/.config/worktrunk/config.toml
 
 # Sibling directory layout (worktrunk default)
-# e.g., ~/code/department-of-veterans-affairs/vets-website.feat-auth
+# e.g., ~/code/HHS/simpler-grants-protocol.feat-auth
 # No worktree-path override needed — default is sibling
 
 # LLM commit messages via opencode
@@ -14,17 +14,14 @@ command = "~/.config/worktrunk/commit-msg.sh"
 [list]
 summary = true     # LLM branch summaries in wt list --full
 
-# Global hooks (run for all repos, no approval needed)
-[pre-start]
+# Global hooks (run for all repos, no approval needed).
+# Pipeline form (array-of-tables) runs steps serially; the older single-table
+# form is being repurposed to run concurrently, so pre-start uses [[...]].
+[[pre-start]]
 copy-ignored = "wt step copy-ignored"
+
+[[pre-start]]
 direnv = "[ -f .envrc ] && direnv allow"
 
 [post-switch]
 tmux = "[ -n \"$WT_SKIP_TMUX_RENAME\" ] && exit 0; [ -n \"$TMUX\" ] && tmux rename-window {{ branch | sanitize }}"
-
-# vets-website project overrides (hooks append to global hooks)
-[projects."github.com/department-of-veterans-affairs/vets-website"]
-pre-start.deps = "yarn install --frozen-lockfile"
-pre-commit.lint = "yarn lint:changed"
-pre-merge.test = "yarn test:changed"
-list.url = "http://localhost:{{ branch | hash_port }}"

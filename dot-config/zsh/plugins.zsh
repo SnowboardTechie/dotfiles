@@ -22,5 +22,8 @@ fi
 eval "$(direnv hook zsh)"
 
 # Worktrunk shell integration (git worktree management)
-# Enables directory switching on `wt switch` and tab completions
-if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init zsh)"; fi
+# Enables directory switching on `wt switch` and tab completions.
+# stderr is discarded: wt emits a trailing color-reset (and any config warnings)
+# to stderr, which leaks past the `$(...)` capture to the TTY and trips
+# Powerlevel10k's "console output during zsh initialization" instant-prompt warning.
+if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init zsh 2>/dev/null)"; fi

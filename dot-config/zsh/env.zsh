@@ -9,7 +9,6 @@ export PAGER="less"
 export GPG_TTY=$(tty)
 
 # Directory paths (can be overridden by setting before sourcing)
-export VA_CODE_DIR="${VA_CODE_DIR:-$HOME/code/department-of-veterans-affairs}"
 export NIX_CONFIG_DIR="${NIX_CONFIG_DIR:-$HOME/code/nix-configs}"
 export NOTES_VAULT_PATH="${NOTES_VAULT_PATH:-$HOME/notes}"
 

@@ -19,14 +19,13 @@ dotfiles/
 │   ├── opencode/        # AI agent system: agents/, skills/, model configs
 │   └── zsh/             # Modular shell: env -> options -> plugins -> functions -> aliases
 ├── dot-gnupg/           # GPG agent (pinentry-mac hardcoded, NixOS must override)
-├── dot-tmux/            # Tmux sessions: va-server-stack.sh, code-editor.sh
+├── dot-tmux/            # Tmux sessions: code-editor.sh, second-brain.sh
 ├── dot-git-hooks/       # Global pre-commit: validates user.email is set
-├── dot-gitconfig        # Multi-identity via includeIf (VA repos vs personal)
+├── dot-gitconfig        # Identity + GPG signing; includes snowboardtechie + local
 ├── dot-zshrc            # Shell loader: P10k + modular config sourcing
 ├── dot-tmux.conf        # Nightfly theme, vim keybinds, vendored TPM plugins
 ├── dot-p10k.zsh         # Powerlevel10k prompt theme
 ├── setup-platform-configs.sh  # Post-stow: alacritty, tmux plugins, secrets, AGENTS.md symlink
-├── setup-va-repos.sh    # Clone 5 VA repos to ~/code/department-of-veterans-affairs/
 └── zsa-keyboard-layouts/  # Binary firmware, stored but never stowed
 ```
 
@@ -35,12 +34,12 @@ dotfiles/
 | Task | Location | Notes |
 |------|----------|-------|
 | Add shell alias | `dot-config/zsh/aliases.zsh` | Grouped by category |
-| Add shell function | `dot-config/zsh/functions.zsh` | VA server functions, `code` launcher |
+| Add shell function | `dot-config/zsh/functions.zsh` | git/worktree helpers, `code` launcher |
 | Add env variable | `dot-config/zsh/env.zsh` | Use `${VAR:-default}` pattern |
 | Add zsh plugin | `dot-config/zsh/plugins.zsh` | Must add 3-path fallback (Homebrew/NixOS/Linux) |
 | Add neovim plugin | `dot-config/nvim/lua/bryan/plugins/` | See `nvim/AGENTS.md` |
 | Change color theme | See "Nightfly Theme" section below | 3 files must stay in sync |
-| Add tmux session | `dot-tmux/` | Follow va-server-stack.sh pattern |
+| Add tmux session | `dot-tmux/` | Follow code-editor.sh pattern |
 | Add git identity | `dot-gitconfig` | Add `includeIf` + new identity file |
 | Change platform behavior | `setup-platform-configs.sh` | Handles stow edge cases |
 | Add Claude Code agent/skill | `dot-claude/agents/` or `dot-claude/skills/` | User-global, personal |
@@ -108,10 +107,9 @@ Colors are centralized but defined in three places that MUST stay in sync:
 
 ## GIT IDENTITY
 
-Dual identity via `includeIf`:
-- **Default**: snowboardtechie (personal Forgejo + Gitea credential helper)
-- **VA repos** (`~/code/department-of-veterans-affairs/`): GitHub noreply email
-- Both use GPG signing with different keys
+- **Default**: snowboardtechie (personal Forgejo + Gitea credential helper), pulled in via unconditional `[include]` of `~/.gitconfig.snowboardtechie` + `~/.gitconfig.local`
+- GPG signing on by default (`commit.gpgsign = true`)
+- To scope a different identity to a directory, add an `includeIf "gitdir:..."` block pointing at a new identity file
 - Global pre-commit hook in `dot-git-hooks/pre-commit` blocks commits without `user.email`
 
 ## COMMANDS
@@ -126,10 +124,6 @@ source ~/.zshrc
 
 # Tmux reload
 tmux source-file ~/.tmux.conf    # or prefix + r
-
-# VA dev environment
-va-tmux                          # 5-window tmux session
-setup-va-repos.sh                # Clone missing VA repos
 
 # Project editor session
 code <project>                   # Opens tmux with cli + opencode + nvim

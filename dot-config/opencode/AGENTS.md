@@ -10,8 +10,7 @@
 **Timezone:** Pacific
 
 **Current Projects:**
-- **VA Facilities** (winding down) — vets-website facility-locator app
-- **Simpler Grants Protocol** (ramping up) — SDK, API, and CLI tools for grants.gov
+- **Simpler Grants Protocol** — SDK, API, and CLI tools for grants.gov
 
 ---
 
@@ -21,7 +20,7 @@
 
 | Vault | Path | Purpose |
 |-------|------|---------|
-| Workday | `~/notes/workday` | Work — VA.gov, Simpler Grants |
+| Workday | `~/notes/workday` | Work — Simpler Grants |
 | Second Brain | `~/notes/second-brain` | Personal — vehicles, hobbies, learning |
 | Burnt Ice | `~/notes/burnt-ice` | Personal — Game development |
 
@@ -63,16 +62,7 @@
 
 ## GitHub Configuration
 
-### VA Facilities (winding down)
-
-| Key | Value |
-|-----|-------|
-| User | `bryan-thompsoncodes` |
-| Org | `department-of-veterans-affairs` |
-| Primary Repo | `vets-website` |
-| Sprint Board | https://github.com/orgs/department-of-veterans-affairs/projects/1865/views/8 |
-
-### Simpler Grants Protocol (primary)
+### Simpler Grants Protocol
 
 | Key | Value |
 |-----|-------|
@@ -143,19 +133,6 @@ fi
 
 ## Repositories & Tech Stack
 
-### VA Facilities
-
-| Repo | Purpose | Tech |
-|------|---------|------|
-| vets-website | React frontend for VA.gov | React, Redux, SCSS |
-| vets-api | Backend API | Ruby on Rails |
-| content-build | Static site generation | Node.js |
-| va.gov-cms | Content management | Drupal |
-
-**Testing:** Cypress (E2E), Jest/RTL (unit)
-**Feature Flags:** Flipper
-**Design System:** VADS (VA Design System)
-
 ### Simpler Grants Protocol
 
 | Repo | Purpose | Tech |
@@ -174,28 +151,6 @@ fi
 ## Team & Contacts
 
 **Agile6 Team:** Alex, Carly, Renata, Tina, Jacky, Dave
-
-**VA/DSVA Contacts:**
-- Tim Cosgrove — CMS, cross-environment
-- Edmund Dunn — CMS, cross-environment
-- Ryan Cook — Tech lead, Forms team
-
-**Support:** Enterprise Service Desk (ESD): (855) 673-4357
-
----
-
-## Terminology
-
-| Term | Meaning |
-|------|---------|
-| VA | Department of Veterans Affairs |
-| DSVA | Digital Service at VA |
-| VAMC | VA Medical Center |
-| VADS | VA Design System |
-| Flipper | Feature flag system |
-| Tugboat | Preview/testing environment |
-| CC | Community Care |
-| a11y | Accessibility |
 
 ---
 

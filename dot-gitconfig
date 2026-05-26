@@ -5,12 +5,6 @@
 	path = ~/.gitconfig.snowboardtechie
 	path = ~/.gitconfig.local
 
-[includeIf "gitdir:~/code/department-of-veterans-affairs/"]
-	path = ~/.gitconfig.github
-
-[includeIf "gitdir:~/code/department-of-veterans-affairs/**"]
-	path = ~/.gitconfig.github
-
 [commit]
 	gpgsign = true
 

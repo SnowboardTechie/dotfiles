@@ -27,7 +27,7 @@ const WORK_SOURCE_BUNDLES = [
 ];
 
 // Google is the one work-leaning domain you also use personally, so we honor
-// source-app context for it. Other work domains (va.gov, agile6.com, ...) stay
+// source-app context for it. Other work domains (grants.gov, agile6.com, ...) stay
 // pinned to Vivaldi regardless of source.
 const isGoogleHost = (host) =>
   /(^|\.)(google\.com|gmail\.com|googleusercontent\.com)$/.test(host || "");
@@ -88,7 +88,6 @@ export default {
         "commongrants.fider.io/*",
         "simplergrants.fider.io/*",
         "philanthropydatacommons.org/*", "*.philanthropydatacommons.org/*",
-        "va.gov/*",                      "*.va.gov/*",
         "cms.gov/*",                     "*.cms.gov/*",
         // Agile6 + partners + tools
         "agile6.com/*",                  "*.agile6.com/*",
@@ -110,7 +109,6 @@ export default {
       match: [
         "github.com/agile6",                          "github.com/agile6/*",
         "github.com/agile-six",                       "github.com/agile-six/*",
-        "github.com/department-of-veterans-affairs",  "github.com/department-of-veterans-affairs/*",
         "github.com/HHS",                             "github.com/HHS/*",
         "github.com/navapbc",                         "github.com/navapbc/*",
       ],
