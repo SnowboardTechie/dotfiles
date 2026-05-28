@@ -151,3 +151,13 @@ git diff --check                 # Trailing whitespace check
     && git remote add origin ssh://forgejo@git.snowboardtechie.com/bryan/dotfiles.git \
     && tea pulls create --login git.snowboardtechie.com --repo bryan/dotfiles --head <branch> --base main ...
   ```
+
+## Notes vault
+
+This repo has `vault/` — symlink to a private Obsidian vault at `~/code/notes/dotfiles/`.
+
+Usage conventions: invoke the `vault-pkm` skill (Claude Code, opencode) or read
+`~/code/dotfiles/dot-claude/skills/vault-pkm/SKILL.md` and its `references/`
+directly (any agent — the skill content is plain markdown).
+Per-vault overrides, if any, live at `vault/AGENTS.md` (advertised here; not
+auto-loaded by agents — the skill checks for it explicitly in its Step 1).
