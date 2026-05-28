@@ -1,13 +1,14 @@
 ---
 name: tech-spec-authoring
 description: >
-  Phase-gated workflow for drafting a tech spec, ADR, or new-endpoint design
-  doc when an established conventions index exists. Use when asked to "draft a
-  tech spec", "write a tech spec for X", "spec out the endpoint", "let's write
-  the spec for #N", "draft an ADR for X", "write the ADR for the new endpoint",
-  or similar. Enforces conform-by-default: prior art is gathered before drafting,
-  the draft uses established shapes verbatim, and every divergence is
-  justified in a final Conforms-to / Diverges-from table before handoff.
+  Conformance-gated workflow for drafting protocol tech specs, ADRs, or
+  new-endpoint design docs in repos with an established ADR / conventions
+  index. Surfaces prior-art shapes before drafting, drafts conforming shapes
+  verbatim, and requires every divergence to be justified in a final
+  Conforms-to / Diverges-from table before handoff. Use when asked to
+  "draft a tech spec for #N", "write the ADR for the new endpoint", or
+  similar. Does not provide general spec-body structure (Goals / Non-Goals /
+  Rollout / Testing) — pair with project conventions for those.
 ---
 
 # Tech Spec Authoring
@@ -28,11 +29,44 @@ This skill enforces the *flow*; it does not restate the rules.
 Every repo using this skill needs a **conventions index** — a discoverable
 markdown file enumerating established conventions with source links.
 
-- **simpler-grants-protocol:** `.notes/technical/protocol-conventions.md`
+- **simpler-grants-protocol:** `vault/technical/protocol-conventions.md`
 - **Other repos:** populate the equivalent file before running this skill.
 
 If no conventions index exists in the current repo, stop and tell the user.
 Do not synthesize one inline.
+
+---
+
+## Phase 0 — Is this spec-worthy?
+
+Before invoking the conformance discipline, check that a full spec is what
+the request actually needs. The skill's overhead (prior-art table,
+divergence justifications, conforms/diverges gate) is wasted on changes
+that have no protocol-shape decisions to make.
+
+**Skip the skill and recommend a regular implementation issue when:**
+
+- The change is a single-field addition to an existing model with no
+  naming choice (the conventions index already settled the field type).
+- The change renames or relocates an existing path/param/field with no
+  consumer-visible shape change.
+- The request is ad-hoc Q&A about an existing ADR ("what does ADR-0011
+  say about cursor pagination?") — answer directly, no spec.
+- The work sits inside an already-specced feature with no new
+  shape-category being introduced.
+
+**Invoke the skill when:**
+
+- The change introduces a new endpoint, new query parameter family, new
+  response shape, or new error shape.
+- The request has protocol-shape ambiguity that more than one prior ADR
+  could plausibly settle.
+- The change is consumer-facing (SDK surface, public schema, OpenAPI
+  output).
+- An ADR exception is on the table.
+
+If the request fails the "invoke" criteria, write a one-line
+recommendation pointing to a regular implementation issue and stop.
 
 ---
 
@@ -91,6 +125,20 @@ The prior-art table is the input to Phase 2, not an afterthought.
 
 **Input:** the prior-art table from Phase 1.
 
+**Lead with Decision Drivers.** Before drafting shapes, open the spec
+body with the MUST / SHOULD criteria the design must satisfy. Drivers
+come from the request's actual user (see the host repo's `USERS, GOALS,
+AND DECISION FRAMEWORK` section, e.g. "vendor engineer adapting existing
+data to speak CommonGrants"), not from abstract principle. Every Phase 4
+Diverges justification later binds to a specific driver — "this diverges
+from ADR-0011 because MUST-driver X is incompatible" reads differently
+than ad-hoc prose. Example:
+
+- **MUST** preserve consumer-side type safety on filter responses
+  (lead-user need: vendor plugins ship typed clients).
+- **SHOULD** keep wire format aligned with existing pagination pattern
+  (ADR-0011) to reduce adopter surprise.
+
 **Action:**
 
 1. For every `conforms-to-existing` row, the draft uses the established
@@ -131,6 +179,23 @@ For `simpler-grants-protocol` that's:
   and `lib/core/lib/core/models/`.
 - For each **new pattern** → ask "is there an ADR that already settled
   this?" before introducing it.
+
+**Cross-cutting sweep.** After the shape-category checklist, sweep the
+cross-cutting axes. For each, the spec either addresses it inline or
+records `N/A — <reason>`:
+
+- **Security** — auth boundaries, input validation, exposed surface.
+- **Privacy** — PII handling, log-redaction obligations.
+- **Observability** — what's logged / metered for the new shape.
+- **Reliability** — error paths, retry semantics, partial-failure modes.
+- **Performance** — query cost, N+1 risk, payload size.
+- **Cost** — storage, compute, third-party API spend.
+- **Operations** — deploy / rollback / migration / versioning concerns.
+
+Many of these will be `N/A` for most SGG specs — the explicit `N/A`
+forces a thinking pass rather than silence. Diverges justifications must
+name a specific cost in this dimension (what conformance would have
+prevented), not a generic "more flexible."
 
 This pass re-greps the same shape-categories as Phase 1; the same scaling
 judgment applies — for a draft touching many shapes, dispatch the checklist
@@ -190,8 +255,29 @@ not a destination — the spec may land as an ADR
 `simpler-grants-protocol`) or as a Google Doc feeding an ADR or
 implementation issue. The user decides where it goes.
 
+**If the spec is destined for the ADR directory**, include the
+frontmatter block at the top of your handoff response (not just in a
+file you write), matching the repo's `adr-template.md`:
+
+    ---
+    title: "<Decision summary>"
+    description: ADR documenting the decision to use <outcome> for <topic>
+    draft: true
+    ---
+
+The ADR's first heading should declare status — `## Status: Proposed`
+(or `Proposed (Supersedes ADR-NNNN)` if Phase 4 produced a superseding
+proposal). In the superseding case, the same handoff updates the prior
+ADR's status to `Superseded by ADR-<new-number>`.
+
 **Do not commit. Do not post. Do not open a PR.** This skill produces
 the spec content and stops.
+
+**Terminal prompt.** End the run with this exact phrasing:
+
+> Spec ready. Reply "approve" to finalize, "edit" with feedback to
+> revise, or tell me where this should land (ADR file path, GDoc,
+> implementation issue).
 
 ---
 
