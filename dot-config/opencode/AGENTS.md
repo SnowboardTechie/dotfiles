@@ -194,3 +194,16 @@ When I encounter a missing or unavailable LSP:
 3. **Ask** the user: "I notice the LSP for [language] is not available. Would you like me to add it to your nix flake at [path]?"
 4. **Upon confirmation**, add the appropriate language server package to the flake's `buildInputs`
 5. **Suggest** running `direnv reload` to activate the changes
+
+## Project vaults & personal vaults
+
+Several repos under `~/code/` have a top-level `vault/` directory (symlinked to
+`~/code/notes/<project>/`). Also `~/second-brain/` is Bryan's personal-knowledge
+vault. When working in any of these — or when capturing decisions, taking notes,
+investigating debugs, recording learnings, or making sense of project context
+that doesn't live in code — read `~/code/dotfiles/dot-claude/skills/vault-pkm/SKILL.md`
+(and its `references/`) before writing anything to a vault.
+
+If a vault has its own `AGENTS.md` at its root (`vault/AGENTS.md` for project
+vaults; `~/second-brain/AGENTS.md` for the personal vault), read it after the
+skill — it overrides skill defaults for that specific vault.
