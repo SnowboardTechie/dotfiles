@@ -9,8 +9,9 @@
 .notes/
 
 # Per-repo Obsidian vault for working with Claude - local context, not committed
-# To track in a specific repo: add `!vault/` to that repo's .gitignore
-vault/
+# No trailing slash so the rule matches symlinks-to-directories (the usual case)
+# AND real directories. To track in a specific repo: add `!vault` to that repo's .gitignore
+vault
 
 # Agent instructions - local context only, not committed
 # To track in a specific repo: add `!AGENTS.md` (or `!CLAUDE.md`) to that repo's .gitignore
