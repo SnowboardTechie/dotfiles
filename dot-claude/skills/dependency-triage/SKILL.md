@@ -193,21 +193,23 @@ Return a concise triage report in this format:
 ## Dependency Triage
 
 ### Merge now
-- #123 `chore(deps): ...` — green, isolated Python lane
+- [#123](https://github.com/{owner}/{repo}/pull/123) `chore(deps): ...` — green, isolated Python lane
 
 ### Review manually
-- #124 `chore(deps): ...` — website-only failures, likely attributable
+- [#124](https://github.com/{owner}/{repo}/pull/124) `chore(deps): ...` — website-only failures, likely attributable
 
 ### Hold
-- #125 `chore(deps): ...` — broad workspace failures across core/cli/sdk/website
+- [#125](https://github.com/{owner}/{repo}/pull/125) `chore(deps): ...` — broad workspace failures across core/cli/sdk/website
 
 ### Special handling
-- #126 `chore(deps): ...` — GitHub Actions PR, keep manual
+- [#126](https://github.com/{owner}/{repo}/pull/126) `chore(deps): ...` — GitHub Actions PR, keep manual
 
 ### Notes
-- Changeset review needed for: #127
-- Older superseded PRs: #121
+- Changeset review needed for: [#127](https://github.com/{owner}/{repo}/pull/127)
+- Older superseded PRs: [#121](https://github.com/{owner}/{repo}/pull/121)
 ```
+
+**Always render every PR reference as a markdown link to its PR URL — `[#NNN](url)`, never a bare `#NNN`** — so the reader can click straight through. Use the `url` field gathered in Step 1 (or `https://github.com/{owner}/{repo}/pull/NNN` for GitHub, the equivalent for Forgejo). This applies everywhere a PR is named, including the Notes section.
 
 Be specific about *why* each PR landed in that bucket.
 
