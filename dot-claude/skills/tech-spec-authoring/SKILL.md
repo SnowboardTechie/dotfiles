@@ -117,6 +117,14 @@ Status values:
   established convention. Surface this to the user *before* drafting;
   default action is to reshape the request to conform.
 
+**Escape hatch — prototype first when the table goes mostly `new-territory`.**
+If your prior-art table fills with `new-territory` rows (most shapes are
+unprecedented), the spec author probably doesn't know enough yet to
+enumerate the right shapes. Stop and run a consumer-playground prototype
+first (`~/code/sgg/consumer-playground/`, `ts/<feature>.ts` scenario);
+return with the shapes the prototype taught you. The spec works better as
+synthesis after experiential learning than as speculation before it.
+
 The prior-art table is the input to Phase 2, not an afterthought.
 
 ---
@@ -152,8 +160,16 @@ than ad-hoc prose. Example:
 4. Apply the repo's drafting voice rules:
    - structural facts and grounded rationale only — no "obviously",
      "we prefer", "significantly easier"
-   - every technical claim cites a source (file path, ADR number, line
-     range) or is marked `[unverified]`
+   - every technical claim cites a source or is marked `[unverified]`.
+     Citation shape: `path:line` for a single anchor, `path (start-end)`
+     for a span, each followed by a one-line purpose gloss (e.g.,
+     `app/src/workspace/workspace.rs (120-220)` — "state/event handling
+     this spec will change"). For ADRs, cite as `ADR-NNNN §section` when
+     pointing at a specific section.
+   - `[unverified]` means "I tried and couldn't confirm." Use
+     `Assumption:` as a sibling marker for "I'm proceeding as if this is
+     true, please confirm" — different semantics, different fix paths
+     (verification vs. confirmation).
    - no fabricated assumptions about external system properties
 
 **Output:** spec body draft, with every cross-reference to prior art linked
@@ -236,6 +252,20 @@ shapes. Add rows for any other convention the spec touches.
 immediately under the table.** Each exception names the conflicting ADR,
 states why conformance fails the use case, and proposes either a
 superseding ADR or a scoped exception.
+
+**Superseding-ADR shape.** When a Diverges row proposes a superseding ADR,
+the proposal must specify:
+
+- The new ADR's status line: `Proposed (Supersedes ADR-NNNN)`.
+- Same handoff updates the prior ADR's status: `Superseded by ADR-<new-number>`.
+- The superseding ADR's body recaps the prior ADR's context, states the
+  reversal, and includes a **Lessons Learned** section naming what the
+  prior ADR over- or under-estimated (e.g., "ADR-0011 underestimated
+  cursor-resume edge cases under concurrent inserts").
+
+Lessons Learned is not optional polish — it's how the next ADR avoids
+repeating the prior ADR's blind spot. Without it, the superseding ADR
+reads as arbitrary reversal.
 
 **Hard gate:** if a `Diverges` row has no justification, the spec is **not
 ready**. Return to Phase 2 and rewrite that piece to conform, or fill in
