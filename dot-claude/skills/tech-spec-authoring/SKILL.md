@@ -171,6 +171,10 @@ than ad-hoc prose. Example:
      true, please confirm" — different semantics, different fix paths
      (verification vs. confirmation).
    - no fabricated assumptions about external system properties
+   - each section earns its place — omit any that would restate another
+     from a different angle or contain only boilerplate. Especially:
+     don't pad with empty "Goals / Non-Goals / Out of Scope" headers
+     when the surrounding prose already names them implicitly.
 
 **Output:** spec body draft, with every cross-reference to prior art linked
 to its source.
@@ -266,6 +270,15 @@ the proposal must specify:
 Lessons Learned is not optional polish — it's how the next ADR avoids
 repeating the prior ADR's blind spot. Without it, the superseding ADR
 reads as arbitrary reversal.
+
+**Choosing superseding ADR vs. scoped exception.** Reversibility is the
+deciding axis: a Diverges row that's hard to roll back later (changes the
+wire shape consumers ship against; alters the typed surface; renames a
+field consumers depend on) needs the superseding-ADR path. A row that's
+reversible inside one feature (an opt-in flag, a per-request override,
+behavior scoped behind a capability bit) can stay a scoped exception. If
+unsure, default to superseding — the protocol is easier to evolve via one
+clean reversal than via accumulated scope-exception rooms.
 
 **Hard gate:** if a `Diverges` row has no justification, the spec is **not
 ready**. Return to Phase 2 and rewrite that piece to conform, or fill in
