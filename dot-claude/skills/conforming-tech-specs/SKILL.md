@@ -1,22 +1,31 @@
 ---
-name: tech-spec-authoring
+name: conforming-tech-specs
 description: >
-  Conformance-gated workflow for drafting protocol tech specs, ADRs, or
-  new-endpoint design docs in repos with an established ADR / conventions
-  index. Surfaces prior-art shapes before drafting, drafts conforming shapes
-  verbatim, and requires every divergence to be justified in a final
-  Conforms-to / Diverges-from table before handoff. Use when asked to
-  "draft a tech spec for #N", "write the ADR for the new endpoint", or
-  similar. Does not provide general spec-body structure (Goals / Non-Goals /
-  Rollout / Testing) — pair with project conventions for those.
+  Conformance-gated pass for tech specs, ADRs, or new-endpoint design docs
+  in repos with an established ADR / conventions index. Surfaces prior-art
+  shapes before drafting, drafts conforming shapes verbatim, and requires
+  every divergence to be justified in a final Conforms-to / Diverges-from
+  table before handoff. Use when asked to "draft a tech spec for #N", "write
+  the ADR for the new endpoint", "make this spec conform to our conventions",
+  or similar. Does not coach the underlying decision (options, drivers,
+  alternatives) — pair with adr-and-spec-coach for that. Does not provide
+  general spec-body structure (Goals / Non-Goals / Rollout / Testing) — pair
+  with project conventions for those.
 ---
 
-# Tech Spec Authoring
+# Conforming Tech Specs
 
 Draft a tech spec or ADR by gathering prior art first, conforming to it by
 default, and surfacing every divergence with an explicit ADR-exception
 justification. The failure mode this skill exists to prevent is **citing an
 ADR and writing around it** — disposition gap, not discovery gap.
+
+This skill owns the **conformance** half of spec work — making a draft obey
+established conventions and gating every divergence. It does **not** coach the
+*decision* behind the spec (what to build, which options, what trade-offs).
+For greenfield decisions or when you're weighing alternatives, run
+`adr-and-spec-coach` first; it deliberates and drafts, then routes the draft
+here when a conventions index exists.
 
 The conform-by-default rule, pre-finalize checklist, and required artifact
 table live in the host repo's `AGENTS.md` under `## TECH SPEC AUTHORING`.
