@@ -28,7 +28,7 @@ For greenfield decisions or when you're weighing alternatives, run
 here when a conventions index exists.
 
 The conform-by-default rule, pre-finalize checklist, and required artifact
-table live in the host repo's `AGENTS.md` under `## TECH SPEC AUTHORING`.
+table live in the host repo's `AGENTS.md` under `## CONFORMING TECH SPECS`.
 This skill enforces the *flow*; it does not restate the rules.
 
 ---
@@ -195,7 +195,7 @@ to its source.
 **Input:** the draft from Phase 2 plus the prior-art table.
 
 **Action:** walk the pre-finalize checklist from the host repo's
-`AGENTS.md` → `## TECH SPEC AUTHORING` → `### Pre-finalize consistency pass`.
+`AGENTS.md` → `## CONFORMING TECH SPECS` → `### Pre-finalize consistency pass`.
 For `simpler-grants-protocol` that's:
 
 - For each new **endpoint** → grep `lib/core/lib/core/routes/` for similar
