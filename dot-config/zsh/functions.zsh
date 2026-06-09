@@ -176,3 +176,18 @@ function code {
 
   "$session_script"
 }
+
+# pair-agents: a global hub for Claude background agents.
+# Unlike `code`, this ignores any argument and always opens at ~/code, so the
+# `claude agents` dashboard sees background sessions across every project.
+function pa {
+  cd "$HOME/code" || return 1
+
+  local session_script="$HOME/.tmux/pair-agents.sh"
+  if [[ ! -x $session_script ]]; then
+    echo "Session script $session_script not found or not executable"
+    return 1
+  fi
+
+  "$session_script"
+}
