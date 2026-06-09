@@ -18,7 +18,7 @@ if [ $? != 0 ]; then
   tmux new-session -d -s "$SESSION_NAME" -n "cli"
 
   # Window 2: claude
-  tmux new-window -t "$SESSION_NAME:2" -n "code"
+  tmux new-window -t "$SESSION_NAME:2" -n "agent"
   tmux send-keys -t "$SESSION_NAME:2" "claude" C-m
 
   # Window 3: nvim
