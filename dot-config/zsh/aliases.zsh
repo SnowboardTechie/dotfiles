@@ -56,6 +56,7 @@ alias upgrade-inix="nix-flake-update && update-inix"
 alias dotfiles="cd ~/code/dotfiles"
 alias nix-configs="cd ~/code/nix-configs"
 alias sgp="cd ~/code/sgg/HHS/simpler-grants-protocol"
+alias second-brain="cd ~/second-brain/"
 
 # Worktrunk aliases (git worktree management)
 alias wls="wt list"
