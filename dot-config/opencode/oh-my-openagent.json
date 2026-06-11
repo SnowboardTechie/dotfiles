@@ -33,7 +33,7 @@
       "model": "openrouter/anthropic/claude-sonnet-4.6"
     },
     "sisyphus-junior": {
-      "model": "openrouter/openai/gpt-5.4-mini"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "sisyphus": {
       "model": "openrouter/anthropic/claude-opus-4.7",
@@ -48,7 +48,7 @@
       }
     },
     "archivist": {
-      "model": "openrouter/anthropic/claude-haiku-4.5",
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
       "temperature": 0.1
     },
     "scribe": {
@@ -84,7 +84,7 @@
       "temperature": 0.35
     },
     "commit-msg": {
-      "model": "openrouter/anthropic/claude-haiku-4.5",
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
       "temperature": 0.1
     },
     "gamedev": {
@@ -117,7 +117,7 @@
       "variant": "high"
     },
     "quick": {
-      "model": "openrouter/openai/gpt-5.4-mini"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "unspecified-low": {
       "model": "openrouter/anthropic/claude-sonnet-4.6"
