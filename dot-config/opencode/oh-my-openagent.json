@@ -2,145 +2,119 @@
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
   "agents": {
     "hephaestus": {
-      "model": "openrouter/openai/gpt-5.5"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "oracle": {
-      "model": "openrouter/openai/gpt-5.5",
-      "variant": "high"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "librarian": {
-      "model": "openrouter/x-ai/grok-code-fast-1"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "explore": {
-      "model": "openrouter/x-ai/grok-code-fast-1"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "multimodal-looker": {
-      "model": "openrouter/google/gemini-3.1-pro-preview",
-      "variant": "high"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "prometheus": {
-      "model": "openrouter/anthropic/claude-opus-4.7",
-      "variant": "max"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "metis": {
-      "model": "openrouter/anthropic/claude-sonnet-4.6"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "momus": {
-      "model": "openrouter/openai/gpt-5.5",
-      "variant": "xhigh"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "atlas": {
-      "model": "openrouter/anthropic/claude-sonnet-4.6"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "sisyphus-junior": {
-      "model": "openrouter/openai/gpt-5.4-mini"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "sisyphus": {
-      "model": "openrouter/anthropic/claude-opus-4.7",
-      "variant": "max"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "muse": {
-      "model": "openrouter/anthropic/claude-opus-4.7",
-      "temperature": 0.6,
-      "thinking": {
-        "type": "enabled",
-        "budgetTokens": 64000
-      }
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "temperature": 0.6
     },
     "archivist": {
-      "model": "openrouter/anthropic/claude-haiku-4.5",
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
       "temperature": 0.1
     },
     "scribe": {
-      "model": "openrouter/anthropic/claude-sonnet-4.6",
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
       "temperature": 0.2
     },
     "pyre": {
-      "model": "openrouter/anthropic/claude-sonnet-4.6",
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
       "temperature": 0.1
     },
     "sage": {
-      "model": "openrouter/anthropic/claude-sonnet-4.6",
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
       "temperature": 0.2
     },
     "demiurge": {
-      "model": "openrouter/anthropic/claude-opus-4.7",
-      "temperature": 0.2,
-      "thinking": {
-        "type": "enabled",
-        "budgetTokens": 32000
-      }
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "temperature": 0.2
     },
     "forge": {
-      "model": "openrouter/anthropic/claude-sonnet-4.6",
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
       "temperature": 0.2
     },
     "kindle": {
-      "model": "openrouter/anthropic/claude-sonnet-4.6",
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
       "temperature": 0.4
     },
     "calliope": {
-      "model": "openrouter/anthropic/claude-sonnet-4.6",
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
       "temperature": 0.35
     },
     "commit-msg": {
-      "model": "openrouter/anthropic/claude-haiku-4.5",
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
       "temperature": 0.1
     },
     "gamedev": {
-      "model": "openrouter/anthropic/claude-sonnet-4.6",
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
       "temperature": 0.3
     },
     "prism": {
-      "model": "openrouter/anthropic/claude-opus-4.7",
-      "temperature": 0.55,
-      "thinking": {
-        "type": "enabled",
-        "budgetTokens": 48000
-      }
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "temperature": 0.55
     }
   },
   "categories": {
     "visual-engineering": {
-      "model": "openrouter/google/gemini-3.1-pro-preview",
-      "variant": "high"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "ultrabrain": {
-      "model": "openrouter/openai/gpt-5.5",
-      "variant": "xhigh"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "deep": {
-      "model": "openrouter/openai/gpt-5.5"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "artistry": {
-      "model": "openrouter/google/gemini-3.1-pro-preview",
-      "variant": "high"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "quick": {
-      "model": "openrouter/openai/gpt-5.4-mini"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "unspecified-low": {
-      "model": "openrouter/anthropic/claude-sonnet-4.6"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "unspecified-high": {
-      "model": "openrouter/anthropic/claude-opus-4.7",
-      "variant": "max"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "writing": {
-      "model": "openrouter/google/gemini-3-flash-preview"
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
     },
     "ideation": {
-      "model": "openrouter/anthropic/claude-opus-4.7",
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
       "temperature": 0.7,
-      "thinking": {
-        "type": "enabled",
-        "budgetTokens": 64000
-      },
       "prompt_append": "Focus on creative exploration, brainstorming, and structured thinking. Use extended thinking to explore ideas deeply. Capture insights using athena-notes patterns."
     },
     "codex": {
-      "model": "openrouter/openai/gpt-5.3-codex",
-      "variant": "high",
+      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
       "description": "Code-focused tasks using GPT Codex - optimized for code generation, refactoring, and implementation"
     }
   },
