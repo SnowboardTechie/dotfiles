@@ -42,6 +42,12 @@ dot-claude/*
 # Runtime log from the SessionStart hook script
 dot-claude/scripts/symlink-worktree-agents-md.log
 
+# Secrets - machine-specific, never committed
+.secrets/
+
 # GPG - only track gpg-agent.conf, ignore everything else
 dot-gnupg/*
 !dot-gnupg/gpg-agent.conf
+
+# Stale backups from opencode config edits
+*.backup*
