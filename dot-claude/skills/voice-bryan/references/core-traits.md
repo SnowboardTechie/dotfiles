@@ -85,6 +85,7 @@ when Claude is reaching for stiffer or more AI-flavored alternatives.
 
 **Openers (substantive replies, generic):**
 - "Yeah, ..." (Slack channel posts, PR review, spec comments)
+- "Very nice, ..." (warm affirmation for a teammate's genuine win or simplification; warmer than a measured "Nice")
 - "Just checking, ..." (clarifying question without an accusatory frame)
 - "Good call to flag this." (PR review acknowledgement)
 - "Quick context on why:" (when teeing up justification for an ask)
@@ -92,6 +93,7 @@ when Claude is reaching for stiffer or more AI-flavored alternatives.
 
 **Openers (severity-calibrated, PR-review specifically):**
 - "Just checking, ..." → clarifying question, no severity
+- "One small thing that concerns me..." → small but verified concern, personal frame; lower-key than "Worth flagging" (used in PR review and Slack alike)
 - "Worth flagging that..." → non-blocking-but-load-bearing concern
 - "Heads up that..." → downstream implication; FYI with consequence
 - "Found something subtle worth surfacing..." → load-bearing bug or risk
@@ -181,6 +183,12 @@ Observed habits, the positive-form mirror of `anti-patterns.md`.
   changes being signed off rather than generic "looks good."
 - Bryan tolerates emoji-as-verdict in PR review ("👍🏻" / "👍 approved.")
   in ways that don't appear in Slack channel posts or email.
+- Affirmation warmth scales with the news. A genuine win (dropping code, a
+  real simplification) earns "Very nice" / "a great X", not a measured "Nice" /
+  "a real X". Under-warming good news is a recurring Claude miss.
+- In review summaries and his own actions, Bryan keeps the first-person frame
+  ("I read through it ... all looks solid to me", "I put up a quick PR")
+  rather than telegraphing the subject away ("read through it, it's solid").
 
 ---
 

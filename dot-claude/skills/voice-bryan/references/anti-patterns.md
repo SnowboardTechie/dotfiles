@@ -186,6 +186,8 @@ need promotion to the canonical section above once seen in corrections.
 - Cut adjectives and adverbs. Most of them are filler too.
 - If you're tempted to write "I think" or "I believe" before a factual
   statement, delete it.
+- If you wrote "can" / "could" / "may" before a behavior you've verified,
+  delete the hedge: "an invalid Date throws past safeParse", not "can throw".
 - Run the draft through the Bryan-specific list above before considering it
   done. If any rule is broken, rewrite before showing.
 

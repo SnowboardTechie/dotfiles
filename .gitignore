@@ -44,6 +44,7 @@ dot-claude/scripts/symlink-worktree-agents-md.log
 
 # Secrets - machine-specific, never committed
 .secrets/
+dot-config/watch/*
 
 # GPG - only track gpg-agent.conf, ignore everything else
 dot-gnupg/*
