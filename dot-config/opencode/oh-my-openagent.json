@@ -2,122 +2,124 @@
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
   "agents": {
     "hephaestus": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4"
     },
     "oracle": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4"
     },
     "librarian": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/gemma4:12b-nvfp4"
     },
     "explore": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/gemma4:12b-nvfp4"
     },
     "multimodal-looker": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4"
     },
     "prometheus": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4"
     },
     "metis": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4"
     },
     "momus": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4"
     },
     "atlas": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4"
     },
     "sisyphus-junior": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4"
     },
     "sisyphus": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4"
     },
     "muse": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "model": "ollama/gemma4:31b-mlx",
       "temperature": 0.6
     },
     "archivist": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "model": "ollama/gemma4:12b-nvfp4",
       "temperature": 0.1
     },
     "scribe": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "model": "ollama/gemma4:31b-mlx",
       "temperature": 0.2
     },
     "pyre": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4",
       "temperature": 0.1
     },
     "sage": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4",
       "temperature": 0.2
     },
     "demiurge": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4",
       "temperature": 0.2
     },
     "forge": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4",
       "temperature": 0.2
     },
     "kindle": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4",
       "temperature": 0.4
     },
     "calliope": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "model": "ollama/gemma4:31b-mlx",
       "temperature": 0.35
     },
     "commit-msg": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "model": "ollama/gemma4:12b-nvfp4",
       "temperature": 0.1
     },
     "gamedev": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4",
       "temperature": 0.3
     },
     "prism": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4",
       "temperature": 0.55
     }
   },
   "categories": {
     "visual-engineering": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4"
     },
     "ultrabrain": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4"
     },
     "deep": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4"
     },
     "artistry": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/gemma4:31b-mlx"
     },
     "quick": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/gemma4:12b-nvfp4"
     },
     "unspecified-low": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/gemma4:12b-nvfp4"
     },
     "unspecified-high": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4"
     },
     "writing": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4"
+      "model": "ollama/gemma4:31b-mlx"
     },
     "ideation": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "model": "ollama/gemma4:31b-mlx",
       "temperature": 0.7,
       "prompt_append": "Focus on creative exploration, brainstorming, and structured thinking. Use extended thinking to explore ideas deeply. Capture insights using athena-notes patterns."
     },
     "codex": {
-      "model": "ollama/qwen3.5:35b-a3b-coding-nvfp4",
+      "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4",
       "description": "Code-focused tasks using GPT Codex - optimized for code generation, refactoring, and implementation"
     }
   },
+  "model_fallback": false,
+  "runtime_fallback": false,
   "disabled_agents": [
     "README"
   ],

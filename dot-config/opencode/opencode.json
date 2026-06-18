@@ -54,6 +54,27 @@
             "context": 262144,
             "output": 16384
           }
+        },
+        "qwen3.6:35b-a3b-coding-nvfp4": {
+          "name": "Qwen3.6 Coder",
+          "limit": {
+            "context": 262144,
+            "output": 16384
+          }
+        },
+        "gemma4:12b-nvfp4": {
+          "name": "Gemma 4 12B Fast",
+          "limit": {
+            "context": 262144,
+            "output": 8192
+          }
+        },
+        "gemma4:31b-mlx": {
+          "name": "Gemma 4 31B",
+          "limit": {
+            "context": 262144,
+            "output": 16384
+          }
         }
       }
     }
