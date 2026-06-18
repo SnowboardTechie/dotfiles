@@ -226,7 +226,9 @@
     "context-mode@context-mode": true,
     "claude-mem@thedotmack": true,
     "skill-creator@claude-plugins-official": true,
-    "github@claude-plugins-official": true
+    "github@claude-plugins-official": false,
+    "ponytail@ponytail": true,
+    "watch@claude-watch": true
   },
   "extraKnownMarketplaces": {
     "superwhisper": {
@@ -251,6 +253,18 @@
       "source": {
         "source": "github",
         "repo": "thedotmack/claude-mem"
+      }
+    },
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail"
+      }
+    },
+    "claude-watch": {
+      "source": {
+        "source": "github",
+        "repo": "taoufik123-collab/claude-watch"
       }
     }
   },
