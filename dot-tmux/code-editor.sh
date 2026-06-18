@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Tmux session for claude and editor
-# Creates a session with 3 windows: cli, claude, nvim
+# Tmux session for opencode and editor
+# Creates a session with 3 windows: cli, opencode, nvim
 
 # Ensure we have a proper TTY for tmux
 if [[ ! -t 0 ]]; then
@@ -19,7 +19,7 @@ if [ $? != 0 ]; then
 
   # Window 2: claude
   tmux new-window -t "$SESSION_NAME:2" -n "agent"
-  tmux send-keys -t "$SESSION_NAME:2" "claude" C-m
+  tmux send-keys -t "$SESSION_NAME:2" "opencode" C-m
 
   # Window 3: nvim
   tmux new-window -t "$SESSION_NAME:3" -n "nvim"
