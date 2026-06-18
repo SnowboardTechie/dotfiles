@@ -46,7 +46,7 @@ Personal AI agent system for thinking, workflow automation, and development assi
 
 ## Agent Files
 
-Each agent is defined in `~/.config/opencode/agents/{name}.md` with YAML frontmatter (model, tools, skills) and prose instructions. Model overrides go in `oh-my-openagent.json`.
+Each agent is defined in `~/.config/opencode/agents/{name}.md` with YAML frontmatter (model, tools, skills) and prose instructions.
 
 ## Skills
 
