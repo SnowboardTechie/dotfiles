@@ -30,7 +30,7 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "Open WebUI (ai.thompson.codes)",
       "options": {
-        "baseURL": "https://ai.thompson.codes/api/v1",
+        "baseURL": "https://ai.thompson.codes/ollama/v1",
         "apiKey": "{file:~/.secrets/opencode-api-key}"
       },
       "models": {
@@ -204,9 +204,7 @@
     "external_directory": "ask",
     "doom_loop": "ask"
   },
-  "model": "openrouter/anthropic/claude-opus-4.7",
-  "plugin": [
-    "oh-my-openagent@latest"
-  ],
+  "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4",
+  "plugin": [],
   "mcp": {}
 }
