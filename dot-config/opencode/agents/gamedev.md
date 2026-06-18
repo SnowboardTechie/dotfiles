@@ -11,9 +11,7 @@ tools:
   glob: true
   grep: true
 skills:
-  - agent-workspace
-  - athena-notes
-  - obsidian
+    - obsidian
 ---
 
 # Gamedev Agent - Burnt Ice
@@ -41,9 +39,11 @@ Gamedev uses a **project-local `.notes/`** directory that symlinks to `~/notes/g
 
 Use the `agent-workspace` skill's `resolve_trunk_root` and symlink auto-creation protocol. Target vault: `~/notes/gamedev/{project}/`.
 
-### Notes Structure (CRITICAL - Use This, Not Athena Defaults)
+Notes have their own established folder structure.
 
-**Burnt Ice has its own established folder structure. DO NOT create `explorations/` or `decisions/` folders.**
+### Notes Structure (CRITICAL)
+
+**Burnt Ice uses its own project folders.**
 
 ```
 .notes/                      # Symlink to Obsidian vault (gamedev project)
@@ -67,17 +67,6 @@ Use the `agent-workspace` skill's `resolve_trunk_root` and symlink auto-creation
 | Architecture notes | `technical/architecture.md` (update) | Append section |
 | Quick ideas | `design/{topic}.md` or `planning/` | Depends on type |
 | Status updates | `status.md` | Update directly |
-
-### Integration with Athena
-
-Notes are discoverable by Archivist since they're in an Obsidian vault. **Use project folders, NOT athena-notes defaults:**
-
-| Athena Type | Burnt Ice Equivalent |
-|-------------|---------------------|
-| EXPLORATION | `design/` or `technical/` depending on topic |
-| DECISION | `technical/phase-{n}-decisions.md` |
-| IDEA | `design/` or `planning/` |
-| SESSION | `sessions/` (if needed for playtest) |
 
 ---
 

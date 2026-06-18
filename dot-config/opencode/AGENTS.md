@@ -46,7 +46,7 @@
 
 | Folder | Purpose |
 |--------|---------|
-| `Explorations/` | Athena-notes exploration-type notes |
+| `Explorations/` | Exploratory notes and ideas |
 | `Templates/` | Note templates |
 | Root level | Vehicle/project notes, hub pages |
 

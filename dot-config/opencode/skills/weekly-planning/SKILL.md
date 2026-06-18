@@ -215,7 +215,6 @@ Pull from `~/notes/second-brain/Projects TODO.md` and present the list. Ask: "An
 ## Dependencies
 
 - **Obsidian skill** — for vault path conventions and wikilink syntax
-- **athena-notes skill** — for note type patterns (this is a `weekly` type note, not in athena's core types but follows the same frontmatter/linking conventions)
 
 ---
 

@@ -134,7 +134,7 @@ for label in tech-debt known-issue follow-up; do
 done
 ```
 
-The label list is configurable: if the user's `~/.claude/cairn/pr-self-review.md` exists with `related_labels: [...]`, use that list instead. Otherwise use the default above. Do not silently add labels beyond what's listed — it drowns reviewers in noise.
+The label list is hardcoded above.
 
 **Forgejo equivalents:** `tea api` against `/repos/{owner}/{repo}/issues?state=open&q={term}` for (B) and `?labels={id}` for (C). Resolve label names → integer IDs first (same pattern as `issue-create` Stage 2.2).
 
@@ -159,7 +159,7 @@ Write the merged cache to `{state-dir}/related-issues.json`:
 
 Resolve `TRUNK_ROOT` using the worktree-aware pattern defined in [`skills/agent-workspace/SKILL.md`](../agent-workspace/SKILL.md) — the canonical `resolve_trunk_root` function, which checks whether `$(git rev-parse --show-toplevel)/.git` is a regular file (i.e., we're inside a worktree) and, if so, returns `dirname $(git rev-parse --git-common-dir)`. Do not re-spell that logic here; cite and reuse.
 
-Then: `Glob(pattern="{TRUNK_ROOT}/.notes")`. Empty → log once ("No project notes available; skipping archivist phase.") and write `{state-dir}/related-notes.json` as `[]`. Do not auto-create `.notes/` — this is a read-only review skill; the user opts into notes via `/cairn-setup`.
+Then: `Glob(pattern="{TRUNK_ROOT}/.notes")`. Empty → log once ("No project notes available; skipping note discovery.") and write `{state-dir}/related-notes.json` as `[]`. Do not auto-create `.notes/` — this is a read-only review skill.
 
 If `.notes/` is present, extract keyword topics from the diff:
 
@@ -167,11 +167,11 @@ If `.notes/` is present, extract keyword topics from the diff:
 - Top-level directory names of changed files.
 - New exported symbols — `git diff {base}...HEAD` + grep for added lines matching `^\+(export\s+|def |class |function |pub fn )` to pull function/class names. Keep the simplest extraction; do not try to parse ASTs.
 
-Dedupe the topic list. If more than 6 topics result, keep the first 6 ranked by the number of changed files each topic matches (i.e., files whose basename or top-level directory contains the topic token); break ties by alphabetical order for determinism. Then fire the parallel archivist calls via `superpowers:dispatching-parallel-agents` (the `Skill` tool), which owns the single-message, multiple-Task-call discipline (matching the meeting-sync precedent — see [skills/meeting-sync/SKILL.md](../meeting-sync/SKILL.md)):
+Dedupe the topic list. If more than 6 topics result, keep the first 6 ranked by the number of changed files each topic matches (i.e., files whose basename or top-level directory contains the topic token); break ties by alphabetical order for determinism. Then fire parallel note-discovery queries via `superpowers:dispatching-parallel-agents` (the `Skill` tool), which owns the single-message, multiple-Task-call discipline:
 
 ```
 Task(
-  subagent_type="archivist",
+  subagent_type="opencode-note-search",
   description="Notes related to {topic}",
   prompt="scope: published
 
@@ -193,7 +193,7 @@ Budget: up to 6 parallel calls. Synthesize results into `{state-dir}/related-not
 ]
 ```
 
-If every archivist call returns "no matches," write `[]` — do not error.
+If every note-discovery call returns "no matches," write `[]` — do not error.
 
 ---
 
@@ -433,9 +433,9 @@ Frontmatter `ticket:` field is retained (not renamed) so tools that key on it ke
 | PR author isn't the current user | Stop. Tell the user this skill is for PRs they authored; point at `/code-review`. |
 | Dirty working tree on invocation | Refuse. Never silently stash. |
 | No open PR for current branch (`branch-inference`) | Stop. Suggest `/ship` or a PR URL. |
-| `.notes/` missing | Skip archivist phase silently; write `related-notes.json` as `[]`; proceed. |
+| `.notes/` missing | Skip note discovery silently; write `related-notes.json` as `[]`; proceed. |
 | `gh` not authenticated | Stop. Surface the auth error. |
-| Archivist returns nothing for every topic | `related-notes.json = []`; proceed. |
+| Archive returns nothing for every topic | `related-notes.json = []`; proceed. |
 | A pass's fix introduces a regression | Next pass flags it as a normal finding. Suppression filters **push-backs**, **skips**, and **acks** (accepts that produced no diff); accepts that did change code are **not** suppressed, so a regression introduced by a fix re-surfaces normally. |
 | User says "done" mid-triage | Finish any accepted edits from this pass, commit + push, write summary, exit. |
 | 5 passes reached | Ask the user whether to continue for another 5 or exit. |
@@ -463,8 +463,7 @@ Frontmatter `ticket:` field is retained (not renamed) so tools that key on it ke
 
 ## Related Agents
 
-- `diff-reviewer` — the four-lens reviewer (correctness / security / simplicity / over-engineering), reused as-is. See `agents/diff-reviewer.md`.
-- `archivist` — invoked in parallel during Phase 1.2 for related-notes discovery.
+- `diff-reviewer` — the four-lens agent (correctness / security / simplicity / over-engineering), reused as-is. See `agents/diff-reviewer.md`.
 
 ## Related Skills
 

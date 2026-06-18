@@ -7,7 +7,7 @@ description: End-to-end GitHub/Forgejo ticket workflow. Use when the user shares
 
 End-to-end workflow for taking a GitHub or Forgejo ticket from URL to review-ready implementation. Four phases: **Intake → Plan → Implement → Self-Review**, with a human approval checkpoint between Plan and Implement.
 
-Standalone — does not require any specific note system. Ships in the cairn-notes plugin, but writes state under `~/.claude/issue-work/` (not the notes vault).
+Standalone — does not require any specific note system; writes state under `~/.claude/issue-work/` (not the notes vault).
 
 ---
 
@@ -109,7 +109,7 @@ Glob(pattern="$HOME/code/*/*/.git")
 
 If no local clone: ask before running `gh repo clone {owner}/{repo} ~/code/{repo}`.
 
-Bind the resolved clone path as `{TRUNK_ROOT}` — the placeholder Phase 1.5 and Phase 1.6 reference. If the resolved path is itself a worktree, resolve to the trunk via `git -C {path} rev-parse --path-format=absolute --git-common-dir` and strip the trailing `/.git` (same pattern the `archivist` agent uses; see [`agent-workspace/SKILL.md`](../agent-workspace/SKILL.md) → *Worktree-Aware Resolution*).
+Bind the resolved clone path as `{TRUNK_ROOT}` — the placeholder Phase 1.5 and Phase 1.6 reference. If the resolved path is itself a worktree, resolve to the trunk via `git -C {path} rev-parse --path-format=absolute --git-common-dir` and strip the trailing `/.git` (same pattern used for worktree-aware resolution; see [`agent-workspace/SKILL.md`](../agent-workspace/SKILL.md) → *Worktree-Aware Resolution*).
 
 ### 1.5 Pre-flight checks
 
