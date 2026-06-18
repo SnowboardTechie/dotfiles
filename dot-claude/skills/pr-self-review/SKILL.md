@@ -1,6 +1,6 @@
 ---
 name: pr-self-review
-description: Iterative self-review loop for PRs you authored. Runs the three-lens parallel review (correctness / security / simplicity), pre-feeds reviewers with related open issues and project-note context so they can defer overlaps, and walks findings through a four-action triage (accept / push-back / issue / skip) that commits accepted edits and loops until the diff is clean. Accept auto-promotes to ack when the edit produces no diff, so observational findings stop re-surfacing. Triggers on `/pr-self-review [pr-url]`, "review my PR", or invocation from `issue-work` Phase 4.
+description: Iterative self-review loop for PRs you authored. Runs the four-lens parallel review (correctness / security / simplicity / over-engineering, the last carrying the ponytail philosophy), pre-feeds reviewers with related open issues and project-note context so they can defer overlaps, and walks findings through a four-action triage (accept / push-back / issue / skip) that commits accepted edits and loops until the diff is clean. Accept auto-promotes to ack when the edit produces no diff, so observational findings stop re-surfacing. Triggers on `/pr-self-review [pr-url]`, "review my PR", or invocation from `issue-work` Phase 4.
 ---
 
 # PR Self-Review
@@ -199,11 +199,11 @@ If every archivist call returns "no matches," write `[]` — do not error.
 
 ## Phase 2 — Review pass
 
-### 2.1 Spawn three parallel `diff-reviewer` agents
+### 2.1 Spawn four parallel `diff-reviewer` agents
 
-Dispatch the three reviewers via `superpowers:dispatching-parallel-agents` (the `Skill` tool) — it owns the single-message, three-Task-call discipline. Each gets:
+Dispatch the four reviewers via `superpowers:dispatching-parallel-agents` (the `Skill` tool) — it owns the single-message, four-Task-call discipline. **All four lenses are required every pass** — never drop a lens to save budget. The `over-engineering` lens is the ponytail reviewer (it carries `ponytail:ponytail-review`'s philosophy inline); a review pass that omits it is not a complete pass. Each reviewer gets:
 
-- `lens` — `correctness` | `security` | `simplicity`
+- `lens` — `correctness` | `security` | `simplicity` | `over-engineering`
 - `diff_range` — `{base-branch}...HEAD`
 - `worktree_path` — absolute
 - `plan_path` — `{state-dir}/plan.md` if present (pre-pr mode), else `null`
@@ -219,7 +219,7 @@ Reviewers do **not** change behavior when the caches are empty — missing-file 
 
 ### 2.2 Filter
 
-After the three reviewers return, merge their findings and filter against the in-memory **session suppression set** (initially empty):
+After the four reviewers return, merge their findings and filter against the in-memory **session suppression set** (initially empty):
 
 - Suppression key: `{lens}|{file}|{line}|{sha8(message)}`. The message hash tolerates whitespace differences but catches rewording.
 - Findings whose key is already suppressed are dropped before triage.
@@ -463,7 +463,7 @@ Frontmatter `ticket:` field is retained (not renamed) so tools that key on it ke
 
 ## Related Agents
 
-- `diff-reviewer` — the three-lens reviewer, reused as-is. See `agents/diff-reviewer.md`.
+- `diff-reviewer` — the four-lens reviewer (correctness / security / simplicity / over-engineering), reused as-is. See `agents/diff-reviewer.md`.
 - `archivist` — invoked in parallel during Phase 1.2 for related-notes discovery.
 
 ## Related Skills
@@ -474,3 +474,4 @@ Frontmatter `ticket:` field is retained (not renamed) so tools that key on it ke
 - `agent-workspace` — trunk-root resolution for `.notes/` access from a worktree.
 - `superpowers:dispatching-parallel-agents` — Phases 1, 1.2, 2.1 fan-outs.
 - `superpowers:verification-before-completion` — Phase 3.0 pre-summary proof.
+- `ponytail:ponytail-review` — source philosophy for the `over-engineering` lens (carried inline in `diff-reviewer`; the skill is not invoked at runtime).
