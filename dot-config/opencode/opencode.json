@@ -28,9 +28,10 @@
      },
      "ollama": {
        "npm": "@ai-sdk/openai-compatible",
-       "name": "Local Ollama (MBP)",
+       "name": "Open WebUI (ai.thompson.codes)",
        "options": {
-         "baseURL": "http://localhost:11434"
+         "baseURL": "https://ai.thompson.codes/ollama/v1",
+         "apiKey": "{file:~/.secrets/opencode-api-key}"
        },
        "models": {
          "qwen3.6:35b-a3b-coding-nvfp4": {
