@@ -1,1 +1,0 @@
-/Users/bryan/code/dotfiles/dot-agents/skills/find-skills/SKILL.md

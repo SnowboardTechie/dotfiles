@@ -1,5 +1,0 @@
-# Corpus files contain verbatim teammate-facing messages and personal DM
-# content. Kept local-only; the distilled rules in core-traits.md and
-# anti-patterns.md are what's committed and shared.
-references/samples.md
-references/off-target.md

@@ -13,5 +13,5 @@ vault where the global rules don't quite fit. Read it after the skill.
 
 ## See also
 
-- Global skill: `~/code/dotfiles/dot-claude/skills/vault-pkm/SKILL.md`
+- Global skill: `~/code/dotfiles/dot-agents/skills/vault-pkm/SKILL.md`
 - This vault's `INDEX.md` (Map of Content)

@@ -119,6 +119,89 @@ else
     echo "  Linked $OPENCODE_AGENTS_DEST -> $OPENCODE_AGENTS_SRC"
 fi
 
+# Agent skills — shared pool in dot-agents/skills, curated per tool.
+# See dot-agents/README.md for the per-tool rationale and the mirror of these lists.
+echo ""
+echo "Setting up agent skills..."
+
+SKILLS_SRC="$(resolve_path "$REPO_ROOT/dot-agents/skills")"
+
+# Common core shared by all three agents: dev/PR essentials + PKM/vault management.
+COMMON_SKILLS=(ship worktrunk git-master update-pr-description pr-self-review agent-workspace
+    vault-pkm vault-capture obsidian)
+
+PI_SKILLS=("${COMMON_SKILLS[@]}")
+
+CLAUDE_SKILLS=("${COMMON_SKILLS[@]}"
+    manual-merge issue-create issue-work loop-issue sync-hold-branch
+    adr-and-spec-coach conforming-tech-specs sprint-deliverable-update weekly-planning
+    catalog-review dependency-review dependency-triage
+    voice-bryan find-skills)
+
+OPENCODE_SKILLS=("${COMMON_SKILLS[@]}"
+    manual-merge issue-create issue-work loop-issue
+    adr-and-spec-coach conforming-tech-specs
+    voice-bryan gamedev)
+
+# Symlink a curated set of pool skills into a tool's skills dir.
+# Idempotent: prunes pool-symlinks no longer wanted; never touches real dirs
+# (e.g. Claude's plugin skills) or symlinks pointing outside the pool.
+link_skills() {
+    local label="$1" dest="$2"; shift 2
+    local wanted=("$@")
+    local existing name tgt w keep linked=0
+
+    if [[ ! -d "$SKILLS_SRC" ]]; then
+        echo "  ERROR: skill pool not found at $SKILLS_SRC"
+        return
+    fi
+
+    # Old Pi wiring symlinked the whole skills dir at once; replace with a real dir.
+    if [[ -L "$dest" ]]; then
+        rm "$dest"
+    fi
+    mkdir -p "$dest"
+
+    # Prune stale links: only symlinks that resolve into the pool and are no
+    # longer curated for this tool. Real dirs and foreign symlinks are left alone.
+    for existing in "$dest"/*; do
+        [[ -L "$existing" ]] || continue
+        tgt="$(resolve_path "$existing")"
+        case "$tgt" in
+            "$SKILLS_SRC"/*)
+                name="$(basename "$existing")"
+                keep=0
+                for w in "${wanted[@]}"; do
+                    if [[ "$w" == "$name" ]]; then keep=1; break; fi
+                done
+                if [[ $keep -eq 0 ]]; then
+                    rm "$existing"
+                    echo "  pruned $label/$name (no longer curated)"
+                fi
+                ;;
+        esac
+    done
+
+    # Link the curated skills as per-skill symlinks into the pool.
+    for name in "${wanted[@]}"; do
+        if [[ ! -d "$SKILLS_SRC/$name" ]]; then
+            echo "  WARNING: skill '$name' not in pool, skipping"
+            continue
+        fi
+        # Replace any old real-dir layout (the pool dir is canonical, incl. local corpus).
+        if [[ -e "$dest/$name" && ! -L "$dest/$name" ]]; then
+            rm -rf "$dest/$name"
+        fi
+        ln -sfn "$SKILLS_SRC/$name" "$dest/$name"
+        linked=$((linked + 1))
+    done
+    echo "  $label: $linked skills linked at $dest"
+}
+
+link_skills "Claude"   "$HOME/.claude/skills"          "${CLAUDE_SKILLS[@]}"
+link_skills "OpenCode" "$HOME/.config/opencode/skills" "${OPENCODE_SKILLS[@]}"
+link_skills "Pi"       "$HOME/.pi/agent/skills"        "${PI_SKILLS[@]}"
+
 echo ""
 echo "Platform-specific configuration complete!"
 echo ""

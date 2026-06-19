@@ -1,1 +1,0 @@
-/Users/bryan/code/dotfiles/dot-agents/skills/gamedev/SKILL.md

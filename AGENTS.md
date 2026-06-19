@@ -12,11 +12,12 @@ GNU Stow-managed dotfiles for macOS + NixOS. Single-package stow (`stow . --dotf
 
 ```
 dotfiles/
+├── dot-agents/          # Shared agent-skill pool (Claude/Pi/OpenCode); curated per-tool. See dot-agents/README.md
 ├── dot-config/
 │   ├── alacritty/       # Import-chain: base.toml + platform overlay (macOS/Linux)
 │   ├── direnv/          # nix-direnv for fast Nix shell caching
 │   ├── nvim/            # Neovim config (see nvim/AGENTS.md)
-│   ├── opencode/        # AI agent system: agents/, skills/, model configs
+│   ├── opencode/        # AI agent system: agents/, model configs (skills live in dot-agents/)
 │   └── zsh/             # Modular shell: env -> options -> plugins -> functions -> aliases
 ├── dot-gnupg/           # GPG agent (pinentry-mac hardcoded, NixOS must override)
 ├── dot-tmux/            # Tmux sessions: code-editor.sh, second-brain.sh
@@ -25,7 +26,7 @@ dotfiles/
 ├── dot-zshrc            # Shell loader: P10k + modular config sourcing
 ├── dot-tmux.conf        # Nightfly theme, vim keybinds, vendored TPM plugins
 ├── dot-p10k.zsh         # Powerlevel10k prompt theme
-├── setup-platform-configs.sh  # Post-stow: alacritty, tmux plugins, secrets, AGENTS.md symlink
+├── setup-platform-configs.sh  # Post-stow: alacritty, tmux plugins, secrets, AGENTS.md + agent-skill symlinks
 └── zsa-keyboard-layouts/  # Binary firmware, stored but never stowed
 ```
 
@@ -42,8 +43,9 @@ dotfiles/
 | Add tmux session | `dot-tmux/` | Follow code-editor.sh pattern |
 | Add git identity | `dot-gitconfig` | Add `includeIf` + new identity file |
 | Change platform behavior | `setup-platform-configs.sh` | Handles stow edge cases |
-| Add Claude Code agent/skill | `dot-claude/agents/` or `dot-claude/skills/` | User-global, personal |
-| Add opencode agent/skill | `dot-config/opencode/agents/` or `skills/` | See opencode/AGENTS.md for identity |
+| Add a shared agent skill | `dot-agents/skills/` | Pool shared by Claude/Pi/OpenCode; curate which tool gets it in `setup-platform-configs.sh`. See `dot-agents/README.md` |
+| Add Claude Code agent | `dot-claude/agents/` | User-global, personal |
+| Add opencode agent | `dot-config/opencode/agents/` | See opencode/AGENTS.md for identity |
 
 ## CONVENTIONS
 
@@ -157,7 +159,7 @@ git diff --check                 # Trailing whitespace check
 This repo has `vault/` — symlink to a private Obsidian vault at `~/code/notes/dotfiles/`.
 
 Usage conventions: invoke the `vault-pkm` skill (Claude Code, opencode) or read
-`~/code/dotfiles/dot-claude/skills/vault-pkm/SKILL.md` and its `references/`
+`~/code/dotfiles/dot-agents/skills/vault-pkm/SKILL.md` and its `references/`
 directly (any agent — the skill content is plain markdown).
 Per-vault overrides, if any, live at `vault/AGENTS.md` (advertised here; not
 auto-loaded by agents — the skill checks for it explicitly in its Step 1).

@@ -201,7 +201,7 @@ Several repos under `~/code/` have a top-level `vault/` directory (symlinked to
 `~/code/notes/<project>/`). Also `~/second-brain/` is Bryan's personal-knowledge
 vault. When working in any of these — or when capturing decisions, taking notes,
 investigating debugs, recording learnings, or making sense of project context
-that doesn't live in code — read `~/code/dotfiles/dot-claude/skills/vault-pkm/SKILL.md`
+that doesn't live in code — read `~/code/dotfiles/dot-agents/skills/vault-pkm/SKILL.md`
 (and its `references/`) before writing anything to a vault.
 
 If a vault has its own `AGENTS.md` at its root (`vault/AGENTS.md` for project
