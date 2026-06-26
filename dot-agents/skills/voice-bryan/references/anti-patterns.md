@@ -124,6 +124,32 @@ draft RFCs), avoid pinning to identifiers that could shift:
 Use stable phrasings: "at implementation time" not "at sub-issue (11) time",
 "in the catalog section" not "in section 4.2.3."
 
+### Gratitude on re-review / second-favor asks (don't strip it)
+
+When asking teammates to spend time *again* on something they already
+reviewed (re-review requests, second-favor asks), Bryan uses gracious,
+imposition-acknowledging politeness, including phrasings the generic list
+below flags as forbidden:
+
+- "Thank you in advance for taking another pass when time allows." (posted
+  verbatim, 2026-06-26)
+
+The generic "Thanks in advance" closing anti-pattern (below) applies to
+*cold / first-time* asks, not re-review asks: there the reviewer already did
+you a favor once, so the close thanks them for both the past look and the
+next. Two calibration rules confirmed in the same session:
+
+- **"when time allows" is fine; "no rush" is not.** "when time allows"
+  acknowledges the reviewer's time; "no rush" downplays the work's
+  importance. Bryan rejected "no rush" and posted "when time allows" in the
+  same draft. Same surface, opposite urgency signal. Don't reach for "no
+  rush" / "whenever you've got a spare cycle" to sound gracious.
+- **Gratitude can lead AND close** on a second-favor ask: thank for the
+  first looks up front, thank for the next pass at the end. Not a praise
+  sandwich; two real thank-yous for two real favors.
+
+See samples.md "2026-06-26: Re-review request for a batch of PRs."
+
 ---
 
 ## Generic AI-flavored defaults (unconfirmed against Bryan corpus)
@@ -146,7 +172,9 @@ need promotion to the canonical section above once seen in corrections.
 - "Hope this helps!" (over-eager)
 - "Please let me know if you have any questions" (generic default footer)
 - "Happy to discuss further" (filler when no specific discussion is offered)
-- "Thanks in advance" (presumes the ask, often reads as pushy)
+- "Thanks in advance" (presumes the ask, often reads as pushy). Exception:
+  re-review / second-favor asks, where Bryan does use it; see "Gratitude on
+  re-review / second-favor asks" above.
 - "Looking forward to your response" (pressure-cuffed politeness)
 
 ### Structural anti-patterns
