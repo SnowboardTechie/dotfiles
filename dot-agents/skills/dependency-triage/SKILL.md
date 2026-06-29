@@ -5,7 +5,7 @@ description: Triage open dependency PRs by blast radius, CI state, and merge ord
 
 # Dependency Triage
 
-Review open dependency pull requests, sort them into the right review order, and recommend which to merge, review manually, hold, or close.
+Review open dependency pull requests, sort them into the right review order, dispatch a parallel read-only review of every PR worth reviewing, and recommend which to merge, review manually, hold, or close.
 
 This skill is designed for low-overhead weekly dependency maintenance in repositories that use Dependabot, grouped update lanes, and CI-heavy monorepos.
 
@@ -157,12 +157,53 @@ If two PRs overlap the same dependency lane, prefer the newer PR and note when t
 
 ---
 
+## Step 3b: Fan out parallel review (all reviewable lanes)
+
+Once the queue is classified (Step 2) and ordered (Step 3), review **every PR worth reviewing in parallel** rather than serially. Dispatch one read-only review subagent per PR via `superpowers:dispatching-parallel-agents`, routed to the right reviewer skill. Run them as **foreground** parallel dispatches — the batch issued in one message, returning together — **never as background tasks**: a background task fires a completion notification per review, which is exactly the per-review running commentary to avoid. The fan-out parallelizes the slow, context-heavy *investigation* (reading CI logs, diffs, changelogs); it never runs builds.
+
+### What to review
+
+Review every open PR **except** those whose fate is already decided by inspection:
+
+- **Skip** explicitly-held PRs: `DO NOT MERGE` / hold branches, and PRs already marked superseded in Step 2b. Their disposition is settled — a review adds nothing. Say in the report that you skipped them and why.
+- **Review everything else**, *including green isolated PRs*. A green PR is exactly where a missed changeset on a runtime dep in a published package slips through, so it still gets a (light) read-only pass — for a green PR there are no failing checks to diagnose, so the review is mostly the changeset-impact check.
+
+Cap **concurrency, not coverage**. If the reviewable set is larger than your parallel-dispatch batch size, run further batches — do not drop the tail. If you defer any reviewable PR, name it in the report; never silently truncate.
+
+### Routing
+
+| PR | Reviewer skill | What the subagent runs | Serial follow-up by the main agent |
+|----|----------------|------------------------|-------------------------------------|
+| Catalog workflow PR | `catalog-review` | the whole skill — it has no local-build step (it judges the CI validation path) | none; the verdict is complete |
+| Every other lane (green isolated, website-framework, tooling, runtime, GitHub Actions, major bump, broad grouped) | `dependency-review` | **read-only analysis only — its Steps 0–4** (metadata, lane, fix-status, CI-log diagnosis, changeset impact) | local verification, if and only if the verdict warrants it (below) |
+
+The only routing decision you make here is *catalog vs. not* (a catalog PR changes `pnpm-workspace.yaml` / catalog-managed versions). Each subagent self-classifies its finer lane, so triage and the reviewer never diverge.
+
+Each subagent returns: its decision (Safe to merge / Fix in this PR / Hold / Close), the lane it classified, and a one-line reason.
+
+### Do NOT fan out local verification
+
+`dependency-review` Step 5 (`gh pr checkout` + `pnpm ci`) mutates a single shared working tree; running it in parallel corrupts checkouts. **Local verification stays serial.** After the parallel review returns, run Step 5 yourself, one PR at a time, only on the candidates whose read-only verdict was *Safe to merge* or *Fix in this PR*.
+
+Broadening the *review* fan-out does **not** broaden the *build* fan-out. No matter how many PRs you reviewed in parallel, the local builds run one at a time. (`catalog-review` has no checkout/build step, so catalog subagents need no serial follow-up.)
+
+### Report once, when the whole batch returns
+
+This step sends the user **exactly two messages, in order:**
+
+1. **At dispatch** — one line naming the PRs being reviewed in parallel (e.g. "Reviewing 6 PRs in parallel; I'll report once all are in").
+2. **After every review has returned** — the single consolidated report (Step 4 / Step 5), with all verdicts folded into their buckets.
+
+Nothing goes to the user between those two messages. Do **not** post an update as each individual review finishes — wait for the whole batch, then report once.
+
+---
+
 ## Step 4: Apply Decision Rules
 
-For each PR, recommend one of:
+Using the review verdicts from Step 3b (not the heuristic classification alone), recommend one of:
 
-- **Merge now** — green, low blast radius, no extra release handling needed
-- **Review manually** — worth a focused fix or verification pass
+- **Merge now** — green, low blast radius, review found no extra release handling needed
+- **Review manually** — worth a focused fix or serial local-verification pass
 - **Hold** — do not spend time yet; wait for another cycle or lane cleanup
 - **Close / supersede** — broad grouped PR is not worth debugging in current form
 
@@ -175,16 +216,6 @@ Use these rules:
 
 ---
 
-## Step 4b: Fan out parallel diagnosis (Review-manually lane)
-
-The **Review manually** lane (B — red but attributable) is where a deeper look pays off. Rather than inspecting each PR serially, dispatch the diagnosis in parallel via `superpowers:dispatching-parallel-agents` — one subagent per PR (cap ~5; if the lane is larger, take the top N by Step 3 priority). Each subagent runs `dependency-review`'s **read-only analysis** — its Steps 0–4 (metadata, lane, fix-status, CI-log diagnosis, changeset impact) — on its assigned PR and returns the decision + a one-line reason.
-
-**Do NOT fan out local verification.** `dependency-review` Step 5 (`gh pr checkout` + `pnpm ci`) mutates a single shared working tree; running it in parallel corrupts checkouts. Local verification stays serial — after the parallel diagnosis returns, run `dependency-review` Step 5 yourself, one PR at a time, on the candidates the diagnosis greenlit. The fan-out parallelizes the *investigation* (reading CI logs is the slow, context-heavy part), never the build.
-
-The other lanes don't need this: **Merge now** is green (nothing to diagnose), **Hold** / **Close** are deferred by definition. Fold each subagent's verdict into the Review-manually entries of the Step 5 report.
-
----
-
 ## Step 5: Report
 
 Return a concise triage report in this format:
@@ -193,13 +224,13 @@ Return a concise triage report in this format:
 ## Dependency Triage
 
 ### Merge now
-- [#123](https://github.com/{owner}/{repo}/pull/123) `chore(deps): ...` — green, isolated Python lane
+- [#123](https://github.com/{owner}/{repo}/pull/123) `chore(deps): ...` — green, isolated Python lane; review confirms no changeset
 
 ### Review manually
-- [#124](https://github.com/{owner}/{repo}/pull/124) `chore(deps): ...` — website-only failures, likely attributable
+- [#124](https://github.com/{owner}/{repo}/pull/124) `chore(deps): ...` — website-only failures, attributable (per review)
 
 ### Hold
-- [#125](https://github.com/{owner}/{repo}/pull/125) `chore(deps): ...` — broad workspace failures across core/cli/sdk/website
+- [#125](https://github.com/{owner}/{repo}/pull/125) `chore(deps): ...` — broad workspace failures across core/cli/sdk/website (per review)
 
 ### Special handling
 - [#126](https://github.com/{owner}/{repo}/pull/126) `chore(deps): ...` — GitHub Actions PR, keep manual
@@ -207,11 +238,12 @@ Return a concise triage report in this format:
 ### Notes
 - Changeset review needed for: [#127](https://github.com/{owner}/{repo}/pull/127)
 - Older superseded PRs: [#121](https://github.com/{owner}/{repo}/pull/121)
+- Skipped (not reviewed): [#128](https://github.com/{owner}/{repo}/pull/128) — DO NOT MERGE hold branch
 ```
 
 **Always render every PR reference as a markdown link to its PR URL — `[#NNN](url)`, never a bare `#NNN`** — so the reader can click straight through. Use the `url` field gathered in Step 1 (or `https://github.com/{owner}/{repo}/pull/NNN` for GitHub, the equivalent for Forgejo). This applies everywhere a PR is named, including the Notes section.
 
-Be specific about *why* each PR landed in that bucket.
+Be specific about *why* each PR landed in that bucket, and ground the reason in its Step 3b review verdict.
 
 ---
 
@@ -221,4 +253,5 @@ Be specific about *why* each PR landed in that bucket.
 - Do not recommend weakening CI just to get dependency PRs merged
 - Do not treat audit exceptions as the default path forward
 - Do not ignore changeset requirements when runtime deps in published packages change
-- Do not hide uncertainty; if a PR needs deeper inspection, say so and hand it to `dependency-review` (or, for the whole Review-manually lane at once, fan out parallel read-only diagnosis per Step 4b)
+- Every reviewable PR gets a read-only review via Step 3b (parallel); never parallelize the local builds — `dependency-review` Step 5 stays serial, one PR at a time
+- Do not hide uncertainty; if a reviewed PR still needs deeper single-PR local verification, run `dependency-review` Step 5 on it serially
