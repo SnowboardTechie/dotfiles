@@ -219,6 +219,8 @@ Use `WebSearch` + `WebFetch` to look up official docs. Capture findings directly
 
 ### 2.3 Synthesize plan.md
 
+> **Consumer- or plugin-author-facing surface? (soft pointer, judgment call.)** If this ticket introduces or reshapes a consumer/plugin-author-facing surface in the SGG / CommonGrants repos (a new endpoint, protocol/`.tsp` change, or SDK/extension surface), consider running the `dx-target` skill *before* delegating to plan authoring — it works backwards from the developer experience (2-3 candidate usage shapes → a chosen target) and hands the chosen target to `writing-plans` as the acceptance oracle, so the plan is "make this snippet real" rather than an inward-facing task list. Skip for endpoint bug-fixes, dep bumps, docs, and internal-only changes.
+
 After exploration returns, delegate plan authoring to `superpowers:writing-plans` (the `Skill` tool). Give it:
 
 - **Inputs:** `context.md`, the `explore-*.md` outputs from 2.1, and any inline research from 2.2.
