@@ -46,6 +46,9 @@
   },
   "ui_font_size": 16,
   "buffer_font_size": 15,
+  "terminal": {
+    "font_family": "MesloLGS Nerd Font"
+  },
   "theme": {
     "mode": "system",
     "light": "Gruvbox Light Hard",

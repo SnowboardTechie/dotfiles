@@ -50,3 +50,6 @@ dot-gnupg/*
 
 # Stale backups from opencode config edits
 *.backup*
+
+# Zed - track settings/keymap, ignore the LMDB prompt-library store (machine-local, binary)
+dot-config/zed/prompts/
