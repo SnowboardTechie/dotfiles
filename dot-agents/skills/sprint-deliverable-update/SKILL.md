@@ -21,9 +21,72 @@ is a separate skill: `sprint-status-update`.
    the sub-heading (e.g., "### Custom Fields Catalog", "### SGG Adoption"). Never use
    numbered labels like "Criteria 1", "Criteria 2".
 3. **"Criteria completed" is an H2.** Needs visual separation from the sprint update above.
-4. **Read the previous sprint's comment first.** Fetch the last sprint update comment
-   on this deliverable to understand what was planned, what rolled over, and whether
-   any ACs/metrics were intentionally held back.
+4. **Gather sources before drafting.** The sprint's goal, dates, and committed issue
+   list come from the planning doc — not from cadence math or the previous comment. The
+   format and voice come from the latest sibling-deliverable updates. See
+   **Gather sources first** below.
+
+## Gather sources first
+
+Gather three things, in order, before you draft. They play different roles: the planning
+doc is the **input** (what we committed to), the recent sibling comments are the **output
+format** to match, and the sub-issues are **what actually happened**.
+
+### 1. The sprint planning Google Doc (the plan)
+
+The P&D team's sprint doc holds the committed goal, dates, and issue list for every sprint:
+
+- Doc ID: `1eTNaLYWsXn1oRU0TB3KRXyTYRHI4oCqf1h-CQBuCo-E`
+- URL: https://docs.google.com/document/d/1eTNaLYWsXn1oRU0TB3KRXyTYRHI4oCqf1h-CQBuCo-E/edit
+
+Fetch it with the Google Drive `read_file_content` tool (`fileId` above). **It is ~107k
+chars — too large to return inline; the tool saves it to a file.** Do not read it whole.
+Extract only the current sprint's block — from `## **Sprint X.Y** (dates)` to the next
+`## ` heading — with grep/awk on the saved file, or hand the saved file to a subagent and
+ask it to return just that block.
+
+From the sprint block, pull (these OVERRIDE guesses — do not compute the sprint window
+from cadence math or lift the goal from last sprint's "Next sprint" section):
+
+- **Sprint number + date range** from the header (e.g. `## **Sprint 6.5** (Jun 24 - Jul 07)`)
+  — this is the exact `SPRINT_START_DATE` for the sub-issue filter.
+- **The `### *Goal:*` line** — the one-sentence sprint goal → the "Sprint goal" section.
+- **The committed issue list under this deliverable** — the workstream-grouped bullets
+  beneath the deliverable's top-level bullet. This is what we committed to; reconcile it
+  against what actually closed (step 3) to split Accomplishments vs. Rollover.
+- **`(carryover from X.Y)` annotations** — rollover context.
+
+From the **Quad's "Checkpoint Planning" table** (top of the current Quad section), pull the
+**deliverable → epic-issue mapping**. As of Quad 6: SDK Plugin Enhancements → #8765,
+Community Stewardship & Co-Planning → #8757, New Routes & Models → #8692, catch-all → #6265.
+Derive it from the table each run — it changes every Quad.
+
+Export gotchas: the exported Markdown is mangled (stray `\` and `*`, mojibake emoji). Parse
+issue numbers from the trailing `/issues/NNN` URL, not the `(\#NNN)` link text, and don't
+trust emoji read from the export.
+
+If the Drive tool isn't authorized (e.g. a headless run), ask the user to paste the current
+sprint's block.
+
+### 2. Recent sibling-deliverable updates (the format to match)
+
+The house format drifts sprint to sprint. Before drafting, fetch the **latest sprint update
+comment from every sibling deliverable epic** (the mapping from step 1 — currently #8765,
+#8757, #8692, #6265) to match the current format, voice, and status conventions, and for
+cross-deliverable context:
+
+```bash
+gh issue view {NUMBER} --repo HHS/simpler-grants-gov --json comments \
+  --jq '[.comments[] | select(.body | startswith("## Sprint"))] | last | .body'
+```
+
+Also read the previous sprint's comment on **this** deliverable for continuity — what was
+planned, what rolled over, whether any ACs/metrics were intentionally held back.
+
+### 3. What actually closed (the sub-issues)
+
+Enumerate the deliverable's sub-issues and filter to the sprint window from step 1. See
+**When Drafting From Scratch** below for the GraphQL query.
 
 ## Template
 
