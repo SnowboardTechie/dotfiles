@@ -8,6 +8,8 @@ fi
 # Initialize Powerlevel10k (try multiple paths for cross-platform compatibility)
 if [[ -f /opt/homebrew/share/powerlevel10k/powerlevel10k.zsh-theme ]]; then
   source /opt/homebrew/share/powerlevel10k/powerlevel10k.zsh-theme
+elif [[ -f /usr/local/share/powerlevel10k/powerlevel10k.zsh-theme ]]; then
+  source /usr/local/share/powerlevel10k/powerlevel10k.zsh-theme
 elif [[ -f /run/current-system/sw/share/zsh-powerlevel10k/powerlevel10k.zsh-theme ]]; then
   source /run/current-system/sw/share/zsh-powerlevel10k/powerlevel10k.zsh-theme
 elif [[ -f /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme ]]; then
