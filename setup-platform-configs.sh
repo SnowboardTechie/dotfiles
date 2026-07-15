@@ -167,9 +167,19 @@ link_skills() {
         return
     fi
 
-    # Old Pi wiring symlinked the whole skills dir at once; replace with a real dir.
+    # Old Pi wiring symlinked the whole pool at once. Replace only that known
+    # layout; a foreign destination symlink may be independently managed.
     if [[ -L "$dest" ]]; then
-        rm "$dest"
+        tgt="$(resolve_path "$dest")"
+        if [[ "$tgt" == "$SKILLS_SRC" ]]; then
+            rm "$dest"
+        else
+            echo "  WARNING: $label destination is a foreign symlink; skipping"
+            return
+        fi
+    elif [[ -e "$dest" && ! -d "$dest" ]]; then
+        echo "  WARNING: $label destination exists and is not a directory; skipping"
+        return
     fi
     mkdir -p "$dest"
 
@@ -199,9 +209,18 @@ link_skills() {
             echo "  WARNING: skill '$name' not in pool, skipping"
             continue
         fi
-        # Never replace a real directory or foreign file automatically. It may
-        # contain local-only corpus or an independently managed skill.
-        if [[ -e "$dest/$name" && ! -L "$dest/$name" ]]; then
+        # Replace only links already owned by the pool. Preserve foreign links,
+        # real directories, and files because they may be independently managed.
+        if [[ -L "$dest/$name" ]]; then
+            tgt="$(resolve_path "$dest/$name")"
+            case "$tgt" in
+                "$SKILLS_SRC"/*) ;;
+                *)
+                    echo "  WARNING: $label/$name is a foreign symlink; skipping"
+                    continue
+                    ;;
+            esac
+        elif [[ -e "$dest/$name" ]]; then
             echo "  WARNING: $label/$name exists and is not a symlink; skipping"
             continue
         fi

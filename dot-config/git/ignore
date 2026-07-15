@@ -28,3 +28,7 @@ CLAUDE.local.md
 
 # Superpowers working docs - plans/specs, local context only
 docs/superpowers/
+
+# Hermes per-project plans and resumable workflow state - local context only
+# To track selected artifacts in a repo, add a narrower !.hermes/... exception there
+.hermes/
