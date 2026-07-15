@@ -75,7 +75,7 @@ def audit_vault(repo: Path, vault: Path, stale_days: int) -> int:
     status = vault / "status.md"
 
     if not index.exists():
-        print("MISSING INDEX.md")
+        print("MISSING_INDEX INDEX.md")
         findings += 1
         return findings
 
@@ -162,7 +162,9 @@ def main() -> int:
     names = args.vaults or [
         path.name
         for path in sorted(root.iterdir())
-        if path.is_dir() and (path / "INDEX.md").exists()
+        if path.is_dir()
+        and not path.name.startswith(".")
+        and any(path.rglob("*.md"))
     ]
     findings = sum(audit_vault(root, root / name, args.stale_days) for name in names)
     print(f"\n{findings} finding(s); read-only audit, no files changed.")
