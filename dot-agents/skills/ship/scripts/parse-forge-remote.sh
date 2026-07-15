@@ -9,6 +9,18 @@ if [[ -z "$remote_url" ]]; then
 fi
 
 case "$remote_url" in
+    *://*)
+        case "$remote_url" in
+            http://*|https://*|ssh://*) ;;
+            *)
+                echo "unsupported remote URL: $remote_url" >&2
+                exit 1
+                ;;
+        esac
+        ;;
+esac
+
+case "$remote_url" in
     http://*|https://*)
         scheme="${remote_url%%://*}"
         rest="${remote_url#*://}"
