@@ -6,8 +6,9 @@ description: >
   ~/code/notes/, or in ~/second-brain/ — or when capturing decisions, taking
   notes, investigating debugs, recording learnings, or making sense of project
   context that doesn't live in code. Encodes MOC-and-spoke topology,
-  atomic-spoke discipline, look-first/never-orphan rule, filename conventions,
-  frontmatter shape, and per-vault git commit discipline.
+  atomic-spoke discipline, look-first/never-orphan rule, compiled-project
+  ingest/reconciliation, filename conventions, frontmatter shape, and per-vault
+  git commit discipline.
 ---
 
 # Vault PKM conventions
@@ -44,7 +45,13 @@ Read the vault's entry point:
 
 Check INDEX.md's `index-last-verified:` frontmatter field. If older than 30 days,
 mention this to the user — the Map of Content may have drifted from the vault's
-actual MOCs and active threads.
+actual MOCs and active threads. This is a fallback warning, not a freshness
+window: verified changes to current state trigger reconciliation immediately.
+
+For an agent-maintained project vault, also read `status.md` when present and the
+relevant topic MOC before writing. Classify the vault as active compiled work,
+a dormant snapshot, or a historical/archive corpus before treating old state as
+current.
 
 Pull other files lazily, following wikilinks as work surfaces them. Don't
 bulk-load the vault.
@@ -56,6 +63,7 @@ bulk-load the vault.
 | Deciding folder + filename shape for a new note | `references/filename-conventions.md` |
 | Writing frontmatter | `references/frontmatter.md` |
 | Establishing or linking to a MOC, or any "before I write" thinking | `references/hub-and-spoke.md` |
+| Grounding and recompiling an agent-maintained project vault | `references/agent-compiled-project-vaults.md` |
 | Committing + pushing a vault write | `references/commit-discipline.md` |
 
 For anything ambiguous, start with `references/hub-and-spoke.md` — it covers
@@ -64,14 +72,15 @@ that informs every other choice.
 
 ## Don't write
 
-- Routine work, things derivable from `git log`, daily logs
+- Routine work, things derivable from `git log`, daily logs, append-only ingest logs
+  that add no information beyond Git
 - Mid-conversation captures without naming the path and type first
 
 ## For non-Skill agents
 
 This skill's content is plain markdown. Agents without a Skill runtime (aider, codex
 when not using its own skills system, Cursor) can read `SKILL.md` directly, and
-should also read all four files under `references/` since they won't follow the
+should also read all files under `references/` since they won't follow the
 routing table dynamically. The mechanism differs; the content is the same.
 
 ## See also

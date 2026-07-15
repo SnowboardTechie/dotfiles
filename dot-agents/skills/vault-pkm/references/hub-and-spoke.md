@@ -43,6 +43,10 @@ first; link liberally. An unlinked note is dead weight — Andy Matuschak's
 evergreen notes, Luhmann's zettelkasten, and Tiago Forte's BASB all agree on
 this even where they disagree elsewhere.
 
+For project vaults, an outbound link is not enough: every durable new note also
+needs an inbound route from the relevant MOC or `INDEX.md`. `.agents/` scratch
+and unpromoted `drafts/` are noncanonical and exempt until promoted.
+
 **Cold-start exception:** if the vault has no notes that the new note could
 link to (fresh vault, sparse vault), update `INDEX.md` in the same write to
 wikilink the new note from its Map of Content. That backlink from INDEX
@@ -86,6 +90,7 @@ an existing note:
 - **After 3+ spokes accumulate that lift a topic out**: create a new MOC; link
   the spokes to it.
 - **When INDEX.md is stale (>30 days `index-last-verified:`)**: re-scan MOCs
-  at root, prune dead ones, surface new ones.
+  at root, prune dead ones, surface new ones. This age check is a fallback;
+  event-driven drift must be reconciled when the underlying state changes.
 
 The skill should prompt these refinements when conditions are met.

@@ -53,6 +53,11 @@ lowercase `decisions/`; second-brain uses Capitalized `Decisions/`).
   context" promise requires that other machines can pull right after.
 - If a note adds a new MOC or shifts the vault's map, update `INDEX.md` in
   the same commit so the map stays current. Also bump `index-last-verified:`.
+- If evidence changes current project state, check and reconcile `status.md`,
+  the relevant MOC, and `INDEX.md` in the same resting-point commit. Search the
+  full active zone for stale copies before staging.
+- Stage explicit files only. Preserve unrelated modified/untracked work; never
+  use `git add .` or `git add -A` in a shared vault repository.
 
 ## Cross-repo isolation
 

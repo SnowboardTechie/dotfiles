@@ -17,7 +17,9 @@ up: "[[Parent-MOC]]"               # parent MOC (for spokes); omit for MOCs them
 created: 2026-05-27
 updated: 2026-05-27                # bumped on each meaningful edit
 status: active                     # active | decided | complete | archived
-source:                            # optional: URL/citation if note derives from external material
+source:                            # optional: one exact source pointer
+sources: []                        # optional: multiple exact source pointers
+source-checked: 2026-07-15         # optional: checked date for claims that can drift
 ---
 ```
 
@@ -29,6 +31,13 @@ have different categorical universes; tag namespaces stay separate.
 the note body. Use `up:` for parent-MOC relations (typed for Bases queries).
 Maintaining `related:` as a separate frontmatter list creates two sources of
 truth that drift.
+
+Use provenance proportionally. Source-backed technical claims that can drift
+should identify the repo path plus commit, PR/issue, document version, or URL and
+checked date where useful. Inline pointers are often clearer for claim-level
+support. Original reasoning, project logs, and historical narrative do not need
+decorative citations. Label observed current state, accepted decisions, proposed
+design, historical state, and unverified inference explicitly in prose.
 
 ## ~/second-brain/
 
