@@ -1,5 +1,6 @@
 ---
 name: vault-capture
+author: Bryan
 description: >
   Use at a session's resting point or end to decide whether anything from the
   work just done is worth writing into an Obsidian notes vault — a repo with a
@@ -25,10 +26,10 @@ Two failure modes this exists to prevent:
   question, not authorization. The reflex is to draft notes and commit them
   immediately. Instead: propose a triaged slate, let the author pick, write only
   what they greenlight.
-- **Provenance pollution.** Laundering a heuristic *you* synthesized — or a
-  half-floated idea, or routine mechanics — into the vault as if the user or
-  team had decided it. The vault records knowledge **they** produced. When in
-  doubt, don't write.
+- **Provenance pollution.** Laundering a heuristic the agent synthesized, a
+  half-floated idea, or routine mechanics into the vault as if the user or team
+  had decided it. Agent-proposed ideas qualify only after Bryan explicitly
+  approves or adopts them. When in doubt, don't write.
 
 ---
 
@@ -45,8 +46,8 @@ Two failure modes this exists to prevent:
 - Mid-task note-writing you weren't asked for → don't; finish the work.
 - The mechanics of an already-decided capture (folder, filename, frontmatter,
   linking, commit) → that's `vault-pkm`. This skill hands off to it.
-- A behavioral correction *for Claude itself* → your memory tooling, not the
-  vault. Name it and let that system catch it.
+- A behavioral correction for the agent itself → Hermes session memory or
+  session history, not the vault. Name it and let that system catch it.
 
 ---
 
@@ -56,27 +57,30 @@ Two failure modes this exists to prevent:
 
 Invoke `vault-pkm` **before anything else.** It verifies vault readiness
 (symlink target, `INDEX.md` currency, a `vault/AGENTS.md` override, existing
-related notes) and owns all topology. When you reach the point of actually
-writing a note, lean on `obsidian-markdown` for the syntax (wikilinks,
-frontmatter, callouts). Do not freelance vault structure from memory.
+related notes) and owns all topology. When writing an approved note, use
+Hermes's native file read, search, patch, and write tools while following
+`vault-pkm` for syntax, frontmatter, links, and placement. Do not freelance
+vault structure from memory.
 
 ### Step 2 — Sweep the session for candidates
 
 List everything from the session that *might* be note-worthy — be generous here,
 triage happens next. For each candidate, note one line: **what it is**, and
-crucially **who produced it** — the user/team, or you.
+crucially **who produced it** — the user/team or the agent — plus whether Bryan
+explicitly adopted an agent-proposed idea.
 
 ### Step 3 — Triage each candidate: two gates, then a tier
 
-**Gate A — Provenance (hard).** Did the user or team actually decide, discover,
-or produce this? Or is it *your* synthesized heuristic, *your* suggestion they
-didn't bite on, a rule you inferred? If it's yours, it is **not vault material —
-full stop.** "mm, maybe" is not adoption. Behavioral notes for yourself are your
-memory tooling's job, not the vault's.
+**Gate A — Provenance and adoption (hard).** Did the user or team decide,
+discover, or produce this? If the agent proposed it, did Bryan explicitly
+approve or adopt it? An unadopted suggestion or inferred rule is not vault
+material. "mm, maybe" is not adoption. Behavioral notes for the agent belong in
+Hermes session memory or session history, not the vault.
 
-**Gate B — Already captured / derivable.** Is it in `CLAUDE.md`, the code, the
-git log, or an existing note? Then don't duplicate — one source of truth. Link,
-don't copy.
+**Gate B — Already captured / derivable.** Is it in the active project
+instructions (`AGENTS.md`, `.hermes.md`, `CLAUDE.md`, or equivalent), the code,
+the git log, or an existing note? Then don't duplicate: one source of truth.
+Link, don't copy.
 
 **Tier** (for what survives both gates):
 
@@ -100,8 +104,9 @@ seem useful.
 
 ### Step 5 — Write only what's greenlit, via vault-pkm
 
-For each chosen item, route the write through `vault-pkm` (filename, frontmatter,
-MOC link, never-orphan, commit discipline) and `obsidian-markdown` (syntax).
+For each chosen item, follow `vault-pkm` for filename, frontmatter, MOC link,
+never-orphan, syntax, and commit discipline, then use native file tools to make
+the approved write.
 
 **Any structural change — a new folder, a new MOC — is itself a decision: name
 it and get a yes before making it.** Defer items get their one-line seed,
@@ -113,14 +118,16 @@ nothing more.
 
 - **The capture question is not write authorization.** Propose a slate first;
   write only what the author picks.
-- **Provenance gate is absolute.** If you produced it, it does not go in the
-  vault — however good the idea is.
+- **Provenance gate requires adoption.** Agent-proposed material goes in only
+  when Bryan explicitly approves or adopts the idea and then greenlights the
+  capture.
 - **"Nothing worth capturing" is a valid result.** Don't pad the vault to look
   productive.
 - **Flag structural changes before making them.** Don't reshape vault topology
   (new folder/MOC) unilaterally.
 - **defer ≠ a full note.** A seed is one line; promote later on signal.
-- **Don't duplicate** what `CLAUDE.md`, code, git, or an existing note holds.
+- **Don't duplicate** what active project instructions, code, git, or an
+  existing note already hold.
 
 ---
 
@@ -129,30 +136,30 @@ nothing more.
 You are about to break the contract if you catch yourself:
 
 - Writing or committing a note before showing the author a slate.
-- Drafting a note for a convention/heuristic *you* proposed ("it's a good idea,
-  it should be written down").
+- Drafting a note for an agent-proposed convention or heuristic that Bryan has
+  not explicitly approved or adopted.
 - Creating a new vault folder or MOC to fit a capture, without asking.
 - Manufacturing a note because the question was asked and a blank answer feels
   unhelpful.
-- Copying something already in `CLAUDE.md` / git / code into the vault.
+- Copying something already in project instructions, git, or code into the vault.
 
 ## Rationalizations
 
 | Excuse | Reality |
 |--------|---------|
 | "They asked 'anything worth capturing', so writing them is what they want" | They asked a *question*. The answer is a proposed slate they pick from — not files already committed. |
-| "It's my idea but it's a good one, the vault should have it" | The vault records what the user/team decided, not what you synthesized. Good idea ≠ ratified. If it's yours, it's not vault material. |
+| "It's my idea but it's a good one, the vault should have it" | Quality is not adoption. Propose it to Bryan first; it becomes eligible only if he explicitly approves or adopts it, and it is written only after he greenlights the capture slate. |
 | "'mm, maybe' is basically a yes" | It's a not-yet. Capturing it launders a non-decision into apparent settled convention. |
 | "I'll just create the folder, the conventions allow it" | A new folder/MOC is a topology decision. Name it and get a yes first. |
 | "There's clearly *something* here, I should write at least one note" | Nothing-worth-capturing is a real outcome. A manufactured note adds noise and dilutes signal. |
-| "It's already in CLAUDE.md but the vault should have it too" | Two copies drift. One source of truth — link, don't duplicate. |
-| "The idea has no shape yet but I'll write it up so it's not lost" | Undeveloped ideas get a one-line seed, not a spoke. Memory/backlog tooling catches the rest. |
+| "It's already in project instructions but the vault should have it too" | Two copies drift. One source of truth: link, don't duplicate. |
+| "The idea has no shape yet but I'll write it up so it's not lost" | Undeveloped ideas get a one-line seed, not a spoke. Hermes session memory or the relevant backlog catches the rest. |
 
 ## See also
 
 - `vault-pkm` — where notes live, frontmatter, linking, commit discipline. This
   skill defers to it for **all** mechanics.
-- `obsidian-markdown` — Obsidian Flavored Markdown syntax (wikilinks,
-  frontmatter, callouts) when writing the note.
-- Corrections about how *Claude* should behave belong in your memory tooling,
-  not the vault.
+- Hermes native file tools — read, search, patch, and write the files after
+  approval while following `vault-pkm` conventions.
+- Corrections about agent behavior belong in Hermes session memory or session
+  history, not the vault.

@@ -1,12 +1,12 @@
 ---
 name: catalog-review
-description: Review catalog dependency update PRs with TypeSpec, lockfile, audit, and downstream package impact in mind
+description: Review SGG / CommonGrants catalog dependency PRs with TypeSpec, lockfile, audit, and downstream package impact in mind
 argument-hint: <pr-number-or-url>
 ---
 
 # Catalog Review
 
-Review a catalog dependency update PR created by the separate catalog workflow. This is not an ordinary Dependabot PR: it has wider downstream impact and needs stricter review.
+Review an SGG / CommonGrants catalog dependency update PR created by the separate catalog workflow. This is not an ordinary Dependabot PR: it has wider downstream impact and needs stricter, project-specific review.
 
 ---
 
@@ -21,6 +21,8 @@ Use this skill for PRs created by the catalog workflow or any PR that changes:
 - `@types/node` in the catalog
 
 Do not use this skill for ordinary pip, website-framework, tooling, runtime, or GitHub Actions PRs.
+
+This lane is specific to `HHS/simpler-grants-protocol`. Confirm the PR belongs to that repository before continuing; plugin-repo dependency PRs route to `dependency-review`.
 
 Note: The catalog workflow (`deps-catalog-check.yml`) runs weekly on Mondays and opens PRs on the `chore/update-catalog-deps` branch. It manages `@typespec/*`, `vitest`, `@vitest/*`, `eslint-plugin-vitest`, and `@types/node` — these are excluded from Dependabot due to known pnpm catalog bugs.
 
@@ -157,3 +159,4 @@ Use this format:
 - Do not recommend merging based on one green package alone
 - Do not recommend blanket audit suppressions
 - Do not skip downstream impact analysis when TypeSpec packages changed
+- The review is advisory. Pushing, commenting on, approving, closing, or merging the PR is public-facing and requires the user's explicit approval immediately before the action.

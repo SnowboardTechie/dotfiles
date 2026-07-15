@@ -1,5 +1,6 @@
 ---
 name: voice-bryan
+author: Bryan
 description: >
   Use when drafting messages other humans will read: Slack, PR comments, PR
   reviews, email replies, GitHub/Forgejo issue replies, standup notes, sprint
@@ -10,17 +11,11 @@ description: >
 
 # Voice: Bryan
 
-How Bryan writes to teammates and collaborators. Drafts produced under this
-skill should not need rewriting before sending.
-
-> **Status:** populated 2026-05-28. References seeded from samples.md (5 Slack
-> + 8 PR review), off-target.md (5 corrections from session archaeology), with
-> validation pass complete. Em-dash rule confirmed at strict zero by Bryan. Use
-> as production skill. PR review channel is richest (positive + correction
-> samples); Slack is positive-only; Email, GitHub/Forgejo issues, and
-> Standups remain placeholders pending samples in those channels (the
-> scaffold-state "present 2 register options" instruction no longer applies
-> for Slack and PR review; still applies for placeholder channels).
+How Bryan writes to teammates and collaborators. The corpus, not any agent or
+runtime, is the source of truth. Drafts should be concise, direct, and ready to
+send, with zero em-dashes. PR review has the richest positive and correction
+coverage; Slack is also well represented. Email, GitHub/Forgejo issues, and
+standups remain placeholders pending samples in those channels.
 
 ## When this applies
 
@@ -47,7 +42,9 @@ skill should not need rewriting before sending.
 2. **Skim `references/anti-patterns.md`.** Cheaper to avoid forbidden phrases
    up front than to rewrite a draft Bryan already saw.
 3. **Draft the message.**
-4. **Self-check against anti-patterns** before presenting. Rewrite as needed.
+4. **Self-check against anti-patterns** before presenting. Cut context that
+   does not change the reader's next decision, and confirm there are zero
+   em-dashes. Rewrite as needed.
 5. **Pattern-match against `references/samples.md`** if channel or register
    feels ambiguous. The corpus is the source of truth; `core-traits.md` is the
    distilled summary.
@@ -64,7 +61,7 @@ closer to target.
 |---|---|---|
 | `references/core-traits.md` | Cross-channel voice + per-channel sub-sections | Every time |
 | `references/samples.md` | Corpus of real Bryan messages, organized by channel | When uncertain or to seed `core-traits.md` |
-| `references/off-target.md` | Claude drafts Bryan rewrote, with diagnoses | When stuck on a recurring miss |
+| `references/off-target.md` | Historical drafts Bryan rewrote, with diagnoses | When stuck on a recurring miss |
 | `references/anti-patterns.md` | Phrases, openings, closings, structural moves to avoid | Every time |
 
 ## For non-Skill agents

@@ -25,11 +25,11 @@ dx-target *may* invent — that's the point — but must fence what it invents, 
 
 Follow in order.
 
-1. **Resolve, classify, and ground FIRST.** Identify the surface (issue / branch / feature description), the repo, and which personas the change touches (table below). Then **read the real catalog before sketching anything** — the existing consumer-facing surface the new shape will live beside (SDK exports, extension API, existing filter/field/transform shapes, schemas). Two things fall out of grounding, and both are load-bearing:
+1. **Resolve, classify, and ground FIRST.** Identify the surface (issue / branch / feature description), the repo, and which personas the change touches (table below). Then use the runtime's native file reading, search, and terminal tools to **read the real catalog before sketching anything** — the existing consumer-facing surface the new shape will live beside (SDK exports, extension API, existing filter/field/transform shapes, schemas). Two things fall out of grounding, and both are load-bearing:
    - **What already exists vs. the genuine gap.** State it plainly. Do not re-propose a shape that already ships.
    - **Whether the ask is mis-framed.** Grounding often reveals the request assumes something untrue (e.g. "mirror what the other SDK got" when this side already has most of it). If so, **correct the framing before sketching** — a target built on a wrong premise wastes the whole exercise.
 
-2. **Generate candidates via independent, distinct-angle agents.** Dispatch 2-3 agents in parallel (via `superpowers:dispatching-parallel-agents` if available, else parallel `Agent`/`Task` calls in one message) — **each designs exactly ONE candidate from a distinct angle**, independently. Pick angles that create a *real* fork for this surface, e.g.:
+2. **Generate candidates via independent, distinct-angle agents.** Use the runtime's native delegation mechanism to dispatch 2-3 independent agents — **each designs exactly ONE candidate from a distinct angle**. In Hermes, use `delegate_task`, issuing independent tasks together and never exceeding three concurrent delegates. If delegation is unavailable, perform the same distinct-angle passes serially and keep their drafts isolated until comparison. Pick angles that create a *real* fork for this surface, e.g.:
    - *max-type-safety* — strictest static guarantees, most annotation
    - *minimal-delta* — smallest change from what already ships
    - *most-flexible* — widest escape hatches / runtime generality
@@ -39,12 +39,12 @@ Follow in order.
 
 3. **Compare, and report convergence honestly.** Lay the candidates side by side; trade-offs tied to the decision drivers (consumer type-safety, cross-SDK **contract** parity, minimal-delta, forward-compat, DX simplicity). Give a reasoned recommendation. **If grounding genuinely shows one honest shape** — the surface is narrow, the angles converged — say so and present the single target with *why there's no real fork*. Do not manufacture a fork to hit "3 options," and do not collapse a real fork into one option. Both are failures; the comparison names which case this is.
 
-4. **Choice gate.** Present the candidates via `AskUserQuestion`, each candidate snippet as a **code preview** (rendered side-by-side), recommendation first. The user's pick becomes the target. **Do not end on an open-questions list** — fold any scope question into an option's trade-offs or into the recommendation, or make it a discrete option in the choice. (An unprompted "a few things to confirm…" tail is the manufactured-open-questions anti-pattern.)
+4. **Choice gate.** Use the runtime's structured clarification mechanism to present the candidates, each candidate snippet as a **code preview** (rendered side-by-side), recommendation first. In Hermes, use `clarify`. The user's pick becomes the target. **Do not end on an open-questions list** — fold any scope question into an option's trade-offs or into the recommendation, or make it a discrete option in the choice. (An unprompted "a few things to confirm…" tail is the manufactured-open-questions anti-pattern.)
 
 5. **Persist and hand off — always.** A dx-target exploration is a design/plan artifact; it goes to the vault (per the specs-and-plans-go-to-vault rule) **even though it's exploratory** — this is the working-backwards record and the plan's acceptance oracle. Do not skip it because "it's just an exploration."
    - Save to the vault's `explorations/` folder (a dated thinking-session note, `YYYY-MM-DD-<feature-slug>.md`), following `vault-pkm` frontmatter/placement. This is a **separate folder from `dx-preview`** (which lives in `technical/`) by design — the two are decoupled; a dx-preview run must never trip over a target note.
    - The note holds all candidates + trade-offs + the chosen target.
-   - Handoff: chosen target + its `PROPOSED` list → plan authoring (`superpowers:writing-plans`) as the acceptance oracle. **Rejected options become the "Alternatives Considered" record** — ADR-ready for `adr-and-spec-coach` / `conforming-tech-specs`.
+   - Handoff: chosen target + its `PROPOSED` list → the installed `plan` skill as the acceptance oracle. **Rejected options become the "Alternatives Considered" record** — ADR-ready for `adr-and-spec-coach` / `conforming-tech-specs`.
 
 ## Repo-aware personas
 

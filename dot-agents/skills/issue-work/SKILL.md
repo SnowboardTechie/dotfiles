@@ -7,7 +7,7 @@ description: End-to-end GitHub/Forgejo ticket workflow. Use when the user shares
 
 End-to-end workflow for taking a GitHub or Forgejo ticket from URL to review-ready implementation. Four phases: **Intake → Plan → Implement → Self-Review**, with a human approval checkpoint between Plan and Implement.
 
-Standalone — does not require any specific note system; writes state under `~/.claude/issue-work/` (not the notes vault).
+Standalone — does not require any specific note system. Resolve the local clone first, then write durable state under `{TRUNK_ROOT}/.hermes/issue-work/` (not the notes vault). This workspace-local path is safe for Hermes profiles and remains usable by Claude, OpenCode, and Pi.
 
 ---
 
@@ -24,7 +24,7 @@ Standalone — does not require any specific note system; writes state under `~/
 All per-ticket state lives at:
 
 ```
-~/.claude/issue-work/{owner}-{repo}-{N}/
+{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/
 ```
 
 This survives worktree teardown. Resume is supported by reading `progress.md` frontmatter `status:` field.
@@ -33,26 +33,26 @@ This survives worktree teardown. Resume is supported by reading `progress.md` fr
 
 ## Phase 0 — Pre-flight
 
-### 0.1 Required skills check
+### 0.1 Runtime capability mapping
 
-This skill hard-depends on the `superpowers` plugin. Before doing anything — before computing paths, fetching the ticket, or creating any state — confirm every skill below appears in your available-skills list for this session:
+Use the host's native operations; do not require one agent framework or plugin:
 
-- `superpowers:using-git-worktrees`
-- `superpowers:dispatching-parallel-agents`
-- `superpowers:writing-plans`
-- `superpowers:executing-plans`
-- `superpowers:systematic-debugging`
-- `superpowers:verification-before-completion`
+| Operation | Hermes | Other compatible hosts |
+|---|---|---|
+| Clarify a decision | interactive clarification (`clarify`) | conversational prompt / `AskUserQuestion` |
+| Track implementation tasks | task list (`todo`) | native todo/task-list tool |
+| Delegate isolated research/review | `delegate_task` | `Task`, `Agent`, or equivalent |
+| Create/enter worktree | `wt switch --create` then run tools with that worktree as `workdir` | `EnterWorktree` or controlled `git worktree` fallback |
+| Write the approved plan | load Hermes `plan` | `superpowers:writing-plans` or equivalent |
+| Implement test-first | load Hermes `test-driven-development` | host TDD/execution workflow |
+| Debug repeated failures | load Hermes `systematic-debugging` | equivalent root-cause workflow |
+| Independent final review | load Hermes `requesting-code-review` | equivalent verification/reviewer workflow |
 
-If any are missing, stop immediately and tell the user:
-
-> `issue-work` requires the `superpowers` plugin, but these skills aren't available: {missing list}. Install or enable superpowers, then re-invoke.
-
-There is no inline fallback — the phases below assume these skills are present.
+If delegation is unavailable, perform the same bounded analysis serially. Missing a framework-specific plugin is never by itself a blocker.
 
 ### 0.2 Resume check
 
-Compute the state-dir path from the input. If `~/.claude/issue-work/{owner}-{repo}-{N}/progress.md` exists:
+After resolving `{TRUNK_ROOT}` in Phase 1.2, compute the state-dir path. If `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/progress.md` exists:
 
 1. Read its frontmatter `status:` field.
 2. Report to the user: "Found existing work on {ticket}. Status: {status}. Resume or refresh?"
@@ -84,19 +84,7 @@ Match the input against these patterns **in order** (stop at the first match):
 
 If none match and the input is ticket-like prose, treat as pasted text and **ask which repo** before proceeding.
 
-### 1.2 Create state directory
-
-```bash
-mkdir -p "$HOME/.claude/issue-work/{owner}-{repo}-{N}"
-```
-
-### 1.3 Spawn `ticket-intake` sub-agent
-
-Invoke the `ticket-intake` agent with the ticket reference and the state-dir path. It writes `context.md` with ticket body, comments, linked refs, inferred open questions.
-
-Do **not** inline the fetch logic here — the agent owns that. Read `context.md` after it returns.
-
-### 1.4 Resolve local clone
+### 1.2 Resolve local clone
 
 See [references/repo-resolution.md](references/repo-resolution.md) for details. Short version:
 
@@ -109,7 +97,15 @@ Glob(pattern="$HOME/code/*/*/.git")
 
 If no local clone: ask before running `gh repo clone {owner}/{repo} ~/code/{repo}`.
 
-Bind the resolved clone path as `{TRUNK_ROOT}` — the placeholder Phase 1.5 and Phase 1.6 reference. If the resolved path is itself a worktree, resolve to the trunk via `git -C {path} rev-parse --path-format=absolute --git-common-dir` and strip the trailing `/.git` (same pattern used for worktree-aware resolution; see [`agent-workspace/SKILL.md`](../agent-workspace/SKILL.md) → *Worktree-Aware Resolution*).
+Bind the resolved clone path as `{TRUNK_ROOT}` — later phases reference it. If the resolved path is itself a worktree, resolve to the trunk via `git -C {path} rev-parse --path-format=absolute --git-common-dir` and strip the trailing `/.git` (same pattern used for worktree-aware resolution; see [`agent-workspace/SKILL.md`](../agent-workspace/SKILL.md) → *Worktree-Aware Resolution*).
+
+### 1.3 Create state directory
+
+Create `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/` with the host file tools or `mkdir -p`.
+
+### 1.4 Fetch ticket context
+
+Use [references/fetch-ticket.md](references/fetch-ticket.md) to fetch the ticket body, comments, linked refs, and inferred open questions. Prefer an isolated intake child (`delegate_task` on Hermes; `Task`/`Agent` elsewhere), but run the same recipe inline when delegation is unavailable. Write `context.md` in the state directory and read it after completion.
 
 ### 1.5 Pre-flight checks
 
@@ -145,15 +141,14 @@ If either auth check fails, stop and surface the error to the user — do not pr
 
 ### 1.6 Create worktree
 
-Delegate worktree setup to `superpowers:using-git-worktrees` via the `Skill` tool. That skill owns isolation detection (its Step 0 covers the resume case — if we're already in this ticket's worktree it skips creation), native-tool preference (it uses the harness `EnterWorktree`), and the manual `git worktree add` fallback. Don't re-implement the `EnterWorktree` `name`-vs-`path` base-branch footgun here; the skill handles base selection.
+Use the [`worktrunk`](../worktrunk/SKILL.md) skill as the preferred controlled-worktree path.
 
-First compute the names the skill needs, then invoke it passing them as declared preferences (it honors a declared directory and branch without re-asking, and skips the consent prompt when a preference is already declared):
+1. **Compute slug, branch, and base.** `kebab-slug` = ticket title, lowercased, non-alphanumerics → `-`, collapsed, trimmed. Branch = `issue-{N}-{kebab-slug}` — or match the repo's convention if recent local branches show a different prefix. Base ref = `origin/$DEFAULT_BRANCH`.
+2. **Check for an existing worktree.** Run `wt list` (or `git worktree list --porcelain` when `wt` is unavailable) and reuse the matching branch; never nest worktrees.
+3. **Create from the fetched base.** From `{TRUNK_ROOT}`, run `wt switch --create {branch} --base origin/$DEFAULT_BRANCH`. If `wt` is unavailable, use the controlled fallback `git -C "{TRUNK_ROOT}" worktree add -b {branch} "{TRUNK_ROOT}.{N}-{kebab-slug}" origin/$DEFAULT_BRANCH`.
+4. **Operate in isolation.** Hermes runs subsequent file and terminal operations with the resulting absolute path as `workdir`; hosts with `EnterWorktree` may enter that path. Record it as `{WORKTREE_PATH}`.
 
-1. **Compute slug, path, branch, base.** `kebab-slug` = ticket title, lowercased, non-alphanumerics → `-`, collapsed, trimmed. Worktree directory name = `{repo}.{N}-{kebab-slug}` (cap at 60 chars). Worktree path = `{TRUNK_ROOT}/.claude/worktrees/{repo}.{N}-{kebab-slug}`. Branch = `issue-{N}-{kebab-slug}` — or match the repo's convention if `git -C "{TRUNK_ROOT}" for-each-ref --format='%(refname:short)' --count=20 refs/heads/` shows a different prefix (e.g., `bryan/issue-…`). Base ref = `origin/$DEFAULT_BRANCH`.
-
-2. **Invoke `superpowers:using-git-worktrees`** with: worktree-directory preference `{TRUNK_ROOT}/.claude/worktrees/`, the computed branch name, and base ref `origin/$DEFAULT_BRANCH`. Let it create the worktree and enter it.
-
-The resume case needs no special handling here — `using-git-worktrees` Step 0 detects existing isolation and skips creation on its own.
+Never switch the trunk checkout in place.
 
 ### 1.7 Write initial progress.md
 
@@ -169,7 +164,7 @@ started: {iso8601}
 
 ## Intake complete
 
-- Context file: ~/.claude/issue-work/{owner}-{repo}-{N}/context.md
+- Context file: {TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/context.md
 - Worktree: {abs-path}
 - Base branch: {default-branch}
 ```
@@ -180,9 +175,7 @@ started: {iso8601}
 
 ### 2.1 Spawn parallel exploration
 
-Decide how many `Explore` agents to dispatch: **always** at least one; **add a second** if the ticket clearly spans two distinct areas (e.g., frontend + backend, API + client SDK).
-
-Dispatch them via `superpowers:dispatching-parallel-agents` (the `Skill` tool) — it owns the "single message, multiple Task calls, no shared state" discipline, so we don't restate it here. Hand it the agent prompt(s) below plus each agent's distinct output path.
+Decide how many exploration children to dispatch: **always** at least one; **add a second** if the ticket clearly spans two distinct areas. Use `delegate_task` on Hermes or `Task`/`Agent` elsewhere. Dispatch independent children together, with distinct output paths and no shared writes. If delegation is unavailable, perform the scopes serially.
 
 Prompt template for each Explore agent:
 
@@ -198,7 +191,7 @@ Prompt template for each Explore agent:
 > - Test locations and conventions in this area
 > - Any gotchas or non-obvious coupling
 >
-> Write your findings to `~/.claude/issue-work/{owner}-{repo}-{N}/explore-{area-slug}.md` where `{area-slug}` is a short kebab-case tag for your assigned scope (e.g., `frontend`, `api`, `migration`). One file per agent — never share a file between Explore agents, since parallel appends can interleave and corrupt the output.
+> Write your findings to `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/explore-{area-slug}.md` where `{area-slug}` is a short kebab-case tag for your assigned scope (e.g., `frontend`, `api`, `migration`). One file per agent — never share a file between Explore agents, since parallel appends can interleave and corrupt the output.
 
 ### 2.2 External research (conditional, inline)
 
@@ -215,16 +208,16 @@ done
 
 Then for each manifest found, grep its declared dependencies and compare against library names mentioned in the ticket. A library named in the ticket but absent from every manifest is a candidate for external research.
 
-Use `WebSearch` + `WebFetch` to look up official docs. Capture findings directly in `plan.md` under a **Research** section. Do not create a separate agent or file.
+Use the host's read-only web search/fetch tools (Hermes browser/web tooling; Claude/OpenCode/Pi equivalents) to look up official docs. Capture findings directly in `plan.md` under a **Research** section. Do not create a separate agent or file.
 
 ### 2.3 Synthesize plan.md
 
 > **Consumer- or plugin-author-facing surface? (soft pointer, judgment call.)** If this ticket introduces or reshapes a consumer/plugin-author-facing surface in the SGG / CommonGrants repos (a new endpoint, protocol/`.tsp` change, or SDK/extension surface), consider running the `dx-target` skill *before* delegating to plan authoring — it works backwards from the developer experience (2-3 candidate usage shapes → a chosen target) and hands the chosen target to `writing-plans` as the acceptance oracle, so the plan is "make this snippet real" rather than an inward-facing task list. Skip for endpoint bug-fixes, dep bumps, docs, and internal-only changes.
 
-After exploration returns, delegate plan authoring to `superpowers:writing-plans` (the `Skill` tool). Give it:
+After exploration returns, load Hermes's installed `plan` skill or the host's equivalent plan-authoring workflow. Do not clone that skill's instructions here. Give it:
 
 - **Inputs:** `context.md`, the `explore-*.md` outputs from 2.1, and any inline research from 2.2.
-- **Plan-path override:** `~/.claude/issue-work/{owner}-{repo}-{N}/plan.md`. `writing-plans` defaults to `docs/superpowers/plans/…` inside the worktree; override it to the state root so the plan survives worktree teardown (resume reads it there) and never shows up in the worktree's `git status`.
+- **Plan-path override:** `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`. Hermes `plan` normally writes under workspace `.hermes/plans/`; use this ticket-specific path so resume state stays together and never appears in the feature worktree's `git status`.
 
 The result is a bite-sized, checkbox-task plan (exact file paths, code, expected command output, commit boundaries) — the shape Phase 3's executor consumes. Make sure its frontmatter carries `status: planned` and `ticket: {url}` so Phase 0.2 resume and the 2.4 approval gate keep working against it.
 
@@ -234,7 +227,7 @@ This is a hard stop. **Do not proceed to Phase 3 without explicit user approval.
 
 Present the full `plan.md` contents inline to the user with a clear prompt:
 
-> **Plan ready for review** — `~/.claude/issue-work/{owner}-{repo}-{N}/plan.md`
+> **Plan ready for review** — `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`
 >
 > {paste plan.md contents}
 >
@@ -260,18 +253,18 @@ After user approval:
 
 ### 3.2 Execute the plan
 
-`plan.md` (at the state-root path) is the source of truth. Invoke `superpowers:executing-plans` (the `Skill` tool) to walk it task-by-task. Pass it:
+`plan.md` (at the state-root path) is the source of truth. Mirror its checkboxes into the host task list (Hermes: `todo`) and execute task-by-task. Load `test-driven-development` for behavior changes and `systematic-debugging` for failures; compatible hosts may use their native execution workflow. Pass through:
 
-- **plan_path:** `~/.claude/issue-work/{owner}-{repo}-{N}/plan.md`
+- **plan_path:** `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`
 - **worktree path:** the absolute path from `progress.md`
 - **commit rules:** atomic (one logical unit per commit); message style matches `git log --oneline -20` in **this repo** (not global defaults); **never** add `Co-authored-by: Claude` or any AI signature; **never** use `--no-verify`.
 - **failure policy:** hand off the 3.5 escalation rule below — on a task whose tests fail, attempt a direct fix first; on a **second** consecutive failure of the same task, escalate per 3.5; hard cap at 3 attempts, then stop and report.
 
-`executing-plans` reads checkbox state, so a resumed run (`status: implementing`) picks up at the first unchecked task automatically — this is the task-level half of the resume protocol.
+Keep `plan.md` checkboxes and the host task list synchronized, so a resumed run (`status: implementing`) picks up at the first unchecked task automatically.
 
 ### 3.3 Test / lint / typecheck reference
 
-`executing-plans` runs each task's own verification commands. When a task doesn't name one, fall back to detection by manifest and hand the detected command to the executor:
+Run each task's own verification commands. When a task doesn't name one, fall back to detection by manifest:
 
 | Manifest | Command |
 |---|---|
@@ -285,7 +278,7 @@ Lint + typecheck when configured: TypeScript `tsc --noEmit`; Python `ruff check`
 
 ### 3.5 On failure
 
-First failure of a task's tests: attempt a direct fix → commit → rerun. **Second consecutive failure of the same task:** escalate to `superpowers:systematic-debugging` (the `Skill` tool) rather than guessing again — it drives a root-cause pass instead of another patch. **Hard cap at 3 attempts total.** On the 4th failure, stop and report the failing output to the user.
+First failure of a task's tests: attempt a direct fix → commit → rerun. **Second consecutive failure of the same task:** escalate to `systematic-debugging` (the `Skill` tool) rather than guessing again — it drives a root-cause pass instead of another patch. **Hard cap at 3 attempts total.** On the 4th failure, stop and report the failing output to the user.
 
 ### 3.6 Progress log
 
@@ -304,7 +297,7 @@ Do not advance `status` when tests go green — Phase 4 bumps it to `reviewed` a
 
 ### 3.7 Verify before handing off
 
-Before Phase 4 spawns review, invoke `superpowers:verification-before-completion` (the `Skill` tool) to *prove* the suite is green rather than trust that implementation said so. It re-runs the project's test / lint / typecheck commands and surfaces the actual output.
+Before Phase 4 spawns review, load `requesting-code-review` on Hermes (or the host's independent verification workflow) to prove the suite is green rather than trust the implementation context. Re-run the project's test / lint / typecheck commands and preserve actual output.
 
 Append the result to `progress.md` under a `## Verification` heading:
 
@@ -324,16 +317,16 @@ If verification fails, do **not** advance to Phase 4. Return to Phase 3's failur
 
 ### 4.1 Delegate to `/pr-self-review`
 
-Phase 4 hands off to the [`pr-self-review`](../pr-self-review/SKILL.md) skill in its `pre-pr` mode — same three parallel `diff-reviewer` agents, plus a pre-review context fetch (related open issues in this repo + related `.notes/` decisions/explorations) and a per-finding triage loop (`accept` / `push-back` / `issue` / `skip`) so easy nits get cleared in-pass instead of piling up in a list. The worktree, branch, and state dir already exist; pass them in:
+Phase 4 hands off to the [`pr-self-review`](../pr-self-review/SKILL.md) skill in its `pre-pr` mode — all four review lenses, plus a pre-review context fetch and a per-finding triage loop (`accept` / `push-back` / `issue` / `skip`). Hermes runs the four lenses in batches of at most three children; other hosts may run all four concurrently. The worktree, branch, and state dir already exist; pass them in:
 
 - `mode`: `pre-pr`
-- `state_dir`: `~/.claude/issue-work/{owner}-{repo}-{N}/`
+- `state_dir`: `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/`
 - `worktree_path`: the absolute path from `progress.md`
 - `base_branch`: the value from `progress.md` `base:`
-- `plan_path`: `~/.claude/issue-work/{owner}-{repo}-{N}/plan.md`
+- `plan_path`: `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`
 - `source_issue`: `{owner}/{repo}#{N}` — the ticket this work is for; lets pr-self-review fire its source-issue exception (findings tagged with this issue surface for triage instead of pre-skipping) without waiting for a PR body to exist.
 
-Invoke it via the `Skill` tool (not by running commands). The skill writes `review-{lens}.md` files and a final `summary.md` into the state dir, matching the shape Phase 4.3 reads below. When it returns, `summary.md` is ready.
+Load the skill through the host's skill mechanism. It writes `review-{lens}.md` files and a final `summary.md` into the state dir, matching the shape Phase 4.3 reads below.
 
 Set `progress.md` `status: reviewed` after the skill returns.
 
@@ -349,9 +342,9 @@ Present the review outcome inline in this order:
 
    > Ready to push the branch and open the draft PR? Reply `ship it` to proceed, or flag anything you want changed first.
 
-   On `ship it` (or equivalent approval like "yes", "go", "push"): **invoke the [`ship` skill](../ship/SKILL.md)** — do not run `git push` / `gh pr create` directly. `/ship` already handles the push, forge-specific PR creation (GitHub via `gh`, Forgejo via REST API), PR-template detection (`.github/PULL_REQUEST_TEMPLATE.md`), and label application via `gh label list` + domain heuristics. Rolling our own here would duplicate that logic and skip the template / labels.
+   On `ship it` (or equivalent approval like "yes", "go", "push"): **load the [`ship` skill](../ship/SKILL.md)** — do not run `git push` / `gh pr create` directly. `ship` preserves draft-PR defaults, forge-specific creation, PR-template fidelity, and labels.
 
-   When invoking `/ship`, tell it the authoritative source for what the PR is about lives at `~/.claude/issue-work/{owner}-{repo}-{N}/summary.md` — `/ship` reads that file when filling the PR template's Summary and Test-plan sections so the PR body reflects the review findings, not a generic diff-walk.
+   When invoking `/ship`, tell it the authoritative source for what the PR is about lives at `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/summary.md` — `/ship` reads that file when filling the PR template's Summary and Test-plan sections so the PR body reflects the review findings, not a generic diff-walk.
 
    On anything ambiguous: ask again, do not ship. Do not treat silence as approval.
 
@@ -363,14 +356,14 @@ Present the review outcome inline in this order:
 
 | Case | Behavior |
 |---|---|
-| Worktree already exists for this ticket | Handled by `using-git-worktrees` Step 0 (isolation detection skips creation); resume from `progress.md` status |
+| Worktree already exists for this ticket | Reuse it after `wt list` / `git worktree list`; resume from `progress.md` status |
 | Trunk dirty (modified/staged) | Stop. List files. Offer stash / commit / abort |
-| Ticket is a PR (review work, not new work) | Skip worktree creation; `gh pr checkout {N}` in trunk or fetch branch; swap Phase 3 for "review against plan"; Phase 4 reviewers still run |
-| Tests fail (2nd time on a task) | Escalate to `superpowers:systematic-debugging`; hard cap 3 attempts, then stop and surface output |
+| Ticket is a PR (review work, not new work) | Fetch the PR head, create/reuse a controlled `wt` worktree without switching trunk, swap Phase 3 for "review against plan"; Phase 4 reviewers still run |
+| Tests fail (2nd time on a task) | Escalate to `systematic-debugging`; hard cap 3 attempts, then stop and surface output |
 | Critical review findings | Present prominently; recommend fix-before-ship; never auto-ship |
 | User amends plan after approval | Overwrite `plan.md`; reset status `planned`; re-present inline and await approval again (see Phase 2.4) |
 | Repo not cloned locally | Ask before `gh repo clone` to `~/code/{repo}` |
-| Forgejo ticket | `ticket-intake` uses REST API; everything else identical |
+| Forgejo ticket | Intake uses the REST API in `references/fetch-ticket.md`; everything else is identical |
 | Pasted raw text (no URL) | Skip fetch; ask user for repo; `context.md` has only Body |
 | User says "refresh" on a resumed ticket | Overwrite prior state files; restart from Phase 1 |
 
@@ -382,7 +375,7 @@ Present the review outcome inline in this order:
 - Modify files outside the worktree and the state dir
 - Add AI signatures to commits or PRs
 - Skip hooks (`--no-verify`) or bypass signing
-- Write notes into `.notes/` or any note system — state goes to `~/.claude/issue-work/` only
+- Write notes into `.notes/` or any note system — state goes to `{TRUNK_ROOT}/.hermes/issue-work/` only
 
 ---
 
@@ -393,25 +386,24 @@ Detailed recipes that load on demand:
 - [references/fetch-ticket.md](references/fetch-ticket.md) — exact gh/tea CLI commands, pagination, rate limits, Forgejo API auth
 - [references/repo-resolution.md](references/repo-resolution.md) — local clone discovery, remote URL matching, clone-if-missing prompt
 
-## Related Agents
+## Related Delegation Roles
 
-- `ticket-intake` — Phase 1 fetch + digest (model: haiku)
-- `diff-reviewer` — Phase 4 parallel reviewer with `lens` argument; carries its own lens prompts inline (model: sonnet). Invoked via `/pr-self-review`.
+- Intake child — Phase 1 fetch + digest; use `delegate_task`, `Task`, or `Agent` when available.
+- Diff reviewer — Phase 4 reviewer with a `lens` argument; invoked through `pr-self-review` in host-appropriate batches.
 
 ## Related Skills
 
-- `pr-self-review` — Phase 4 delegates here for the three-lens review + triage loop.
+- `pr-self-review` — Phase 4 delegates here for the four-lens review + triage loop.
 - `ship` — Phase 4.3 hands off here on `ship it` for push + PR creation + template fill + label application.
-- `superpowers:using-git-worktrees` — Phase 1.6 worktree setup.
-- `superpowers:dispatching-parallel-agents` — Phase 2.1 Explore fan-out.
-- `superpowers:writing-plans` — Phase 2.3 plan authoring (path-overridden to the state root).
-- `superpowers:executing-plans` — Phase 3 task-by-task execution.
-- `superpowers:systematic-debugging` — Phase 3.5 second-failure escalation.
-- `superpowers:verification-before-completion` — Phase 3.7 pre-handoff proof.
+- `worktrunk` — Phase 1.6 controlled worktree setup.
+- `plan` — Phase 2.3 Hermes plan authoring (path-overridden to the state root).
+- `test-driven-development` — Phase 3 implementation discipline.
+- `systematic-debugging` — Phase 3.5 second-failure escalation.
+- `requesting-code-review` — Phase 3.7 independent verification.
 
 ### Optional Delegation
 
 Soft references — the skill works without them, but if the host environment has them installed they can be invoked on demand during a run:
 
-- `engineering:debug` — optional alternative to `superpowers:systematic-debugging` at Phase 3.5, if that environment-specific debugger is installed and preferred
+- `engineering:debug` — optional alternative to `systematic-debugging` at Phase 3.5, if that environment-specific debugger is installed and preferred
 - `engineering:testing-strategy` — optional, when Phase 2 exploration surfaces a test-architecture gap deep enough to warrant its own plan

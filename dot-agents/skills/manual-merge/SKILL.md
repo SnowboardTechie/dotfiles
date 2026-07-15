@@ -1,253 +1,195 @@
 ---
 name: manual-merge
-description: Manual squash-merge a branch into main locally, using its PR description as the commit message
+description: Use when an approved, CI-green Forgejo or Codeberg PR must be squash-merged locally to preserve commit signatures.
+version: 2.0.0
+author: Bryan Thompson
+license: MIT
+metadata:
+  hermes:
+    tags: [git, forgejo, codeberg, squash-merge, signed-commits]
+    related_skills: [ship, worktrunk, pr-self-review]
 ---
 
-# Merge - Manual Local Squash Merge
+# Manual Local Squash Merge
 
-For when you need to merge a branch into main **locally** (e.g. Forgejo
-repos without squash-merge UI, or manual merges for GPG-signed commits).
+## Overview
 
-Fetches the PR title and description from the forge and uses them as the
-commit message. Always squash-merges to keep main's history linear.
+Squash an approved PR onto the default branch locally, create the signed commit
+from the PR title/body, push the default branch, and mark the Forgejo PR as
+manually merged. This is Bryan's sanctioned merge path for Forgejo/Codeberg,
+where server-side merging may re-sign or invalidate commit signatures.
 
----
+This is a significant, externally visible operation. Never treat implementation
+approval as merge approval.
 
-## Quick Reference
+## When to Use
 
-```
-/merge                     # merge current branch into main
-/merge fix/ci-triggers     # merge named branch into main
-```
+- The origin is Forgejo, Gitea, or Codeberg.
+- The PR has completed human review and all required CI checks are green.
+- Local squash merge is required to preserve the expected signature.
 
----
+Do not use to bypass review, CI, branch protection, or an unresolved discussion.
+Do not run two merges against the same base concurrently.
 
-## Execution
+## Procedure
 
-### 1. Determine Branch
+### 1. Resolve the branch, repository, and PR
 
-If a branch name is provided as an argument, use it. Otherwise:
+Load `ship/references/forge-detection.md` and use its parser. Resolve the target
+branch from the argument or current branch. Abort if it is the default branch,
+does not exist, or has no commits ahead of the default branch.
 
-```bash
-branch=$(git branch --show-current)
-```
+Fetch the open PR with authenticated `tea api`. If Tea cannot read the current
+repository because of `extensions.worktreeconfig`, run it from a temporary
+initialized repository and pass `--login` and `--repo` explicitly, as documented
+by `ship`.
 
-**ABORT** if the branch is `main` or `master` — you cannot merge main into main.
+No matching open PR means stop. A manual commit message is not a substitute for
+the reviewed PR record in this workflow.
 
-### 2. Detect Forge
+### 2. Enforce the merge gate
 
-```bash
-remote_url=$(git remote get-url origin 2>/dev/null)
-if [[ "$remote_url" == *"github.com"* ]]; then
-  forge="github"
-elif [[ "$remote_url" == *"forgejo"* || "$remote_url" == *"gitea"* || "$remote_url" == *"codeberg"* || "$remote_url" == *"snowboardtechie"* ]]; then
-  forge="forgejo"
-else
-  forge="none"
-fi
-```
+Read back the PR and its current checks immediately before merging. Verify:
 
-### 3. Find PR for Branch
+- PR is open and not a draft;
+- required human review is present;
+- no unresolved review request or blocking conversation remains;
+- every required CI check is green;
+- head SHA matches the branch SHA being merged;
+- base branch is the repository's default branch.
 
-Look for a PR (open or merged) with the branch as the head ref.
+If the forge cannot expose one of these facts, show the missing fact and ask the
+user to verify it. Never infer approval from silence.
 
-#### GitHub
+### 3. Present the exact operation for approval
 
-```bash
-# Try open first, then closed/merged
-pr_json=$(gh pr list --head "$branch" --json number,title,body --limit 1 2>/dev/null)
-if [ "$pr_json" = "[]" ] || [ -z "$pr_json" ]; then
-  pr_json=$(gh pr list --head "$branch" --state merged --json number,title,body --limit 1 2>/dev/null)
-fi
-```
+Show:
 
-#### Forgejo
+- clickable PR link and title;
+- head SHA and target default branch;
+- review/CI evidence;
+- squash commit subject;
+- planned push, manual-merge API call, and branch cleanup.
 
-Use `tea api` — `{owner}` and `{repo}` are auto-resolved from the local
-git remote context.
+Obtain explicit approval immediately before changing the default branch. One
+approval may cover the complete listed sequence, including cleanup.
 
-```bash
-# Search open PRs first, then closed
-tea api "/repos/{owner}/{repo}/pulls?state=open" \
-  | jq -c --arg branch "$branch" '.[] | select(.head.ref == $branch) | {number: .number, title: .title, body: .body, url: .html_url}' \
-  | head -1
-```
+### 4. Prepare the default-branch worktree
 
-If empty, try closed PRs with the same pattern.
+The default branch may already be checked out in another Worktrunk worktree.
+Use `git worktree list --porcelain` to find that path instead of blindly running
+`git switch` in the feature worktree.
 
-Parse the result to extract `number`, `title`, `body`, and `url`.
-
-### 4. Handle Missing PR
-
-If no PR is found:
-
-```
-No PR found for branch "$branch".
-
-Options:
-1. Provide a commit message manually
-2. Abort and create a PR first
-
-What would you like to do?
-```
-
-If the user provides a manual message, use it. Otherwise abort.
-
-### 5. Confirm with User
-
-Show what will happen:
-
-```
-Squash-merging "$branch" into main:
-
-  Title: <PR title>
-  PR #<number>
-
-  <first 5 lines of PR body>
-
-Proceed? (This will switch to main and squash-merge)
-```
-
-### 6. Pre-flight Checks
-
-Before merging, verify:
+In the default-branch worktree:
 
 ```bash
-# Working tree is clean
 git status --porcelain
-# If dirty, ABORT: "Working tree has uncommitted changes. Commit or stash first."
-
-# Main is up to date with remote
-git fetch origin main
-git log main..origin/main --oneline
-# If behind, warn: "main is behind origin/main. Pull first?"
+git fetch origin <default-branch>
+git rev-parse <default-branch>
+git rev-parse origin/<default-branch>
 ```
 
-### 7. Squash Merge
+Abort unless the worktree is clean and local default exactly matches origin.
+Record the rollback point:
 
 ```bash
-git checkout main
-git merge --squash "$branch"
+pre_merge_head=$(git rev-parse HEAD)
 ```
 
-If there are merge conflicts, report them and abort:
+### 5. Squash and commit
+
 ```bash
-git merge --abort
-git checkout "$branch"
-# Report conflicts to user
+git merge --squash <feature-branch>
 ```
 
-### 8. Commit
+If the squash reports conflicts, roll back only the merge attempt:
 
-Use the PR title as the commit subject and the PR body as the commit body.
-
-Format the commit message as:
-
+```bash
+git reset --merge "$pre_merge_head"
 ```
+
+Then verify `git status --porcelain` is empty and `HEAD` still equals
+`$pre_merge_head`. If either check fails, stop and ask the user how to proceed;
+do not escalate to `git reset --hard` automatically.
+
+On success, inspect the staged diff before committing. Use the reviewed PR title
+and body:
+
+```text
 <PR title> (#<PR number>)
 
 <PR body>
 ```
 
-Example:
-```
-fix: allow manual CI triggers, apply rustfmt, fix clippy warnings (#2)
+Never add AI attribution. Create the signed commit according to repository git
+configuration, then verify the signature locally.
 
-## Summary
+### 6. Push and mark manually merged
 
-Fix CI pipeline configuration and repo discovery filtering.
-
-## Changes
-
-- Add `manual` to Woodpecker CI event filter...
-```
+Push the default branch first:
 
 ```bash
-git commit -m "<PR title> (#<PR number>)" -m "<PR body>"
+git push origin <default-branch>
 ```
 
-**Note:** If the PR body is very long, it's fine to include it all — git
-handles long commit messages gracefully.
-
-### 9. Push, Mark Merged, and Clean Up
-
-**Order matters.** The remote branch must still exist when marking the PR
-as merged, otherwise Forgejo returns 404/409.
+Verify the remote now points at the new commit. While the feature branch still
+exists remotely, mark the PR manually merged:
 
 ```bash
-# 1. Push the squash commit to main
-git push origin main
-
-# 2. Mark the PR as manually-merged on the forge (BEFORE deleting branch)
-```
-
-#### GitHub
-
-```bash
-# gh recognizes squash-merged PRs automatically when main is pushed.
-# No extra step needed — GitHub auto-closes the PR as merged.
-```
-
-#### Forgejo
-
-```bash
-# Get the full SHA of the squash-merge commit
 MERGE_SHA=$(git rev-parse HEAD)
-
-# Mark as manually-merged — branch must still exist on remote
-# {owner} and {repo} are auto-resolved by tea; replace {index} with the PR number
-tea api -X POST "/repos/{owner}/{repo}/pulls/{index}/merge" \
-  -f "Do=manually-merged" \
-  -f "merge_commit_id=$MERGE_SHA"
-
-# Verify it took
-# {owner} and {repo} are auto-resolved by tea; replace {index} with the PR number
-tea api "/repos/{owner}/{repo}/pulls/{index}" | jq '{state, merged}'
-# Expected: {"state": "closed", "merged": true}
+tea api \
+  --login <configured-login> \
+  --repo <owner/repo> \
+  --method POST \
+  -f Do=manually-merged \
+  -f merge_commit_id="$MERGE_SHA" \
+  /repos/<owner>/<repo>/pulls/<number>/merge
 ```
 
-**IMPORTANT**: `tea` does NOT have a `pr merge` subcommand that supports
-`manually-merged`. Use `tea api` as shown above.
+Run this from the same safe Tea context used for lookup. Read the PR back and
+require `state: closed`, `merged: true`, and the expected merge SHA before any
+branch deletion.
+
+### 7. Clean up
+
+Only after the forge record is correct:
 
 ```bash
-# 3. NOW delete the branch (after PR is marked merged)
-git branch -D "$branch"
-git push origin --delete "$branch"
-
-# 4. Prune stale remote tracking refs
+git push origin --delete <feature-branch>
+git branch -d <feature-branch>
 git fetch --prune origin
 ```
 
-Report:
+Use `-d`, not `-D`. If Git refuses because squash merges are not recognized as
+ancestry, report that and leave the local branch in place unless the user
+explicitly approves forced deletion.
 
-```
-Squash-merged "$branch" into main as <short-sha>.
-PR #<number> marked as merged. Pushed main, deleted branch.
-```
+Report the clickable PR URL, pushed commit SHA, signature result, forge merge
+state, and any retained worktree/branch.
 
----
+## Common Pitfalls
 
-## Hard Rules
+1. **Merging an open draft or unreviewed PR.** The carve-out is a merge
+   mechanism, not a review bypass.
+2. **Running against a stale default branch.** Local and origin must match
+   exactly before the squash.
+3. **Using `git merge --abort` after `--squash`.** A squash conflict may have no
+   `MERGE_HEAD`; restore with the recorded commit and verify the result.
+4. **Deleting the branch before the API call.** Forgejo may reject the manual
+   merge record after branch deletion.
+5. **Forcing branch deletion automatically.** Keep it when safe deletion fails.
+6. **Parallel base-branch merges.** Serialize them; concurrent pushes can leave
+   a false forge merge record.
 
-| Rule | Rationale |
-|------|-----------|
-| ALWAYS `--squash` | Clean linear history on main |
-| NEVER regular merge into main | No merge commits cluttering history |
-| ALWAYS push + mark merged + clean up | Complete the workflow end-to-end |
-| Mark PR merged BEFORE deleting branch | Forgejo needs the branch to exist for manually-merged |
-| ALWAYS look for PR first | PR descriptions are the source of truth |
-| ABORT on conflicts | Don't try to resolve automatically |
-| ABORT on dirty worktree | Prevent accidental data loss |
+## Verification Checklist
 
----
-
-## Edge Cases
-
-| Situation | Action |
-|-----------|--------|
-| Already on main | Error: "Switch to the feature branch first, or pass branch name" |
-| Branch doesn't exist | Error: "Branch '$branch' not found" |
-| No remote | Skip PR lookup, ask for manual commit message |
-| Multiple PRs for branch | Use the most recent one |
-| PR is still open | Proceed — step 9 will mark it merged on the forge |
-| Branch has no commits ahead of main | Warn: "Nothing to merge — branch is up to date with main" |
+- [ ] Human review confirmed
+- [ ] Required CI green at the current head SHA
+- [ ] Explicit merge approval obtained
+- [ ] Default worktree clean and synchronized with origin
+- [ ] Squash diff inspected before commit
+- [ ] Commit signature verified
+- [ ] Remote default branch verified after push
+- [ ] PR read back as manually merged with expected SHA
+- [ ] Remote branch deleted only after merge record succeeded
+- [ ] Local branch/worktree cleanup reported accurately

@@ -48,8 +48,8 @@ The pattern is `{repo}.{branch}` as a sibling directory. All worktrees share the
 | Task | Command | Notes |
 |------|---------|-------|
 | Switch to worktree | `wt switch <branch>` | Changes directory to the worktree |
-| Create + switch | `wt switch --create <branch>` | Creates branch and worktree from current HEAD |
-| Create + run agent | `wt switch -c -x claude <branch>` | Creates worktree and launches Claude Code |
+| Create + switch | `wt switch --create <branch>` | Creates from the default branch; add `--base <ref>` when the base is explicit |
+| Create + run agent | `wt switch -c -x <agent-cli> <branch>` | Use `hermes`, `claude`, `opencode`, or `pi` as installed |
 | List all worktrees | `wt list` | Shows branch, status, ahead/behind, age |
 | Full list with summaries | `wt list --full` | Includes LLM-generated branch summaries |
 | Remove worktree | `wt remove` | Removes current worktree and its branch |
@@ -61,9 +61,10 @@ The pattern is `{repo}.{branch}` as a sibling directory. All worktrees share the
 ### Important Flags
 
 - `--create` / `-c` — Create a new branch and worktree
-- `--execute` / `-x <cmd>` — Run a command after switching (e.g., `-x claude`)
-- `--no-verify` — Skip hooks on create/switch
-- `--` — Pass arguments to the executed command (e.g., `-x claude -- 'Fix the bug'`)
+- `--base` / `-b <ref>` — Choose the base for `--create` (for example `origin/main`)
+- `--execute` / `-x <cmd>` — Run a command after switching (for example `-x hermes` or `-x claude`)
+- `--no-verify` — exists, but agents must not use it; hooks remain mandatory
+- `--` — Pass arguments to the executed command when that CLI supports them
 
 ---
 
@@ -114,6 +115,18 @@ test = "yarn test:changed"
 
 Hooks support **template variables**: `{{ branch }}`, `{{ branch | sanitize }}`, `{{ branch | hash_port }}`.
 
+### Shared agent context
+
+Personal `AGENTS.md`, its `CLAUDE.md` symlink, and vault links may be globally
+ignored and therefore absent from a new worktree. After creation, run the linked
+`scripts/link-shared-context.sh` helper against the new worktree. It links only
+missing context files/directories from the trunk and never replaces existing
+paths.
+
+This can be called manually after `wt switch --create`, or from a trusted
+`post-create` hook. Verify its reported links before starting an agent in the
+worktree.
+
 ---
 
 ## LLM Commit Messages
@@ -141,7 +154,7 @@ Trigger with `wt step commit` or `wt merge` (which commits automatically).
 
 ### DO
 
-- Use `wt switch` instead of `git checkout` or `git switch`
+- Use `wt switch` instead of `git checkout` or `git switch`; Hermes can also keep the session in place and target the worktree through each tool's `workdir`
 - Use `wt list` to see what other worktrees/branches exist
 - Use `wt step commit` for committing (gets LLM-generated message)
 - Use `wt merge <target>` for local-only repos without a remote — for repos with a remote, push and open a PR instead (see "Wrapping Up")
@@ -152,7 +165,7 @@ Trigger with `wt step commit` or `wt merge` (which commits automatically).
 
 - **Never** `git checkout <branch>` — this switches branches in-place, defeating the purpose of worktrees
 - **Never** delete or modify the `.git` file in a worktree
-- **Never** `git worktree add` or `git worktree remove` directly — use `wt` commands which also handle branch cleanup
+- **Never** use raw `git worktree` when `wt` is available. If `wt` is unavailable, a controlled `git worktree add` fallback is allowed, but record the path and clean it up with `git worktree remove` rather than `rm -rf`
 - **Never** `rm -rf` a worktree directory — use `wt remove` to properly unregister it
 - Don't assume you're on the main branch — check `git branch --show-current`
 
@@ -169,69 +182,15 @@ When operating inside a worktree:
 
 ## Wrapping Up
 
-**Trigger phrases:** "wrap up", "open a PR", "ship it", "I'm done", "create a pull request"
+For a repository with a remote, load `ship`; it owns forge detection,
+verification, publication approval, draft PR creation, template filling, and
+labels. Do not duplicate that logic here.
 
-When work is complete and committed, follow this flow to open a PR and clean up.
+For a local-only repository, `wt merge <target>` is available after the user
+approves the merge and project hooks pass.
 
-### Step 1: Detect Forge
-
-```bash
-remote_url=$(git remote get-url origin 2>/dev/null)
-if [[ "$remote_url" == *"github.com"* ]]; then
-  forge="github"   # use gh CLI
-elif [[ "$remote_url" == *"forgejo"* || "$remote_url" == *"gitea"* || "$remote_url" == *"snowboardtechie"* ]]; then
-  forge="forgejo"  # use tea CLI
-else
-  forge="none"     # no remote or unknown — fall back to wt merge
-fi
-```
-
-### Step 2: Pre-flight Checks
-
-Before offering to open a PR:
-
-- Not on trunk: `git branch --show-current` must not be `main` or `master`
-- Remote exists: `git remote -v` returns output
-- Forge CLI authenticated: `gh auth status` (GitHub) or `tea login list` (Forgejo) — if not, bail early with setup instructions
-- No existing PR: `gh pr list --head <branch>` (GitHub) or `tea pr list --state open | grep <branch>` (Forgejo) returns empty
-
-### Step 3: Ask User
-
-Ask conversationally: "Should I open a PR for this work?" — do not use a shell prompt.
-Also ask: draft or ready-for-review?
-
-### Step 4: Push Branch
-
-```bash
-git push -u origin <branch>
-```
-
-Note: `git push` triggers an opencode permission prompt (not in allow-list by design).
-
-### Step 5: Create PR
-
-| Forge | Ready | Draft |
-|-------|-------|-------|
-| GitHub | `gh pr create --fill` | `gh pr create --fill --draft` |
-| Forgejo | `tea pr create --head <branch> --base main` | `tea pr create --head <branch> --base main --draft` |
-
-### Step 6: Fill PR Description
-
-Invoke `/update-pr-description` (or load the `update-pr-description` skill) to fill the PR template from the diff. It auto-detects the PR from the current branch.
-
-The skill is **forge-aware** — it detects GitHub vs Forgejo from the remote URL and uses the appropriate API (`gh` for GitHub, `tea api` / Forgejo REST API for Forgejo).
-
-### Step 7: Report
-
-Show the PR URL to the user.
-
-### Step 8: Post-Merge Cleanup
-
-After the PR is merged (may be a separate session), clean up:
-
-```bash
-wt remove  # removes current worktree and branch
-```
+After a remote PR is merged and the forge state is verified, clean up with
+`wt remove`. Never remove a worktree merely because its PR exists.
 
 ---
 
@@ -243,6 +202,7 @@ wt remove  # removes current worktree and branch
 | Not authenticated | Bail: "Run `gh auth login` or `tea login`" |
 | PR already exists | Show URL via `gh pr view --web` or `tea pr view`, skip creation |
 | On trunk branch | Warn user, do not create PR |
+| Forgejo merge requested | Do not use `wt merge` for a remote PR. Load `manual-merge`, require reviewed/CI-green state plus explicit approval, and serialize merges against the same base. |
 
 ---
 
@@ -259,7 +219,7 @@ wmg   # wt merge
 
 ### wcode Function
 
-`wcode` creates a worktree and opens opencode in a new tmux window:
+`wcode` is the OpenCode-specific launcher. For other agents, use `wt switch -c -x hermes <branch>`, `-x claude`, or `-x pi` directly:
 
 ```bash
 wcode feat-auth                    # Create worktree + tmux window + opencode

@@ -7,7 +7,7 @@ description: Use when reviewing the developer experience of a branch or PR befor
 
 ## Overview
 
-Read-only DX review of a branch or PR. Given a ref, show what a **plugin author** and a **consumer** would write and see against the changed surface — requests, response payloads, and authoring code — so the reviewer can judge whether the end result feels right *before* committing to it.
+Read-only DX review of a branch or PR. Given a ref, show what a **plugin author** and a **consumer** would write and see against the changed surface — requests, response payloads, and authoring code — so the reviewer can judge whether the end result feels right *before* committing to it. "Read-only" means **no writes to the reviewed repository, branch, worktree, or forge**; the approved vault preview artifact in step 5 may be created or updated.
 
 **Core principle:** illustrate only what you've read. This is a preview, not a proof — it never has to build, install, or run anything to succeed.
 
@@ -22,11 +22,11 @@ Follow in order. Each step is required unless marked optional.
 
 2. **Classify: repo + changed surface + which personas apply.** Diff the head against its base. Identify the repo and map it to personas (table below). If a persona genuinely isn't touched by the change, say so in one line — do not manufacture a hollow example to fill the slot.
 
-3. **Ground from what the branch already ships.** Read, in this priority order: the branch's own `examples/`, its tests, then the changed source (schemas / `.tsp` / route handler / SDK exports). For a `.tsp` change, trace it *through* to the emitted json-schema/openapi + SDK public exports — the consumer sees what it compiles to, not the `.tsp`. Derive request/response payloads from the source (the classifier/serializer/schema). Run code live ONLY if a payload genuinely can't be derived from source AND running is cheap — do not monkeypatch transports or fabricate fixtures for a DX eyeball.
+3. **Ground from what the branch already ships.** Use the runtime's native file reading, search, and terminal tools. Read, in this priority order: the branch's own `examples/`, its tests, then the changed source (schemas / `.tsp` / route handler / SDK exports). For a `.tsp` change, trace it *through* to the emitted json-schema/openapi + SDK public exports — the consumer sees what it compiles to, not the `.tsp`. Derive request/response payloads from the source (the classifier/serializer/schema). Run code live ONLY if a payload genuinely can't be derived from source AND running is cheap — do not monkeypatch transports or fabricate fixtures for a DX eyeball.
 
 4. **Present the output contract** (below).
 
-5. **Save to the vault. Always.** Follow the `vault-pkm` skill's conventions for placement and frontmatter. A DX preview is event-shaped, keyed to the ref: filename `dx-preview-pr<N>-<slug>.md` (or `dx-preview-<branch-slug>.md` if no PR), linked from a relevant MOC. **On a follow-up question, find and update that same note — never spawn a second one.** Present inline first; the vault note carries the same content.
+5. **Save to the vault. Always.** After the user approves the preview content, follow the `vault-pkm` skill's conventions for placement and frontmatter. This approved vault artifact is the sole write permitted by this otherwise read-only workflow. A DX preview is event-shaped, keyed to the ref: filename `dx-preview-pr<N>-<slug>.md` (or `dx-preview-<branch-slug>.md` if no PR), linked from a relevant MOC. **On a follow-up question, find and update that same note — never spawn a second one.** Present inline first; the vault note carries the same content.
 
 ## Repo-aware personas
 

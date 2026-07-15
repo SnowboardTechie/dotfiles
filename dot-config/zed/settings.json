@@ -36,6 +36,18 @@
   "vim_mode": true,
   "agent_servers": {
     "claude-acp": {
+      "favorite_config_option_values": {
+        "effort": [
+          "xhigh"
+        ],
+        "model": [
+          "default"
+        ]
+      },
+      "default_config_options": {
+        "effort": "xhigh",
+        "model": "default"
+      },
       "type": "registry",
     },
     "opencode": {

@@ -27,9 +27,11 @@ Determine which forge hosts this repo via the shared [forge-detection reference]
 
 ### Forgejo: URL Parsing
 
-`tea api` auto-resolves `{owner}` and `{repo}` placeholders from the local
-git remote, so manual URL parsing is rarely needed. Just ensure `tea` is
-logged in (`tea login list`).
+Use the host and `owner_repo` returned by the shared parser. Run authenticated
+`tea api` with explicit `--login` and `--repo` values. If Tea cannot read the
+current checkout because of `extensions.worktreeconfig`, use the temporary
+initialized-repository pattern documented by `ship`; do not fall back to token
+scraping.
 
 If a PR URL is provided (e.g. `https://codeberg.org/owner/repo/pulls/1`),
 extract the PR index from path segment 4.
@@ -55,7 +57,8 @@ gh pr list --head "$BRANCH" --json number,title,url,body --limit 1
 
 ```bash
 BRANCH=$(git branch --show-current)
-tea api "/repos/{owner}/{repo}/pulls?state=open" \
+tea api --login {login} --repo {owner/repo} \
+  "/repos/{owner}/{repo}/pulls?state=open" \
   | jq -c --arg branch "$BRANCH" '.[] | select(.head.ref == $branch) | {number: .number, title: .title, url: .html_url, body: .body}' \
   | head -1
 ```
@@ -78,9 +81,9 @@ git diff {baseRefName}...HEAD
 **Forgejo:**
 
 ```bash
-# Get PR metadata including current description
-# {owner} and {repo} are auto-resolved by tea; replace {index} with the PR number
-tea api "/repos/{owner}/{repo}/pulls/{index}" \
+# Run from a Tea-safe context; replace placeholders with parsed values.
+tea api --login {login} --repo {owner/repo} \
+  "/repos/{owner}/{repo}/pulls/{index}" \
   | jq '{number: .number, title: .title, url: .html_url, body: .body, baseRefName: .base.ref}'
 
 # Get the diff (same git commands for both forges)
@@ -109,9 +112,17 @@ Fill the template (read from the PR body in Step 3) following the shared fill di
 
 The **source material** here is the diff from Step 2 — this skill has no summary artifact, so drive every section factually from the diff.
 
+Do not add AI attribution, generated-by notices, or `Co-authored-by` text. Preserve factual issue links and the repository template exactly.
+
+### Step 4.5: Approval gate
+
+Updating a PR body is public communication. Present the complete generated description inline and ask for explicit approval using interactive clarification (Hermes: `clarify`) or the host's conversational equivalent. Iterate on requested edits and re-present. **Do not call `gh pr edit`, `tea api`, or the Forgejo REST API until the user approves the exact body.** Silence and ambiguity are not approval. In unattended runs, write/report the proposed body and stop without mutating the PR.
+
 ---
 
 ## Step 5: Update the PR
+
+Proceed only after Step 4.5 approval.
 
 **GitHub:**
 
@@ -124,17 +135,16 @@ EOF
 
 **Forgejo:**
 
-Use `tea api` with `-X PATCH` and `-f` for string fields.
-`{owner}` and `{repo}` are auto-resolved from the local repo context.
-Replace `{index}` with the actual PR number.
+Use `tea api` with explicit login/repository context, `-X PATCH`, and `-f`
+for string fields. Replace `{index}` with the actual PR number.
 
 ```bash
 # Update body only
-tea api -X PATCH "/repos/{owner}/{repo}/pulls/{index}" \
+tea api --login {login} --repo {owner/repo} -X PATCH "/repos/{owner}/{repo}/pulls/{index}" \
   -f "body={generated description}"
 
 # Update both title and body
-tea api -X PATCH "/repos/{owner}/{repo}/pulls/{index}" \
+tea api --login {login} --repo {owner/repo} -X PATCH "/repos/{owner}/{repo}/pulls/{index}" \
   -f "title={new title}" \
   -f "body={generated description}"
 ```

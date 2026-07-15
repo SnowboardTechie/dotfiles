@@ -7,7 +7,13 @@ description: Draft a GitHub/Forgejo issue from a rough idea via Q&A, then post i
 
 Turn a rough idea into a well-structured, template-faithful GitHub or Forgejo issue through four stages: **Detect → Q&A → Draft → Post**. The user reviews and approves before anything is posted.
 
-Pairs with `issue-work` — the natural next step after posting is to start implementation in a fresh-context session via `/issue-work {url}`.
+## Runtime mappings
+
+- Interactive choices: Hermes `clarify`; Claude/OpenCode/Pi `AskUserQuestion` or conversational equivalent.
+- File discovery: Hermes `search_files`; other hosts `Glob` or equivalent.
+- Public mutation: always requires explicit user approval in the active run. Unattended execution may prepare a draft but must not post.
+
+Pairs with `issue-work` — the natural next step after posting is to start implementation in a fresh-context session by loading `issue-work` with `{url}`.
 
 ---
 
@@ -29,27 +35,18 @@ Parse `owner` and `repo` from the chosen remote using the `owner_repo` snippet i
 
 **GitHub:**
 
-```bash
-# YAML form templates (new style)
-Glob(pattern=".github/ISSUE_TEMPLATE/*.yml")
-Glob(pattern=".github/ISSUE_TEMPLATE/*.yaml")
-
-# Legacy Markdown templates
-Glob(pattern=".github/ISSUE_TEMPLATE/*.md")
-```
+- YAML form templates: search `.github/ISSUE_TEMPLATE/*.yml` and `*.yaml`.
+- Legacy Markdown templates: search `.github/ISSUE_TEMPLATE/*.md`.
 
 **Forgejo / Gitea / Codeberg:**
 
-```bash
-Glob(pattern=".forgejo/issue_template/*.md")
-Glob(pattern=".gitea/issue_template/*.md")
-```
+Search `.forgejo/issue_template/*.md` and `.gitea/issue_template/*.md`.
 
 Three cases:
 
 1. **No templates found** → propose the default structure (see 1.3). Skip template-field fidelity and GraphQL issue-type steps.
 2. **Exactly one template** → use it.
-3. **Multiple templates** → `AskUserQuestion` with each template's `name` field as the option label. Let the user pick.
+3. **Multiple templates** → interactive clarification (Hermes: `clarify`) with each template's `name` field as the option label. Let the user pick.
 
 ### 1.3 Default structure (no templates)
 
@@ -137,7 +134,7 @@ For Forgejo templates: same as legacy Markdown. Forgejo has no issue-type field,
 
 ## Stage 2 — Clarifying Q&A
 
-> **If this ticket is really a design exploration** — multiple valid approaches, unclear shape, "I'm not sure what we even want yet" — it's worth running `superpowers:brainstorming` first to converge on the design, then returning here to file a crisp issue. This is a soft pointer, not a hard step: the Q&A below handles well-formed tickets fine on its own. Use judgment.
+> **If this ticket is really a design exploration** — multiple valid approaches, unclear shape, "I'm not sure what we even want yet" — pause for conversational design exploration first, then return here to file a crisp issue. This is a soft pointer, not a hard dependency; the Q&A below handles well-formed tickets on its own.
 
 ### 2.1 Four open-ended areas
 
@@ -166,7 +163,7 @@ If the list is empty, silently skip.
 
 On the Forgejo path, after the user picks label names, map each back to its integer id for Stage 4.2's `labels` payload field. Milestones work the same way — Forgejo expects `milestone: {id}` (integer), so capture the milestone's `id` from the API response, not just the title.
 
-Use `AskUserQuestion` with `multiSelect: true`. Include a "none" option and a free-text "other" option.
+Use interactive clarification (Hermes: `clarify`) with `multiSelect: true`. Include a "none" option and a free-text "other" option.
 
 **Pre-check label suggestions based on the Stage 2 answers before presenting the question.** The template's `labels:` field (if any) always pre-checks. On top of that, infer from the draft's content using these signals — they apply to any repo's label set, so match by name substring (case-insensitive):
 
@@ -181,7 +178,7 @@ Use `AskUserQuestion` with `multiSelect: true`. Include a "none" option and a fr
 
 Do **not** pre-check `good first issue` from a "this is small" signal alone — that label has external discoverability semantics (newcomer search on GitHub) and should only be used when the issue is genuinely suitable for a first-time contributor to the repo. Leave it for the user to add manually.
 
-Pre-checked labels still go through `AskUserQuestion` — the user sees them as checked defaults and can uncheck any that miss.
+Pre-checked labels still go through interactive clarification (Hermes: `clarify`) — the user sees them as checked defaults and can uncheck any that miss.
 
 #### Milestone
 
@@ -195,7 +192,7 @@ tea api "/repos/{owner}/{repo}/milestones?state=open" | jq '[.[] | {id, title}]'
 
 If the list is empty, silently skip.
 
-Use `AskUserQuestion` single-select with "(none)" as a default option. On the Forgejo path, after the user picks a title, look up its `id` from the response above for Stage 4.2's `milestone` payload field.
+Use interactive clarification (Hermes: `clarify`) single-select with "(none)" as a default option. On the Forgejo path, after the user picks a title, look up its `id` from the response above for Stage 4.2's `milestone` payload field.
 
 #### Project (GitHub only)
 
@@ -222,7 +219,7 @@ Branch on a successful response:
 
 - **Zero open linked projects** → skip silently. No prompt, no flag.
 - **Exactly one open linked project** → attach it automatically. One linked project is unambiguous, so no prompt. Capture the title for Stage 4.2's `--project` flag.
-- **Two or more open linked projects** → `AskUserQuestion` single-select with each title plus `(none)`. Capture the selection (empty when `(none)`).
+- **Two or more open linked projects** → interactive clarification (Hermes: `clarify`) single-select with each title plus `(none)`. Capture the selection (empty when `(none)`).
 
 ### 2.3 Parent linkage (GitHub only)
 
@@ -330,7 +327,7 @@ Among candidates whose `n` is in `siblings[]` but **not** in `direct_parents[]`,
 
 #### 2.3.4 Ask the user
 
-Use `AskUserQuestion` single-select. Always include all of:
+Use interactive clarification (Hermes: `clarify`) single-select. Always include all of:
 
 - **Direct parents** (one option per `direct_parents[]` entry): `Link under #N — {title}`. Listed first — the user named these explicitly, so they should not have to retype them via `Specify`.
 - **Inferred parents** from 2.3.3 (up to 3): same option shape. **Drop any inferred-parent number that already appears in `direct_parents[]`** — convergence can land on a number the user named directly, and showing it twice as `Link under #N — {title}` would be visually duplicative without conveying anything new.
@@ -350,18 +347,28 @@ In Stage 3.2's frontmatter, write `parent: {N}` (or empty when not chosen). The 
 
 ### 3.1 Resolve the drafts directory
 
-Use the `agent-workspace` skill's trunk-resolution pattern:
+Resolve the trunk worktree directly so drafts remain stable across feature worktrees:
 
 ```bash
-# resolve_trunk_root is defined in agent-workspace/SKILL.md
-TRUNK_ROOT=$(resolve_trunk_root)
-DRAFTS_DIR="$TRUNK_ROOT/.notes/.agents/drafts"
+# Keep resumable workflow state in the trunk workspace even when invoked from a worktree.
+TRUNK_ROOT=$(git worktree list --porcelain | python3 -c '
+import sys
+for line in sys.stdin:
+    if line.startswith("worktree "):
+        print(line.removeprefix("worktree ").rstrip())
+        break
+')
+[[ -n "$TRUNK_ROOT" ]] || { echo "Could not resolve trunk worktree" >&2; exit 1; }
+DRAFTS_DIR="$TRUNK_ROOT/.hermes/issue-create/drafts"
 mkdir -p "$DRAFTS_DIR"
 ```
 
-If `$TRUNK_ROOT/.notes` doesn't exist yet, run the auto-setup protocol from [agent-workspace/SKILL.md](../agent-workspace/SKILL.md).
+Do not create `.notes`, `.agents`, or modify `.gitignore` for this workflow.
+Workspace `.hermes/` is resumable agent state, not a knowledge-vault note.
 
-If the user chose a **target repo that differs from cwd** in Stage 1, still use cwd's `.notes/` for the draft — the draft is local-to-the-thinker, not local-to-the-issue. Record the target `{owner}/{repo}` in the draft frontmatter so future-you can trace which repo it got posted to.
+If the user chose a **target repo that differs from cwd** in Stage 1, still use
+the current workspace's `.hermes/issue-create/` directory. Record the target
+`{owner}/{repo}` in frontmatter so a resumed draft remains attributable.
 
 ### 3.2 Render the draft
 
@@ -409,7 +416,7 @@ created: {iso8601}
 
 Once the draft is rendered, scan the body for a heading whose text matches `Open questions` (case-insensitive) at H2 level (default structure / legacy Markdown templates) or H3 (GitHub YAML form templates), with at least one bullet `- ` underneath. Zero matches → fall through silently to 3.4 with no announcement.
 
-When matches exist, announce the pass positively (per [`AGENTS.md` → "Positive prompts for approval gates"](../../AGENTS.md#positive-prompts-for-approval-gates)):
+When matches exist, announce the pass positively:
 
 > Draft has **N** open question(s). Want to resolve them inline before posting? *[yes / post as-is / skip]*
 
@@ -460,7 +467,7 @@ Then continue to 3.4 with the re-rendered draft.
 
 Present the full draft inline. Accept conversational edits: "tighten the problem section", "add a note about X", "change the title to Y". Re-render and re-present until the user approves.
 
-Approval is conversational — "looks good," "approve," "post it," "ship it," all count. If the user says anything ambiguous, ask explicitly: "Ready to post?"
+Approval is conversational — "looks good," "approve," "post it," "ship it," all count when replying to the presented draft. If the user says anything ambiguous, ask explicitly: "Ready to post?" Silence is not approval. In an unattended run, leave the draft in place and stop before Stage 4.
 
 ---
 
@@ -537,24 +544,11 @@ new_issue_number=$(echo "$issue_url" | grep -oE '[0-9]+$')
 **Forgejo:**
 
 ```bash
-# Extract token from tea config (pattern mirrors ship/SKILL.md)
-TEA_CONFIG=""
-for candidate in \
-  "${XDG_CONFIG_HOME:-$HOME/.config}/tea/config.yml" \
-  "$HOME/Library/Application Support/tea/config.yml" \
-  "$HOME/.tea/tea.yml"; do
-  [ -f "$candidate" ] && TEA_CONFIG="$candidate" && break
-done
-TOKEN=$(grep 'token:' "$TEA_CONFIG" | head -1 | awk '{print $2}')
-
-instance=$(echo "$remote_url" | sed -E 's|.*(@\|//)([^:/]+).*|https://\2|')
-
-# Labels must be resolved to integer IDs for the Forgejo API.
-# Build JSON payload — env vars are exported so python3 sees them.
-# TITLE / LABELS_JSON / MILESTONE_NUM come from the Q&A + label-id lookup.
+# Build JSON payload. owner/repo/login come from the shared forge parser and
+# the configured Tea login matching that host.
 export TITLE="$title"
-export LABELS_JSON="${labels_id_json:-[]}"              # e.g. [3, 7]; default [] when no labels chosen
-export MILESTONE_NUM="${milestone_num:-}"               # integer or empty
+export LABELS_JSON="${labels_id_json:-[]}"
+export MILESTONE_NUM="${milestone_num:-}"
 
 payload=$(python3 -c "
 import json, os, sys
@@ -569,10 +563,14 @@ if m:
 print(json.dumps(out))
 " < "$BODY_FILE")
 
-curl -s -X POST "${instance}/api/v1/repos/${owner}/${repo}/issues" \
-  -H "Authorization: token $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "$payload" \
+# Use the temporary Tea-safe context from ship when the current repository has
+# extensions.worktreeconfig. Never extract or print the token.
+printf '%s' "$payload" | tea api \
+  --login "$login" \
+  --repo "$owner/$repo" \
+  --method POST \
+  --data @- \
+  "/repos/$owner/$repo/issues" \
   | jq '{number, html_url}'
 ```
 
@@ -582,7 +580,7 @@ If the resolved template has a `type:` field (e.g., `type: Task`), set it via Gr
 
 #### 4.3.1 Resolve the issue-type ID
 
-Lazy cache at `$TRUNK_ROOT/.notes/.agents/issue-create/type-ids.md`:
+Lazy cache at `$TRUNK_ROOT/.hermes/issue-create/type-ids.md`:
 
 ```markdown
 ---
@@ -761,7 +759,7 @@ verified_parent=$(gh api graphql \
 On successful post — i.e., the issue was created in 4.2, regardless of whether 4.3 (type-set), 4.4 (type-verify), and 4.5 (parent-link + verify) all succeeded. The issue exists; archival is unconditional once 4.2 returns a URL:
 
 ```bash
-ARCHIVE_DIR="$TRUNK_ROOT/.notes/.agents/_archive/issue-create"
+ARCHIVE_DIR="$TRUNK_ROOT/.hermes/issue-create/archive"
 mkdir -p "$ARCHIVE_DIR"
 DATE=$(date +%Y-%m-%d)
 mv "$DRAFT_PATH" "$ARCHIVE_DIR/${DATE}-${slug}.md"
@@ -804,12 +802,12 @@ Archived draft: {archive path}
 |---|---|
 | `cwd` isn't a git repo | Ask user for `{owner}/{repo}` |
 | Multiple remotes (`origin` + `upstream`) | Default to `origin`; confirm with user |
-| Target repo differs from cwd | Use cwd's `.notes/` for draft; record target in frontmatter |
+| Target repo differs from cwd | Use the current workspace's `.hermes/issue-create/` state; record target in frontmatter |
 | Template has `title:` prefix | Pre-fill user's title suggestion with the prefix |
 | Template has required fields | Don't post with empty answers; re-ask |
 | `gh auth status` fails | Stop. Tell user to `gh auth login` |
 | Forgejo token missing | Stop. Tell user token source (tea config) |
-| No labels / no milestones in repo | Skip the `AskUserQuestion` prompts silently |
+| No labels / no milestones in repo | Skip the interactive clarification (Hermes: `clarify`) prompts silently |
 | User edits draft mid-Stage 3 | Re-render from user's edits; continue iteration |
 | User says "actually, let me think more" | Leave draft in `drafts/`; exit cleanly; re-invoke later picks up by listing drafts |
 | Dedup check finds identical title | Surface + ask — never auto-merge |
@@ -828,7 +826,7 @@ Archived draft: {archive path}
 - **Auto-link parent or related issues without confirmation.** Stage 2.3 always asks before linking; user can pick `No parent`. Free-text `#N` references in the body are preserved as-is, never auto-converted into linkages.
 - **Bulk-create issues from a list.**
 - **Assign anyone other than the default (caller is author, no assignees).**
-- **Add `Co-authored-by: Claude` trailers** to the issue body.
+- **Add AI attribution or `Co-authored-by` trailers** to the issue body.
 - **Auto-delete drafts** — archiving on success is the cleanup step; pyre handles the archive directory later if the user wants.
 - **Retry failed posts silently.** Errors surface to the user; they decide whether to retry.
 

@@ -89,7 +89,9 @@ recommendation pointing to a regular implementation issue and stop.
    query parameters, headers, request/response field names, response
    wrappers, error shapes, identifier types, status semantics.
 2. For each shape, look it up in the repo's conventions index.
-3. Grep the source-of-truth directories for shapes the index doesn't cover.
+3. Search the source-of-truth directories for shapes the index doesn't cover,
+   using the runtime's native file-reading and search tools (and terminal only
+   where repository commands are needed).
    In `simpler-grants-protocol`, that means:
    - `lib/core/lib/core/routes/` for verbs, paths, headers, parameter names
    - `lib/core/lib/core/models/` for field naming and response wrappers
@@ -100,8 +102,9 @@ recommendation pointing to a regular implementation issue and stop.
 
 **Scaling the gather (judgment call):** when the spec touches many shape
 categories across a large source tree, dispatch this gather via
-`superpowers:dispatching-parallel-agents` — one `Explore` agent per
-shape-category (routes / models / fields / prior-ADRs), each returning only
+the runtime's native delegation mechanism — in Hermes, `delegate_task` — one
+independent task per shape-category (routes / models / fields / prior-ADRs),
+in batches of at most three, each returning only
 its prior-art-table rows. This isn't about speed so much as **context
 isolation**: Phase 2 drafting wants a clean head, and raw grep output from
 `routes/` + `models/` + `adr/` is noise the drafting context shouldn't carry.
@@ -130,7 +133,7 @@ Status values:
 If your prior-art table fills with `new-territory` rows (most shapes are
 unprecedented), the spec author probably doesn't know enough yet to
 enumerate the right shapes. Stop and run a consumer-playground prototype
-first (`~/code/sgg/consumer-playground/`, `ts/<feature>.ts` scenario);
+first (`~/code/sgg/sgp-consumer-playground/`, `ts/<feature>.ts` scenario);
 return with the shapes the prototype taught you. The spec works better as
 synthesis after experiential learning than as speculation before it.
 
@@ -228,8 +231,9 @@ prevented), not a generic "more flexible."
 
 This pass re-greps the same shape-categories as Phase 1; the same scaling
 judgment applies — for a draft touching many shapes, dispatch the checklist
-via `superpowers:dispatching-parallel-agents` (one agent per category,
-each returning only its divergence flags) to keep the annotation pass out
+through the runtime's native delegation mechanism (Hermes: `delegate_task`),
+one independent task per category in batches of at most three, each returning
+only its divergence flags, to keep the annotation pass out
 of the drafting context. For a small draft, inline greps are fine.
 
 **Citation check:** for every ADR or convention the draft cites, verify

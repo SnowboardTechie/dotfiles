@@ -1,13 +1,13 @@
 ---
 name: dependency-triage
-description: Triage open dependency PRs by blast radius, CI state, and merge order
+description: Triage open dependency PRs in the SGG / CommonGrants monorepo by blast radius, CI state, and merge order
 ---
 
 # Dependency Triage
 
 Review open dependency pull requests, sort them into the right review order, dispatch a parallel read-only review of every PR worth reviewing, and recommend which to merge, review manually, hold, or close.
 
-This skill is designed for low-overhead weekly dependency maintenance in repositories that use Dependabot, grouped update lanes, and CI-heavy monorepos.
+This skill is intentionally specific to low-overhead weekly dependency maintenance in the SGG / CommonGrants monorepo, with its Dependabot groups, catalog lane, published packages, and CI layout. Do not generalize its package or changeset rules to unrelated repositories.
 
 ---
 
@@ -28,6 +28,16 @@ Use this skill when:
 - You want a weekly review pass instead of ad hoc dependency babysitting
 
 Do not use this skill to deeply debug one PR. Use `dependency-review` for that.
+
+### SGG scope prerequisite
+
+From the `~/code/sgg/` umbrella, triage only the dependency queues Bryan maintains:
+
+- `HHS/simpler-grants-protocol`
+- `common-grants/py-cg-grants-gov`
+- `common-grants/ts-cg-grants-gov`
+
+Exclude `HHS/simpler-grants-gov`; its Renovate queue is outside this maintenance workflow. Before gathering PRs, resolve which of the three maintained repositories is in scope. If the invocation is from the umbrella and does not identify one, use the runtime's structured clarification mechanism (Hermes: `clarify`) rather than silently scanning all repositories.
 
 ---
 
@@ -159,7 +169,7 @@ If two PRs overlap the same dependency lane, prefer the newer PR and note when t
 
 ## Step 3b: Fan out parallel review (all reviewable lanes)
 
-Once the queue is classified (Step 2) and ordered (Step 3), review **every PR worth reviewing in parallel** rather than serially. Dispatch one read-only review subagent per PR via `superpowers:dispatching-parallel-agents`, routed to the right reviewer skill. Run them as **foreground** parallel dispatches — the batch issued in one message, returning together — **never as background tasks**: a background task fires a completion notification per review, which is exactly the per-review running commentary to avoid. The fan-out parallelizes the slow, context-heavy *investigation* (reading CI logs, diffs, changelogs); it never runs builds.
+Once the queue is classified (Step 2) and ordered (Step 3), review **every PR worth reviewing in parallel** rather than serially. Dispatch one read-only review task per PR through the runtime's native delegation mechanism, routed to the right reviewer skill. In Hermes, use `delegate_task` in foreground batches of **at most three concurrent tasks**. Wait for all three before dispatching the next batch; never use background tasks that emit per-review commentary. The fan-out parallelizes the slow, context-heavy *investigation* (reading CI logs, diffs, changelogs); it never runs builds.
 
 ### What to review
 
@@ -168,7 +178,7 @@ Review every open PR **except** those whose fate is already decided by inspectio
 - **Skip** explicitly-held PRs: `DO NOT MERGE` / hold branches, and PRs already marked superseded in Step 2b. Their disposition is settled — a review adds nothing. Say in the report that you skipped them and why.
 - **Review everything else**, *including green isolated PRs*. A green PR is exactly where a missed changeset on a runtime dep in a published package slips through, so it still gets a (light) read-only pass — for a green PR there are no failing checks to diagnose, so the review is mostly the changeset-impact check.
 
-Cap **concurrency, not coverage**. If the reviewable set is larger than your parallel-dispatch batch size, run further batches — do not drop the tail. If you defer any reviewable PR, name it in the report; never silently truncate.
+Cap **concurrency, not coverage**. Hermes delegation is capped at three concurrent tasks, so run `ceil(reviewable / 3)` batches — do not drop the tail. If you defer any reviewable PR, name it in the report; never silently truncate.
 
 ### Routing
 
@@ -255,3 +265,4 @@ Be specific about *why* each PR landed in that bucket, and ground the reason in 
 - Do not ignore changeset requirements when runtime deps in published packages change
 - Every reviewable PR gets a read-only review via Step 3b (parallel); never parallelize the local builds — `dependency-review` Step 5 stays serial, one PR at a time
 - Do not hide uncertainty; if a reviewed PR still needs deeper single-PR local verification, run `dependency-review` Step 5 on it serially
+- This workflow recommends actions only. Closing, commenting on, approving, or merging a PR is public-facing and requires the user's explicit approval immediately before the forge command.

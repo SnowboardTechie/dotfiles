@@ -1,180 +1,179 @@
 ---
 name: ship
-description: Wrap up worktree work - push branch, open PR, fill description, report URL
+description: Use when a branch is ready to push and open as a draft pull request on GitHub or Forgejo.
+version: 2.0.0
+author: Bryan Thompson
+license: MIT
+metadata:
+  hermes:
+    tags: [git, pull-request, github, forgejo, worktree]
+    related_skills: [worktrunk, update-pr-description, pr-self-review, issue-work]
 ---
 
-# Ship - Worktree Wrap-Up
+# Ship
 
-Push the current branch, open a PR, and fill the description.
+## Overview
 
-Ships WIP as a draft PR by default — self-review and merge-readiness are not this skill's job. For end-to-end ticket work with self-review baked in, use [`/issue-work`](../issue-work/SKILL.md) instead; for a standalone review pass on a branch already shipped with `/ship`, run [`/pr-self-review`](../pr-self-review/SKILL.md) against the open PR.
+Push the current branch, open a **draft** pull request, fill the repository's PR
+template, apply justified labels, and report the clickable URL. This skill does
+not merge or declare the branch review-ready.
 
----
+For end-to-end ticket work, use `issue-work`. For an independent review of an
+already-open PR, use `pr-self-review`.
 
-## Quick Reference
+## When to Use
 
-```
-/ship           # wrap up current branch — detect forge, push, open PR
-```
+- "Ship this branch"
+- "Push this and open a PR"
+- The final publication phase of `issue-work`
 
----
+Do not use for direct-to-main work or for merging an approved Forgejo PR; use
+the repository's merge policy and `manual-merge` where applicable.
 
-## Execution
+## Procedure
 
-### 1. Detect Forge
+### 1. Detect the repository and forge
 
-Detect the forge per the shared [references/forge-detection.md](references/forge-detection.md). If it returns `forge="unknown"`, stop:
+Load `references/forge-detection.md` and run its linked
+`scripts/parse-forge-remote.sh` helper. Stop on an unknown forge or ambiguous
+repository; do not guess.
 
-```
-No supported forge detected — use wt merge instead
-```
+Completion criteria:
 
-### 2. Pre-flight
+- current branch, default branch, forge, host, and `owner/repo` are known;
+- the current branch is not the default branch;
+- authentication is available through `gh` or `tea` without printing a token;
+- no open PR already exists for the branch.
 
-- `git branch --show-current` must not be `main` or `master`
-- `git remote -v` returns output
-- Forge CLI authenticated: `gh auth status` (GitHub) or tea config file exists with token (Forgejo)
-- No existing PR: `gh pr list --head <branch>` (GitHub) or Forgejo API `GET /repos/{owner}/{repo}/pulls?state=open` (Forgejo)
+### 2. Verify the branch
 
-If any check fails, report what's wrong and stop.
+Inspect `git status`, the branch diff, and the repository's own instructions.
+Run the relevant test, lint, typecheck, and formatting gates. In Hermes, use the
+installed verification/review skills where applicable; in another agent, use
+its equivalent verification workflow.
 
-### 3. Confirm
+If a caller supplies an already-current verification artifact, inspect it and
+avoid rerunning unchanged expensive gates. Any failed or missing required gate
+blocks publication.
 
-Ask: "Ready to push and open a draft PR?"
+### 3. Draft the PR body
 
-### 3.5. Verify (standalone only, best-effort)
+Find the repository's PR template in the standard locations. Fill it using
+`references/pr-body-fill.md`.
 
-If `ship` was **handed a review/summary artifact** by a caller (the `issue-work` Phase 4.3 path passes `summary.md`), skip this — `issue-work` already verified the branch (its Seam 7) and re-running here just wastes time.
+Source priority:
 
-Otherwise (a direct `/ship` invocation), prove the branch is green before pushing: if `superpowers:verification-before-completion` is available, invoke it (the `Skill` tool) to run the project's test / lint / typecheck commands. **Best-effort, not a hard dependency** — if the skill isn't installed, note it in one line (`No verification skill installed; pushing without a pre-push test run.`) and continue. `ship`'s core job doesn't need superpowers; this gate is a bonus. If verification runs and fails, stop and surface the output before pushing.
+1. A current issue-work summary, approved plan, or review artifact.
+2. Commit history and `git diff <default>...HEAD`.
 
-### 4. Push
+Preserve every template section. Replace placeholders, justify checkbox
+selections, use `N/A` only when genuinely inapplicable, and preserve clickable
+issue/PR links. Never add AI attribution.
+
+Choose only labels supported by the repository and justified by the diff. Do
+not apply speculative labels merely because they are inexpensive.
+
+### 4. Obtain publication approval
+
+Show the user the proposed title, complete body, base/head branches, and labels.
+Ask for approval immediately before the push/API calls unless the user already
+explicitly approved publishing this exact PR in the current task.
+
+A request to implement or review code is not approval to publish it.
+
+### 5. Push
 
 ```bash
 git push -u origin <branch>
 ```
 
-### 5. Create PR
+Stop and report any push error.
+
+### 6. Create the draft PR
 
 #### GitHub
 
-```bash
-gh pr create --fill --draft
-```
-
-**Always open as draft.** Never use `--fill` without `--draft`.
-
-#### Forgejo
-
-**Never use `tea pr` commands.** They require TTY interaction and will fail in agent environments. Always use the Forgejo API directly:
+Write the approved body to a temporary file so shell quoting cannot corrupt it:
 
 ```bash
-# 1. Extract token from tea config
-TEA_CONFIG=""
-for candidate in \
-  "${XDG_CONFIG_HOME:-$HOME/.config}/tea/config.yml" \
-  "$HOME/Library/Application Support/tea/config.yml" \
-  "$HOME/.tea/tea.yml"; do
-  [ -f "$candidate" ] && TEA_CONFIG="$candidate" && break
-done
-
-# 2. Parse token (requires PyYAML or grep)
-TOKEN=$(grep 'token:' "$TEA_CONFIG" | head -1 | awk '{print $2}')
-
-# 3. Parse owner/repo + instance from remote
-#    (owner_repo and instance per references/forge-detection.md)
-remote_url=$(git remote get-url origin)
-owner_repo=$(echo "$remote_url" | sed -E 's|.*[:/]([^/]+/[^/]+?)(\.git)?$|\1|')
-instance=$(echo "$remote_url" | sed -E 's|.*(@\|//)([^:/]+).*|https://\2|')
-
-# 4. Create PR via API
-curl -s -X POST "${instance}/api/v1/repos/${owner_repo}/pulls" \
-  -H "Authorization: token $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"title\":\"<PR title>\",\"head\":\"<branch>\",\"base\":\"main\",\"body\":\"<description>\",\"draft\":true}"
+gh pr create \
+  --draft \
+  --base <default-branch> \
+  --head <branch> \
+  --title "<approved-title>" \
+  --body-file <body-file>
 ```
 
-Extract the PR number and URL from the JSON response:
-```bash
-| python3 -c "import sys,json; d=json.load(sys.stdin); print(f'PR #{d[\"number\"]}: {d[\"html_url\"]}')"
-```
+#### Forgejo / Codeberg
 
-### 6. Fill Description
-
-**Check for a PR template first:**
+Never scrape or print the token from Tea's config. Use `tea api`, which supplies
+a configured credential. In repositories where Tea cannot read
+`extensions.worktreeconfig`, run it from a temporary initialized repository and
+pass the target explicitly:
 
 ```bash
-# Look for PR template (GitHub supports both casings and locations)
-template=""
-for candidate in \
-  ".github/pull_request_template.md" \
-  ".github/PULL_REQUEST_TEMPLATE.md" \
-  ".github/PULL_REQUEST_TEMPLATE/pull_request_template.md" \
-  "pull_request_template.md"; do
-  [ -f "$candidate" ] && template="$candidate" && break
-done
+tmpdir=$(mktemp -d)
+trap 'rm -rf "$tmpdir"' EXIT
+git -C "$tmpdir" init -q
+
+python3 - <<'PY' >"$tmpdir/pr.json"
+import json
+from pathlib import Path
+
+print(json.dumps({
+    "title": "<approved-title>",
+    "head": "<branch>",
+    "base": "<default-branch>",
+    "body": Path("<body-file>").read_text(),
+    "draft": True,
+}))
+PY
+
+(
+  cd "$tmpdir"
+  tea api \
+    --login <configured-login> \
+    --repo <owner/repo> \
+    --method POST \
+    --data @pr.json \
+    /repos/<owner>/<repo>/pulls
+)
 ```
 
-**Source-of-truth priority when filling sections:**
+Use the configured Tea login matching the parsed host. Verify the response says
+`draft: true`; if this forge version does not support draft PRs, stop rather
+than silently opening a ready-for-review PR.
 
-1. If the invoker passes a **review / summary artifact** (e.g., `issue-work` hands off its `~/.claude/issue-work/{owner}-{repo}-{N}/summary.md`, or the user cites a plan document) — read it first and use its findings + rationale as the authoritative source for Summary, Test-plan, and any other narrative sections. The artifact is *why* this PR exists; the diff is *what*.
-2. Otherwise, derive from the commit history + diff.
+### 7. Apply approved labels and verify
 
-**If a template exists:** Fill it following the shared fill discipline in [references/pr-body-fill.md](references/pr-body-fill.md) — sections-as-structure, strip `>` / `<!-- -->` / placeholder text, fill every section with no empties (`N/A` if N/A), check/justify boxes, link issues. The **source material** is the summary artifact (priority 1 above) when present, else commits + diff (priority 2). Note: this repo's `.github/PULL_REQUEST_TEMPLATE.md` uses the HTML-comment placeholder style.
+Use `gh pr edit --add-label` on GitHub or authenticated `tea api` requests on
+Forgejo. Then fetch the PR again and verify:
 
-**If no template exists:** Write a comprehensive PR description covering:
-- Summary of changes (what and why)
-- Key features/files added or modified
-- Testing (test counts, what was verified)
-- Commit list
+- draft state is true;
+- title, base, head, body, and labels match the approved proposal;
+- the returned URL is on the expected forge and repository.
 
-Then update via the API:
-```bash
-# GitHub
-gh pr edit {number} --body "$BODY"
+Report the PR as a Markdown link.
 
-# Forgejo (always use API)
-body_json=$(python3 -c "import json,sys; print(json.dumps({'body': sys.stdin.read()}))" <<< "$BODY")
-curl -s -X PATCH "${instance}/api/v1/repos/${owner_repo}/pulls/{number}" \
-  -H "Authorization: token $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "$body_json"
-```
+## Common Pitfalls
 
-### 7. Apply Labels
+1. **Using `gh pr create --fill` without the template.** Draft the body from the
+   repository template explicitly.
+2. **Extracting Tea tokens with `grep`.** Use `tea api`; credentials must never
+   enter command output or generated artifacts.
+3. **Publishing before approval.** Present the exact public content first.
+4. **Reusing the old macOS-incompatible `sed` parser.** Always use the linked
+   parser script.
+5. **Calling the PR complete because creation succeeded.** Read it back and
+   verify draft state, body, and labels.
 
-Check the repo's available labels and apply all that are relevant to the PR.
+## Verification Checklist
 
-```bash
-# GitHub — list available labels, then apply
-gh label list --json name
-gh pr edit {number} --add-label "label1,label2"
-
-# Forgejo — use API
-curl -s -X POST "${instance}/api/v1/repos/${owner_repo}/issues/{number}/labels" \
-  -H "Authorization: token $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"labels": [label_id_1, label_id_2]}'
-```
-
-**Selection heuristic:** Match labels to the PR's domain. Common mappings:
-- Files in `lib/core/` → `core`
-- Files in `lib/cli/` → `cli`
-- Files in `lib/ts-sdk/` → `sdk`, `typescript`, `ts-sdk`
-- Files in `lib/python-sdk/` → `sdk`, `python`, `py-sdk`
-- Files in `website/` → `website`
-- Dependency file changes → `dependencies`
-- Docs-only changes → `documentation`
-
-When in doubt, apply more labels rather than fewer — they're cheap and help with filtering.
-
-### 8. Report
-
-Show the PR URL to the user.
-
----
-
-## Related
-
-- `superpowers:finishing-a-development-branch` — the general-case "branch is done, what now?" menu (Merge / PR / Keep / Discard) for ad-hoc flows. `ship` is the PR-path specialist used by `issue-work` Phase 4.3: forge-aware (GitHub + Forgejo), template-faithful description fill (prefers a handed-in `summary.md` as source-of-truth), domain-mapped labels. When you've already chosen to open a PR, `ship` is the right call; reach for the superpowers skill only when the merge/keep/discard choice is genuinely open.
-- **Future consideration:** if `ship` ever grows worktree cleanup (post-merge teardown, abort-and-rollback), borrow `finishing-a-development-branch`'s provenance-check pattern (only remove a worktree you created). Today `ship` is worktree-agnostic, so there's nothing to guard.
+- [ ] Current branch is not the default branch
+- [ ] Required repository gates passed
+- [ ] Existing PR check completed
+- [ ] Repository template fully populated
+- [ ] Exact public content approved
+- [ ] PR created as draft and read back successfully
+- [ ] Labels are supported and justified
+- [ ] Clickable PR URL reported

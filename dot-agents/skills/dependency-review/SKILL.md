@@ -1,16 +1,18 @@
 ---
 name: dependency-review
-description: Review one dependency PR for risk, failing checks, changeset impact, and merge readiness
+description: Review one SGG / CommonGrants dependency PR for risk, failing checks, changeset impact, and merge readiness
 argument-hint: <pr-number-or-url>
 ---
 
 # Dependency Review
 
-Review a single dependency pull request and decide whether it is safe to merge, needs a focused fix, should be held, or should be closed as not worth the churn.
+Review a single dependency pull request in the SGG / CommonGrants monorepo and decide whether it is safe to merge, needs a focused fix, should be held, or should be closed as not worth the churn. Its package lanes, commands, and changeset rules are project-specific.
 
 ---
 
 ## Input
+
+First confirm the PR belongs to one of the maintained SGG dependency queues: `HHS/simpler-grants-protocol`, `common-grants/py-cg-grants-gov`, or `common-grants/ts-cg-grants-gov`. Stop if it belongs to `HHS/simpler-grants-gov`; that Renovate queue is outside this workflow. The lane matrix below is fullest for `simpler-grants-protocol`; for either plugin repo, use only commands actually defined by that repo.
 
 Accepts either:
 
@@ -156,7 +158,7 @@ Do not guess. Read the relevant `package.json` or `pyproject.toml` files if need
 
 ## Step 5: Verify Locally Before Recommending Merge
 
-This step is the no-claim-without-evidence discipline that `superpowers:verification-before-completion` formalizes — never say "safe to merge" on the strength of a green PR badge alone; run the commands and read the output. The per-lane matrix below is this skill's domain-specific version of that gate.
+This step applies a no-claim-without-evidence discipline using native terminal execution: never say "safe to merge" on the strength of a green PR badge alone; run the commands and read the output. The per-lane matrix below is this skill's domain-specific gate.
 
 Before recommending "safe to merge," check out the branch and run the relevant verification commands:
 
@@ -236,3 +238,4 @@ Use this format:
 - Do not recommend a changeset without verifying the dependency is runtime or peer-facing
 - Do not recommend audit exceptions just because CI is noisy
 - Do not bury the decision; the report must contain one explicit recommendation
+- The review is advisory. Pushing, commenting on, approving, closing, or merging the PR is public-facing and requires the user's explicit approval immediately before the action.

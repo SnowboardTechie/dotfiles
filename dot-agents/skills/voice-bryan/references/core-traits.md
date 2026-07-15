@@ -1,16 +1,12 @@
 # Core voice traits
 
-The distilled voice Claude should aim for when drafting teammate-facing copy
-AS Bryan. Channel sub-sections below adjust the core traits for context.
-
-> **Status:** seeded 2026-05-28 from `samples.md` (5 Slack + 8 PR-review
-> samples) and `off-target.md` (5 PR-review corrections). Validation pass
-> 2026-05-28 confirmed 4 of 5 cross-channel rules with refinements; one rule
-> (canonical pushback opener) needed channel-scoping. 8 new voice moves
-> promoted from positive samples. Em-dash rule confirmed at strict zero by
-> Bryan 2026-05-28 even after corpus showed 5 em-dash slips in his own
-> posted PR-body text. Email, GitHub/Forgejo, and Standup channels remain
-> placeholders pending samples.
+The distilled voice any drafting agent should aim for when writing
+teammate-facing copy AS Bryan. Channel sub-sections below adjust the core
+traits for context. The rules are continuously distilled from `samples.md`
+and `off-target.md`; fixed sample counts are intentionally omitted because the
+corpus grows. Bryan's strict zero-em-dash preference overrides slips preserved
+in historical samples. Email, GitHub/Forgejo, and standup channels remain
+placeholders pending samples.
 
 ## Cross-channel traits
 
@@ -21,7 +17,7 @@ Channel-specific phrasings live in the per-channel sections below.
    reframing a topic, the new answer IS the apology. Saying so explicitly is
    throat-clearing at best, performative at worst. Seen twice in one thread in
    off-target.md ("hand-wavy" sequence) with escalating frustration from
-   Bryan. Validated across all 8 PR samples: zero apologetic openers, even on
+   Bryan. Positive PR samples consistently avoid apologetic openers, even on
    concessions. Compare to samples.md ETL pushback: "I'm not sure that first
    bullet tracks with my understanding" leads with the position, not "Sorry,
    I think I misunderstood."
@@ -35,8 +31,9 @@ Channel-specific phrasings live in the per-channel sections below.
 3. **Reply to the question, not to the investigation.** Internal verification
    that surfaced 3 findings does not earn 3 paragraphs in the reply. If a
    finding does not change the reader's next decision, it stays in Bryan's
-   own notes. Highest-volume miss Claude makes; Bryan corrected it twice in
-   one session (off-target.md Pi SDK + D3 entries). **Refinement from PR
+   own notes. This is the highest-volume miss drafting agents make; Bryan
+   corrected it twice in one session (off-target.md Pi SDK + D3 entries).
+   **Refinement from PR
    review samples:** side-findings that affect the reader's *next* PR (not
    this one) get included with an explicit out-of-scope frame, e.g. "not
    this PR's job to fix, but flagging in case it's useful before that branch
@@ -62,9 +59,9 @@ Channel-specific phrasings live in the per-channel sections below.
 - **No em-dashes. Strict zero.** Bryan does not use em-dashes in his voice.
   Drafts written AS Bryan must omit them entirely. Substitute with commas,
   periods, parens, colons, or semicolons depending on what the em-dash was
-  doing. Confirmed by Bryan 2026-05-28 even after corpus showed 5 em-dash
-  slips in his own posted PR-body text (those are slips Bryan didn't notice,
-  not endorsements). See `anti-patterns.md` for substitution mapping.
+  doing. Confirmed by Bryan 2026-05-28; occasional em-dashes preserved in his
+  posted PR-body samples are slips, not endorsements. See `anti-patterns.md`
+  for substitution mapping.
 - Contractions OK across all channels ("don't" / "doesn't" / "we'll").
 - Slack DM register goes lower than Slack channel register: "Ya"
   specifically, not "Yeah" / "Yep" / "Yes."
@@ -81,7 +78,7 @@ Channel-specific phrasings live in the per-channel sections below.
 ## Recurring phrases
 
 Pulled verbatim from samples.md and off-target.md. Use as direct stand-ins
-when Claude is reaching for stiffer or more AI-flavored alternatives.
+when a draft is reaching for stiffer or more AI-flavored alternatives.
 
 **Openers (substantive replies, generic):**
 - "Yeah, ..." (Slack channel posts, PR review, spec comments)
@@ -159,7 +156,7 @@ Observed habits, the positive-form mirror of `anti-patterns.md`.
   reply spans multiple readers (see ETL investigation in samples.md: line 1
   to [lead], line 2 to [data eng]).
 - Bryan keeps links live. Does not strip URLs to bare identifiers like "PR
-  #755". See dotfiles CLAUDE.md global rule.
+  #755". Follow the repository's active agent instructions for link handling.
 - Bryan signals opinion vs. claim with "Personally I" or "I think" framing.
 - Bryan engages with specific prior-context details rather than generic
   acknowledgement ("I like how they were mentioning the possibility to have
@@ -177,8 +174,8 @@ Observed habits, the positive-form mirror of `anti-patterns.md`.
   without explicit labels: "Worth flagging" < "Heads up" < "Found something
   subtle worth surfacing" < "The bigger thing I'd push on is."
 - Bryan points to where follow-up is happening rather than leaving concerns
-  dangling. Includes specific PR/ticket links when possible (live links, per
-  the dotfiles CLAUDE.md rule).
+  dangling. Includes specific PR/ticket links when possible, preserving live
+  links per the repository's active agent instructions.
 - Bryan uses detail-recall in approvals as warmth: names the specific
   changes being signed off rather than generic "looks good."
 - Bryan tolerates emoji-as-verdict in PR review ("👍🏻" / "👍 approved.")
@@ -194,10 +191,9 @@ Observed habits, the positive-form mirror of `anti-patterns.md`.
 
 ## Channel: Slack
 
-Seeded from 5 positive samples in `samples.md`. No correction data in
-off-target.md for Slack (Bryan does not typically iterate Slack drafts with
-Claude, per the off-target.md status note). Patterns below are observed
-habits, not battle-tested through correction loops.
+Seeded from positive samples in `samples.md`. Slack has less correction data
+than PR review. Patterns below are observed habits and should continue to be
+checked against new corpus entries.
 
 ### Register
 
@@ -249,9 +245,9 @@ Disagreement variants).
 
 ## Channel: PR review
 
-Seeded from 5 corrections in `off-target.md` (SGG Custom Filters spec review,
-2026-05-28) and 8 positive samples in `samples.md`
-(HHS/simpler-grants-protocol PRs #810, #825, #838, #842, #855). Channel covers
+Seeded from corrections in `off-target.md` and positive samples in
+`samples.md`, including HHS/simpler-grants-protocol PRs #810, #825, #838,
+#842, and #855. Channel covers
 GitHub PR comments, Forgejo PR comments, and Google Doc spec comments since
 they fill the same role.
 
@@ -407,9 +403,9 @@ when available.*
 
 *Placeholder for issues and discussions outside PR-review context. PR-review
 on these platforms uses the Channel: PR review section above. No
-issues-or-discussion samples yet. Strict markdown-link discipline per
-dotfiles CLAUDE.md (keep `#755` as a live link, not a stripped bare
-identifier).*
+issues-or-discussion samples yet. Keep references such as `#755` as live links
+when repository instructions require it, rather than stripping them to bare
+identifiers.*
 
 ### Register
 ### Structure

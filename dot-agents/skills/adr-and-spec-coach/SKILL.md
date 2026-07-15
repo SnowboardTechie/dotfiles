@@ -1,5 +1,6 @@
 ---
 name: adr-and-spec-coach
+author: Bryan
 description: >
   Use when a technical decision is still open and needs to be captured as an
   ADR or tech spec — weighing architectural options, choosing between
@@ -102,8 +103,10 @@ Top of the agenda first. For **each** decision, in its own turn:
 4. Give a **recommendation with your reasoning.** Do not withhold an opinion;
    the author learns judgment from seeing *why* you'd lean a way. Make clear
    it's their call.
-5. Ask the author to choose. Use `AskUserQuestion` when the options are
-   discrete; plain prose when the choice is open-ended.
+5. Ask the author to choose through a tool-neutral interactive clarification.
+   In Hermes, use the native `clarify` tool when available; otherwise ask one
+   focused question in plain prose. Keep discrete options selectable and leave
+   an open-ended path when the listed options are incomplete.
 
 Trivial decisions still get surfaced, but compressed: state the default, name
 the one trade-off worth knowing, let the author rubber-stamp in a beat.
@@ -132,6 +135,14 @@ why it lost. Name what each section is *for* if the author is learning.
   gate. Tell the author you're doing this and why.
 - **No index (greenfield / learning)** → finalize the draft in place and hand
   it to the author for review.
+
+Before declaring the coaching pass complete, verify that every item on the
+ranked agenda is either settled or explicitly recorded as an open question;
+every load-bearing choice records the selected option and deciding driver;
+rejected alternatives explain why they lost; and the draft includes the
+relevant consequences, risks, rollout, and testing language from the selected
+anatomy. If any check fails, return to the corresponding phase rather than
+papering over the gap in the draft.
 
 **Do not commit. Do not post. Do not open a PR.** This skill produces content
 and stops. The author decides where it lands (ADR file, Google Doc, issue).
@@ -180,3 +191,15 @@ the author chooses.
 | "This decision is obvious, I'll just pick it" | If it's truly trivial, surface it as trivial and let them rubber-stamp. If it's load-bearing, it's not yours to pick. |
 | "They're experienced, they can handle a batch" | The skill's value is per-decision deliberation. Experience doesn't change the one-at-a-time contract. |
 | "Let me just draft it and they'll edit" | A finished draft buries the choices. Deliberate first; the draft is the output, not the method. |
+
+## Completion checklist
+
+- [ ] The artifact type is explicit: one-decision ADR or multi-decision spec.
+- [ ] The ranked agenda accounts for every surfaced decision.
+- [ ] Every load-bearing decision was clarified interactively and chosen by the author.
+- [ ] Each chosen option records the driver that decided it.
+- [ ] Rejected alternatives and their losing trade-offs are present.
+- [ ] Consequences or risks include negative outcomes, not only benefits.
+- [ ] Rollout and testing are present or explicitly `N/A` with a reason.
+- [ ] Repo conformance was run when a conventions index exists.
+- [ ] No commit, post, or PR was created by this coaching workflow.

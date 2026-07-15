@@ -1,7 +1,7 @@
 # dot-agents
 
 Single source of truth for Bryan's **personal agent skills**, shared across the
-three coding agents he runs: **Claude Code**, **Pi**, and **OpenCode**.
+four coding agents he runs: **Claude Code**, **Pi**, **OpenCode**, and **Hermes**.
 
 ## How it works
 
@@ -13,6 +13,7 @@ gets a *curated subset* via per-skill symlinks created by
 ~/.claude/skills/<name>          -> dot-agents/skills/<name>
 ~/.config/opencode/skills/<name> -> dot-agents/skills/<name>
 ~/.pi/agent/skills/<name>        -> dot-agents/skills/<name>
+~/.hermes/skills/personal/<name> -> dot-agents/skills/<name>
 ```
 
 The setup script is idempotent: it links the curated skills, prunes symlinks that
@@ -26,38 +27,42 @@ one-line change to an array below.
 
 ## Curation
 
-Not every tool gets every skill — Pi is kept lean: the git/PR/worktree essentials
-plus the PKM/vault-management skills. The authoritative lists are the `*_SKILLS`
-arrays in `setup-platform-configs.sh`; this table mirrors them.
+Not every tool gets every skill. Pi is kept lean. Hermes gets adapted personal
+workflows but keeps its bundled/local `obsidian` and `vault-pkm` implementations,
+so those names are intentionally excluded from its pool links. The authoritative
+lists are the `*_SKILLS` arrays in `setup-platform-configs.sh`; this table mirrors
+them.
 
-| Skill | What it does | Claude | OpenCode | Pi |
-|-------|--------------|:------:|:--------:|:--:|
-| `ship` | wrap up worktree → push → open PR | ✅ | ✅ | ✅ |
-| `worktrunk` | git worktree (wt) management | ✅ | ✅ | ✅ |
-| `git-master` | git workflow (strips AI attribution) | ✅ | ✅ | ✅ |
-| `update-pr-description` | fill PR body from template | ✅ | ✅ | ✅ |
-| `pr-self-review` | 4-lens self-review loop | ✅ | ✅ | ✅ |
-| `agent-workspace` | `.agents/` working-dir conventions | ✅ | ✅ | ✅ |
-| `vault-pkm` | PKM conventions for vaults | ✅ | ✅ | ✅ |
-| `vault-capture` | session-end vault capture | ✅ | ✅ | ✅ |
-| `obsidian` | Obsidian vault patterns | ✅ | ✅ | ✅ |
-| `manual-merge` | Forgejo local squash-merge | ✅ | ✅ | — |
-| `issue-create` | draft & post an issue | ✅ | ✅ | — |
-| `issue-work` | end-to-end ticket workflow | ✅ | ✅ | — |
-| `loop-issue` | autonomous backlog-drain loop | ✅ | ✅ | — |
-| `adr-and-spec-coach` | guide an ADR/spec decision | ✅ | ✅ | — |
-| `conforming-tech-specs` | conformance-gated spec pass | ✅ | ✅ | — |
-| `voice-bryan` | write in Bryan's voice (teammate-facing) | ✅ | ✅ | — |
-| `gamedev` | Burnt Ice game-dev workflow | — | ✅ | — |
-| `sync-hold-branch` | resync long-lived feature branches | ✅ | — | — |
-| `catalog-review` | catalog dep-PR review | ✅ | — | — |
-| `dependency-review` | single dep-PR review | ✅ | — | — |
-| `dependency-triage` | dep-PR triage by blast radius | ✅ | — | — |
-| `sprint-deliverable-update` | sprint update comments | ✅ | — | — |
-| `weekly-planning` | ADHD weekly planning (Second Brain) | ✅ | — | — |
-| `find-skills` | browse community skills.sh | ✅ | — | — |
+| Skill | What it does | Claude | OpenCode | Pi | Hermes |
+|-------|--------------|:------:|:--------:|:--:|:------:|
+| `ship` | wrap up worktree → push → open PR | ✅ | ✅ | ✅ | ✅ |
+| `worktrunk` | git worktree (wt) management | ✅ | ✅ | ✅ | ✅ |
+| `git-master` | git workflow (strips AI attribution) | ✅ | ✅ | ✅ | — |
+| `update-pr-description` | fill PR body from template | ✅ | ✅ | ✅ | ✅ |
+| `pr-self-review` | 4-lens self-review loop | ✅ | ✅ | ✅ | ✅ |
+| `agent-workspace` | `.agents/` working-dir conventions | ✅ | ✅ | ✅ | — |
+| `vault-pkm` | PKM conventions for vaults | ✅ | ✅ | ✅ | local |
+| `vault-capture` | session-end vault capture | ✅ | ✅ | ✅ | ✅ |
+| `obsidian` | Obsidian vault patterns | ✅ | ✅ | ✅ | bundled |
+| `manual-merge` | Forgejo local squash-merge | ✅ | ✅ | — | ✅ |
+| `issue-create` | draft & post an issue | ✅ | ✅ | — | ✅ |
+| `issue-work` | end-to-end ticket workflow | ✅ | ✅ | — | ✅ |
+| `loop-issue` | autonomous backlog-drain loop | ✅ | ✅ | — | ✅ |
+| `adr-and-spec-coach` | guide an ADR/spec decision | ✅ | ✅ | — | ✅ |
+| `conforming-tech-specs` | conformance-gated spec pass | ✅ | ✅ | — | ✅ |
+| `voice-bryan` | write in Bryan's voice (teammate-facing) | ✅ | ✅ | — | ✅ |
+| `dx-target` | derive consumer-first DX target | — | — | — | ✅ |
+| `dx-preview` | review implemented consumer DX | — | — | — | ✅ |
+| `gamedev` | Burnt Ice game-dev workflow | — | ✅ | — | — |
+| `sync-hold-branch` | resync long-lived feature branches | ✅ | — | — | — |
+| `catalog-review` | catalog dep-PR review | ✅ | — | — | ✅ |
+| `dependency-review` | single dep-PR review | ✅ | — | — | ✅ |
+| `dependency-triage` | dep-PR triage by blast radius | ✅ | — | — | ✅ |
+| `sprint-deliverable-update` | sprint update comments | ✅ | — | — | ✅ |
+| `weekly-planning` | retired weekly-planning machinery | ✅ | — | — | — |
+| `find-skills` | browse community skills.sh | ✅ | — | — | — |
 
-**Counts:** Claude 23 · OpenCode 17 · Pi 9 (24 distinct).
+**Counts:** Claude 23 · OpenCode 17 · Pi 9 · Hermes 18 (26 distinct).
 
 ## Adding or re-curating a skill
 
@@ -71,6 +76,9 @@ step removes the now-stale symlink.
 
 ## Notes
 
+- Hermes's `personal/` entries are ordinary symlinks into this repository. A
+  foreground skill edit can therefore modify the canonical pool; review diffs
+  before committing. Hermes's autonomous curator does not own these files.
 - Some skills carry **local-only, gitignored** content (e.g. `voice-bryan`'s
   verbatim corpus under `references/`). It lives in the pool dir on each machine but
   is never committed; a fresh clone starts without it.

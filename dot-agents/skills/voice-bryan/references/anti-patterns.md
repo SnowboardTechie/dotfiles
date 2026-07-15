@@ -29,21 +29,20 @@ what the em-dash was doing:
 
 Confirmed by Bryan directly on 2026-05-28 ("I do not like the use of
 emdashes"). **Reconfirmed at strict zero** on 2026-05-28 after the validation
-pass found 5 em-dash slips in Bryan's own posted PR-body / review-summary
-text (samples.md PR review entries). Bryan chose to treat those as slips he
+pass found occasional em-dash slips in Bryan's own posted PR-body and
+review-summary text. Bryan chose to treat those as slips he
 didn't notice, not endorsements. The rule stands: zero em-dashes in any
 draft AS Bryan, regardless of whether Bryan-typed text in the corpus
 contains them.
 
-Cross-validated: zero em-dashes appear in any verbatim Bryan-authored Slack
-message across the samples.md corpus (5 Slack samples). The 5 em-dashes that
-appear in posted PR-body / review-summary text are slips. The em-dashes in
-off-target.md Claude drafts (the things Bryan corrected away from) are the
-canonical AI-default pattern.
+Cross-validated: Bryan-authored Slack samples consistently avoid em-dashes.
+Em-dashes preserved in posted PR-body or review-summary samples are slips, not
+endorsements. Em-dashes in off-target drafts are the canonical AI-default
+pattern.
 
-**Scope note:** This rule applies to drafts written AS Bryan. Claude's own
-responses to Bryan in conversation are unconstrained (see memory file
-`feedback_em_dashes.md`).
+**Scope note:** This rule applies to drafts written AS Bryan. It does not impose
+a punctuation rule on the agent's ordinary conversation outside Bryan-voice
+drafting.
 
 ### Apologetic openers on correction replies
 
@@ -87,7 +86,7 @@ registers" for the canonical examples.
 If a finding does not change the reader's next decision, it stays in Bryan's
 own notes. Reply to the question that was asked, not to the investigation
 that surfaced 3 things. Bryan corrected this twice in one session. Highest
-volume miss Claude makes.
+volume miss drafting agents make.
 
 ### Narrating self-corrections to a reviewer
 

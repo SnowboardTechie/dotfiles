@@ -126,7 +126,7 @@ echo "Setting up agent skills..."
 
 SKILLS_SRC="$(resolve_path "$REPO_ROOT/dot-agents/skills")"
 
-# Common core shared by all three agents: dev/PR essentials + PKM/vault management.
+# Common core shared by Claude, OpenCode, and Pi: dev/PR essentials + PKM/vault management.
 COMMON_SKILLS=(ship worktrunk git-master update-pr-description pr-self-review agent-workspace
     vault-pkm vault-capture obsidian)
 
@@ -142,6 +142,17 @@ OPENCODE_SKILLS=("${COMMON_SKILLS[@]}"
     manual-merge issue-create issue-work loop-issue
     adr-and-spec-coach conforming-tech-specs
     voice-bryan gamedev)
+
+# Hermes keeps its bundled/local obsidian and vault-pkm implementations. Personal
+# skills live in a dedicated category so the shared pool remains canonical while
+# Hermes's curator and bundled-skill lifecycle stay separate.
+HERMES_SKILLS=(
+    ship worktrunk update-pr-description pr-self-review
+    manual-merge issue-create issue-work loop-issue
+    vault-capture adr-and-spec-coach voice-bryan
+    dx-target dx-preview conforming-tech-specs
+    catalog-review dependency-review dependency-triage sprint-deliverable-update
+)
 
 # Symlink a curated set of pool skills into a tool's skills dir.
 # Idempotent: prunes pool-symlinks no longer wanted; never touches real dirs
@@ -188,9 +199,11 @@ link_skills() {
             echo "  WARNING: skill '$name' not in pool, skipping"
             continue
         fi
-        # Replace any old real-dir layout (the pool dir is canonical, incl. local corpus).
+        # Never replace a real directory or foreign file automatically. It may
+        # contain local-only corpus or an independently managed skill.
         if [[ -e "$dest/$name" && ! -L "$dest/$name" ]]; then
-            rm -rf "$dest/$name"
+            echo "  WARNING: $label/$name exists and is not a symlink; skipping"
+            continue
         fi
         ln -sfn "$SKILLS_SRC/$name" "$dest/$name"
         linked=$((linked + 1))
@@ -201,6 +214,7 @@ link_skills() {
 link_skills "Claude"   "$HOME/.claude/skills"          "${CLAUDE_SKILLS[@]}"
 link_skills "OpenCode" "$HOME/.config/opencode/skills" "${OPENCODE_SKILLS[@]}"
 link_skills "Pi"       "$HOME/.pi/agent/skills"        "${PI_SKILLS[@]}"
+link_skills "Hermes"   "$HOME/.hermes/skills/personal" "${HERMES_SKILLS[@]}"
 
 echo ""
 echo "Platform-specific configuration complete!"

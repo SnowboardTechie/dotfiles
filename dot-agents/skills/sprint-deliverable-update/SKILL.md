@@ -4,6 +4,13 @@ description: >
   Draft or post a sprint update comment on a deliverable issue. Use when asked to
   "write the sprint update for [deliverable]", "post the update on #7309", or
   "draft the deliverable comment for this sprint."
+version: 2.0.0
+author: Bryan Thompson
+license: MIT
+metadata:
+  hermes:
+    tags: [sprint, github, google-docs, status-update]
+    related_skills: [voice-bryan]
 ---
 
 # Sprint Deliverable Update
@@ -39,11 +46,12 @@ The P&D team's sprint doc holds the committed goal, dates, and issue list for ev
 - Doc ID: `1eTNaLYWsXn1oRU0TB3KRXyTYRHI4oCqf1h-CQBuCo-E`
 - URL: https://docs.google.com/document/d/1eTNaLYWsXn1oRU0TB3KRXyTYRHI4oCqf1h-CQBuCo-E/edit
 
-Fetch it with the Google Drive `read_file_content` tool (`fileId` above). **It is ~107k
-chars — too large to return inline; the tool saves it to a file.** Do not read it whole.
-Extract only the current sprint's block — from `## **Sprint X.Y** (dates)` to the next
-`## ` heading — with grep/awk on the saved file, or hand the saved file to a subagent and
-ask it to return just that block.
+Fetch it through the active agent's authenticated Google Workspace integration. In
+Hermes, load `google-workspace` and use its Docs read command; save the JSON/text response
+to a temporary file rather than returning the whole document into context. **It is ~107k
+chars. Do not read it whole.** Extract only the current sprint's block — from
+`## **Sprint X.Y** (dates)` to the next `## ` heading — with a small script or delegate
+the saved file to a read-only subagent that returns only that block.
 
 From the sprint block, pull (these OVERRIDE guesses — do not compute the sprint window
 from cadence math or lift the goal from last sprint's "Next sprint" section):
@@ -65,8 +73,8 @@ Export gotchas: the exported Markdown is mangled (stray `\` and `*`, mojibake em
 issue numbers from the trailing `/issues/NNN` URL, not the `(\#NNN)` link text, and don't
 trust emoji read from the export.
 
-If the Drive tool isn't authorized (e.g. a headless run), ask the user to paste the current
-sprint's block.
+If Google Workspace is not authorized (common in a headless or scheduled run), stop and
+ask the user to paste the current sprint block. Do not infer it from previous comments.
 
 ### 2. Recent sibling-deliverable updates (the format to match)
 

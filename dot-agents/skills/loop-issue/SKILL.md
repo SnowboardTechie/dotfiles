@@ -1,60 +1,116 @@
 ---
 name: loop-issue
-description: Use when working a queued backlog issue under autonomous-loop policy and you don't want to re-specify the rules each time — invoked as /loop-issue [issue-ref], as the body of /loop to drain a queue, or from a schedule. Triggers: "work the next ready-for-agent issue", "run the issue loop", "drain the ready-for-agent queue", "loop-issue".
+description: "Use when working one queued ready-for-agent issue under bounded autonomous-loop policy, either interactively or from a pre-authorized schedule."
+version: 2.0.0
+author: Bryan Thompson
+license: MIT
+metadata:
+  hermes:
+    tags: [issues, automation, cron, draft-pr]
+    related_skills: [issue-work, ship]
 ---
 
-# loop-issue
+# Loop Issue
 
 ## Overview
 
-Work ONE `ready-for-agent` issue end-to-end, then stop — leaving a **draft PR** for a human to merge. This is the goal-scoped-task half of an agent loop; the *wake trigger* (you typing it, `/loop`, or a schedule) is separate and not this skill's job. Thin wrapper over the `issue-work` skill that adds loop policy: discover the issue, draft-PR-only, never merge, route failures to a human.
+Work exactly one `ready-for-agent` issue through `issue-work`, then stop. A
+successful supervised run may leave a draft PR for human review. This skill
+never merges and never recursively schedules itself.
 
-**The gate lives in the issue, not here.** Every well-formed issue's acceptance criteria already name the repo's check gate (tests, lint, format). So this skill needs no per-repo config and ports to any repo unchanged.
+The wake mechanism is separate: a user invocation, an external loop, or a
+Hermes cron job can start a run. Keeping one issue per run bounds failures and
+makes every result attributable.
 
-## When to use
+## When to Use
 
-- Hand the agent an issue without re-typing the loop rules: `/loop-issue 42`
-- Let it pick the work itself: `/loop-issue` (no arg → oldest open `ready-for-agent` issue in the current repo)
-- As the body of a `/loop` (drain the queue) or a scheduled run (hands-off)
+- Work a named queued issue under the repository's autonomous-work policy.
+- Select the oldest open `ready-for-agent` issue in the current repository.
+- Use as a self-contained Hermes cron prompt after publication permissions are
+  explicitly chosen.
 
-Run it from **inside the target repo** — it reads the git remote to choose host + CLI.
+Run inside the target repository so its context instructions and gate are
+available.
+
+## Authorization Modes
+
+### Supervised
+
+The user is present. `issue-work` may ask for plan and publication approval.
+Public comments, relabeling, pushing, and draft PR creation still require the
+normal approval gates.
+
+### Unattended
+
+A cron-run agent cannot ask questions. The cron prompt must explicitly state
+which external actions, if any, Bryan pre-authorized. Authorization must name
+the repository and action class; "run autonomously" alone is insufficient.
+
+Without explicit publication authorization, an unattended run may inspect and
+work locally, but it must not:
+
+- comment or relabel an issue;
+- push a branch;
+- create or update a PR;
+- send any other public-facing communication.
+
+Instead, deliver a local blocker or ready-to-publish report for Bryan.
 
 ## Procedure
 
-1. **Pick the issue.**
-   - Arg given (number / `owner/repo#N` / URL) → that's the target.
-   - No arg → find the **oldest open** issue labeled `ready-for-agent` in the current repo. Detect host from `git remote get-url origin`:
-     - Forgejo/Gitea (e.g. `codeberg.org`, `git.snowboardtechie.com`) → `tea issues ls --state open --labels ready-for-agent`; take the lowest number. If `tea` errors with `worktreeconfig`, re-run it from a non-repo dir (`cd /`).
-     - `github.com` → `gh issue list --state open --label ready-for-agent`; take the oldest.
-   - **None found → report "queue empty" and STOP.** Do not schedule another wake.
+1. **Pick one issue.** Use an explicit issue reference when supplied. Otherwise,
+   query the current forge for the oldest open `ready-for-agent` issue. Use
+   `gh` on GitHub or authenticated `tea api` on Forgejo. If none exists, report
+   `queue empty` and stop.
+2. **Run `issue-work`.** Preserve its intake, worktree, plan, implementation,
+   verification, and self-review gates. Unattended mode must stop rather than
+   invent an answer to a load-bearing ambiguity.
+3. **Enforce acceptance criteria.** Every acceptance criterion and repository
+   test/lint/typecheck/format gate must be satisfied before publication is even
+   proposed.
+4. **Choose the authorized finish:**
+   - Green + supervised approval or explicit unattended publication authority:
+     use `ship` to create a draft PR, then stop.
+   - Green but publication not authorized: report the branch, checks, proposed
+     PR title/body, and exact next action; do not push.
+   - Blocked or red: report the blocker locally. Commenting and changing
+     `ready-for-agent` to `needs-human` are separate public actions and happen
+     only after approval or explicit cron authorization.
+5. **Stop after one issue.** Do not invoke another issue and do not create a new
+   schedule.
 
-2. **Work it** with the `issue-work` skill (hand it the issue URL/ref). issue-work creates a worktree, plans, implements, runs tests, and self-reviews.
+## Forge Notes
 
-3. **Enforce loop policy before finishing:**
-   - **Gate:** satisfy *every* acceptance-criteria checkbox. The full check gate named in the ACs (tests + lint + format) must be **green** before any PR.
-   - **Draft only, never merge:** open a **draft** PR that links the issue, then stop. A human owns the merge gate — always, every repo, even once you trust the loop.
-   - **Failure path:** if you can't get the gate green, the issue is bigger than its "tightly bounded" scope, or you hit genuine ambiguity → do **NOT** open a PR. Comment the specific blocker on the issue, relabel `ready-for-agent` → `needs-human` (via `tea`/`gh`), stop working it.
+Use `ship/references/forge-detection.md` for forge parsing. On Forgejo, create a
+real draft with the API's `draft: true` field and read it back. Do not silently
+substitute a `WIP:` title; if the instance cannot create drafts, stop and report
+that limitation.
 
-4. **Report:** the issue worked + draft-PR URL, or the `needs-human` relabel + the reason.
+## Result Contract
 
-## Quick reference
+Return exactly one of:
 
-| Invocation | Behavior |
-|---|---|
-| `/loop-issue 42` | Work issue 42 |
-| `/loop-issue` | Work the oldest open `ready-for-agent` issue; "queue empty" → stop |
-| `/loop /loop-issue` | Drain the whole `ready-for-agent` queue, one draft PR each |
+- `queue empty`;
+- a clickable draft PR URL plus verified gate summary;
+- a ready-to-publish local branch/report;
+- a blocker report with the issue link and proposed public follow-up.
 
-| Host | Issue CLI |
-|---|---|
-| codeberg.org, Forgejo/Gitea | `tea` (run from `/` if it errors on `worktreeconfig`) |
-| github.com | `gh` |
+## Common Pitfalls
 
-**Draft PR per host:** GitHub → `gh pr create --draft`; Forgejo/Gitea → prefix the PR title with `WIP:` (`tea` has no draft flag, so `WIP:` is how a PR stays un-mergeable).
+1. **Draining the queue inside the skill.** One invocation means one issue.
+2. **Treating cron execution as publication approval.** External writes require
+   explicit action-specific authorization.
+3. **Opening a red PR.** A failed required gate blocks publication.
+4. **Auto-commenting on failure.** Prepare the comment, but do not post it
+   without authorization.
+5. **Merging.** Human review and merge remain outside this skill.
 
-## Common mistakes
+## Verification Checklist
 
-- **Opening a non-draft PR or merging.** Never. Draft-only; the human merges.
-- **Opening a PR with a red gate.** If checks aren't green, it's the failure path (comment + `needs-human`), not a PR.
-- **Looping inside the skill.** This skill does ONE issue and stops. Draining/scheduling is the trigger's job (`/loop`, cron) — keep the seam clean.
-- **Forgetting the approval pause:** `issue-work` pauses for plan approval. Under supervision (Stage 0) that's the point — approve each. For unattended `/loop` or scheduled runs you must pre-authorize / auto-accept, or it stalls waiting.
+- [ ] Exactly one issue selected
+- [ ] Repository instructions and acceptance criteria loaded
+- [ ] Authorization mode identified
+- [ ] Required gates green before any publication
+- [ ] Every external write was explicitly authorized
+- [ ] Result uses a clickable issue/PR link
+- [ ] Run stopped without recursive scheduling

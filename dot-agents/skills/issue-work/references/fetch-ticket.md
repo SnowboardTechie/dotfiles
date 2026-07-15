@@ -1,6 +1,6 @@
 # Fetching Tickets — CLI Reference
 
-Long-form fetch recipes. The `ticket-intake` agent uses these. Loaded on demand from SKILL.md.
+Long-form fetch recipes. Use them from an isolated intake child (`delegate_task`, `Task`, or `Agent`) or inline when delegation is unavailable. Loaded on demand from SKILL.md.
 
 ---
 
@@ -82,38 +82,28 @@ If `remaining < 10` and the fetch will need more calls, stop and report to the u
 
 ## Forgejo / Gitea / Codeberg
 
-No official CLI for Forgejo is as reliable as `gh` for comments. Use the REST API directly.
+Use authenticated `tea api` calls. Resolve the host and owner/repo with the
+shared `ship` forge parser, then choose the configured Tea login for that host.
+If Tea cannot read the current checkout because of
+`extensions.worktreeconfig`, run it from the temporary initialized-repository
+context documented by `ship` with explicit `--login` and `--repo` values.
 
 ### Auth
 
-```bash
-: "${FORGEJO_TOKEN:=$GITEA_TOKEN}"
-if [[ -z "$FORGEJO_TOKEN" ]]; then
-  echo "Set FORGEJO_TOKEN in your shell env" >&2
-  exit 1
-fi
-AUTH=(-H "Authorization: token $FORGEJO_TOKEN")
-```
-
-`tea` CLI stores tokens at `~/.config/tea/config.yml`. If the user is logged in via `tea login`, parse the token:
-
-```bash
-# Fallback: extract token from tea config for a named login
-tea login list --output simple
-# yq '.logins[0].token' ~/.config/tea/config.yml   # if yq available
-```
+Verify the matching configured login with `tea login list`. Never parse, print,
+or copy Tea's stored token.
 
 ### Issue (or PR — Forgejo treats PRs as issues for this endpoint)
 
 ```bash
-INSTANCE="https://{host}"     # e.g. https://codeberg.org or https://git.example.com
+LOGIN="{configured-login}" # login whose URL matches the parsed host
 OWNER="{owner}"
 REPO="{repo}"
 N="{number}"
 
 # Basic issue/PR record
-curl -sS "${AUTH[@]}" \
-  "$INSTANCE/api/v1/repos/$OWNER/$REPO/issues/$N" \
+tea api --login "$LOGIN" --repo "$OWNER/$REPO" \
+  "/repos/$OWNER/$REPO/issues/$N" \
   | jq '{
       number, title, body, state,
       labels: [.labels[].name],
@@ -127,8 +117,8 @@ curl -sS "${AUTH[@]}" \
 ### Comments
 
 ```bash
-curl -sS "${AUTH[@]}" \
-  "$INSTANCE/api/v1/repos/$OWNER/$REPO/issues/$N/comments" \
+tea api --login "$LOGIN" --repo "$OWNER/$REPO" \
+  "/repos/$OWNER/$REPO/issues/$N/comments" \
   | jq '[.[] | {author: .user.login, created: .created_at, body: .body}]'
 ```
 
@@ -137,8 +127,8 @@ Paginate if needed:
 ```bash
 page=1
 while :; do
-  resp=$(curl -sS "${AUTH[@]}" \
-    "$INSTANCE/api/v1/repos/$OWNER/$REPO/issues/$N/comments?page=$page&limit=50")
+  resp=$(tea api --login "$LOGIN" --repo "$OWNER/$REPO" \
+    "/repos/$OWNER/$REPO/issues/$N/comments?page=$page&limit=50")
   [[ "$resp" == "[]" ]] && break
   echo "$resp"
   page=$((page + 1))
@@ -148,8 +138,8 @@ done | jq -s 'add'
 ### PR-specific fields (if `is_pr: true`)
 
 ```bash
-curl -sS "${AUTH[@]}" \
-  "$INSTANCE/api/v1/repos/$OWNER/$REPO/pulls/$N" \
+tea api --login "$LOGIN" --repo "$OWNER/$REPO" \
+  "/repos/$OWNER/$REPO/pulls/$N" \
   | jq '{
       base: .base.ref,
       head: .head.ref,
@@ -162,8 +152,8 @@ curl -sS "${AUTH[@]}" \
 ### Review comments (inline diff comments)
 
 ```bash
-curl -sS "${AUTH[@]}" \
-  "$INSTANCE/api/v1/repos/$OWNER/$REPO/pulls/$N/reviews" \
+tea api --login "$LOGIN" --repo "$OWNER/$REPO" \
+  "/repos/$OWNER/$REPO/pulls/$N/reviews" \
   | jq '[.[] | {author: .user.login, state, submitted_at, body}]'
 ```
 
@@ -216,7 +206,7 @@ git -C "$LOCAL_CLONE" log -1 --format='%h %s' "{sha}" 2>/dev/null
 
 If not cloned, skip silently.
 
-**Arbitrary URL** — fetch title with `WebFetch` (cheap, optional). Skip on failure.
+**Arbitrary URL** — fetch the title with the host's read-only web fetch/browser tool (Hermes: browser/web tooling; other hosts: `WebFetch` or equivalent). Skip on failure.
 
 ### No-recursion rule
 

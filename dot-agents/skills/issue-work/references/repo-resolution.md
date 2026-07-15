@@ -66,7 +66,7 @@ for dir in "$HOME"/code/*/.git "$HOME"/code/*/*/.git; do
 done
 ```
 
-If you prefer Claude's built-in tools over shell globbing, use the `Glob` tool for each pattern and loop over the returned paths in the orchestrator instead — never try to embed `Glob` inside a shell command.
+Prefer the host's file-search tool over shell globbing when available (Hermes: `search_files(target="files")`; Claude/OpenCode/Pi: `Glob` or equivalent). Never embed an agent tool call inside a shell command.
 
 ---
 
@@ -110,7 +110,7 @@ Rules:
   ```
 
 - All `git fetch`, dirty-tree checks, and default-branch lookups should happen against the trunk.
-- `EnterWorktree` only switches the session into an existing worktree (`name` or `path`); it does **not** accept a base branch. Worktree creation goes through `git -C "{TRUNK_ROOT}" worktree add -b {branch} {path} origin/{DEFAULT_BRANCH}` first, then `EnterWorktree(path: ...)` to switch in. See `issue-work` Phase 1.6.
+- Prefer `wt` for creation/switching. Hermes then targets the returned path through each tool's `workdir`; hosts that provide `EnterWorktree` may enter the already-created path. The controlled fallback is `git -C "{TRUNK_ROOT}" worktree add -b {branch} {path} origin/{DEFAULT_BRANCH}`. See `issue-work` Phase 1.6.
 
 ---
 
@@ -124,7 +124,7 @@ Rare edge case. Don't optimize unless it comes up.
 
 ## Cache (optional future work)
 
-If resolution becomes slow in practice (many cloned repos), consider a tiny cache at `~/.claude/issue-work/.repo-cache.json`:
+If resolution becomes slow in practice (many cloned repos), consider a tiny cache at `{TRUNK_ROOT}/.hermes/issue-work/.repo-cache.json`:
 
 ```json
 {
