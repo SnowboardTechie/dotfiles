@@ -1,0 +1,57 @@
+{
+  "title": "Claude implementation worker result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "summary",
+    "files_changed",
+    "tests",
+    "plan_deviations",
+    "blockers",
+    "notes"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["completed", "blocked", "failed"]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "files_changed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "status", "summary"],
+        "properties": {
+          "command": {"type": "string"},
+          "status": {
+            "type": "string",
+            "enum": ["passed", "failed", "skipped"]
+          },
+          "summary": {"type": "string"}
+        }
+      }
+    },
+    "plan_deviations": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "blockers": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "notes": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  }
+}
