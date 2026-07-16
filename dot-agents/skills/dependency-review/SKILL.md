@@ -203,6 +203,19 @@ Use these defaults:
 - Hold if the change is plausible but not urgent and the failure needs more time
 - Close if the grouped PR is so broad that debugging it is wasted effort
 
+### Approved “Fix in this PR” handoff
+
+The recommendation is not authorization to edit or publish. Present the diagnosis, proposed scope, acceptance criteria, and required lane-specific checks, then ask whether to implement the fix.
+
+If the user approves and the current host is a Codex-backed Hermes parent with `codex-claude-implementation-loop` installed:
+
+1. Create or reuse an isolated worktree for the dependency PR; do not switch the trunk checkout in place.
+2. Codex writes a self-contained implementation plan grounded in the failing logs, dependency changelog, affected call sites, and this skill's Step 5 verification commands.
+3. Run the loop with Claude Opus as implementer and initial tester. Never silently downgrade models; an unavailable Opus run stops with a blocker.
+4. Codex inspects the actual diff and independently reruns the affected lane's verification. Return to Step 6 and recompute the recommendation from the final evidence.
+
+Claude does not commit or push. Local commit creation and any update to the dependency PR remain parent-owned actions, and pushing, commenting, approving, closing, or merging still requires the explicit public-action approval in Hard Rules. On other hosts, use the approved host-native implementation workflow while preserving the same diagnosis and verification contract.
+
 ---
 
 ## Step 7: Report
@@ -239,3 +252,9 @@ Use this format:
 - Do not recommend audit exceptions just because CI is noisy
 - Do not bury the decision; the report must contain one explicit recommendation
 - The review is advisory. Pushing, commenting on, approving, closing, or merging the PR is public-facing and requires the user's explicit approval immediately before the action.
+
+## Related Skills
+
+- `dependency-triage` — queue-level classification and review routing.
+- `catalog-review` — stricter lane for catalog-managed updates.
+- `codex-claude-implementation-loop` — approved narrow fixes on a Codex-backed Hermes parent.

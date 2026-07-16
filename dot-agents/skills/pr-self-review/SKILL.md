@@ -39,7 +39,7 @@ Detect the mode from arguments and context:
 
 ### 0.1 `pre-pr` (invoked from issue-work)
 
-Selected when the invoker passes an explicit `mode: pre-pr` argument (alongside `state_dir`, `worktree_path`, `base_branch`, `plan_path`, and optionally `source_issue` in `{owner}/{repo}#{N}` form). Mode is always explicit — never inferred from the state-dir path prefix, which would break under unusual `$HOME` or relocated state directories. In `pre-pr` mode:
+Selected when the invoker passes an explicit `mode: pre-pr` argument (alongside `state_dir`, `worktree_path`, `base_branch`, `plan_path`, and optionally `source_issue` in `{owner}/{repo}#{N}` form). A Codex-backed `issue-work` caller may also pass `implementation_loop: codex-claude-implementation-loop` and `claude_session_id`; treat those as an opaque routing marker and worker resume ID, never as forge credentials. Mode is always explicit — never inferred from the state-dir path prefix, which would break under unusual `$HOME` or relocated state directories. In `pre-pr` mode:
 
 - Worktree path and branch are already set up.
 - The caller's `plan.md` exists in the state dir — use it as ground truth for reviewers.
@@ -73,6 +73,7 @@ Otherwise treat as `pr-url` mode from here on — same author check, same worktr
 Common to all three modes:
 
 - **Capability mapping.** Delegate isolated work with Hermes `delegate_task`, Claude/OpenCode/Pi `Task`/`Agent`, or the host equivalent. Use interactive clarification (Hermes: `clarify`) for triage and `requesting-code-review` for Hermes verification. If delegation is unavailable, run the same lenses serially; do not require Superpowers.
+- **Correction routing.** On a Codex-backed Hermes parent with `codex-claude-implementation-loop` installed, accepted code fixes go to Claude Opus and return to Codex for review. Resume `claude_session_id` when supplied by `issue-work`; otherwise start a fresh Opus implementation session from the accepted-finding contract. Other hosts retain the native edit path.
 - `gh auth status` must pass for GitHub PRs; Forgejo needs `FORGEJO_TOKEN` (or `GITEA_TOKEN`) in env, same as `issue-work` Phase 1.5.
 - Working tree must be clean (no modified/staged files; untracked OK). Dirty → **refuse**: "Working tree has uncommitted changes. Commit, stash, or discard before starting a review loop." Do not silently stash.
 - Record mode, owner, repo, PR number (or branch for `pre-pr`), worktree path, and state-dir path in memory for the rest of the run.
@@ -240,7 +241,7 @@ Question: {lens} • {file}:{line}
   Related note:   [[{wikilink}]] ({type}) — {summary}  [only if related_note tag]
 
 Options (single-select):
-  1. accept           — the active agent edits the code; you eyeball the diff at end of pass
+  1. accept           — apply the fix (Opus on the Codex–Claude path; active agent otherwise)
   2. push-back <...>  — you give a one-line rationale; suppressed for rest of session
   3. issue            — hand off to /issue-create (dedup checks related-issues + repo)
   4. skip             — drop silently for this session
@@ -284,7 +285,7 @@ Parse the reply; apply in order. If a `push-back` line arrives with no rationale
 
 **Triage action semantics:**
 
-- **accept** — the active agent makes the edit in the worktree (no commit yet; batched at end of pass) and records the set of files it touched into the finding's `files_touched` field in `accepts_per_pass[pass_count]`. If no edit is attempted or the edit produces no diff, populate `files_touched` as an empty set explicitly. An empty set auto-classifies the finding as an acknowledgment and suppresses it; see Phase 2.4.
+- **accept** — on the native path, the active agent makes the edit in the worktree (no commit yet; batched at end of pass) and records the set of files it touched into the finding's `files_touched` field in `accepts_per_pass[pass_count]`. On the Codex–Claude path, queue the finding in `pending_opus_fixes` without editing; Phase 2.4 sends the batch to Opus and Codex populates `files_touched` after inspecting the resulting diff. If no edit is attempted or the accepted finding produces no diff, populate `files_touched` as an empty set explicitly. An empty set auto-classifies the finding as an acknowledgment and suppresses it; see Phase 2.4.
 - **push-back <reason>** — record reason in session state; add finding key to suppression set.
 - **issue** — hand off to `/issue-create` for dedup + filing. Pre-fill the issue body with the finding text, the offending file:line, and a link back to the PR. Filed-issue URL goes into session state so the same finding isn't re-filed next pass.
 - **skip** — drop silently for this session. Add key to suppression set.
@@ -304,9 +305,11 @@ pushbacks:          List<{key, reason}>                              # for summa
 filed_issues:       List<{key, url}>                                 # auto-suppress on re-surface
 skips:              List<key>                                        # for summary.md
 accepts_per_pass:   List<List<{key, file, line, lens, summary, files_touched: Set<string>}>>
-                                                                     # files_touched populated at triage; entries with empty set move to acks at Phase 2.4 reconciliation
+                                                                     # populated at native triage or Codex reconciliation; empty sets become acks
+pending_opus_fixes: List<{key, file, line, lens, severity, finding}> # Codex–Claude path only; cleared after each worker pass
 acks:               List<{key, file, line, lens, summary, pass}>     # accept-without-diff; for summary.md
 pass_count:         int
+opus_correction_passes: int                                          # bounded independently to 2 for this review run
 ```
 
 All of it dies when the skill run ends. `{TRUNK_ROOT}/.hermes/pr-self-review/…/` holds only the JSON caches, the `review-{lens}.md` files, and the final `summary.md` — the decision log is a *report*, not an input to future runs.
@@ -314,6 +317,16 @@ All of it dies when the skill run ends. `{TRUNK_ROOT}/.hermes/pr-self-review/…
 At the end of triage, the pass has accumulated a set of accepted edits.
 
 ### 2.4 Commit + push
+
+**Apply accepted findings first.** If `pending_opus_fixes` is non-empty on the Codex–Claude path:
+
+1. Write `{state-dir}/codex-review-pass-{pass_count}.md` with each accepted finding's stable key, severity, location, observed behavior, expected behavior, and evidence. Treat this as a self-contained correction contract; do not pass chat history.
+2. If `claude_session_id` is available, run `claude_worker.py revise` against that same session. Otherwise write `{state-dir}/accepted-fixes-plan.md`, run `claude_worker.py implement`, and retain the returned session ID for later passes.
+3. Use `--model opus`. Retry only Opus through the wrapper; model unavailability stops the review and reports a blocker rather than silently downgrading.
+4. Save the worker envelope as `{state-dir}/claude-review-fixes-{pass_count}.json`. Codex then inspects the real diff, reconciles every accepted finding against the changed behavior, and independently reruns the targeted and broader checks. Worker-reported `findings_addressed` and tests are claims to verify, not proof.
+5. Populate each accepted finding's `files_touched` from Codex's diff reconciliation. Use an empty set when the finding required acknowledgment only or produced no relevant diff. Increment `opus_correction_passes`, then clear `pending_opus_fixes` after reconciliation.
+
+Allow at most two Opus correction passes during one `pr-self-review` run. If a third correction batch would be required, stop before editing and ask the user whether to begin a new bounded run. Claude never commits or pushes; the active parent owns the existing commit/push gate below after Codex accepts the repository state.
 
 **Auto-ack reconciliation (run first).** Walk `accepts_per_pass[pass_count]` and check each entry's `files_touched` set (populated at triage time per the `accept` semantics above). For any entry where `files_touched` is empty:
 
@@ -336,7 +349,7 @@ If no edits were accepted (all push-back / issue / skip / ack), skip the commit 
 
 - **Zero unsuppressed findings on the pass** (nothing to triage) → diff is clean. Exit the loop.
 - **No diff was committed this pass** (all push-back / issue / skip / ack — i.e., post-reconciliation `accepts_per_pass[pass_count]` is empty) → the code didn't change; reviewing the same diff again would produce the same findings. Exit the loop.
-- **Any accepts that produced a diff** → loop back to Phase 2.1 (HEAD moved; the range is still `{base}...HEAD`). Cap at 5 passes to prevent runaway loops; on the 5th pass, stop and ask the user whether to continue.
+- **Any accepts that produced a diff** → loop back to Phase 2.1 (HEAD moved; the range is still `{base}...HEAD`). On the Codex–Claude path, cap correction passes at 2 and stop before a third Opus edit batch. On the native path, cap at 5 passes; on the 5th pass, stop and ask the user whether to continue.
 - **User says "done" at any point** → exit loop immediately.
 
 ---
@@ -345,7 +358,7 @@ If no edits were accepted (all push-back / issue / skip / ack), skip the commit 
 
 ### 3.0 Verify the reviewed state
 
-The review loop may have committed accepted fixes across passes — so the current branch state is unverified even if a caller verified before this skill ran. On Hermes, load the installed `requesting-code-review` skill rather than cloning its procedure here; other hosts use an independent verification context. Re-run the project's test / lint / typecheck commands and confirm the post-review state is green.
+The review loop may have committed accepted fixes across passes — so the current branch state is unverified even if a caller verified before this skill ran. On the Codex–Claude path, Codex's fresh post-revision gate is the independent verification context: cite its actual command output and rerun only checks invalidated after that gate; do not delegate the final verdict back to Claude or start a duplicate generic fixer. On other Hermes paths, load the installed `requesting-code-review` skill rather than cloning its procedure; other hosts use their independent verification context. Confirm the post-review test / lint / typecheck state is green.
 
 Feed the result into `summary.md`'s **Ship Readiness** section (3.1): green → the normal readiness verdict; red → "Do not merge — verification failed: {key output}", regardless of how triage went. A clean triage over a red suite is not shippable.
 
@@ -436,7 +449,7 @@ Frontmatter `ticket:` field is retained (not renamed) so tools that key on it ke
 | Archive returns nothing for every topic | `related-notes.json = []`; proceed. |
 | A pass's fix introduces a regression | Next pass flags it as a normal finding. Suppression filters **push-backs**, **skips**, and **acks** (accepts that produced no diff); accepts that did change code are **not** suppressed, so a regression introduced by a fix re-surfaces normally. |
 | User says "done" mid-triage | Finish any accepted edits from this pass, commit + push, write summary, exit. |
-| 5 passes reached | Ask the user whether to continue for another 5 or exit. |
+| Correction bound reached | Codex–Claude path: stop before a third Opus correction pass. Native path: ask after 5 passes whether to continue for another 5 or exit. |
 | Worktree already exists for this PR | Reuse it; don't nest. |
 | Forgejo PR | `gh` replaced with Forgejo API (pattern from `skills/ship/SKILL.md` and `skills/issue-create/SKILL.md` Stage 4.2). Everything else is identical. |
 | Invoked from issue-work but `plan.md` missing | Proceed with `plan_path: null`; reviewers fall back to "no plan ground truth" (they already tolerate this). |
@@ -470,4 +483,5 @@ Frontmatter `ticket:` field is retained (not renamed) so tools that key on it ke
 - `ship` — invoked by `issue-work` Phase 4.3 after this skill returns (not by this skill directly).
 - `agent-workspace` — trunk-root resolution for `.notes/` access from a worktree.
 - `requesting-code-review` — Phase 3.0 pre-summary proof.
+- `codex-claude-implementation-loop` — applies accepted findings with Opus while Codex retains the review and test gate.
 - `ponytail:ponytail-review` — source philosophy for the `over-engineering` lens (carried inline in `diff-reviewer`; the skill is not invoked at runtime).

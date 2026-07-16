@@ -44,6 +44,7 @@ Use the host's native operations; do not require one agent framework or plugin:
 | Delegate isolated research/review | `delegate_task` | `Task`, `Agent`, or equivalent |
 | Create/enter worktree | `wt switch --create` then run tools with that worktree as `workdir` | `EnterWorktree` or controlled `git worktree` fallback |
 | Write the approved plan | load Hermes `plan` | `superpowers:writing-plans` or equivalent |
+| Execute a Codex-authored plan with Claude | load Hermes `codex-claude-implementation-loop` when the parent is Codex-backed | host-native implementation workflow |
 | Implement test-first | load Hermes `test-driven-development` | host TDD/execution workflow |
 | Debug repeated failures | load Hermes `systematic-debugging` | equivalent root-cause workflow |
 | Independent final review | load Hermes `requesting-code-review` | equivalent verification/reviewer workflow |
@@ -253,12 +254,29 @@ After user approval:
 
 ### 3.2 Execute the plan
 
-`plan.md` (at the state-root path) is the source of truth. Mirror its checkboxes into the host task list (Hermes: `todo`) and execute task-by-task. Load `test-driven-development` for behavior changes and `systematic-debugging` for failures; compatible hosts may use their native execution workflow. Pass through:
+`plan.md` (at the state-root path) is the source of truth. Mirror its checkboxes into the host task list (Hermes: `todo`). Then select exactly one execution path.
+
+#### Hermes with a Codex-backed parent
+
+When `codex-claude-implementation-loop` is installed, load it and use it as the implementation engine:
+
+1. Record the worktree's baseline status and run the worker's subscription-auth check.
+2. Invoke `claude_worker.py implement` with `plan.md`, `{WORKTREE_PATH}`, and `--model opus`. Never authorize a model downgrade on the run's behalf; if Opus remains unavailable after the wrapper's same-model retry, stop and report the blocker.
+3. Save the normalized worker envelope as `{state-dir}/claude-implementation.json`. Record its `session_id` in `progress.md` frontmatter as `claude_session_id:` so Phase 4 can resume the same Claude context.
+4. Codex reviews the actual repository diff and independently reruns every targeted and broader check required by the plan. Claude's structured result is evidence, not the verdict.
+5. For blocking findings, write `{state-dir}/codex-review-{pass}.md` and resume the same Opus session with `claude_worker.py revise`. Repeat the complete Codex gate after each revision; cap the correction loop at two revision passes.
+6. Mark plan/task checkboxes complete only after Codex accepts the final repository state. Preserve the implementation and revision envelopes in the state directory.
+
+Claude must not commit, push, reset, clean, publish, or alter history. After the complete Codex gate passes, the parent may create local commits at the approved plan's logical boundaries, staging only reviewed paths and preserving the repository's message and hook rules. Plan approval authorizes those local implementation commits; it does not authorize a push, PR, comment, or other publication.
+
+#### Other hosts or a non-Codex Hermes parent
+
+Execute task-by-task with the host-native workflow. Load `test-driven-development` for behavior changes and `systematic-debugging` for failures. Pass through:
 
 - **plan_path:** `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`
 - **worktree path:** the absolute path from `progress.md`
 - **commit rules:** atomic (one logical unit per commit); message style matches `git log --oneline -20` in **this repo** (not global defaults); **never** add `Co-authored-by: Claude` or any AI signature; **never** use `--no-verify`.
-- **failure policy:** hand off the 3.5 escalation rule below — on a task whose tests fail, attempt a direct fix first; on a **second** consecutive failure of the same task, escalate per 3.5; hard cap at 3 attempts, then stop and report.
+- **failure policy:** hand off the 3.5 escalation rule below — on a task whose tests fail, attempt a direct fix first; on a **second** consecutive failure of the same task, escalate per 3.5; hard cap at 3 attempts, then stop and report. The Codex–Claude path instead uses its two-revision bound above.
 
 Keep `plan.md` checkboxes and the host task list synchronized, so a resumed run (`status: implementing`) picks up at the first unchecked task automatically.
 
@@ -278,7 +296,9 @@ Lint + typecheck when configured: TypeScript `tsc --noEmit`; Python `ruff check`
 
 ### 3.5 On failure
 
-First failure of a task's tests: attempt a direct fix → commit → rerun. **Second consecutive failure of the same task:** escalate to `systematic-debugging` (the `Skill` tool) rather than guessing again — it drives a root-cause pass instead of another patch. **Hard cap at 3 attempts total.** On the 4th failure, stop and report the failing output to the user.
+On the host-native path, first failure of a task's tests: attempt a direct fix → commit → rerun. **Second consecutive failure of the same task:** escalate to `systematic-debugging` (the `Skill` tool) rather than guessing again — it drives a root-cause pass instead of another patch. **Hard cap at 3 attempts total.** On the 4th failure, stop and report the failing output to the user.
+
+On the Codex–Claude path, Codex first determines whether the failure is a plan defect, implementation defect, pre-existing failure, or external blocker. Send implementation defects back through the same Opus session under the two-revision bound. A plan defect, ambiguity, destructive conflict, or exhausted revision budget stops for the user instead of switching models or guessing.
 
 ### 3.6 Progress log
 
@@ -293,11 +313,13 @@ Tests: {pass/fail summary}
 Lint/typecheck: {summary}
 ```
 
+For the Codex–Claude path, also record the implementation/revision artifact path, Claude-reported checks, Codex-rerun checks, and Codex gate verdict. Never collapse Claude's claims and Codex's fresh results into one line.
+
 Do not advance `status` when tests go green — Phase 4 bumps it to `reviewed` after self-review completes. Leave it at `implementing` until then.
 
 ### 3.7 Verify before handing off
 
-Before Phase 4 spawns review, load `requesting-code-review` on Hermes (or the host's independent verification workflow) to prove the suite is green rather than trust the implementation context. Re-run the project's test / lint / typecheck commands and preserve actual output.
+Before Phase 4 spawns review, prove the suite is green rather than trust the implementation context. If Phase 3 used `codex-claude-implementation-loop`, its final Codex review/retest gate satisfies this step; cite that fresh gate output rather than spawning a duplicate generic reviewer, and rerun only checks invalidated by the parent's post-gate local commit operation. Otherwise load `requesting-code-review` on Hermes (or the host's independent verification workflow), rerun the project's test / lint / typecheck commands, and preserve actual output.
 
 Append the result to `progress.md` under a `## Verification` heading:
 
@@ -324,7 +346,9 @@ Phase 4 hands off to the [`pr-self-review`](../pr-self-review/SKILL.md) skill in
 - `worktree_path`: the absolute path from `progress.md`
 - `base_branch`: the value from `progress.md` `base:`
 - `plan_path`: `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`
-- `source_issue`: `{owner}/{repo}#{N}` — the ticket this work is for; lets pr-self-review fire its source-issue exception (findings tagged with this issue surface for triage instead of pre-skipping) without waiting for a PR body to exist.
+- `source_issue`: `{owner}/{repo}#{N}` — the ticket this work is for; lets pr-self-review fire its source-issue exception (findings tagged with this issue surface for triage instead of pre-skipping) without waiting for a PR body to exist yet.
+- `claude_session_id`: the value recorded in `progress.md`, when Phase 3 used the Codex–Claude loop; otherwise omit it.
+- `implementation_loop`: `codex-claude-implementation-loop` when `claude_session_id` is present; otherwise omit it.
 
 Load the skill through the host's skill mechanism. It writes `review-{lens}.md` files and a final `summary.md` into the state dir, matching the shape Phase 4.3 reads below.
 
@@ -400,6 +424,7 @@ Detailed recipes that load on demand:
 - `test-driven-development` — Phase 3 implementation discipline.
 - `systematic-debugging` — Phase 3.5 second-failure escalation.
 - `requesting-code-review` — Phase 3.7 independent verification.
+- `codex-claude-implementation-loop` — preferred Phase 3 implementation/revision engine for a Codex-backed Hermes parent.
 
 ### Optional Delegation
 

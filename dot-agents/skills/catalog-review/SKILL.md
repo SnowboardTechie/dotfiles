@@ -102,6 +102,19 @@ Use this decision model:
 
 - the update is clearly destabilizing and not worth carrying right now
 
+### Approved “Fix in the PR” handoff
+
+“Fix in the PR” is a recommendation, not authorization to edit or publish. Present the attributable breakage, proposed scope, affected downstream packages, and full catalog validation plan, then ask whether to implement it.
+
+If the user approves and the current host is a Codex-backed Hermes parent with `codex-claude-implementation-loop` installed:
+
+1. Create or reuse an isolated worktree for the catalog PR; never switch the trunk checkout in place.
+2. Codex writes a self-contained plan from the catalog diff, release notes, failing logs, and downstream impact mapped in Steps 2–3.
+3. Run the loop with Claude Opus as implementer and initial tester. Never silently downgrade models; Opus unavailability is a blocker.
+4. Codex reviews the actual diff and independently reruns the full relevant validation path, including audit and every affected downstream package. Then return to Step 4 and recompute the merge/hold/reject decision.
+
+Claude does not commit or push. Local commit creation and every PR mutation remain parent-owned actions; the explicit public-action approval in Hard Rules still applies. On other hosts, use the approved host-native implementation workflow with the same downstream-validation contract.
+
 ---
 
 ## Step 5: Handle Audit Pressure Carefully
@@ -160,3 +173,9 @@ Use this format:
 - Do not recommend blanket audit suppressions
 - Do not skip downstream impact analysis when TypeSpec packages changed
 - The review is advisory. Pushing, commenting on, approving, closing, or merging the PR is public-facing and requires the user's explicit approval immediately before the action.
+
+## Related Skills
+
+- `dependency-triage` — queue-level routing into the catalog lane.
+- `dependency-review` — non-catalog dependency PRs.
+- `codex-claude-implementation-loop` — approved attributable fixes on a Codex-backed Hermes parent.
