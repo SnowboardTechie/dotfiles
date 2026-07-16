@@ -1,7 +1,7 @@
 ---
 name: cross-agent-skill-migration
 description: Use when auditing, consolidating, or porting a skill library and agent configuration between Claude Code, OpenCode, Codex, Hermes, or another agent framework. Separates durable workflow knowledge from framework mechanics, validates portability, preserves user-specific policy, and recommends a curated migration rather than copying everything wholesale.
-version: 1.0.0
+version: 1.1.0
 author: Hermes Agent
 license: MIT
 metadata:
@@ -160,9 +160,11 @@ When name collisions exist, document precedence. A local adapted skill may inten
 
 When one canonical pool feeds several runtimes, prefer a per-runtime allowlist and a dedicated destination category. A setup script must prune only pool-owned symlinks that are no longer wanted. It must never replace a real directory, regular file, or foreign symlink automatically: warn and skip instead.
 
-Sandbox the installer with a temporary `HOME`. Test an empty destination, a colliding real directory containing a sentinel file, a stale pool link, and a foreign link. See `references/shared-distribution-and-portability.md` for the full test pattern and portable forge-parser guidance.
+When authored assets live inside a runtime home that also contains credentials, databases, sessions, scheduler history, or encryption state, do **not** stow or version the whole runtime root. Track the authored layer plus a declarative manifest, leave mutable state local, and reconcile scheduled jobs through the runtime API rather than committing its job database. If the runtime rejects executable symlinks that resolve outside its sandbox, install that entry point as a backed-up regular copy while keeping the Git source canonical.
 
-**Completion criterion:** the installer is idempotent, collision-safe, and proven not to destroy independently managed skill data.
+Sandbox the installer with a temporary `HOME`. Test an empty destination, a colliding real directory containing a sentinel file, a stale pool link, and a foreign link. See `references/shared-distribution-and-portability.md` for the general test pattern and `references/git-backed-runtime-assets.md` for the mutable-runtime boundary, first-adoption sequence, scheduler reconciliation, and full restore verification matrix.
+
+**Completion criterion:** the installer is idempotent, collision-safe, keeps secrets and mutable runtime state out of Git, recreates declarative automations, and is proven not to destroy independently managed skill data.
 
 ### 10. Verify repository changes and runtime activation separately
 
@@ -232,3 +234,4 @@ Include structural validation failures and live stale-state findings separately.
 
 - `references/hermes-porting-checklist.md` — concise Hermes-oriented mapping and audit checklist.
 - `references/shared-distribution-and-portability.md` — collision-safe symlink distribution, repository-versus-runtime completion gates, portable forge parsing, and multi-agent edit discipline.
+- `references/git-backed-runtime-assets.md` — selective Git protection for authored skills, scripts, and automations stored beside mutable runtime state.

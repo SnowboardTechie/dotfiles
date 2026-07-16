@@ -1,7 +1,7 @@
 ---
 name: cross-repository-release-validation
 description: Validate a multi-repository release train when downstream consumers depend on an unpublished upstream SDK or package. Use for local artifact testing, expected CI dependency gates, package-shape verification, and release-readiness evidence.
-version: 1.2.0
+version: 1.3.0
 platforms: [linux, macos]
 metadata:
   hermes:
@@ -146,7 +146,11 @@ When the user is collecting screenshots and comments across several PRs, every r
 
 Match evidence to the claim. Protocol/SDK PRs need packaged-artifact and independent-consumer evidence. Plugin PRs need unfiltered live-service output with actual parsed response content. Do not strip reviewer-relevant API content through `grep` merely to fit one screenshot; prefer multiple readable screenshots and retain the full log. Keep automated checks, packaged-consumer validation, and manual live validation explicitly separate.
 
-See `references/manual-live-plugin-validation.md` for runner-hardening and screenshot/comment guidance.
+A deterministic playground/fixture runner is not live-service evidence, even when it prints realistic request JSON and a success banner. Make the runner path and evidence layer visible, and never caption fixture output as an API response. Likewise, do not assume similarly shaped metadata has the same provenance across languages: one client may reconstruct request metadata while another passes through a server-normalized response. Trace classification, serialized request, server parsing, and response assembly before naming or comparing those fields.
+
+After the user posts evidence, stop regenerating plans and perform a read-only source audit: inspect the actual PR comments, load every attachment, read the screenshots, verify immutable revisions and scenario coverage, check for exposed secrets, and identify duplicates or misleading claims. Comment prose alone is not proof.
+
+See `references/manual-live-plugin-validation.md` for runner-hardening, fixture-vs-live distinctions, metadata-provenance tracing, screenshot/comment guidance, and post-publication evidence auditing.
 
 ### 11. Final hygiene and evidence
 

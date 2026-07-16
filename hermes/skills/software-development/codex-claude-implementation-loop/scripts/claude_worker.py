@@ -371,7 +371,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     def add_common(subparser: argparse.ArgumentParser) -> None:
         subparser.add_argument("--workdir", default=os.getcwd())
-        subparser.add_argument("--model", default="sonnet")
+        subparser.add_argument("--model", default="opus")
+        subparser.add_argument(
+            "--allow-non-opus",
+            action="store_true",
+            help="allow a non-Opus model only after explicit user confirmation",
+        )
         subparser.add_argument("--max-turns", type=int, default=40)
         subparser.add_argument("--timeout", type=int, default=1800)
         subparser.add_argument(
@@ -400,6 +405,21 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
+    if (
+        hasattr(args, "model")
+        and "opus" not in args.model.lower()
+        and not args.allow_non_opus
+    ):
+        return emit(
+            {
+                "ok": False,
+                "error": (
+                    "non-Opus Claude models require explicit user confirmation; "
+                    "rerun with --allow-non-opus only after receiving it"
+                ),
+            },
+            exit_code=2,
+        )
     if hasattr(args, "max_turns") and args.max_turns < 1:
         return emit(
             {"ok": False, "error": "--max-turns must be at least 1"}, exit_code=2

@@ -1,7 +1,7 @@
 ---
 name: codex-claude-implementation-loop
 description: "Use when a Codex-backed Hermes parent should plan and gate code changes while Claude Code implements, runs the first tests, and revises from Codex feedback using a subscription-backed CLI session."
-version: 1.0.0
+version: 1.0.1
 author: Hermes Agent
 license: MIT
 metadata:
@@ -51,6 +51,7 @@ Do not use for:
 5. **Preserve user work.** Snapshot the initial status and never overwrite, discard, stage, or clean unrelated changes.
 6. **Bounded loop.** Allow at most two revision passes after the initial implementation unless the user explicitly extends it.
 7. **Fail closed.** Authentication failure, invalid JSON, missing session ID, unexplained file changes, or unverified tests blocks completion.
+8. **Opus throughout.** Claude implementation and revision passes use Opus. A non-Opus model requires the user's explicit confirmation and the wrapper's `--allow-non-opus` acknowledgement; overload never authorizes a silent downgrade.
 
 ## Prerequisites
 
@@ -119,10 +120,10 @@ Run the worker from the repository root:
 python3 <skill-dir>/scripts/claude_worker.py implement \
   --workdir "$PWD" \
   --plan /absolute/path/to/plan.md \
-  --model sonnet
+  --model opus
 ```
 
-Use `--model opus` only when the user requests it or the implementation is unusually architecture- or security-sensitive. Sonnet is the routine default to conserve subscription capacity.
+Always use `--model opus` for implementation and revision. Do not fall back or downgrade to Sonnet, Haiku, or another model after overload, throttling, or model unavailability. Stop and ask the user first. After explicit confirmation, a non-Opus invocation must also include `--allow-non-opus`.
 
 The worker starts Claude Code in print mode with editing tools, structured output, a bounded turn count, and explicit prohibitions against Git publication/history changes. It loads project/local Claude settings while excluding user-level plugins and hooks so personal Claude extensions do not create repository artifacts or consume worker turns. It returns a normalized JSON envelope containing `session_id` and `worker_result`.
 
@@ -187,7 +188,7 @@ python3 <skill-dir>/scripts/claude_worker.py revise \
   --workdir "$PWD" \
   --session-id <session-id> \
   --review /absolute/path/to/codex-review.md \
-  --model sonnet
+  --model opus
 ```
 
 After each revision, repeat the entire Codex review and independent test gate. Do not review only the files Claude says it changed.
@@ -218,7 +219,7 @@ The worker prints one JSON object. Important fields:
 {
   "ok": true,
   "mode": "implement",
-  "model": "sonnet",
+  "model": "opus",
   "session_id": "...",
   "worker_result": {
     "status": "completed",
@@ -246,7 +247,7 @@ A shell exit code of zero means Claude ran and produced schema-valid output. It 
 8. **Parallel edits in one tree.** Wait for Claude to exit before Codex edits or launches another worker.
 9. **Mistaking structured output for proof.** Git state and fresh command output are proof.
 10. **Loading user-level Claude plugins.** Personal hooks can consume turns or write helper artifacts into the repository. The wrapper intentionally disables user plugins, uses only project/local settings, redirects runtime caches outside the repository, and disables slash-command skills; do not remove that isolation without testing it.
-11. **Treating overload as an implementation failure.** Claude may return HTTP 429/529 before doing work. The wrapper retries transient API failures once by default; if both attempts fail, preserve repository state and report the provider outage rather than changing the plan.
+11. **Treating overload as an implementation failure.** Claude may return HTTP 429/529 before doing work. The wrapper retries the same Opus request once by default; if both attempts fail, preserve repository state and report the provider outage. Never downgrade models without explicit user confirmation.
 
 ## Verification Checklist
 
