@@ -235,6 +235,22 @@ link_skills "OpenCode" "$HOME/.config/opencode/skills" "${OPENCODE_SKILLS[@]}"
 link_skills "Pi"       "$HOME/.pi/agent/skills"        "${PI_SKILLS[@]}"
 link_skills "Hermes"   "$HOME/.hermes/skills/personal" "${HERMES_SKILLS[@]}"
 
+# Git-backed Hermes-local assets are installed explicitly rather than stowing
+# ~/.hermes, which also contains credentials, databases, logs, and live state.
+echo ""
+echo "Setting up Hermes managed assets..."
+
+HERMES_INSTALLER="$REPO_ROOT/hermes/install.py"
+if [[ "$PLATFORM" != "macos" ]]; then
+    echo "  Skipped (the managed Hermes runtime is on Studio)"
+elif [[ ! -f "$HERMES_INSTALLER" ]]; then
+    echo "  ERROR: Hermes installer not found at $HERMES_INSTALLER"
+elif [[ "$(scutil --get LocalHostName 2>/dev/null || hostname -s)" != "Bryans-Mac-Studio" ]]; then
+    echo "  Skipped (Studio-only assets)"
+else
+    python3 "$HERMES_INSTALLER" --adopt-identical
+fi
+
 echo ""
 echo "Platform-specific configuration complete!"
 echo ""

@@ -10,3 +10,4 @@ AGENTS.md
 openchamber
 .claude
 dot-agents
+^hermes$

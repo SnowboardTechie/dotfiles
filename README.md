@@ -144,6 +144,7 @@ dotfiles/
 ├── dot-tmux/            # Tmux session templates (~/.tmux/)
 │   ├── code-editor.sh   # Editor session launched by the `code` function
 │   └── second-brain.sh  # Personal notes session
+├── hermes/              # Curated Hermes skills, scripts, and cron definitions
 ├── dot-gitconfig        # Git configuration (~/.gitconfig)
 ├── dot-gitconfig.local  # Git signing key (~/.gitconfig.local, not tracked)
 ├── dot-zshrc            # Zsh shell loader (~/.zshrc) - sources modular configs
@@ -205,6 +206,14 @@ dotfiles/
   `security add-generic-password -a "$LOGNAME" -s ai.thompson.codes-openwebui -w '<api-key>'`
 - On Linux, manually create `~/.secrets/opencode-api-key` with your API key
 - For repo-specific tweaks (extra docs, different permissions, etc.), create `.opencode/project.json` inside the repo
+
+### AI / Hermes
+
+- `hermes/` preserves authored local skills, automation scripts, and declarative cron definitions.
+- `~/.hermes` remains a real local runtime directory; it is intentionally not stowed because it contains credentials, databases, sessions, logs, caches, and Matrix encryption state.
+- `setup-platform-configs.sh` installs only manifest-listed assets on Studio, compiles native helpers locally, and reconciles named cron jobs through Hermes's API.
+- Built-in Hermes skills come from the Hermes installation rather than being copied into dotfiles.
+- See [`hermes/README.md`](hermes/README.md) for the managed boundary and restore process.
 
 ### Tmux Session Templates
 
