@@ -9,6 +9,8 @@ End-to-end workflow for taking a GitHub or Forgejo ticket from URL to review-rea
 
 Standalone — does not require any specific note system. Resolve the local clone first, then write durable state under `{TRUNK_ROOT}/.hermes/issue-work/` (not the notes vault). This workspace-local path is safe for Hermes profiles and remains usable by Claude, OpenCode, and Pi.
 
+**Ticket ownership rule:** when the request names one or more tracked issues and also names a narrower implementation workflow, keep `issue-work` as the umbrella unless the user explicitly limits the task to an implementation/review-only handoff. Load the narrower workflow in Phase 3 rather than replacing ticket intake, durable state, self-review, and the ship gate. A publication prohibition remains in force until Phase 4 obtains item-level approval; it is not a reason to skip the umbrella.
+
 ---
 
 ## Inputs Accepted
@@ -48,6 +50,7 @@ Use the host's native operations; do not require one agent framework or plugin:
 | Implement test-first | load Hermes `test-driven-development` | host TDD/execution workflow |
 | Debug repeated failures | load Hermes `systematic-debugging` | equivalent root-cause workflow |
 | Independent final review | load Hermes `requesting-code-review` | equivalent verification/reviewer workflow |
+| Push and open the approved draft PR | load Hermes `ship` | host-native `ship` workflow |
 
 If delegation is unavailable, perform the same bounded analysis serially. Missing a framework-specific plugin is never by itself a blocker.
 

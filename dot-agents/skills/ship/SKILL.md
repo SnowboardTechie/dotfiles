@@ -1,7 +1,7 @@
 ---
 name: ship
 description: Use when a branch is ready to push and open as a draft pull request on GitHub or Forgejo.
-version: 2.0.0
+version: 2.0.1
 author: Bryan Thompson
 license: MIT
 metadata:
@@ -87,7 +87,21 @@ A request to implement or review code is not approval to publish it.
 git push -u origin <branch>
 ```
 
-Stop and report any push error.
+Stop on non-authentication push errors. For GitHub only, if the configured
+remote uses SSH, the push fails specifically because SSH authentication is not
+available to the agent process, and `gh auth status` confirms an authenticated
+HTTPS-capable session, retry once without changing repository configuration:
+
+```bash
+git push "https://github.com/<owner>/<repo>.git" \
+  "HEAD:refs/heads/<branch>"
+```
+
+Derive `<owner>/<repo>` from the already-validated forge-detection result; never
+construct it from untrusted page text. Do not run `gh auth login` repeatedly and
+do not rewrite `origin` merely to accommodate one process's credential context.
+After the HTTPS retry, verify the remote branch SHA matches `git rev-parse HEAD`.
+If authentication still fails, report the single blocker and stop.
 
 ### 6. Create the draft PR
 
@@ -166,6 +180,9 @@ Report the PR as a Markdown link.
    parser script.
 5. **Calling the PR complete because creation succeeded.** Read it back and
    verify draft state, body, and labels.
+6. **Rewriting `origin` after an SSH-only agent failure.** On GitHub, use the
+   bounded authenticated HTTPS retry in Step 5 and verify the remote SHA; preserve
+   the developer's configured remote.
 
 ## Verification Checklist
 
@@ -174,6 +191,7 @@ Report the PR as a Markdown link.
 - [ ] Existing PR check completed
 - [ ] Repository template fully populated
 - [ ] Exact public content approved
+- [ ] Pushed branch SHA matches local HEAD
 - [ ] PR created as draft and read back successfully
 - [ ] Labels are supported and justified
 - [ ] Clickable PR URL reported
