@@ -1,13 +1,13 @@
 ---
 name: codex-claude-implementation-loop
 description: "Use when a Codex-backed Hermes parent should plan and gate code changes while Claude Code implements, runs the first tests, and revises from Codex feedback using a subscription-backed CLI session."
-version: 1.1.0
+version: 1.1.1
 author: Hermes Agent
 license: MIT
 metadata:
   hermes:
     tags: [codex, claude, implementation, review, testing, subscription, orchestration]
-    related_skills: [plan, test-driven-development, requesting-code-review, claude-code, codex]
+    related_skills: [plan, test-driven-development, requesting-code-review, claude-code, codex, coding-agent-model-purity]
 ---
 
 # Codex–Claude Implementation Loop
@@ -51,7 +51,7 @@ Do not use for:
 5. **Preserve user work.** Snapshot the initial status and never overwrite, discard, stage, or clean unrelated changes.
 6. **Bounded loop.** Allow at most two revision passes after the initial implementation unless the user explicitly extends it.
 7. **Fail closed.** Authentication failure, invalid JSON, missing session ID, unexplained file changes, or unverified tests blocks completion.
-8. **Opus throughout.** Claude implementation and revision passes use Opus. A non-Opus model requires the user's explicit confirmation and the wrapper's `--allow-non-opus` acknowledgement; overload never authorizes a silent downgrade.
+8. **Opus primary selection.** Claude implementation and revision passes select Opus. A non-Opus primary model requires the user's explicit confirmation and the wrapper's `--allow-non-opus` acknowledgement; overload never authorizes a silent downgrade. When the user requires literal model purity, load `coding-agent-model-purity`: `--model opus` alone does not prove that internal helpers used only Opus.
 9. **Separate contract and engineering reviews.** Acceptance-criteria traceability and passing tests do not establish code quality. Codex must complete a distinct engineering review for quality, security, simplicity, maintainability, and test quality before calling a diff approval-ready.
 
 ## Prerequisites
@@ -64,6 +64,8 @@ claude auth status --text
 ```
 
 The login method must be a Claude subscription account such as Pro, Max, Team, or Enterprise. If `ANTHROPIC_API_KEY` is set, stop and tell the user the worker would risk API billing.
+
+If the user says one model must be used "throughout," forbids helper or fallback models, or otherwise requires literal model purity, load `coding-agent-model-purity` before execution. Record raw model-usage metadata and treat any observed nonconforming model as non-compliant, independently of code quality.
 
 Locate this skill's worker through the loaded skill path. The normal user-local location is:
 
@@ -124,7 +126,9 @@ python3 <skill-dir>/scripts/claude_worker.py implement \
   --model opus
 ```
 
-Always use `--model opus` for implementation and revision. Do not fall back or downgrade to Sonnet, Haiku, or another model after overload, throttling, or model unavailability. Stop and ask the user first. After explicit confirmation, a non-Opus invocation must also include `--allow-non-opus`.
+Always use `--model opus` for implementation and revision. Do not fall back or downgrade to Sonnet, Haiku, or another primary model after overload, throttling, or model unavailability. Stop and ask the user first. After explicit confirmation, a non-Opus invocation must also include `--allow-non-opus`.
+
+`--model opus` proves primary-model selection only. Under a literal-purity requirement, preserve and inspect the most detailed available model-usage metadata for internal helpers, delegated agents, summarizers, or routing. Do not report compliance from the command flag or normalized worker result alone.
 
 The worker starts Claude Code in print mode with editing tools, structured output, a bounded turn count, and explicit prohibitions against Git publication/history changes. It loads project/local Claude settings while excluding user-level plugins and hooks so personal Claude extensions do not create repository artifacts or consume worker turns. It returns a normalized JSON envelope containing `session_id` and `worker_result`.
 
@@ -135,6 +139,7 @@ After Claude returns:
 3. If Claude reports `blocked` or `failed`, inspect the blocker. Codex either repairs the plan, asks the user, or stops.
 4. Compare `git status --short` with the baseline immediately.
 5. Stop if Claude touched unrelated pre-existing work or performed an unexplained broad change.
+6. When strict purity applies, classify execution as certified, uncertified, non-compliant, or blocked using `coding-agent-model-purity`; keep this verdict separate from implementation correctness.
 
 **Completion criterion:** Claude produced a parseable result with a session ID, and every changed path is either planned or explicitly explained.
 
@@ -270,12 +275,14 @@ A shell exit code of zero means Claude ran and produced schema-valid output. It 
 10. **Loading user-level Claude plugins.** Personal hooks can consume turns or write helper artifacts into the repository. The wrapper intentionally disables user plugins, uses only project/local settings, redirects runtime caches outside the repository, and disables slash-command skills; do not remove that isolation without testing it.
 11. **Treating overload as an implementation failure.** Claude may return HTTP 429/529 before doing work. The wrapper retries the same Opus request once by default; if both attempts fail, preserve repository state and report the provider outage. Never downgrade models without explicit user confirmation.
 12. **Equating acceptance with approval.** A diff can meet every requirement and still be insecure, brittle, confusing, or over-engineered. Run and report the separate engineering-review pass before approval.
+13. **Equating `--model opus` with literal purity.** The flag selects the primary model but does not rule out internal helper models. Load `coding-agent-model-purity`, inspect raw metadata, and fail closed when purity is an acceptance criterion.
 
 ## Verification Checklist
 
 - [ ] Codex inspected the repository and wrote the plan
 - [ ] Initial dirty state was recorded and preserved
 - [ ] Claude authentication was subscription-backed and no Anthropic API key was active
+- [ ] Any strict model-purity requirement was audited from raw metadata and classified separately from code quality
 - [ ] Claude implemented and ran the first tests
 - [ ] Claude session ID was retained for revisions
 - [ ] Codex completed contract traceability for every acceptance criterion and changed path
