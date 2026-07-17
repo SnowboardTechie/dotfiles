@@ -13,3 +13,8 @@ decorations = "None"  # No traffic lights, clean look
 
 [font]
 size = 16
+
+[[keyboard.bindings]]
+key = "Return"
+mods = "Shift"
+chars = "\u001B\r"

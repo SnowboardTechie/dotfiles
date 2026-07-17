@@ -1,269 +1,270 @@
 {
-    "env": {
-        "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-    },
-    "permissions": {
-        "allow": [
-            "Read(/Users/bryan/notes/**)",
-            "Write(/Users/bryan/notes/**)",
-            "Edit(/Users/bryan/notes/**)",
-            "Glob(/Users/bryan/notes/**)",
-            "Grep(/Users/bryan/notes/**)",
-            "Bash(git rev-parse:*)",
-            "Bash(mkdir:*)",
-            "Bash(ln:*)",
-            "Bash(readlink:*)",
-            "Bash(rm:*)",
-            "Bash(echo:*)",
-            "Bash(date:*)",
-            "Bash(test:*)",
-            "Bash(gh pr list:*)",
-            "Bash(gh pr view:*)",
-            "Bash(gh pr status)",
-            "Bash(gh issue list:*)",
-            "Bash(gh issue view:*)",
-            "Bash(gh run list:*)",
-            "Bash(gh run view:*)",
-            "Bash(gh repo view:*)",
-            "Bash(gh search:*)",
-            "Bash(cd * && gh pr list:*)",
-            "Bash(cd * && gh pr view:*)",
-            "Bash(cd * && gh pr status)",
-            "Bash(cd * && gh issue list:*)",
-            "Bash(cd * && gh issue view:*)",
-            "Bash(cd * && gh run list:*)",
-            "Bash(cd * && gh run view:*)",
-            "Bash(cd * && gh repo view:*)",
-            "Bash(tea pulls list:*)",
-            "Bash(tea pulls ls:*)",
-            "Bash(tea pulls show:*)",
-            "Bash(tea issues list:*)",
-            "Bash(tea issues ls:*)",
-            "Bash(tea issues show:*)",
-            "Bash(tea repos list:*)",
-            "Bash(tea repos ls:*)",
-            "Bash(tea repos show:*)",
-            "Bash(cd * && tea pulls list:*)",
-            "Bash(cd * && tea pulls ls:*)",
-            "Bash(cd * && tea pulls show:*)",
-            "Bash(cd * && tea issues list:*)",
-            "Bash(cd * && tea issues ls:*)",
-            "Bash(cd * && tea issues show:*)",
-            "Bash(cd * && tea repos list:*)",
-            "Bash(cd * && tea repos ls:*)",
-            "Bash(cd * && tea repos show:*)",
-            "Bash(grep *)",
-            "Bash(ln -s *)",
-            "Read(.notes/**)",
-            "Write(.notes/**)",
-            "Edit(.notes/**)",
-            "Glob(.notes/**)",
-            "Grep(.notes/**)"
-        ],
-        "deny": [
-            "Bash(rm -rf /)",
-            "Bash(rm -rf /*)",
-            "Bash(rm -rf ~)",
-            "Bash(rm -rf ~/)",
-            "Bash(rm -rf $HOME)",
-            "Bash(rm -rf $HOME/)",
-            "Bash(sudo:*)",
-            "Bash(curl * | sh)",
-            "Bash(curl * | bash)",
-            "Bash(wget * | sh)",
-            "Bash(wget * | bash)",
-            "Bash(dd if=/dev/*)",
-            "Bash(mkfs:*)",
-            "Bash(su:*)",
-            "Bash(doas:*)",
-            "Bash(pkexec:*)",
-            "Bash(osascript:*)"
-        ],
-        "defaultMode": "auto"
-    },
-    "hooks": {
-        "SessionStart": [
-            {
-                "matcher": "",
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": "if [ -n \"$CLAUDE_ENV_FILE\" ]; then echo 'export PATH=\"/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH\"' >> \"$CLAUDE_ENV_FILE\"; fi"
-                    },
-                    {
-                        "type": "command",
-                        "command": "/Users/bryan/.claude/scripts/symlink-worktree-agents-md.sh"
-                    }
-                ]
-            },
-            {
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-check-update.js\""
-                    }
-                ]
-            },
-            {
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": "bash \"/Users/bryan/.claude/hooks/gsd-session-state.sh\""
-                    }
-                ]
-            },
-            {
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": "\"/Users/bryan/.claude/hooks/context-mode-cache-heal.mjs\""
-                    }
-                ]
-            }
-        ],
-        "PostToolUse": [
-            {
-                "matcher": "Bash|Edit|Write|MultiEdit|Agent|Task",
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-context-monitor.js\"",
-                        "timeout": 10
-                    }
-                ]
-            },
-            {
-                "matcher": "Read",
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-read-injection-scanner.js\"",
-                        "timeout": 5
-                    }
-                ]
-            },
-            {
-                "matcher": "Write|Edit",
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": "bash \"/Users/bryan/.claude/hooks/gsd-phase-boundary.sh\"",
-                        "timeout": 5
-                    }
-                ]
-            }
-        ],
-        "PreToolUse": [
-            {
-                "matcher": "Write|Edit",
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-prompt-guard.js\"",
-                        "timeout": 5
-                    }
-                ]
-            },
-            {
-                "matcher": "Write|Edit",
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-read-guard.js\"",
-                        "timeout": 5
-                    }
-                ]
-            },
-            {
-                "matcher": "Write|Edit",
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-workflow-guard.js\"",
-                        "timeout": 5
-                    }
-                ]
-            },
-            {
-                "matcher": "Bash",
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": "bash \"/Users/bryan/.claude/hooks/gsd-validate-commit.sh\"",
-                        "timeout": 5
-                    }
-                ]
-            }
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Read(/Users/bryan/notes/**)",
+      "Write(/Users/bryan/notes/**)",
+      "Edit(/Users/bryan/notes/**)",
+      "Glob(/Users/bryan/notes/**)",
+      "Grep(/Users/bryan/notes/**)",
+      "Bash(git rev-parse:*)",
+      "Bash(mkdir:*)",
+      "Bash(ln:*)",
+      "Bash(readlink:*)",
+      "Bash(rm:*)",
+      "Bash(echo:*)",
+      "Bash(date:*)",
+      "Bash(test:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr status)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh search:*)",
+      "Bash(cd * && gh pr list:*)",
+      "Bash(cd * && gh pr view:*)",
+      "Bash(cd * && gh pr status)",
+      "Bash(cd * && gh issue list:*)",
+      "Bash(cd * && gh issue view:*)",
+      "Bash(cd * && gh run list:*)",
+      "Bash(cd * && gh run view:*)",
+      "Bash(cd * && gh repo view:*)",
+      "Bash(tea pulls list:*)",
+      "Bash(tea pulls ls:*)",
+      "Bash(tea pulls show:*)",
+      "Bash(tea issues list:*)",
+      "Bash(tea issues ls:*)",
+      "Bash(tea issues show:*)",
+      "Bash(tea repos list:*)",
+      "Bash(tea repos ls:*)",
+      "Bash(tea repos show:*)",
+      "Bash(cd * && tea pulls list:*)",
+      "Bash(cd * && tea pulls ls:*)",
+      "Bash(cd * && tea pulls show:*)",
+      "Bash(cd * && tea issues list:*)",
+      "Bash(cd * && tea issues ls:*)",
+      "Bash(cd * && tea issues show:*)",
+      "Bash(cd * && tea repos list:*)",
+      "Bash(cd * && tea repos ls:*)",
+      "Bash(cd * && tea repos show:*)",
+      "Bash(grep *)",
+      "Bash(ln -s *)",
+      "Read(.notes/**)",
+      "Write(.notes/**)",
+      "Edit(.notes/**)",
+      "Glob(.notes/**)",
+      "Grep(.notes/**)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf ~/)",
+      "Bash(rm -rf $HOME)",
+      "Bash(rm -rf $HOME/)",
+      "Bash(sudo:*)",
+      "Bash(curl * | sh)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | sh)",
+      "Bash(wget * | bash)",
+      "Bash(dd if=/dev/*)",
+      "Bash(mkfs:*)",
+      "Bash(su:*)",
+      "Bash(doas:*)",
+      "Bash(pkexec:*)",
+      "Bash(osascript:*)"
+    ],
+    "defaultMode": "auto"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -n \"$CLAUDE_ENV_FILE\" ]; then echo 'export PATH=\"/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH\"' >> \"$CLAUDE_ENV_FILE\"; fi"
+          },
+          {
+            "type": "command",
+            "command": "/Users/bryan/.claude/scripts/symlink-worktree-agents-md.sh"
+          }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-check-update.js\""
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"/Users/bryan/.claude/hooks/gsd-session-state.sh\""
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/Users/bryan/.claude/hooks/context-mode-cache-heal.mjs\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit|Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-context-monitor.js\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-read-injection-scanner.js\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"/Users/bryan/.claude/hooks/gsd-phase-boundary.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-prompt-guard.js\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-read-guard.js\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/opt/homebrew/bin/node\" \"/Users/bryan/.claude/hooks/gsd-workflow-guard.js\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"/Users/bryan/.claude/hooks/gsd-validate-commit.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/claude-hud.mjs"
+  },
+  "enabledPlugins": {
+    "code-review@claude-plugins-official": false,
+    "pyright-lsp@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "explanatory-output-style@claude-plugins-official": true,
+    "learning-output-style@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true,
+    "obsidian@obsidian-skills": true,
+    "slack@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "lua-lsp@claude-plugins-official": true,
+    "context-mode@context-mode": true,
+    "claude-mem@thedotmack": true,
+    "skill-creator@claude-plugins-official": true,
+    "github@claude-plugins-official": false,
+    "ponytail@ponytail": true,
+    "watch@claude-watch": true
+  },
+  "extraKnownMarketplaces": {
+    "superwhisper": {
+      "source": {
+        "source": "github",
+        "repo": "superultrainc/superwhisper-claude-code"
+      }
     },
-    "statusLine": {
-        "type": "command",
-        "command": "node ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/claude-hud.mjs"
+    "obsidian-skills": {
+      "source": {
+        "source": "github",
+        "repo": "kepano/obsidian-skills"
+      }
     },
-    "enabledPlugins": {
-        "code-review@claude-plugins-official": false,
-        "pyright-lsp@claude-plugins-official": true,
-        "typescript-lsp@claude-plugins-official": true,
-        "claude-md-management@claude-plugins-official": true,
-        "context7@claude-plugins-official": true,
-        "commit-commands@claude-plugins-official": true,
-        "pr-review-toolkit@claude-plugins-official": true,
-        "security-guidance@claude-plugins-official": true,
-        "playwright@claude-plugins-official": true,
-        "explanatory-output-style@claude-plugins-official": true,
-        "learning-output-style@claude-plugins-official": true,
-        "frontend-design@claude-plugins-official": true,
-        "claude-code-setup@claude-plugins-official": true,
-        "feature-dev@claude-plugins-official": true,
-        "obsidian@obsidian-skills": true,
-        "slack@claude-plugins-official": true,
-        "superpowers@claude-plugins-official": true,
-        "lua-lsp@claude-plugins-official": true,
-        "context-mode@context-mode": true,
-        "claude-mem@thedotmack": true,
-        "skill-creator@claude-plugins-official": true,
-        "github@claude-plugins-official": false,
-        "ponytail@ponytail": true,
-        "watch@claude-watch": true
+    "context-mode": {
+      "source": {
+        "source": "github",
+        "repo": "mksglu/context-mode"
+      }
     },
-    "extraKnownMarketplaces": {
-        "superwhisper": {
-            "source": {
-                "source": "github",
-                "repo": "superultrainc/superwhisper-claude-code"
-            }
-        },
-        "obsidian-skills": {
-            "source": {
-                "source": "github",
-                "repo": "kepano/obsidian-skills"
-            }
-        },
-        "context-mode": {
-            "source": {
-                "source": "github",
-                "repo": "mksglu/context-mode"
-            }
-        },
-        "thedotmack": {
-            "source": {
-                "source": "github",
-                "repo": "thedotmack/claude-mem"
-            }
-        },
-        "ponytail": {
-            "source": {
-                "source": "github",
-                "repo": "DietrichGebert/ponytail"
-            }
-        },
-        "claude-watch": {
-            "source": {
-                "source": "github",
-                "repo": "taoufik123-collab/claude-watch"
-            }
-        }
+    "thedotmack": {
+      "source": {
+        "source": "github",
+        "repo": "thedotmack/claude-mem"
+      }
     },
-    "effortLevel": "xhigh",
-    "skipAutoPermissionPrompt": true
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail"
+      }
+    },
+    "claude-watch": {
+      "source": {
+        "source": "github",
+        "repo": "taoufik123-collab/claude-watch"
+      }
+    }
+  },
+  "effortLevel": "xhigh",
+  "theme": "dark",
+  "skipAutoPermissionPrompt": true
 }

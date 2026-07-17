@@ -1,7 +1,7 @@
 ---
 name: codex-claude-implementation-loop
 description: "Use when a Codex-backed Hermes parent should plan and gate code changes while Claude Code implements, runs the first tests, and revises from Codex feedback using a subscription-backed CLI session."
-version: 1.0.1
+version: 1.1.0
 author: Hermes Agent
 license: MIT
 metadata:
@@ -52,6 +52,7 @@ Do not use for:
 6. **Bounded loop.** Allow at most two revision passes after the initial implementation unless the user explicitly extends it.
 7. **Fail closed.** Authentication failure, invalid JSON, missing session ID, unexplained file changes, or unverified tests blocks completion.
 8. **Opus throughout.** Claude implementation and revision passes use Opus. A non-Opus model requires the user's explicit confirmation and the wrapper's `--allow-non-opus` acknowledgement; overload never authorizes a silent downgrade.
+9. **Separate contract and engineering reviews.** Acceptance-criteria traceability and passing tests do not establish code quality. Codex must complete a distinct engineering review for quality, security, simplicity, maintainability, and test quality before calling a diff approval-ready.
 
 ## Prerequisites
 
@@ -141,18 +142,35 @@ After Claude returns:
 
 Codex now performs an independent gate. Do not delegate this gate back to Claude.
 
-### 1. Review the implementation
+### 1. Pass A: verify the implementation contract
 
-Inspect the complete diff and relevant files. Check:
+Inspect the complete diff and relevant files for contract compliance. Check:
 
 - Every acceptance criterion is implemented.
 - Behavior matches the plan rather than merely Claude's summary.
-- Error paths, boundaries, and security implications are handled.
-- Tests assert behavior and would catch a regression.
+- Every changed path is planned or explicitly justified.
 - No unrelated refactor, generated debris, secret, or debug output appeared.
 - Existing user changes remain intact.
 
-### 2. Run tests independently
+Record any unmet or ambiguous criterion. Do not treat a clean contract pass as code approval.
+
+**Completion criterion:** every acceptance criterion and changed path is accounted for, independently of the engineering-quality verdict.
+
+### 2. Pass B: perform a separate engineering review
+
+Start a second pass over the full diff from an engineering-review perspective rather than walking the acceptance checklist again. Evaluate each lens explicitly:
+
+- **Quality and correctness:** API design, control flow, error handling, boundary behavior, typing, naming, readability, and consistency with neighboring code.
+- **Security and privacy:** untrusted inputs, validation, authentication and authorization, secret handling, injection risks, unsafe network or filesystem behavior, data exposure, and dependency implications. A package audit is evidence about known dependency advisories, not a security review of the diff.
+- **Simplicity:** unnecessary abstractions, duplication, over-engineering, speculative flexibility, excessive fixtures, and whether a smaller change would be clearer.
+- **Maintainability:** coupling, public-surface consequences, documentation drift, future failure modes, and whether the implementation is easy to modify safely.
+- **Test quality:** behavioral coverage, regression sensitivity, false-positive risks, assertion strength, realistic seams, cleanup/isolation, and whether tests merely mirror the implementation.
+
+For each lens, record actionable findings or an explicit "no findings" conclusion with brief evidence. Passing tests, lint, type checks, and acceptance criteria cannot substitute for this pass. If the diff has little or no runtime surface, say so while still reviewing the changed tests, examples, documentation, and build behavior.
+
+**Completion criterion:** all five lenses have an evidence-based conclusion, and every actionable finding is classified as blocking, non-blocking, or follow-up.
+
+### 3. Run tests independently
 
 Run the targeted tests from the plan, then the appropriate broader suite, linter, type checker, or build. Distinguish:
 
@@ -164,9 +182,9 @@ Run the targeted tests from the plan, then the appropriate broader suite, linter
 
 **Completion criterion:** Codex has fresh local output for every required automated check and has reviewed every changed file.
 
-### 3. Decide
+### 4. Decide
 
-- **Pass:** proceed to Final Report.
+- **Pass:** proceed to Final Report only when both Pass A and Pass B are clean and the independent test gate passes.
 - **Fixable findings:** write a review file and enter the Revision Loop.
 - **Ambiguous requirements, destructive conflict, or external blocker:** stop and ask the user.
 
@@ -204,10 +222,13 @@ Only Codex reports completion. Include:
 - What was implemented
 - Files changed
 - Claude implementation/test summary
-- Codex review verdict
+- Contract-review verdict
+- Separate engineering-review findings for quality, security, simplicity, maintainability, and test quality
 - Tests Codex independently ran and their actual outcomes
 - Any manual/live checks still outstanding
 - Remaining risks or follow-ups
+
+Do not call a change "approval-ready" when only the contract and automated checks passed. If the engineering review was not completed, say so plainly and withhold approval.
 
 Do not imply commit, push, PR creation, deployment, or publication unless those actions were explicitly requested and verified.
 
@@ -248,6 +269,7 @@ A shell exit code of zero means Claude ran and produced schema-valid output. It 
 9. **Mistaking structured output for proof.** Git state and fresh command output are proof.
 10. **Loading user-level Claude plugins.** Personal hooks can consume turns or write helper artifacts into the repository. The wrapper intentionally disables user plugins, uses only project/local settings, redirects runtime caches outside the repository, and disables slash-command skills; do not remove that isolation without testing it.
 11. **Treating overload as an implementation failure.** Claude may return HTTP 429/529 before doing work. The wrapper retries the same Opus request once by default; if both attempts fail, preserve repository state and report the provider outage. Never downgrade models without explicit user confirmation.
+12. **Equating acceptance with approval.** A diff can meet every requirement and still be insecure, brittle, confusing, or over-engineered. Run and report the separate engineering-review pass before approval.
 
 ## Verification Checklist
 
@@ -256,9 +278,11 @@ A shell exit code of zero means Claude ran and produced schema-valid output. It 
 - [ ] Claude authentication was subscription-backed and no Anthropic API key was active
 - [ ] Claude implemented and ran the first tests
 - [ ] Claude session ID was retained for revisions
-- [ ] Codex reviewed every changed file
+- [ ] Codex completed contract traceability for every acceptance criterion and changed path
+- [ ] Codex separately reviewed quality, correctness, security, privacy, simplicity, maintainability, and test quality
+- [ ] Each engineering-review lens has findings or an evidence-based "no findings" conclusion
 - [ ] Codex independently reran required checks
 - [ ] Any findings were returned with evidence
 - [ ] Revision count stayed within the bound
-- [ ] Final report distinguishes Claude claims, Codex checks, and remaining manual validation
+- [ ] Final report distinguishes Claude claims, contract compliance, engineering-review findings, Codex checks, and remaining manual validation
 - [ ] No commit, push, reset, clean, PR, deployment, or publication occurred without explicit authorization
