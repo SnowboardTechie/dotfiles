@@ -16,7 +16,6 @@ dot-config/opencode/*
 !dot-config/opencode/oh-my-openagent.json
 !dot-config/opencode/AGENTS.md
 !dot-config/opencode/agents/
-dot-tmux/plugins/
 dot-config/alacritty/alacritty.toml
 dot-config/fj-dash/
 dot-config/gh/
