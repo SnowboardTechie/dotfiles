@@ -39,7 +39,7 @@ them.
 | `worktrunk` | git worktree (wt) management | ✅ | ✅ | ✅ | ✅ |
 | `git-master` | git workflow (strips AI attribution) | ✅ | ✅ | ✅ | — |
 | `update-pr-description` | fill PR body from template | ✅ | ✅ | ✅ | ✅ |
-| `pr-self-review` | 4-lens self-review loop | ✅ | ✅ | ✅ | ✅ |
+| `pr-self-review` | 4-lens autonomous review + fix loop | ✅ | ✅ | ✅ | ✅ |
 | `agent-workspace` | `.agents/` working-dir conventions | ✅ | ✅ | ✅ | — |
 | `vault-pkm` | PKM conventions for vaults | ✅ | ✅ | ✅ | local |
 | `vault-capture` | session-end vault capture | ✅ | ✅ | ✅ | ✅ |

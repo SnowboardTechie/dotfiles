@@ -342,14 +342,14 @@ If verification fails, do **not** advance to Phase 4. Return to Phase 3's failur
 
 ### 4.1 Delegate to `/pr-self-review`
 
-Phase 4 hands off to the [`pr-self-review`](../pr-self-review/SKILL.md) skill in its `pre-pr` mode — all four review lenses, plus a pre-review context fetch and a per-finding triage loop (`accept` / `push-back` / `issue` / `skip`). Hermes runs the four lenses in batches of at most three children; other hosts may run all four concurrently. The worktree, branch, and state dir already exist; pass them in:
+Phase 4 hands off to the [`pr-self-review`](../pr-self-review/SKILL.md) skill in its `pre-pr` mode — all four review lenses, plus a pre-review context fetch and agent-owned finding disposition. The agent automatically fixes validated in-scope findings, rejects false positives, and defers demonstrably separate non-blocking work. It asks the user only when a valid blocking finding has no reasonable fix that preserves the approved PR intent. Hermes runs the four lenses in batches of at most three children; other hosts may run all four concurrently. The worktree, branch, and state dir already exist; pass them in:
 
 - `mode`: `pre-pr`
 - `state_dir`: `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/`
 - `worktree_path`: the absolute path from `progress.md`
 - `base_branch`: the value from `progress.md` `base:`
 - `plan_path`: `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`
-- `source_issue`: `{owner}/{repo}#{N}` — the ticket this work is for; lets pr-self-review fire its source-issue exception (findings tagged with this issue surface for triage instead of pre-skipping) without waiting for a PR body to exist yet.
+- `source_issue`: `{owner}/{repo}#{N}` — the ticket this work is for; lets pr-self-review treat findings tagged with this issue as PR-intent findings rather than separately tracked work, without waiting for a PR body to exist yet.
 - `claude_session_id`: the value recorded in `progress.md`, when Phase 3 used the Codex–Claude loop; otherwise omit it.
 - `implementation_loop`: `codex-claude-implementation-loop` when `claude_session_id` is present; otherwise omit it.
 
@@ -420,7 +420,7 @@ Detailed recipes that load on demand:
 
 ## Related Skills
 
-- `pr-self-review` — Phase 4 delegates here for the four-lens review + triage loop.
+- `pr-self-review` — Phase 4 delegates here for the four-lens autonomous review-and-fix loop.
 - `ship` — Phase 4.3 hands off here on `ship it` for push + PR creation + template fill + label application.
 - `worktrunk` — Phase 1.6 controlled worktree setup.
 - `plan` — Phase 2.3 Hermes plan authoring (path-overridden to the state root).

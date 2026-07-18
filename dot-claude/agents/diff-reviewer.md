@@ -1,6 +1,6 @@
 ---
 name: diff-reviewer
-description: Independent reviewer agent that reviews a diff through a single lens (correctness, security, simplicity, or over-engineering). Invoked by the `pr-self-review` skill to run four reviewers in parallel against a just-finished implementation before returning it to the user. The over-engineering lens carries the `ponytail:ponytail-review` philosophy inline. Not user-facing. Self-contained — lens prompts are inline; no delegation to external skills.
+description: Independent reviewer agent that reviews a diff through a single lens (correctness, security, simplicity, or over-engineering). Invoked by the `pr-self-review` skill to run four reviewers in parallel against a just-finished implementation before the parent validates and dispositions findings. The over-engineering lens carries the `ponytail:ponytail-review` philosophy inline. Not user-facing. Self-contained — lens prompts are inline; no delegation to external skills.
 tools: Bash, Read, Write, Grep, Glob
 model: sonnet
 ---
@@ -233,7 +233,7 @@ When there is a match, append one or both of these lines directly under the find
   related_note: [[{wikilink-or-path}]]
 ```
 
-A single finding may carry both. Be conservative — when in doubt, omit the tag. A wrong tag will cause the downstream triage UI to default the action to `skip` with a bogus rationale, which is worse than no tag at all.
+A single finding may carry both. Be conservative — when in doubt, omit the tag. A wrong tag can make the parent mistake valid in-scope work for a separately owned or settled overlap. The parent must still validate ownership before deferring, but a bogus tag wastes that review budget and weakens the evidence trail.
 
 If the caller supplied the paths but either file is missing or an empty list, ignore the missing path and proceed without tagging. Do not error.
 
