@@ -24,7 +24,7 @@ dotfiles/
 ├── dot-git-hooks/       # Global pre-commit: validates user.email is set
 ├── dot-gitconfig        # Identity + GPG signing; includes snowboardtechie + local
 ├── dot-zshrc            # Shell loader: P10k + modular config sourcing
-├── dot-tmux.conf        # Nightfly theme, vim keybinds, vendored TPM plugins
+├── dot-tmux.conf        # Nightfly theme, vim keybinds, TPM plugin configuration
 ├── dot-p10k.zsh         # Powerlevel10k prompt theme
 ├── setup-platform-configs.sh  # Post-stow: alacritty, tmux plugins, secrets, AGENTS.md + agent-skill symlinks
 └── zsa-keyboard-layouts/  # Binary firmware, stored but never stowed
@@ -105,7 +105,7 @@ Colors are centralized but defined in three places that MUST stay in sync:
 - `setup-platform-configs.sh` compensates by manually symlinking `opencode/AGENTS.md`
 - GPG config requires manual: `ln -s ~/code/dotfiles/dot-gnupg/gpg-agent.conf ~/.gnupg/gpg-agent.conf`
 - `alacritty.toml` is a generated platform-conditional symlink, gitignored
-- Tmux plugins are vendored in-repo (not submodules), symlinked by setup script
+- Tmux plugins are pinned as Git submodules under `dot-tmux/plugins/`; the setup script initializes them and exposes them at `~/.tmux/plugins`
 
 ## GIT IDENTITY
 

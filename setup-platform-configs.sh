@@ -45,22 +45,39 @@ resolve_path() {
     perl -MCwd -le 'print Cwd::abs_path($ARGV[0])' "$1"
 }
 
-if [[ ! -d "$REPO_PLUGINS_DIR" ]]; then
-    echo "  ERROR: Expected plugin source directory at $REPO_PLUGINS_DIR was not found."
-    echo "  Ensure the repository is intact before re-running this script."
-elif [[ -L "$TMUX_PLUGINS_DIR" ]]; then
+if [[ ! -f "$REPO_PLUGINS_DIR/tpm/tpm" ]]; then
+    echo "  Initializing Tmux plugin submodules..."
+    git -C "$REPO_ROOT" submodule update --init --recursive -- dot-tmux/plugins
+fi
+
+if [[ ! -f "$REPO_PLUGINS_DIR/tpm/tpm" ]]; then
+    echo "  ERROR: TPM was not found at $REPO_PLUGINS_DIR/tpm/tpm."
+    echo "  Ensure the repository and its submodules are intact before re-running this script."
+    exit 1
+fi
+
+mkdir -p "$HOME/.tmux"
+SOURCE_TARGET="$(resolve_path "$REPO_PLUGINS_DIR")"
+
+if [[ -e "$TMUX_PLUGINS_DIR" ]]; then
     LINK_TARGET="$(resolve_path "$TMUX_PLUGINS_DIR")"
-    SOURCE_TARGET="$(resolve_path "$REPO_PLUGINS_DIR")"
     if [[ "$LINK_TARGET" == "$SOURCE_TARGET" ]]; then
-        echo "  ~/.tmux/plugins already points at the vendored plugins. Nothing to do."
-    else
+        echo "  ~/.tmux/plugins already resolves to the plugin submodules. Nothing to do."
+    elif [[ -L "$TMUX_PLUGINS_DIR" ]]; then
         echo "  WARNING: ~/.tmux/plugins points to $LINK_TARGET (expected $SOURCE_TARGET)."
         echo "  Leaving the existing link untouched to avoid clobbering local data."
+    elif [[ -d "$TMUX_PLUGINS_DIR" ]] &&
+        [[ -z "$(find "$TMUX_PLUGINS_DIR" -mindepth 1 ! -type d -print -quit)" ]]; then
+        find "$TMUX_PLUGINS_DIR" -depth -type d -exec rmdir {} \;
+        ln -s "$REPO_PLUGINS_DIR" "$TMUX_PLUGINS_DIR"
+        echo "  Replaced the empty local plugin tree with a link to the plugin submodules."
+    else
+        echo "  WARNING: Found existing data at ~/.tmux/plugins."
+        echo "  Leaving it untouched to avoid clobbering locally managed plugins."
     fi
-elif [[ -e "$TMUX_PLUGINS_DIR" ]]; then
-    echo "  WARNING: Found a real directory at ~/.tmux/plugins."
-    echo "  Skipping auto-link to keep your local plugins intact."
-    echo "  Remove or move that directory if you want to use the vendored plugins."
+elif [[ -L "$TMUX_PLUGINS_DIR" ]]; then
+    echo "  WARNING: ~/.tmux/plugins is a broken symlink."
+    echo "  Leaving the existing link untouched to avoid clobbering local data."
 else
     ln -s "$REPO_PLUGINS_DIR" "$TMUX_PLUGINS_DIR"
     echo "  Linked ~/.tmux/plugins -> $REPO_PLUGINS_DIR"
