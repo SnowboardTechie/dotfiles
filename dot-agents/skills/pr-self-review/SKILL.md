@@ -39,12 +39,13 @@ Detect the mode from arguments and context:
 
 ### 0.1 `pre-pr` (invoked from issue-work)
 
-Selected when the invoker passes an explicit `mode: pre-pr` argument (alongside `state_dir`, `worktree_path`, `base_branch`, `plan_path`, and optionally `source_issue` in `{owner}/{repo}#{N}` form). A Codex-backed `issue-work` caller may also pass `implementation_loop: codex-claude-implementation-loop` and `claude_session_id`; treat those as an opaque routing marker and worker resume ID, never as forge credentials. Mode is always explicit — never inferred from the state-dir path prefix, which would break under unusual `$HOME` or relocated state directories. In `pre-pr` mode:
+Selected when the invoker passes an explicit `mode: pre-pr` argument alongside `state_dir`, `worktree_path`, `head_branch`, `base_branch`, `plan_path`, and optionally `source_issue` in `{owner}/{repo}#{N}` form. A Codex-backed `issue-work` caller may also pass `implementation_loop: codex-claude-implementation-loop` and `claude_session_id`; treat those as an opaque routing marker and worker resume ID, never as forge credentials. Mode is always explicit — never inferred from the state-dir path prefix, which would break under unusual `$HOME` or relocated state directories. In `pre-pr` mode:
 
 - Worktree path and branch are already set up.
 - The caller's `plan.md` exists in the state dir — use it as ground truth for reviewers.
 - There is no PR yet. Skip the PR-lookup step; the linked-to-PR issue fetch (Phase 1.1 dimension A) degrades to path-touching + label-matched only — **except** for the `source_issue` arg, which is fetched directly and seeded into the cache so the source-issue rule can apply even though no PR body exists yet (see Phase 1.1 dimension A for the synthesis step).
-- Skip the commit-and-push loop's push step for the first pass if the branch is still unpushed — just commit. Let `issue-work` Phase 4.3 drive the eventual push + PR creation via `/ship`.
+- Record `head_branch` as the expected branch identity for every later safety check.
+- Commit automatic fixes locally, but **never push in `pre-pr` mode**, even when the branch already has an upstream. Only `issue-work` Phase 4.3 and `/ship` may publish it after explicit approval.
 
 ### 0.2 `pr-url`
 
@@ -76,7 +77,7 @@ Common to all three modes:
 - **Correction routing.** On a Codex-backed Hermes parent with `codex-claude-implementation-loop` installed, automatic code fixes go to Claude Opus and return to Codex for review. Resume `claude_session_id` when supplied by `issue-work`; otherwise start a fresh Opus implementation session from the validated-finding contract. Other hosts retain the native edit path.
 - `gh auth status` must pass for GitHub PRs; Forgejo needs `FORGEJO_TOKEN` (or `GITEA_TOKEN`) in env, same as `issue-work` Phase 1.5.
 - Working tree must be clean (no modified/staged files; untracked OK). Dirty → **refuse**: "Working tree has uncommitted changes. Commit, stash, or discard before starting a review loop." Do not silently stash.
-- Record mode, owner, repo, PR number (or branch for `pre-pr`), worktree path, and state-dir path in memory for the rest of the run.
+- Record mode, owner, repo, PR number, expected head branch (`headRefName` in standalone modes; `head_branch` in `pre-pr` mode), worktree path, and state-dir path in memory for the rest of the run.
 
 ---
 
@@ -278,6 +279,7 @@ suppression_set:    Set<string>                                      # suppressi
 rejections:         List<{key, reason, evidence}>                    # agent-rejected findings
 deferrals:          List<{key, reason, related_context}>             # valid but separately owned/non-blocking
 escalations:        List<{key, conflict, recommendation, resolution}># material intent conflicts only
+bound_findings:     List<{key, file, line, lens, summary}>           # valid fixes blocked only by correction cap
 fixes_per_pass:     List<List<{key, file, line, lens, summary, files_touched: Set<string>}>>
                                                                      # populated at native disposition or Codex reconciliation; empty sets become acks
 pending_opus_fixes: List<{key, file, line, lens, severity, finding}> # Codex–Claude path only; cleared after each worker pass
@@ -290,7 +292,7 @@ All of it dies when the skill run ends. `{TRUNK_ROOT}/.hermes/pr-self-review/…
 
 At the end of disposition, the pass has accumulated a set of automatic fixes.
 
-### 2.4 Commit + push
+### 2.4 Commit + mode-aware publication
 
 **Apply queued fixes first.** If `pending_opus_fixes` is non-empty on the Codex–Claude path:
 
@@ -300,7 +302,7 @@ At the end of disposition, the pass has accumulated a set of automatic fixes.
 4. Save the worker envelope as `{state-dir}/claude-review-fixes-{pass_count}.json`. Codex then inspects the real diff, reconciles every automatic fix against the changed behavior, and independently reruns the targeted and broader checks. Worker-reported `findings_addressed` and tests are claims to verify, not proof.
 5. Populate each automatic fix's `files_touched` from Codex's diff reconciliation. Use an empty set when the finding required acknowledgment only or produced no relevant diff. Increment `opus_correction_passes`, then clear `pending_opus_fixes` after reconciliation.
 
-Allow at most two Opus correction passes during one `pr-self-review` run. If a third correction batch would be required, stop before editing and ask the user whether to begin a new bounded run. Claude never commits or pushes; the active parent owns the existing commit/push gate below after Codex accepts the repository state.
+Allow at most two Opus correction passes during one `pr-self-review` run. If a third correction batch would be required, stop before editing, move those validated in-scope findings to `bound_findings`, and finish with `Ship Readiness: Correction bound reached — do not merge.` Do not ask the user to disposition the findings or continue the loop. A later explicit invocation may begin a fresh bounded review. Claude never commits or pushes; the active parent owns the existing commit/push gate below after Codex accepts the repository state.
 
 **Auto-ack reconciliation (run first).** Walk `fixes_per_pass[pass_count]` and check each entry's `files_touched` set (populated during disposition or Codex reconciliation). For any entry where `files_touched` is empty:
 
@@ -311,10 +313,10 @@ Findings with non-empty `files_touched` stay in `fixes_per_pass` and proceed to 
 
 If any automatic fixes changed files this pass (i.e., `fixes_per_pass[pass_count]` is non-empty after reconciliation):
 
+- **Before any commit or push, verify branch identity.** Compare `git branch --show-current` to the expected head branch recorded in Phase 0 (`head_branch` for `pre-pr`; `headRefName` otherwise). Mismatch → stop and surface it; the session may have drifted to another branch.
 - Stage only the touched files (no `git add -A`).
 - Commit with a message that names the lens(es) involved: `review: address {correctness,simplicity} findings` (or whichever lenses contributed). Never add AI-attribution trailers.
-- **Before pushing, verify branch identity.** Compare `git branch --show-current` to the `headRefName` recorded in Phase 0. Mismatch → stop and surface it; the session may have drifted to another branch.
-- Push to the PR branch: `git push origin HEAD` — **skip the push in `pre-pr` mode if the branch is still unpushed locally** (let `issue-work` Phase 4.3 / `/ship` drive the first push).
+- In `pre-pr` mode, stop after the local commit. Never push from this skill. In standalone modes, push to the PR branch with `git push origin HEAD`.
 - Never use `--no-verify`.
 
 If no findings produced edits (all rejected / deferred / escalated / ack), skip the commit and push.
@@ -322,8 +324,8 @@ If no findings produced edits (all rejected / deferred / escalated / ack), skip 
 ### 2.5 Loop check
 
 - **Zero unsuppressed findings on the pass** (nothing to disposition) → diff is clean. Exit the loop.
-- **No diff was committed this pass** (all rejected / deferred / escalated / ack — i.e., post-reconciliation `fixes_per_pass[pass_count]` is empty) → the code didn't change; reviewing the same diff again would produce the same findings. Exit the loop.
-- **Any automatic fixes produced a diff** → loop back to Phase 2.1 (HEAD moved; the range is still `{base}...HEAD`). On the Codex–Claude path, cap correction passes at 2 and stop before a third Opus edit batch. On the native path, cap at 5 passes; on the 5th pass, stop and ask the user whether to continue.
+- **No diff was committed this pass** (all rejected / deferred / escalated / bound / ack — i.e., post-reconciliation `fixes_per_pass[pass_count]` is empty) → the code didn't change; reviewing the same diff again would produce the same findings. Exit the loop.
+- **Any automatic fixes produced a diff** → loop back to Phase 2.1 (HEAD moved; the range is still `{base}...HEAD`). On the Codex–Claude path, cap correction passes at 2; validated findings requiring a third edit batch become `bound_findings`. On the native path, cap edits at 5 passes, then run one final review-only pass: if it is clean, exit normally; if any validated in-scope fixes remain, record them as `bound_findings`. Correction-cap exhaustion is a deterministic stop/report outcome, never a clarification prompt.
 - **User says "done" at any point** → exit loop immediately.
 
 ---
@@ -334,7 +336,7 @@ If no findings produced edits (all rejected / deferred / escalated / ack), skip 
 
 The review loop may have committed automatic fixes across passes — so the current branch state is unverified even if a caller verified before this skill ran. On the Codex–Claude path, Codex's fresh post-revision gate is the independent verification context: cite its actual command output and rerun only checks invalidated after that gate; do not delegate the final verdict back to Claude or start a duplicate generic fixer. On other Hermes paths, load the installed `requesting-code-review` skill rather than cloning its procedure; other hosts use their independent verification context. Confirm the post-review test / lint / typecheck state is green.
 
-Feed the result into `summary.md`'s **Ship Readiness** section (3.1): green → the normal readiness verdict; red → "Do not merge — verification failed: {key output}", regardless of how disposition went. A clean review over a red suite is not shippable.
+Feed the result into `summary.md`'s **Ship Readiness** section (3.1). `bound_findings` is a hard blocker even when verification is green: use `Correction bound reached — do not merge.` Otherwise green verification permits the normal readiness verdict, while red verification requires `Do not merge — verification failed: {key output}` regardless of disposition. A clean review over a red suite is not shippable.
 
 ### 3.1 Write summary.md
 
@@ -354,7 +356,8 @@ passes: {N}
 
 ## Critical Issues
 
-{Outstanding Critical findings only — unresolved material-intent escalations.
+{Outstanding Critical findings only — unresolved material-intent escalations
+and Critical correction-bound findings.
 Critical findings cannot be deferred as non-blocking. Findings fixed automatically,
 rejected after validation, or acknowledged without a diff do NOT appear here.
 If none outstanding, write: "None outstanding."}
@@ -363,7 +366,7 @@ If none outstanding, write: "None outstanding."}
 
 ## Major Issues
 
-{Unresolved material-intent escalations and valid non-blocking deferrals. Label
+{Unresolved material-intent escalations, correction-bound findings, and valid non-blocking deferrals. Label
 each as blocking or non-blocking. Fixed, rejected, and acknowledged findings do
 not appear here.}
 
@@ -371,7 +374,7 @@ not appear here.}
 
 ## Minor / Nit
 
-{Unresolved escalations and valid deferrals, grouped. Typically short.}
+{Unresolved escalations, correction-bound findings, and valid deferrals, grouped. Typically short.}
 
 - [{lens}] [{file}:{line}] {finding} — {disposition}
 
@@ -391,6 +394,10 @@ not appear here.}
 
 - [{lens}] [{file}:{line}] {finding} — conflicts with: {documented intent}; resolution: {user decision or unresolved}
 
+## Correction-Bound Findings
+
+- [{lens}] [{file}:{line}] {finding} — validated fix not attempted because this run reached its correction cap
+
 ## Acknowledged
 
 {Valid findings that produced no worktree diff. Most are observational findings the reviewer prose-flagged as no fix required, but the trigger is mechanical: any automatic `fix` disposition whose `files_touched` is empty after the pass lands here.}
@@ -399,17 +406,17 @@ not appear here.}
 
 ## Ship Readiness
 
-{Clear recommendation, incorporating the 3.0 verification result: "Ready to merge" | "Outstanding blocking intent conflict — do not merge" | "Verification failed — do not merge: {key output}" | "Review stopped with open findings"}
+{Clear recommendation, incorporating the 3.0 verification result: "Ready to merge" | "Outstanding blocking intent conflict — do not merge" | "Correction bound reached — do not merge" | "Verification failed — do not merge: {key output}" | "Review stopped with open findings"}
 ```
 
-Two-axis shape: the `## Critical Issues` / `## Major Issues` / `## Minor / Nit` sections preserve the `issue-work` Phase 4.3 contract (Phase 4.3 reads these to present outstanding findings before the ship gate). The `## Fixed automatically` / `## Rejected after validation` / `## Deferred / Already Tracked` / `## Escalated for Intent Decision` / `## Acknowledged` sections preserve the disposition audit trail unique to this skill. Both belong; don't drop either half.
+Two-axis shape: the `## Critical Issues` / `## Major Issues` / `## Minor / Nit` sections preserve the `issue-work` Phase 4.3 contract (Phase 4.3 reads these to present outstanding findings before the ship gate). The `## Fixed automatically` / `## Rejected after validation` / `## Deferred / Already Tracked` / `## Escalated for Intent Decision` / `## Correction-Bound Findings` / `## Acknowledged` sections preserve the disposition audit trail unique to this skill. Both belong; don't drop either half.
 
 Frontmatter `ticket:` field is retained (not renamed) so tools that key on it keep working — for `pr-url` mode it's the PR URL, for `pre-pr` mode it's the issue URL from the caller, for `branch-inference` mode it's the PR URL discovered from the branch.
 
 ### 3.2 Mode-specific exit
 
 - **`pr-url` / `branch-inference`:** Report summary inline + PR URL + "{N} passes; {M} findings fixed automatically and pushed." No `/ship` invocation — the PR already exists; each pass's push already updated it.
-- **`pre-pr` (from issue-work):** Return control to the caller. `issue-work` Phase 4.3 reads the summary and presents the ship gate as before. Do not invoke `/ship` from inside this skill in pre-pr mode — that's `issue-work`'s gate.
+- **`pre-pr` (from issue-work):** Return control to the caller. `issue-work` inspects Ship Readiness first: correction-bound runs stop as blocked, while other outcomes continue to Phase 4.3's ship gate. Do not invoke `/ship` from inside this skill in pre-pr mode — that's `issue-work`'s gate.
 
 ---
 
@@ -424,8 +431,8 @@ Frontmatter `ticket:` field is retained (not renamed) so tools that key on it ke
 | `gh` not authenticated | Stop. Surface the auth error. |
 | Archive returns nothing for every topic | `related-notes.json = []`; proceed. |
 | A pass's fix introduces a regression | Next pass flags it as a normal finding. Suppression filters **rejections**, **deferrals**, and **acks** (fix dispositions that produced no diff); fixes that did change code are **not** suppressed, so a regression introduced by a fix re-surfaces normally. |
-| User says "done" mid-review | Finish any already-applied edits from this pass, commit + push, write summary, exit. |
-| Correction bound reached | Codex–Claude path: stop before a third Opus correction pass. Native path: ask after 5 passes whether to continue for another 5 or exit. |
+| User says "done" mid-review | Finish any already-applied edits from this pass and commit them. Push only in standalone modes; `pre-pr` always returns with local commits only. Write summary and exit. |
+| Correction bound reached | Stop deterministically, preserve validated remaining findings under `## Correction-Bound Findings`, set Ship Readiness to do-not-merge, and report the bound. Never ask the user to disposition routine findings or continue inline. |
 | Worktree already exists for this PR | Reuse it; don't nest. |
 | Forgejo PR | `gh` replaced with Forgejo API (pattern from `skills/ship/SKILL.md` and `skills/issue-create/SKILL.md` Stage 4.2). Everything else is identical. |
 | Invoked from issue-work but `plan.md` missing | Proceed with `plan_path: null`; reviewers fall back to "no plan ground truth" (they already tolerate this). |

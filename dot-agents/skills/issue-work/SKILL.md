@@ -347,6 +347,7 @@ Phase 4 hands off to the [`pr-self-review`](../pr-self-review/SKILL.md) skill in
 - `mode`: `pre-pr`
 - `state_dir`: `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/`
 - `worktree_path`: the absolute path from `progress.md`
+- `head_branch`: the value from `progress.md` `branch:`; pr-self-review uses it for branch-drift checks because no PR-derived `headRefName` exists yet
 - `base_branch`: the value from `progress.md` `base:`
 - `plan_path`: `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`
 - `source_issue`: `{owner}/{repo}#{N}` — the ticket this work is for; lets pr-self-review treat findings tagged with this issue as PR-intent findings rather than separately tracked work, without waiting for a PR body to exist yet.
@@ -355,7 +356,7 @@ Phase 4 hands off to the [`pr-self-review`](../pr-self-review/SKILL.md) skill in
 
 Load the skill through the host's skill mechanism. It writes `review-{lens}.md` files and a final `summary.md` into the state dir, matching the shape Phase 4.3 reads below.
 
-Set `progress.md` `status: reviewed` after the skill returns.
+After the skill returns, inspect `summary.md` Ship Readiness. If it says `Correction bound reached — do not merge`, set `progress.md` `status: blocked`, present the remaining correction-bound findings, and stop without entering Phase 4.3 or asking for ship approval. Otherwise set `progress.md` `status: reviewed` and continue.
 
 ### 4.3 Present to user and ask for ship approval
 
