@@ -1,0 +1,15 @@
+[submodule "dot-tmux/plugins/tmux"]
+	path = dot-tmux/plugins/tmux
+	url = https://github.com/catppuccin/tmux
+[submodule "dot-tmux/plugins/tmux-continuum"]
+	path = dot-tmux/plugins/tmux-continuum
+	url = https://github.com/tmux-plugins/tmux-continuum
+[submodule "dot-tmux/plugins/tmux-resurrect"]
+	path = dot-tmux/plugins/tmux-resurrect
+	url = https://github.com/tmux-plugins/tmux-resurrect
+[submodule "dot-tmux/plugins/tpm"]
+	path = dot-tmux/plugins/tpm
+	url = https://github.com/tmux-plugins/tpm
+[submodule "dot-tmux/plugins/vim-tmux-navigator"]
+	path = dot-tmux/plugins/vim-tmux-navigator
+	url = https://github.com/christoomey/vim-tmux-navigator
