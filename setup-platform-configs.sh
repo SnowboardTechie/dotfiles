@@ -158,7 +158,7 @@ HERMES_SKILLS=(
 # Idempotent: prunes pool-symlinks no longer wanted; never touches real dirs
 # (e.g. Claude's plugin skills) or symlinks pointing outside the pool.
 link_skills() {
-    local label="$1" dest="$2"; shift 2
+    local label="$1" dest="$2" legacy_dest="$3"; shift 3
     local wanted=("$@")
     local existing name tgt w keep linked=0
 
@@ -167,11 +167,11 @@ link_skills() {
         return
     fi
 
-    # Old Pi wiring symlinked the whole pool at once. Replace only that known
-    # layout; a foreign destination symlink may be independently managed.
+    # Replace known whole-directory layouts from before the per-skill pool.
+    # A foreign destination symlink may be independently managed.
     if [[ -L "$dest" ]]; then
         tgt="$(resolve_path "$dest")"
-        if [[ "$tgt" == "$SKILLS_SRC" ]]; then
+        if [[ "$tgt" == "$SKILLS_SRC" || ( -n "$legacy_dest" && "$tgt" == "$legacy_dest" ) ]]; then
             rm "$dest"
         else
             echo "  WARNING: $label destination is a foreign symlink; skipping"
@@ -230,10 +230,10 @@ link_skills() {
     echo "  $label: $linked skills linked at $dest"
 }
 
-link_skills "Claude"   "$HOME/.claude/skills"          "${CLAUDE_SKILLS[@]}"
-link_skills "OpenCode" "$HOME/.config/opencode/skills" "${OPENCODE_SKILLS[@]}"
-link_skills "Pi"       "$HOME/.pi/agent/skills"        "${PI_SKILLS[@]}"
-link_skills "Hermes"   "$HOME/.hermes/skills/personal" "${HERMES_SKILLS[@]}"
+link_skills "Claude"   "$HOME/.claude/skills"          "$REPO_ROOT/dot-claude/skills"          "${CLAUDE_SKILLS[@]}"
+link_skills "OpenCode" "$HOME/.config/opencode/skills" "$REPO_ROOT/dot-config/opencode/skills" "${OPENCODE_SKILLS[@]}"
+link_skills "Pi"       "$HOME/.pi/agent/skills"        ""                                     "${PI_SKILLS[@]}"
+link_skills "Hermes"   "$HOME/.hermes/skills/personal" ""                                     "${HERMES_SKILLS[@]}"
 
 # Git-backed Hermes-local assets are installed explicitly rather than stowing
 # ~/.hermes, which also contains credentials, databases, logs, and live state.
