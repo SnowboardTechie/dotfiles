@@ -23,7 +23,8 @@ nothing.
 candidate must identify a reusable trigger, an exact change to future behavior,
 and a way to verify that change.
 
-The audit is read-only until the user approves named candidates.
+The foreground audit does not call mutation tools until the user approves named
+candidates.
 
 ## When to Use
 
@@ -45,7 +46,7 @@ Do not use when:
 
 This skill complements rather than replaces Hermes's native learning features:
 
-- `/learn` packages one already-understood workflow into a user-local skill.
+- `/learn` packages one already-understood workflow into a new user-local skill.
 - The background self-improvement review periodically considers skills and
   memory with a restricted tool set.
 - The curator manages lifecycle and optional consolidation of agent-created
@@ -55,24 +56,26 @@ This skill complements rather than replaces Hermes's native learning features:
 
 ## Promotion Tests
 
-Promote a candidate only when it has **one strong signal** or **two independent
-medium signals**.
+Default to no action. Every candidate must have transcript-backed evidence,
+generalize beyond accidental identifiers, change future behavior at a clear
+trigger, define verification, avoid duplication, and exclude sensitive or
+volatile state.
 
-| Strength | Signals |
+Then apply the gate for its proposed destination:
+
+| Destination | Minimum evidence |
 |---|---|
-| Strong | Repeated user correction; loaded skill proved wrong or incomplete; same unproductive loop occurred twice; a failed path produced a verified, non-obvious workaround |
-| Medium | Coherent multi-step routine with real verification; prerequisite repeatedly discovered late; recurring handoff or scope friction; likely reuse across comparable tasks |
-| Weak | One-off fact; generic best practice; transient machine failure; unverified theory; task progress; narrative about one session |
+| Existing skill patch | The current artifact is missing or contradicts needed guidance, and the corrected path is evidenced |
+| User memory | An explicit stable preference or durable environment fact should affect behavior across sessions |
+| Project instructions | A repository or team invariant has a canonical project owner and should apply whenever work occurs there |
+| New skill | A verified non-obvious class-level procedure has a stable trigger, no suitable existing owner, and either recurrence across episodes or an explicit user request |
+| Vault or automation | The observation meets that destination's own capture or change-management gate |
 
-Every promoted candidate must pass all three tests:
-
-1. **Generalization:** Replace names, dates, and issue numbers. The rule still
-   applies to a recognizable class of future tasks.
-2. **Behavioral delta:** State what a future agent will do differently and when.
-3. **Verification:** State how to tell that the changed procedure worked.
-
-If any test fails, decline or defer the candidate. Do not create a speculative
-skill as a reminder to investigate later.
+Repeated loops, user corrections, verified recovery, and repeatedly rediscovered
+prerequisites raise confidence but do not replace the destination gate. Decline
+one-off facts, generic advice, transient failures, unverified theories, task
+progress, and successful trajectories whose method was not shown to cause the
+success.
 
 ## Workflow
 
@@ -159,7 +162,7 @@ For each candidate, choose one primary destination:
 | Project instructions | The rule is specific to one repository, product, or team |
 | Vault capture | The learning is durable domain knowledge, a decision, or project context rather than agent procedure |
 | Automation | The real need is a repeated schedule or machine-enforceable check |
-| No action / defer | Evidence is weak, transient, already encoded, or still unverified |
+| No action / defer | Evidence is weak, transient, still unverified, or accurately encoded in an artifact that will be reliably retrieved |
 
 Prefer one source of truth. Dual-write only when the destinations serve genuinely
 different retrieval scopes, and state which one owns the procedure.
@@ -179,6 +182,8 @@ Use a compact table:
 
 Then include:
 
+- **Proposed delta:** exact patch text or a sufficiently exact new-artifact
+  preview, every affected file or manifest, and planned validation.
 - **Declined or deferred:** plausible observations that failed the promotion
   tests and why.
 - **Evidence limits:** omitted or compressed material that could change the
@@ -186,14 +191,16 @@ Then include:
 - **Privacy/redactions:** sensitive source material excluded from the proposal.
 - **Approval ask:** request the IDs the user wants implemented or investigated.
 
-The retrospective request authorizes analysis only. Do not create, patch,
-install, publish, commit, push, or write memory from a slate. A broad "capture
-anything useful" is not item-level selection. If the user explicitly overrides
-the slate gate for a named change, follow that instruction and host safety
-policy.
+The foreground retrospective does not create, patch, install, publish, commit,
+push, or write memory from a slate. A broad "capture anything useful" is not
+item-level selection. If the user explicitly overrides the slate gate for a
+named change, follow that instruction and host safety policy.
 
 Hermes's optional `skills.write_approval` staging is useful defense-in-depth,
 but it is off by default and does not replace this slate-and-approval boundary.
+Guaranteeing no independent background skill or memory writes requires staging
+or disabling those host features separately; never change those settings as a
+side effect of this retrospective.
 
 If nothing qualifies, say so directly. A zero-candidate slate is a successful
 outcome.
@@ -208,23 +215,29 @@ For each approved ID:
 2. Load the runtime's authoring workflow. In Hermes, use
    `hermes-agent-skill-authoring` and treat current Hermes documentation as the
    source of truth.
-3. Confirm the canonical writable source. Patch a tracked or shared source
-   rather than a generated symlink; use `skill_manage` for supported user-local
-   or existing-skill edits.
-4. Patch existing content in place and remove superseded wording. Create a new
+3. Use host-native equivalents for session retrieval, skill discovery,
+   mutation, and approval. If a host lacks durable memory or prior-session
+   retrieval, report that route as unsupported rather than inventing storage.
+4. Confirm the canonical writable source. Patch a tracked or shared source
+   rather than a generated symlink. For bundled or hub-installed skills,
+   default to the upstream/source artifact and disclose update-lifecycle
+   consequences before patching an installed copy. Resolve shadowed duplicates
+   before approval.
+5. Patch existing content in place and remove superseded wording. Create a new
    skill only after overlap has been ruled out.
-5. Update distribution lists, indexes, or symlink wiring when the canonical
+6. Update distribution lists, indexes, or symlink wiring when the canonical
    skill pool requires them.
-6. Validate frontmatter, links, supporting files, and the exact behavior delta.
-7. Exercise the trigger in a fresh session or representative scenario and
+7. Validate frontmatter, links, supporting files, and the exact behavior delta.
+8. Exercise the trigger in a fresh session or representative scenario and
    inspect the response, not merely whether the file loaded.
 
 Approval to edit a skill is not approval to commit, push, publish, install a
 community package, or perform another externally visible action. Obtain whatever
 separate authorization the host and repository require.
 
-**Complete when:** each approved change is active in the intended runtime,
-behaviorally tested, and reported with its verification evidence.
+**Complete when:** each approved change is behaviorally tested and reported per
+artifact as **saved**, **staged/pending**, **blocked**, or **failed**, with its
+verification evidence.
 
 ## Common Pitfalls
 
@@ -253,6 +266,7 @@ behaviorally tested, and reported with its verification evidence.
 - [ ] Closest existing skills were read in full
 - [ ] Each candidate has one primary destination
 - [ ] Declined and deferred observations are visible
-- [ ] No mutation occurred before candidate approval
+- [ ] The foreground audit invoked no mutation before candidate approval
 - [ ] Approved changes were validated and behaviorally exercised
+- [ ] Every artifact is reported as saved, staged/pending, blocked, or failed
 - [ ] Secrets and session-specific residue were excluded
