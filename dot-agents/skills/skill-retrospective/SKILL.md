@@ -174,7 +174,7 @@ decline it, plus an overlap assessment based on full content.
 
 Use a compact table:
 
-| ID | Evidence and root cause | Recommendation and target | Exact future behavior | Confidence |
+| ID | Evidence and root cause | Recommendation and exact target | Exact future behavior | Confidence |
 |---|---|---|---|---|
 
 Then include:
@@ -183,6 +183,7 @@ Then include:
   tests and why.
 - **Evidence limits:** omitted or compressed material that could change the
   judgment.
+- **Privacy/redactions:** sensitive source material excluded from the proposal.
 - **Approval ask:** request the IDs the user wants implemented or investigated.
 
 The retrospective request authorizes analysis only. Do not create, patch,
@@ -191,6 +192,9 @@ anything useful" is not item-level selection. If the user explicitly overrides
 the slate gate for a named change, follow that instruction and host safety
 policy.
 
+Hermes's optional `skills.write_approval` staging is useful defense-in-depth,
+but it is off by default and does not replace this slate-and-approval boundary.
+
 If nothing qualifies, say so directly. A zero-candidate slate is a successful
 outcome.
 
@@ -198,7 +202,9 @@ outcome.
 
 For each approved ID:
 
-1. Re-read the target and its supporting files to avoid a stale patch.
+1. Re-read the target and its supporting files to avoid a stale patch. If the
+   target drifted after approval, show the revised delta and ask again rather
+   than adapting silently.
 2. Load the runtime's authoring workflow. In Hermes, use
    `hermes-agent-skill-authoring` and treat current Hermes documentation as the
    source of truth.
