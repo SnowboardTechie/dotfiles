@@ -126,9 +126,9 @@ echo "Setting up agent skills..."
 
 SKILLS_SRC="$(resolve_path "$REPO_ROOT/dot-agents/skills")"
 
-# Common core shared by Claude, OpenCode, and Pi: dev/PR essentials + PKM/vault management.
+# Common core shared by Claude, OpenCode, and Pi: dev/PR, PKM, and workflow learning.
 COMMON_SKILLS=(ship worktrunk git-master update-pr-description pr-self-review agent-workspace
-    vault-pkm vault-capture obsidian)
+    vault-pkm vault-capture skill-retrospective obsidian)
 
 PI_SKILLS=("${COMMON_SKILLS[@]}")
 
@@ -149,7 +149,7 @@ OPENCODE_SKILLS=("${COMMON_SKILLS[@]}"
 HERMES_SKILLS=(
     ship worktrunk update-pr-description pr-self-review
     manual-merge issue-create issue-work loop-issue
-    vault-capture adr-and-spec-coach voice-bryan
+    vault-capture skill-retrospective adr-and-spec-coach voice-bryan
     dx-target dx-preview conforming-tech-specs
     catalog-review dependency-review dependency-triage sprint-deliverable-update
 )

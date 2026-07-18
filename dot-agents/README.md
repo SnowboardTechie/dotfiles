@@ -43,6 +43,7 @@ them.
 | `agent-workspace` | `.agents/` working-dir conventions | ✅ | ✅ | ✅ | — |
 | `vault-pkm` | PKM conventions for vaults | ✅ | ✅ | ✅ | local |
 | `vault-capture` | session-end vault capture | ✅ | ✅ | ✅ | ✅ |
+| `skill-retrospective` | conversation-to-workflow improvement triage | ✅ | ✅ | ✅ | ✅ |
 | `obsidian` | Obsidian vault patterns | ✅ | ✅ | ✅ | bundled |
 | `manual-merge` | Forgejo local squash-merge | ✅ | ✅ | — | ✅ |
 | `issue-create` | draft & post an issue | ✅ | ✅ | — | ✅ |
@@ -62,7 +63,7 @@ them.
 | `weekly-planning` | retired weekly-planning machinery | ✅ | — | — | — |
 | `find-skills` | browse community skills.sh | ✅ | — | — | — |
 
-**Counts:** Claude 23 · OpenCode 17 · Pi 9 · Hermes 18 (26 distinct).
+**Counts:** Claude 24 · OpenCode 18 · Pi 10 · Hermes 19 (27 distinct).
 
 ## Adding or re-curating a skill
 
