@@ -320,7 +320,23 @@ For the Codex–Claude path, also record the implementation/revision artifact pa
 
 Do not advance `status` when tests go green — Phase 4 bumps it to `reviewed` after self-review completes. Leave it at `implementing` until then.
 
-### 3.7 Verify before handing off
+### 3.7 Repository planning closeout
+
+Re-read the worktree's active project instructions. If they identify tracked
+specs, plans, status notes, decision records, or other living planning
+artifacts, reconcile them before self-review. Record completed milestones,
+verified findings, changed assumptions, closed or newly opened questions, and
+the next tracked work where applicable. These updates belong in the same
+feature branch and PR as the implementation.
+
+If no tracked planning artifact needs a change, record the inspected files and
+the reason in `progress.md` under `## Planning closeout`. Do not proceed to
+final verification until the required updates are in the diff or the no-update
+rationale is recorded. External vault capture remains governed by
+`vault-capture`; this gate covers repository-owned planning artifacts required
+by project instructions.
+
+### 3.8 Verify before handing off
 
 Before Phase 4 spawns review, prove the suite is green rather than trust the implementation context. If Phase 3 used `codex-claude-implementation-loop`, its final Codex review/retest gate satisfies this step; cite that fresh gate output rather than spawning a duplicate generic reviewer, and rerun only checks invalidated by the parent's post-gate local commit operation. Otherwise load `requesting-code-review` on Hermes (or the host's independent verification workflow), rerun the project's test / lint / typecheck commands, and preserve actual output.
 
@@ -403,7 +419,10 @@ Present the review outcome inline in this order:
 - Modify files outside the worktree and the state dir
 - Add AI signatures to commits or PRs
 - Skip hooks (`--no-verify`) or bypass signing
-- Write notes into `.notes/` or any note system — state goes to `{TRUNK_ROOT}/.hermes/issue-work/` only
+- Write notes into `.notes/` or an external note system — state goes to
+  `{TRUNK_ROOT}/.hermes/issue-work/` only. Repository-owned planning artifacts
+  required by project instructions are implementation files and follow the
+  Phase 3.7 closeout gate.
 
 ---
 
@@ -427,7 +446,7 @@ Detailed recipes that load on demand:
 - `plan` — Phase 2.3 Hermes plan authoring (path-overridden to the state root).
 - `test-driven-development` — Phase 3 implementation discipline.
 - `systematic-debugging` — Phase 3.5 second-failure escalation.
-- `requesting-code-review` — Phase 3.7 independent verification.
+- `requesting-code-review` — Phase 3.8 independent verification.
 - `codex-claude-implementation-loop` — preferred Phase 3 implementation/revision engine for a Codex-backed Hermes parent.
 
 ### Optional Delegation

@@ -56,7 +56,11 @@ Read back the PR and its current checks immediately before merging. Verify:
 - no unresolved review request or blocking conversation remains;
 - every required CI check is green;
 - head SHA matches the branch SHA being merged;
-- base branch is the repository's default branch.
+- base branch is the repository's default branch;
+- active project instructions' completion requirements are satisfied: required
+  tracked spec, plan, status, or decision updates are included in the reviewed
+  PR, or a concrete no-update rationale identifies what was inspected and why
+  no change is needed.
 
 If the forge cannot expose one of these facts, show the missing fact and ask the
 user to verify it. Never infer approval from silence.
@@ -68,6 +72,7 @@ Show:
 - clickable PR link and title;
 - head SHA and target default branch;
 - review/CI evidence;
+- planning-closeout evidence from the project instructions;
 - squash commit subject;
 - planned push, manual-merge API call, and branch cleanup.
 
@@ -140,11 +145,15 @@ MERGE_SHA=$(git rev-parse HEAD)
 tea api \
   --login <configured-login> \
   --repo <owner/repo> \
-  --method POST \
+  -X POST \
   -f Do=manually-merged \
-  -f merge_commit_id="$MERGE_SHA" \
+  -f MergeCommitID="$MERGE_SHA" \
   /repos/<owner>/<repo>/pulls/<number>/merge
 ```
+
+Use the exact case-sensitive Forgejo field `MergeCommitID`. The snake-case
+`merge_commit_id` field may return HTTP 200 with `{}` while leaving the PR open;
+that is not success. Always enforce the read-back gate below.
 
 Run this from the same safe Tea context used for lookup. Read the PR back and
 require `state: closed`, `merged: true`, and the expected merge SHA before any
@@ -185,6 +194,7 @@ state, and any retained worktree/branch.
 
 - [ ] Human review confirmed
 - [ ] Required CI green at the current head SHA
+- [ ] Project planning-closeout requirements satisfied
 - [ ] Explicit merge approval obtained
 - [ ] Default worktree clean and synchronized with origin
 - [ ] Squash diff inspected before commit
