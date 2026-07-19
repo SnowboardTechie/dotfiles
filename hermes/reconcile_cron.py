@@ -52,6 +52,10 @@ def main() -> int:
             "workdir": definition["workdir"],
             "attach_to_session": definition["attachToSession"],
         }
+        # Apply finite repeat counts only on creation. Reconciliation must not
+        # reset completed pilot runs.
+        if not matches and "repeat" in definition:
+            common["repeat"] = definition["repeat"]
         if matches:
             action = "update"
             response = json.loads(cronjob(action=action, job_id=matches[0]["id"], **common))
@@ -86,6 +90,13 @@ def main() -> int:
                 "expected": definition["attachToSession"],
                 "actual": actual_attach,
             }
+        if "repeat" in definition:
+            actual_repeat = (job.get("repeat") or {}).get("times")
+            if actual_repeat != definition["repeat"]:
+                mismatches["repeat"] = {
+                    "expected": definition["repeat"],
+                    "actual": actual_repeat,
+                }
         if mismatches:
             fail(f"cron verification failed for {name!r}: {json.dumps(mismatches, sort_keys=True)}")
         summaries.append({"name": name, "action": action, "jobId": job["id"]})

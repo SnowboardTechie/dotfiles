@@ -5,10 +5,13 @@
     "sgg-morning-brief.py",
     "sgg-sync-workday-note.py",
     "sgg-calendar-events.swift",
-    "sgg-mail-messages.js"
+    "sgg-mail-messages.js",
+    "personal-alignment-brief.py",
+    "personal-mail-messages.js"
   ],
   "copiedScripts": [
-    "sgg-morning-brief.py"
+    "sgg-morning-brief.py",
+    "personal-alignment-brief.py"
   ],
   "skills": [
     "apple/apple-mail",
@@ -16,6 +19,7 @@
     "devops/homelab-change-management",
     "mlops/openai-compatible-model-endpoints",
     "note-taking/vault-pkm",
+    "productivity/personal-routine-automation",
     "productivity/workday-briefing-automation",
     "security/self-hosted-agent-security",
     "software-development/codex-claude-implementation-loop",
@@ -39,6 +43,45 @@
         "terminal"
       ],
       "workdir": "/Users/bryan/code/sgg",
+      "attachToSession": false
+    },
+    {
+      "name": "Personal Weekday Close",
+      "schedule": "0 17 * * 1-5",
+      "promptFile": "automations/personal-weekday-close/prompt.md",
+      "deliver": "matrix",
+      "skills": ["personal-routine-automation"],
+      "script": "personal-alignment-brief.py",
+      "noAgent": false,
+      "repeat": 15,
+      "enabledToolsets": ["file", "terminal"],
+      "workdir": "/Users/bryan/second-brain",
+      "attachToSession": false
+    },
+    {
+      "name": "Personal Saturday Orientation",
+      "schedule": "0 11 * * 6",
+      "promptFile": "automations/personal-saturday-orientation/prompt.md",
+      "deliver": "matrix",
+      "skills": ["personal-routine-automation"],
+      "script": "personal-alignment-brief.py",
+      "noAgent": false,
+      "repeat": 3,
+      "enabledToolsets": ["file", "terminal"],
+      "workdir": "/Users/bryan/second-brain",
+      "attachToSession": false
+    },
+    {
+      "name": "Personal Sunday Reset",
+      "schedule": "0 11 * * 0",
+      "promptFile": "automations/personal-sunday-reset/prompt.md",
+      "deliver": "matrix",
+      "skills": ["personal-routine-automation"],
+      "script": "personal-alignment-brief.py",
+      "noAgent": false,
+      "repeat": 4,
+      "enabledToolsets": ["file", "terminal"],
+      "workdir": "/Users/bryan/second-brain",
       "attachToSession": false
     }
   ]

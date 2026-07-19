@@ -59,7 +59,12 @@ guard granted else {
 
 let systemCalendar = Calendar.current
 let start = systemCalendar.startOfDay(for: Date())
-let end = systemCalendar.date(byAdding: .day, value: 1, to: start)!
+let requestedDays = CommandLine.arguments.dropFirst().first.flatMap(Int.init) ?? 1
+guard (1...31).contains(requestedDays) else {
+    FileHandle.standardError.write(Data("Calendar lookahead must be between 1 and 31 days.\n".utf8))
+    exit(2)
+}
+let end = systemCalendar.date(byAdding: .day, value: requestedDays, to: start)!
 let predicate = store.predicateForEvents(withStart: start, end: end, calendars: nil)
 let records = store.events(matching: predicate)
     .sorted { $0.startDate < $1.startDate }

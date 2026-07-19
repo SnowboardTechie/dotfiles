@@ -110,4 +110,6 @@ Do not make the pilot permanent merely because it was completed. Continued volun
 
 ## Session learning: reconciling intent with vault history
 
-A user may sincerely want more daily or weekly thinking while their vault explicitly records that prior planning machinery was dropped for non-use. Do not choose one statement and ignore the other. Preserve both facts: the desired outcome remains valid, while the previous implementation is evidence about what not to repeat. Offer a minimal pilot aimed at the outcome, not a revival of the abandoned system.
+A user may sincerely want more daily or weekly thinking while their vault explicitly records that prior planning machinery was dropped for non-use. Do not choose one statement and ignore the other. Preserve both facts: the desired outcome remains valid, while the previous implementation is evidence about what not to repeat.
+
+Investigate *why* the system went unused. If the user valued the output but repeatedly failed to remember or initiate the ritual, reliable agent-initiated prompting changes a real design variable and can justify a fresh pilot. If the artifacts themselves were ignored, automation may only produce more clutter. In either case, offer a minimal pilot aimed at the outcome, preserve no unattended artifact when participation is absent, and do not revive the abandoned system wholesale.
