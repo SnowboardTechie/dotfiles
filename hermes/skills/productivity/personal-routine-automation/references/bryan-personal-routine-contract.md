@@ -85,6 +85,13 @@ Bryan can continue, redirect, or stop the conversation from that room. The room
 is not canonical storage: `~/second-brain` remains the source of truth, and only
 participated reflection is captured under the vault rules.
 
+Each personal cron is continuable: its delivery is mirrored into Bryan's
+room-specific Hermes session as labelled cron context, so a reply in `Second
+Brain` can continue the delivered briefing without restating it. The tracked
+manifest names the room and a local environment key, while the Matrix account
+identifier remains untracked. A delivered briefing is still not participation;
+the existing capture and autonomy boundaries apply to every reply.
+
 The room is intentionally scoped to one human domain rather than one agent. It
 does not broaden the routine's authority: briefings may gather, synthesize, and
 recommend, while further execution still requires an agreed plan under the

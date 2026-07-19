@@ -5,13 +5,64 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
+from typing import NoReturn
 
 
-def fail(message: str) -> None:
+def fail(message: str) -> NoReturn:
     print(message, file=sys.stderr)
     raise SystemExit(1)
+
+
+def _env_value(name: str) -> str:
+    value = os.environ.get(name, "").strip()
+    if value:
+        return value
+
+    hermes_home = Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes"))
+    env_path = hermes_home / ".env"
+    if not env_path.is_file():
+        return ""
+    try:
+        from dotenv import dotenv_values  # pyright: ignore[reportMissingImports]
+
+        return str(dotenv_values(env_path).get(name) or "").strip()
+    except ImportError:
+        return ""
+
+
+def continuation_origin(definition: dict) -> dict | None:
+    continuation = definition.get("continuation")
+    if not definition["attachToSession"]:
+        if continuation is not None:
+            fail(f"{definition['name']!r} defines continuation while attachToSession is false")
+        return None
+    if not isinstance(continuation, dict):
+        fail(f"{definition['name']!r} requires continuation metadata")
+
+    match = re.fullmatch(r"matrix:(!\S+)", definition["deliver"])
+    if not match:
+        fail(f"{definition['name']!r} continuable delivery must target one explicit Matrix room")
+
+    user_env = continuation.get("userEnv")
+    if not isinstance(user_env, str) or not re.fullmatch(r"[A-Z][A-Z0-9_]*", user_env):
+        fail(f"{definition['name']!r} has invalid continuation userEnv")
+    users = [value.strip() for value in _env_value(user_env).split(",") if value.strip()]
+    if len(users) != 1:
+        fail(f"{definition['name']!r} requires exactly one continuation user")
+
+    chat_name = continuation.get("chatName")
+    if not isinstance(chat_name, str) or not chat_name.strip():
+        fail(f"{definition['name']!r} requires a continuation chatName")
+    return {
+        "platform": "matrix",
+        "chat_id": match.group(1),
+        "chat_name": chat_name.strip(),
+        "thread_id": None,
+        "user_id": users[0],
+    }
 
 
 def main() -> int:
@@ -25,13 +76,14 @@ def main() -> int:
         fail(f"Hermes source root not found: {source_root}")
     sys.path.insert(0, str(source_root))
 
-    from cron.jobs import list_jobs, resolve_job_ref  # pyright: ignore[reportMissingImports]  # noqa: PLC0415
+    from cron.jobs import list_jobs, resolve_job_ref, update_job  # pyright: ignore[reportMissingImports]  # noqa: PLC0415
     from tools.cronjob_tools import cronjob  # pyright: ignore[reportMissingImports]  # noqa: PLC0415
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     summaries: list[dict[str, str]] = []
     for definition in manifest["cronJobs"]:
         name = definition["name"]
+        expected_origin = continuation_origin(definition)
         matches = [job for job in list_jobs(include_disabled=True) if job.get("name") == name]
         if len(matches) > 1:
             fail(f"refusing to reconcile duplicate cron jobs named {name!r}")
@@ -68,6 +120,10 @@ def main() -> int:
         job = resolve_job_ref(name)
         if not job:
             fail(f"cron job {name!r} disappeared after {action}")
+        if job.get("origin") != expected_origin:
+            job = update_job(job["id"], {"origin": expected_origin})
+            if not job:
+                fail(f"cron job {name!r} disappeared while setting continuation origin")
         expected = {
             "name": name,
             "schedule_display": definition["schedule"],
@@ -89,6 +145,11 @@ def main() -> int:
             mismatches["attach_to_session"] = {
                 "expected": definition["attachToSession"],
                 "actual": actual_attach,
+            }
+        if job.get("origin") != expected_origin:
+            mismatches["origin"] = {
+                "expected": "configured" if expected_origin else None,
+                "actual": "configured" if job.get("origin") else None,
             }
         if "repeat" in definition:
             actual_repeat = (job.get("repeat") or {}).get("times")

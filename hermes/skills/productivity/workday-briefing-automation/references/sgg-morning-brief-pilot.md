@@ -8,7 +8,9 @@ Prepare Bryan for a workday by reconstructing the previous business day's restin
 
 - Schedule: 7:30 AM Pacific, Monday–Friday; Monday looks back to Friday.
 - Hermes workdir: `/Users/bryan/code/sgg`.
-- Delivery: configured Matrix home room, fire-and-forget; do not attach the cron delivery to the originating conversation.
+- Delivery: private encrypted `SGG` Matrix room, continuable in Bryan's
+  room-specific Hermes session. Mirror the labelled cron delivery into that
+  session so replies retain the brief as context.
 - Retain local cron output for audit/troubleshooting.
 - Use an LLM-driven job with a deterministic bounded pre-run collector.
 - The job may read notes, Calendar, Mail, and GitHub. It may write only the exact dated SGG workday note under the approved pilot contract below; every other source and path remains read-only.
@@ -118,6 +120,8 @@ A cron run is not proven delivered merely because synthesis completed, a local o
 2. Cron delivery logs contain `Matrix: sent event <event-id>`.
 3. Cron logs record delivery to the intended Matrix room.
 4. `last_delivery_error` is empty.
+5. Cron logs record a delivery mirror into the same room session, and SQLite
+   contains the labelled cron context as a user-role turn.
 
 When Hermes cannot restart its own gateway safely, put the exact external-terminal command in the same visible user question that asks for the result; do not ask whether they ran an instruction that may not have been shown.
 

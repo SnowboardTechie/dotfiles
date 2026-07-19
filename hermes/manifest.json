@@ -34,7 +34,7 @@
       "name": "Workday Morning Brief",
       "schedule": "30 7 * * 1-5",
       "promptFile": "automations/workday-morning-brief/prompt.md",
-      "deliver": "matrix",
+      "deliver": "matrix:!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU",
       "skills": [
         "vault-pkm"
       ],
@@ -45,7 +45,11 @@
         "terminal"
       ],
       "workdir": "/Users/bryan/code/sgg",
-      "attachToSession": false
+      "attachToSession": true,
+      "continuation": {
+        "chatName": "SGG",
+        "userEnv": "MATRIX_ALLOWED_USERS"
+      }
     },
     {
       "name": "Personal Weekday Close",
@@ -58,7 +62,11 @@
       "repeat": 15,
       "enabledToolsets": ["file", "terminal"],
       "workdir": "/Users/bryan/second-brain",
-      "attachToSession": false
+      "attachToSession": true,
+      "continuation": {
+        "chatName": "Second Brain",
+        "userEnv": "MATRIX_ALLOWED_USERS"
+      }
     },
     {
       "name": "Personal Saturday Orientation",
@@ -71,7 +79,11 @@
       "repeat": 3,
       "enabledToolsets": ["file", "terminal"],
       "workdir": "/Users/bryan/second-brain",
-      "attachToSession": false
+      "attachToSession": true,
+      "continuation": {
+        "chatName": "Second Brain",
+        "userEnv": "MATRIX_ALLOWED_USERS"
+      }
     },
     {
       "name": "Personal Sunday Reset",
@@ -84,7 +96,11 @@
       "repeat": 4,
       "enabledToolsets": ["file", "terminal"],
       "workdir": "/Users/bryan/second-brain",
-      "attachToSession": false
+      "attachToSession": true,
+      "continuation": {
+        "chatName": "Second Brain",
+        "userEnv": "MATRIX_ALLOWED_USERS"
+      }
     }
   ]
 }

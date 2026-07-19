@@ -29,6 +29,13 @@ locks, caches, and `cron/jobs.json` remain local and untracked.
    replaced installed copies are also backed up rather than silently discarded.
 4. Compiles the EventKit Calendar collector locally.
 5. Creates or updates cron jobs by exact name through Hermes's cron API.
+6. Binds continuable Matrix jobs to one explicit room and the single local
+   `MATRIX_ALLOWED_USERS` principal without committing that account identifier.
+
+Continuable jobs require an existing per-user Matrix session in the target
+room. Send one message in the room before the first scheduled delivery. The
+installer preserves finite repeat progress while reconciling delivery,
+`attach_to_session`, and the local continuation origin.
 
 Run directly when needed:
 
