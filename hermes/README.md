@@ -9,6 +9,7 @@ This directory preserves Bryan-authored Hermes assets without treating the mutab
 - `scripts/`: authored automation source. Compiled binaries remain local.
 - `automations/`: declarative prompts and schedules for named cron jobs.
 - `orchestrators/`: reusable durable-goal contract templates and validation.
+- `webhooks/`: bounded event-trigger pilot contracts and activation gates.
 - `manifest.json`: the explicit allowlist installed on Studio.
 
 Hermes built-in skills are supplied by the Hermes installation and are not copied.

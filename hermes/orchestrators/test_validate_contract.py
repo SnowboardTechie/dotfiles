@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import contextlib
+import importlib.util
 import io
 import tempfile
 import unittest
 from pathlib import Path
 
-from validate_contract import validate
+VALIDATOR = Path(__file__).with_name("validate_contract.py")
+SPEC = importlib.util.spec_from_file_location("validate_contract", VALIDATOR)
+assert SPEC and SPEC.loader
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
 
 
 VALID_CONTRACT = """# Contract
@@ -29,7 +34,7 @@ class ContractValidationTest(unittest.TestCase):
             path = Path(directory) / "contract.md"
             path.write_text(text, encoding="utf-8")
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-                validate(path, allow_placeholders)
+                MODULE.validate(path, allow_placeholders)
 
     def test_accepts_complete_contract(self) -> None:
         self.validate_text(VALID_CONTRACT)

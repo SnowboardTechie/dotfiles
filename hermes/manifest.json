@@ -6,11 +6,13 @@
     "sgg-sync-workday-note.py",
     "sgg-calendar-events.swift",
     "sgg-mail-messages.js",
+    "sgg-pr-review-event.py",
     "personal-alignment-brief.py",
     "personal-mail-messages.js"
   ],
   "copiedScripts": [
     "sgg-morning-brief.py",
+    "sgg-pr-review-event.py",
     "personal-alignment-brief.py"
   ],
   "skills": [
