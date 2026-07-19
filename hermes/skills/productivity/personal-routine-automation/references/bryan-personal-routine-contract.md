@@ -37,7 +37,7 @@ The collector reads bounded, read-only context from:
 - IP-geolocated `wttr.in` weather, currently resolving to Bend, Oregon;
 - Bryan's physical whiteboard through his report during the reset.
 
-Traci's calendar is included only when an event affects shared availability, transportation, household responsibilities, date planning, or an opportunity for support. Source failure means unknown, not empty.
+Traci's calendar is included only when an event affects shared availability, transportation, household responsibilities, date planning, or an opportunity for support. Subscription-calendar birthdays are informational, not availability constraints, unless separate evidence shows a gathering, call, travel, or other commitment. Source failure means unknown, not empty.
 
 ## Artifact paths
 
@@ -64,6 +64,8 @@ Surface what remains relevant without treating the weekend as a rescue deadline.
 ### Sunday reset
 
 Review how the week felt, wins and meaningful partial progress, goal outcomes, patterns, coming constraints and opportunities, candidate projects with resurfacing reasons, adaptive active goals, explicit parked projects, possible Hermes delegation, and a short whiteboard slate.
+
+Keep the reset in planning mode. Clarify only enough to define an outcome, then record it and move on rather than beginning research or execution inside the reset. If Bryan says a task is not for now, stop expanding it and return to the reset. Before suggesting a new plan or Hermes delegation for a named project, inspect its canonical notes or repository state for existing plans, issues, or active agents; ask rather than assume when current execution state is unavailable.
 
 ## Growth and challenge
 
