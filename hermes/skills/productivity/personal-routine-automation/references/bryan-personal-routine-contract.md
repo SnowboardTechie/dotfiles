@@ -79,7 +79,7 @@ Resurfacing is not execution authorization. Hermes may execute ordinary steps on
 
 ### Remote workspace
 
-The private encrypted Matrix room named `Personal / Second Brain` is the remote
+The private encrypted Matrix room named `Second Brain` is the remote
 interaction surface for this pilot. Scheduled personal briefings deliver there;
 Bryan can continue, redirect, or stop the conversation from that room. The room
 is not canonical storage: `~/second-brain` remains the source of truth, and only
