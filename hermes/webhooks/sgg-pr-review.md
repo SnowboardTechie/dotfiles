@@ -69,8 +69,8 @@ infrastructure changes. HMAC secrets remain local and must never enter Git.
 
 ## Activation gates
 
-- [ ] Private encrypted SGG room exists and Bryan has joined.
-- [ ] `sgg-pr-review-event.py` is installed as a regular file under
+- [x] Private encrypted SGG room exists and Bryan has joined.
+- [x] `sgg-pr-review-event.py` is installed as a regular file under
       `~/.hermes/scripts/`; the webhook sandbox must not resolve it outside that
       directory.
 - [ ] Hermes webhook listener binds only to loopback.
@@ -83,3 +83,13 @@ infrastructure changes. HMAC secrets remain local and must never enter Git.
 - [ ] GitHub hook readback matches only the approved event types and URL.
 
 Until every gate passes, status is implemented locally, not activated or live.
+
+## Local pilot evidence
+
+On 2026-07-19, the filter transformed an existing external review on
+`common-grants/ts-cg-grants-gov#16`, performed a successful read-only GitHub
+readback, and delivered one clearly labeled manual-pilot report to the encrypted
+SGG room. Matrix readback verified the resulting encrypted event. All three
+GitHub repositories still had zero configured hooks afterward. This proves the
+local transformation and private delivery path, not signed ingress,
+idempotency, or live event activation.
