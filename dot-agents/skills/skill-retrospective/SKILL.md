@@ -1,7 +1,7 @@
 ---
 name: skill-retrospective
 description: Use after chats with repeated workflow friction.
-version: 1.0.0
+version: 1.1.0
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
@@ -111,6 +111,9 @@ Privately inventory the consequential sequence before suggesting changes:
 - guessed APIs, flags, paths, or capabilities;
 - premature completion followed by missing verification;
 - handoffs that lost scope, decisions, or source links;
+- recurring source gathering, comparisons, exclusions, or judgment calls that
+  the user still performs manually even when the path is successful;
+- outputs the user repeatedly turns into the same kind of decision or action;
 - the final successful path and the checks that proved it.
 
 Distinguish an **unproductive loop** from a **diagnostic loop**. Hypothesis,
@@ -120,6 +123,11 @@ action or assumption without new evidence is friction.
 For each meaningful observation, retain a concise transcript anchor, impact,
 root cause if established, successful alternative, and expected reuse horizon.
 Do not paste raw secrets or large tool output into the ledger or final slate.
+
+Run a **compoundability scan** as well as a friction scan. Smooth repetition can
+be a workflow-improvement signal when the same sources, rules, exclusions,
+decision, and actionable output recur. Do not treat mere topic recurrence or a
+repeated request for unrelated answers as a reusable loop.
 
 **Complete when:** every claimed pattern has direct evidence and the successful
 path, if any, is separated from failed attempts.
@@ -141,6 +149,36 @@ Reject candidates that merely say "be careful," restate generic engineering
 practice, preserve version-specific syntax without a discovery step, or encode
 negative capability claims from one failed environment.
 
+For a repeated-workflow candidate, record its **current maturity** and the
+**next justified layer**. Use this progression as a diagnostic, not a mandate:
+
+1. an ad hoc answer becomes a manually exercised loop with named sources,
+   rules, exclusions, decision criteria, and an actionable output;
+2. a proven loop becomes an on-demand skill when future invocation should not
+   reconstruct the procedure;
+3. a workflow gains a dedicated workspace only when context or remote
+   continuity benefits from isolation: a canonical project vault or project
+   instructions own durable context, a Desktop Project owns the local working
+   boundary, and a dedicated messaging room or thread owns remote interaction;
+   use a separate profile only when tools, memory, or permissions must differ;
+4. independent evidence lanes may become focused subagent work only when their
+   bounded reports improve context or decision quality;
+5. a proven on-demand loop may become a cron when time is the natural trigger,
+   a webhook when an external state transition is the natural trigger, or a
+   polling cron when no reliable event exists and change detection can remain
+   deterministic and quiet;
+6. unattended workflows gain an observability surface only when chat delivery
+   and existing logs no longer make status, failures, or approvals clear.
+
+Recommend only the smallest next layer that resolves an evidenced limitation.
+More machinery is not improvement by itself.
+
+Before proposing unattended execution, require at least one representative
+manual run that proves source access, rule and exclusion handling, output
+quality, permission boundaries, and observable verification. If the loop has
+not passed that gate, propose a bounded manual pilot rather than a persistent
+cron, webhook, or polling job.
+
 **Complete when:** every retained candidate has a trigger, behavior change,
 verification, evidence strength, and root-cause rationale.
 
@@ -161,7 +199,8 @@ For each candidate, choose one primary destination:
 | User memory | A stable cross-task preference or environment fact changes behavior broadly |
 | Project instructions | The rule is specific to one repository, product, or team |
 | Vault capture | The learning is durable domain knowledge, a decision, or project context rather than agent procedure |
-| Automation | The real need is a repeated schedule or machine-enforceable check |
+| Workspace or room | A proven workflow needs isolated local context or a dedicated remote conversation; name the canonical vault/project separately from the interaction surface |
+| Automation | A manually proven loop has a natural time or event trigger and an explicit permission, failure, and verification contract |
 | No action / defer | Evidence is weak, transient, still unverified, or accurately encoded in an artifact that will be reliably retrieved |
 
 Prefer one source of truth. Dual-write only when the destinations serve genuinely
@@ -182,6 +221,8 @@ Use a compact table:
 
 Then include:
 
+- **Workflow maturity:** for each loop candidate, its current maturity and the
+  smallest next justified layer.
 - **Proposed delta:** exact patch text or a sufficiently exact new-artifact
   preview, every affected file or manifest, and planned validation.
 - **Declined or deferred:** plausible observations that failed the promotion
@@ -263,6 +304,10 @@ verification evidence.
 - [ ] Evidence boundary and limitations are explicit
 - [ ] Productive diagnostic iteration was not mislabeled as friction
 - [ ] Every candidate passes the promotion and behavioral-delta tests
+- [ ] Repeated manual decisions were considered even when no failure occurred
+- [ ] Automation candidates passed the representative manual-run gate
+- [ ] Every workflow candidate names its current maturity and next justified layer
+- [ ] Workspace candidates separate durable context from local and remote interaction surfaces
 - [ ] Closest existing skills were read in full
 - [ ] Each candidate has one primary destination
 - [ ] Declined and deferred observations are visible
