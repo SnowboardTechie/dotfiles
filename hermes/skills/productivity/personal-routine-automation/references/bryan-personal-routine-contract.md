@@ -77,6 +77,19 @@ Resurfacing is not execution authorization. Hermes may execute ordinary steps on
 
 ## Pilot operation
 
+### Remote workspace
+
+The private encrypted Matrix room named `Personal / Second Brain` is the remote
+interaction surface for this pilot. Scheduled personal briefings deliver there;
+Bryan can continue, redirect, or stop the conversation from that room. The room
+is not canonical storage: `~/second-brain` remains the source of truth, and only
+participated reflection is captured under the vault rules.
+
+The room is intentionally scoped to one human domain rather than one agent. It
+does not broaden the routine's authority: briefings may gather, synthesize, and
+recommend, while further execution still requires an agreed plan under the
+autonomy boundary above.
+
 Tracked source lives under `/Users/bryan/code/dotfiles/hermes/`:
 
 - collector: `scripts/personal-alignment-brief.py`
