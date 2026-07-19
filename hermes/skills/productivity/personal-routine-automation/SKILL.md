@@ -161,7 +161,7 @@ Use `weekday`, `saturday`, or `sunday`. Read only relevant source files named by
 
 ### Weekday and Saturday capture
 
-Target `Journal/YYYY-MM-DD-daily-check-in.md`. Ask a compact first group about current energy, anything weighing on Bryan, and one specific gratitude. Adaptively ask what went well and what would make the remaining day intentional. Saturday also distinguishes what still matters from what can be deliberately deprioritized, renegotiated, or parked.
+Target `Journal/YYYY-MM-DD-daily-check-in.md`. Ask exactly one small question at a time, beginning with current energy or what Bryan needs from the transition. Adaptively ask about anything weighing on him, one specific gratitude, what went well, and what would make the remaining day intentional. Saturday also distinguishes what still matters from what can be deliberately deprioritized, renegotiated, or parked. Never present these topics as a questionnaire or preview the full sequence.
 
 At a resting point, use `templates/daily-spoke.md`, record only Bryan's actual reflections and concise synthesis, link the Monday-dated weekly hub when present, and add the spoke under its `## Daily Reflections` section.
 
@@ -169,7 +169,7 @@ At a resting point, use `templates/daily-spoke.md`, record only Bryan's actual r
 
 Use `Journal/CURRENT-MONDAY-weekly-plan.md` as the ending hub and `Journal/NEXT-MONDAY-weekly-plan.md` as the new hub. Review the current hub and spokes, relevant personal project notes, concise canonical SGG context, all calendars, incomplete Reminders, filtered recent Mail, weather, and the physical whiteboard through Bryan's report.
 
-Guide the reset through feelings and gratitude, wins, honest goal outcomes, cross-day patterns, coming capacity, candidate resurfacing with reasons, adaptive active goals, an explicit parked list, bounded Hermes delegation, and a concise whiteboard slate. Finalize the current hub when it exists, create the next hub with `templates/weekly-hub.md`, link spokes, and update canonical project notes when state changed.
+Guide the reset through feelings and gratitude, wins, honest goal outcomes, cross-day patterns, coming capacity, candidate resurfacing with reasons, adaptive active goals, an explicit parked list, bounded Hermes delegation, and a concise whiteboard slate. Ask exactly one adaptive question at a time and do not front-load collected context or preview the full sequence. Finalize the current hub when it exists, create the next hub with `templates/weekly-hub.md`, link spokes, and update canonical project notes when state changed.
 
 ### Capture and synchronization authority
 

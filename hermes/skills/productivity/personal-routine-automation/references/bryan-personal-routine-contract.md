@@ -51,6 +51,8 @@ Participating through a resting point authorizes these exact non-draft captures 
 
 ## Interaction contracts
 
+All three routines are conversations, not briefings or questionnaires. The scheduled delivery opens with a brief welcome and exactly one small question. Collected context stays in reserve and is introduced only when it helps the next adaptive question. Do not dump the agenda, constraints, candidate list, or all reflection prompts at once, and do not ask Bryan to invoke another command in the same room.
+
 ### Weekday close
 
 Ask about energy, anything weighing on Bryan, and one specific gratitude. Adaptively ask about a win and what would make the evening intentional. Mark work as over, reconnect with no more than the useful portion of the weekly direction, and choose an action suited to real energy.
