@@ -8,6 +8,7 @@ This directory preserves Bryan-authored Hermes assets without treating the mutab
 - `skills/`: the Hermes-local skills reported by `hermes skills list --source local`.
 - `scripts/`: authored automation source. Compiled binaries remain local.
 - `automations/`: declarative prompts and schedules for named cron jobs.
+- `orchestrators/`: reusable durable-goal contract templates and validation.
 - `manifest.json`: the explicit allowlist installed on Studio.
 
 Hermes built-in skills are supplied by the Hermes installation and are not copied.
