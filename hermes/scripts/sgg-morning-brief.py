@@ -16,8 +16,8 @@ HOME = Path.home()
 HERMES_HOME = Path(os.environ.get("HERMES_HOME", HOME / ".hermes"))
 SGG_ROOT = HOME / "code" / "sgg"
 NOTES_ROOT = HOME / "code" / "notes"
-SECOND_BRAIN = HOME / "second-brain"
 PACIFIC = ZoneInfo("America/Los_Angeles")
+WORK_CALENDARS = {"Bryan @ Agile6"}
 REPOS = (
     "HHS/simpler-grants-protocol",
     "HHS/simpler-grants-gov",
@@ -64,21 +64,7 @@ def json_command(args: list[str], *, timeout: int = 45, cwd: Path | None = None)
 def collect_calendar() -> tuple[list[dict[str, Any]], str | None]:
     binary = HERMES_HOME / "scripts" / "bin" / "sgg-calendar-events"
     data, error = json_command([str(binary)], timeout=30)
-    rows = [
-        row
-        for row in (data or [])
-        if str(row.get("calendar", "")).strip().casefold() != "traci"
-    ]
-    return rows, error
-
-
-def collect_reminders() -> tuple[list[dict[str, Any]], str | None]:
-    data, error = json_command(["remindctl", "today", "--json"], timeout=30)
-    rows = [
-        row
-        for row in (data or [])
-        if not row.get("isCompleted", False)
-    ]
+    rows = [row for row in (data or []) if str(row.get("calendar", "")).strip() in WORK_CALENDARS]
     return rows, error
 
 
@@ -159,45 +145,11 @@ def git_history(repo: Path, since: datetime, pathspec: str | None = None) -> tup
     return command(args, timeout=30, cwd=repo)
 
 
-def changed_paths(history: str) -> list[str]:
-    return sorted(
-        {
-            line.strip()
-            for line in history.splitlines()
-            if line.strip() and not line.startswith("COMMIT ")
-        }
-    )
-
-
 def collect_notes(since: datetime, now: datetime) -> tuple[dict[str, Any], list[str]]:
     errors: list[str] = []
     sgg_history, error = git_history(NOTES_ROOT, since, "sgg")
     if error:
         errors.append(f"SGG vault: {error}")
-
-    project_history, error = git_history(NOTES_ROOT, since)
-    if error:
-        errors.append(f"project vaults: {error}")
-
-    recent_project_history, error = git_history(NOTES_ROOT, now - timedelta(days=7))
-    if error:
-        errors.append(f"recent project vaults: {error}")
-
-    second_brain_history, error = git_history(SECOND_BRAIN, since)
-    if error:
-        errors.append(f"second-brain: {error}")
-
-    recent_second_brain_history, error = git_history(SECOND_BRAIN, now - timedelta(days=7))
-    if error:
-        errors.append(f"recent second-brain: {error}")
-
-    active_project_vaults = sorted(
-        {
-            path.split("/", 1)[0]
-            for path in changed_paths(recent_project_history)
-            if "/" in path and not path.startswith(".")
-        }
-    )
 
     return {
         "sgg": {
@@ -215,19 +167,6 @@ def collect_notes(since: datetime, now: datetime) -> tuple[dict[str, Any], list[
                 "pilotReviewDate": "2026-07-30",
             },
         },
-        "secondBrain": {
-            "root": str(SECOND_BRAIN),
-            "instructionsFile": str(SECOND_BRAIN / "AGENTS.md"),
-            "previousWorkdayHistory": second_brain_history[:12000],
-            "recentSevenDayPaths": changed_paths(recent_second_brain_history)[:50],
-        },
-        "projectVaults": {
-            "root": str(NOTES_ROOT),
-            "instructionsFile": str(NOTES_ROOT / "AGENTS.md"),
-            "previousWorkdayHistory": project_history[:15000],
-            "activeVaultsFromLastSevenDays": active_project_vaults,
-            "recentSevenDayPaths": changed_paths(recent_project_history)[:80],
-        },
     }, errors
 
 
@@ -235,7 +174,6 @@ def main() -> int:
     now = datetime.now(PACIFIC)
     since = previous_workday_start(now)
     calendar_rows, calendar_error = collect_calendar()
-    reminders, reminders_error = collect_reminders()
     apple_mail, apple_mail_error = collect_apple_mail(since)
     github, github_errors = collect_github(since)
     notes, notes_errors = collect_notes(since, now)
@@ -244,7 +182,6 @@ def main() -> int:
         key: value
         for key, value in {
             "appleCalendar": calendar_error,
-            "appleReminders": reminders_error,
             "appleMail": apple_mail_error,
             "notes": notes_errors or None,
             "github": github_errors or None,
@@ -257,8 +194,6 @@ def main() -> int:
         "previousWorkdayStart": since.isoformat(),
         "sourceErrors": errors,
         "calendar": calendar_rows,
-        "reminders": reminders,
-        "reminderSourceCounts": {"appleReminders": len(reminders)},
         "email": apple_mail,
         "emailSourceCounts": {"appleMail": len(apple_mail)},
         "github": github,

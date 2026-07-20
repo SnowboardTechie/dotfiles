@@ -36,6 +36,8 @@ Start with the user outcome, not the available integrations. A strong default is
 
 Do not add news, weather, broad inbox summaries, automatic task creation, or note maintenance unless the user identifies a real need.
 
+When work and personal morning context have separate delivery rooms, enforce the boundary in both collectors rather than relying only on synthesis: the work collector omits personal vaults, reminders, and calendars, while the personal collector omits work notes, repositories, mail, and calendars.
+
 ### 2. Discover the actual sources and their authority
 
 Inspect the current environment before proposing automation:

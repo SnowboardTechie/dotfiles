@@ -7,12 +7,14 @@
     "sgg-calendar-events.swift",
     "sgg-mail-messages.js",
     "sgg-pr-review-event.py",
+    "personal-morning-brief.py",
     "personal-alignment-brief.py",
     "personal-mail-messages.js"
   ],
   "copiedScripts": [
     "sgg-morning-brief.py",
     "sgg-pr-review-event.py",
+    "personal-morning-brief.py",
     "personal-alignment-brief.py"
   ],
   "skills": [
@@ -48,6 +50,22 @@
       "attachToSession": true,
       "continuation": {
         "chatName": "SGG",
+        "userEnv": "MATRIX_ALLOWED_USERS"
+      }
+    },
+    {
+      "name": "Personal Morning Brief",
+      "schedule": "20 7 * * 1-5",
+      "promptFile": "automations/personal-morning-brief/prompt.md",
+      "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
+      "skills": ["personal-routine-automation", "vault-pkm"],
+      "script": "personal-morning-brief.py",
+      "noAgent": false,
+      "enabledToolsets": ["file", "terminal"],
+      "workdir": "/Users/bryan/second-brain",
+      "attachToSession": true,
+      "continuation": {
+        "chatName": "Second Brain",
         "userEnv": "MATRIX_ALLOWED_USERS"
       }
     },

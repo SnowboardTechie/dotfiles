@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Prepare Bryan for a workday by reconstructing the previous business day's resting point, showing today's constraints, recalling a few other active projects when useful, and recommending one concrete work outcome. The brief is read-only across mail, calendar, GitHub, canonical notes, and project repositories. An explicitly approved two-week pilot may additionally maintain one path-bounded, noncanonical SGG workday note.
+Prepare Bryan for SGG work by reconstructing the previous business day's resting point, showing work constraints, and recommending one concrete work outcome. Personal projects, personal reminders, and personal calendar events are handled by the separate Second Brain morning brief. The SGG brief is read-only across work mail, the work calendar, GitHub, canonical SGG notes, and project repositories. An explicitly approved two-week pilot may additionally maintain one path-bounded, noncanonical SGG workday note.
 
 ## Operational contract
 
@@ -46,23 +46,11 @@ Through 2026-07-30, the job maintains `workdays/YYYY-MM-DD.md` as a lightweight 
 
 The implementation helper lives at `/Users/bryan/.hermes/scripts/sgg-sync-workday-note.py`; the collector exposes today's and the previous workday's note paths. The pilot intentionally does not add an automatic end-of-day job.
 
-### Personal second-brain
-
-Root: `/Users/bryan/second-brain`
-
-Read `AGENTS.md` before any topic note. Use previous-workday Git history and a bounded list of paths changed within the last seven days to nominate active topics. Open only the few relevant Markdown notes needed to recover a concrete open thread. Do not install daily/weekly planning machinery or edit the vault from the morning brief.
-
-### Other project vaults
-
-Root: `/Users/bryan/code/notes`
-
-Read the root `AGENTS.md`. Infer candidate active vaults from top-level paths touched by Git commits in the previous workday and the last seven days. For a candidate that may matter today, read its `INDEX.md` and `status.md` when present. Recent activity is a selection signal, not proof every project belongs in the output. Limit the final “Other recent projects” section to three concrete open threads and omit it when none merit attention.
-
 Session history can supply secondary context but never outranks current vault files or live systems.
 
 ## Calendar
 
-Apple Calendar on Studio is canonical because it includes the synchronized work Google calendar and broader scheduling constraints.
+Apple Calendar on Studio is canonical for synchronized work events. The SGG collector includes only `Bryan @ Agile6`; personal and shared calendars belong to the Second Brain morning brief.
 
 - Collect read-only through EventKit; use AppleScript only as a fallback.
 - Separate timed and all-day events; infer focus windows. Collect bounded organizer, current-user attendee, and attendee-count metadata. Assign preparation only when Bryan is the organizer or another authoritative source explicitly assigns it; never infer ownership from an event title or attendee status alone.
@@ -96,13 +84,12 @@ Check authored PRs, assigned reviews, actionable comments/requested changes, mea
 ## Output contract
 
 1. **Where work left off** — 2–5 grounded bullets and the recorded next resting point.
-2. **Other recent projects** — at most 3 concrete open threads; omit when empty.
-3. **Today's calendar** — commitments, preparation, conflicts, and focus windows.
-4. **Work email requiring attention** — at most 3 actionable messages; omit when empty.
-5. **GitHub watch list** — at most 3 items unless something is actively broken.
-6. **Recommended primary work outcome** — exactly one result.
-7. **Suggested first action** — exactly one concrete next step.
-8. **Unverified / needs judgment** — only real source failures, disagreements, or assumptions.
+2. **Today's work calendar** — commitments, verified preparation, conflicts, and focus windows.
+3. **Work email requiring attention** — at most 3 actionable messages; omit when empty.
+4. **GitHub watch list** — at most 3 items unless something is actively broken.
+5. **Recommended primary work outcome** — exactly one result.
+6. **Suggested first action** — exactly one concrete next step.
+7. **Unverified / needs judgment** — only real source failures, disagreements, or assumptions.
 
 Aim for under two minutes and about fifteen or fewer substantive bullets. Distinguish verified live state, canonical recorded state, historical evidence, proposals, and inference.
 

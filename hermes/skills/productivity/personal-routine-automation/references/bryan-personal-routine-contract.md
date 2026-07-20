@@ -19,6 +19,7 @@ Generated briefings are ephemeral. If Bryan does not participate, create no note
 
 ## Cadence and suppression
 
+- Weekday personal morning brief: 7:20 AM Pacific, read-only, delivered to Second Brain before the 7:30 AM SGG work brief.
 - Weekdays: 5:00 PM Pacific, or when Bryan starts a close earlier.
 - Saturday: 11:00 AM Pacific, or when Bryan starts earlier.
 - Sunday: 11:00 AM Pacific, or when Bryan starts earlier.
@@ -36,6 +37,8 @@ The collector reads bounded, read-only context from:
 - Apple Mail on Sunday, filtered to commitments, appointments, travel, purchases requiring action, property/vehicle projects, family/shared plans, important people, or active goals;
 - IP-geolocated `wttr.in` weather, currently resolving to Bend, Oregon;
 - Bryan's physical whiteboard through his report during the reset.
+
+The weekday personal morning brief is a separate one-minute update. It reads only non-work calendars, today's incomplete Reminders, actionable weather, the current weekly hub, and bounded recent Second Brain project activity. It excludes the SGG vault, work repositories, GitHub, work mail, and the `Bryan @ Agile6` calendar. It never writes a note.
 
 Traci's calendar is included only when an event affects shared availability, transportation, household responsibilities, date planning, or an opportunity for support. Subscription-calendar birthdays are informational, not availability constraints, unless separate evidence shows a gathering, call, travel, or other commitment. Source failure means unknown, not empty.
 
@@ -111,6 +114,7 @@ Tracked source lives under `/Users/bryan/code/dotfiles/hermes/`:
 
 Jobs:
 
+- Personal Morning Brief: weekdays at 7:20 AM Pacific, recurring until removed
 - Personal Weekday Close: 15 scheduled pilot runs
 - Personal Saturday Orientation: 3 scheduled pilot runs
 - Personal Sunday Reset: one implementation test plus 3 scheduled pilot runs
