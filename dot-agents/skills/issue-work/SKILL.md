@@ -46,7 +46,7 @@ Use the host's native operations; do not require one agent framework or plugin:
 | Delegate isolated research/review | `delegate_task` | `Task`, `Agent`, or equivalent |
 | Create/enter worktree | `wt switch --create` then run tools with that worktree as `workdir` | `EnterWorktree` or controlled `git worktree` fallback |
 | Write the approved plan | load Hermes `plan` | `superpowers:writing-plans` or equivalent |
-| Execute a Codex-authored plan with Claude | load Hermes `codex-claude-implementation-loop` when the parent is Codex-backed | host-native implementation workflow |
+| Execute an approved plan | on a Codex-backed Hermes parent, route SGG to `codex-claude-implementation-loop`, route other repos to `codex-qwen-implementation-loop`, or use host-native GPT when explicitly requested | host-native implementation workflow |
 | Implement test-first | load Hermes `test-driven-development` | host TDD/execution workflow |
 | Debug repeated failures | load Hermes `systematic-debugging` | equivalent root-cause workflow |
 | Independent final review | load Hermes `requesting-code-review` | equivalent verification/reviewer workflow |
@@ -257,20 +257,45 @@ After user approval:
 
 ### 3.2 Execute the plan
 
-`plan.md` (at the state-root path) is the source of truth. Mirror its checkboxes into the host task list (Hermes: `todo`). Then select exactly one execution path.
+`plan.md` (at the state-root path) is the source of truth. Mirror its checkboxes into the host task list (Hermes: `todo`). Then select exactly one execution path. This routing applies only inside `issue-work`; it does not prevent GPT from implementing ad hoc work outside this skill.
 
 #### Hermes with a Codex-backed parent
 
-When `codex-claude-implementation-loop` is installed, load it and use it as the implementation engine:
+Select the implementation engine after plan approval, in this order:
 
-1. Record the worktree's baseline status and run the worker's subscription-auth check.
-2. Invoke `claude_worker.py implement` with `plan.md`, `{WORKTREE_PATH}`, and `--model opus`. Never authorize a model downgrade on the run's behalf; if Opus remains unavailable after the wrapper's same-model retry, stop and report the blocker.
-3. Save the normalized worker envelope as `{state-dir}/claude-implementation.json`. Record its `session_id` in `progress.md` frontmatter as `claude_session_id:` so Phase 4 can resume the same Claude context.
-4. Codex reviews the actual repository diff and independently reruns every targeted and broader check required by the plan. Claude's structured result is evidence, not the verdict.
-5. For blocking findings, write `{state-dir}/codex-review-{pass}.md` and resume the same Opus session with `claude_worker.py revise`. Repeat the complete Codex gate after each revision; cap the correction loop at two revision passes.
-6. Mark plan/task checkboxes complete only after Codex accepts the final repository state. Preserve the implementation and revision envelopes in the state directory.
+1. **Explicit same-run override.** Bryan may say GPT should implement this issue, or may explicitly select Qwen. Use that path. Claude remains limited to the verified SGG allowlist.
+2. **SGG Claude allowlist.** Use `codex-claude-implementation-loop` only when the resolved origin host is `github.com` and the ticket owner/repository is exactly one of:
+   - `HHS/simpler-grants-gov`
+   - `HHS/simpler-grants-protocol`
+   - `common-grants/py-cg-grants-gov`
+   - `common-grants/ts-cg-grants-gov`
+3. **Default planned-issue worker.** For every other repository, use `codex-qwen-implementation-loop`.
 
-Claude must not commit, push, reset, clean, publish, or alter history. After the complete Codex gate passes, the parent may create local commits at the approved plan's logical boundaries, staging only reviewed paths and preserving the repository's message and hook rules. Plan approval authorizes those local implementation commits; it does not authorize a push, PR, comment, or other publication.
+Resolve this decision with the skill's deterministic router, using `--override auto` unless Bryan explicitly selected GPT, Qwen, or an allowlisted Claude route:
+
+```bash
+python3 <issue-work-skill-dir>/scripts/select_issue_worker.py \
+  --workdir "{WORKTREE_PATH}" \
+  --ticket-repo "{owner}/{repo}" \
+  --override auto
+```
+
+Load the exact skill named by `implementation_loop`; a `null` loop means the explicit host-native GPT path. Preserve the router JSON in the state directory as `implementation-routing.json`.
+
+The intake owner/repository and the resolved clone's origin host plus owner/repository must agree before routing. A path under `~/code/sgg`, a similarly named checkout, a lookalike repository on another forge, or an unrelated repository under the SGG umbrella is not sufficient to authorize Claude. Missing worker prerequisites stop the run; never silently fall back to GPT, Claude, or a cloud model merely because the selected worker is unavailable.
+
+For either delegated engine:
+
+1. Record the worktree's baseline status and run the selected readiness command: Claude `claude_worker.py check`; Qwen `qwen_worker.py check`.
+2. Invoke its `implement` command with `plan.md` and `{WORKTREE_PATH}`. The Claude path must select `--model opus` and may not downgrade. The Qwen path pins the wrapper's exact local provider and model and may not use a cloud fallback.
+3. Save the normalized envelope as `{state-dir}/{worker}-implementation.json`. Record `implementation_loop:` and its `session_id` as `worker_session_id:` in `progress.md` frontmatter so Phase 4 can resume the same worker context.
+4. Codex reviews the actual repository diff and independently reruns every targeted and broader check required by the plan. Worker JSON is evidence, not the verdict.
+5. For blocking findings, write `{state-dir}/codex-review-{pass}.md` and resume the same worker session with its `revise` command. Repeat the complete Codex gate after each revision; cap the correction loop at two revision passes.
+6. Mark plan/task checkboxes complete only after Codex accepts the final repository state. Preserve every implementation and revision envelope in the state directory.
+
+The delegated worker must not stage, commit, push, reset, clean, publish, or alter history. After the complete Codex gate passes, the parent may create local commits at the approved plan's logical boundaries, staging only reviewed paths and preserving the repository's message and hook rules. Plan approval authorizes those local implementation commits; it does not authorize a push, PR, comment, or other publication.
+
+When Bryan explicitly selects GPT implementation, execute task-by-task with the host-native workflow below while retaining the same plan, test, failure, and independent-review gates.
 
 #### Other hosts or a non-Codex Hermes parent
 
@@ -279,7 +304,7 @@ Execute task-by-task with the host-native workflow. Load `test-driven-developmen
 - **plan_path:** `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`
 - **worktree path:** the absolute path from `progress.md`
 - **commit rules:** atomic (one logical unit per commit); message style matches `git log --oneline -20` in **this repo** (not global defaults); **never** add `Co-authored-by: Claude` or any AI signature; **never** use `--no-verify`.
-- **failure policy:** hand off the 3.5 escalation rule below — on a task whose tests fail, attempt a direct fix first; on a **second** consecutive failure of the same task, escalate per 3.5; hard cap at 3 attempts, then stop and report. The Codex–Claude path instead uses its two-revision bound above.
+- **failure policy:** hand off the 3.5 escalation rule below — on a task whose tests fail, attempt a direct fix first; on a **second** consecutive failure of the same task, escalate per 3.5; hard cap at 3 attempts, then stop and report. Delegated Claude and Qwen paths instead use their two-revision bound above.
 
 Keep `plan.md` checkboxes and the host task list synchronized, so a resumed run (`status: implementing`) picks up at the first unchecked task automatically.
 
@@ -301,7 +326,7 @@ Lint + typecheck when configured: TypeScript `tsc --noEmit`; Python `ruff check`
 
 On the host-native path, first failure of a task's tests: attempt a direct fix → commit → rerun. **Second consecutive failure of the same task:** escalate to `systematic-debugging` (the `Skill` tool) rather than guessing again — it drives a root-cause pass instead of another patch. **Hard cap at 3 attempts total.** On the 4th failure, stop and report the failing output to the user.
 
-On the Codex–Claude path, Codex first determines whether the failure is a plan defect, implementation defect, pre-existing failure, or external blocker. Send implementation defects back through the same Opus session under the two-revision bound. A plan defect, ambiguity, destructive conflict, or exhausted revision budget stops for the user instead of switching models or guessing.
+On either delegated path, Codex first determines whether the failure is a plan defect, implementation defect, pre-existing failure, or external blocker. Send implementation defects back through the same retained worker session under the two-revision bound. A plan defect, ambiguity, destructive conflict, unavailable selected worker, or exhausted revision budget stops for the user instead of switching workers or guessing.
 
 ### 3.6 Progress log
 
@@ -316,7 +341,7 @@ Tests: {pass/fail summary}
 Lint/typecheck: {summary}
 ```
 
-For the Codex–Claude path, also record the implementation/revision artifact path, Claude-reported checks, Codex-rerun checks, and Codex gate verdict. Never collapse Claude's claims and Codex's fresh results into one line.
+For either delegated path, also record the implementation/revision artifact path, worker-reported checks, Codex-rerun checks, and Codex gate verdict. Never collapse worker claims and Codex's fresh results into one line.
 
 Do not advance `status` when tests go green — Phase 4 bumps it to `reviewed` after self-review completes. Leave it at `implementing` until then.
 
@@ -338,7 +363,7 @@ by project instructions.
 
 ### 3.8 Verify before handing off
 
-Before Phase 4 spawns review, prove the suite is green rather than trust the implementation context. If Phase 3 used `codex-claude-implementation-loop`, its final Codex review/retest gate satisfies this step; cite that fresh gate output rather than spawning a duplicate generic reviewer, and rerun only checks invalidated by the parent's post-gate local commit operation. Otherwise load `requesting-code-review` on Hermes (or the host's independent verification workflow), rerun the project's test / lint / typecheck commands, and preserve actual output.
+Before Phase 4 spawns review, prove the suite is green rather than trust the implementation context. If Phase 3 used either delegated implementation loop, its final Codex review/retest gate satisfies this step; cite that fresh gate output rather than spawning a duplicate generic reviewer, and rerun only checks invalidated by the parent's post-gate local commit operation. Otherwise load `requesting-code-review` on Hermes (or the host's independent verification workflow), rerun the project's test / lint / typecheck commands, and preserve actual output.
 
 Append the result to `progress.md` under a `## Verification` heading:
 
@@ -367,8 +392,8 @@ Phase 4 hands off to the [`pr-self-review`](../pr-self-review/SKILL.md) skill in
 - `base_branch`: the value from `progress.md` `base:`
 - `plan_path`: `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`
 - `source_issue`: `{owner}/{repo}#{N}` — the ticket this work is for; lets pr-self-review treat findings tagged with this issue as PR-intent findings rather than separately tracked work, without waiting for a PR body to exist yet.
-- `claude_session_id`: the value recorded in `progress.md`, when Phase 3 used the Codex–Claude loop; otherwise omit it.
-- `implementation_loop`: `codex-claude-implementation-loop` when `claude_session_id` is present; otherwise omit it.
+- `worker_session_id`: the value recorded in `progress.md` when Phase 3 used a delegated implementation loop; otherwise omit it.
+- `implementation_loop`: the exact selected value, `codex-claude-implementation-loop` or `codex-qwen-implementation-loop`, when `worker_session_id` is present; otherwise omit it.
 
 Load the skill through the host's skill mechanism. It writes `review-{lens}.md` files and a final `summary.md` into the state dir, matching the shape Phase 4.3 reads below.
 
@@ -447,7 +472,8 @@ Detailed recipes that load on demand:
 - `test-driven-development` — Phase 3 implementation discipline.
 - `systematic-debugging` — Phase 3.5 second-failure escalation.
 - `requesting-code-review` — Phase 3.8 independent verification.
-- `codex-claude-implementation-loop` — preferred Phase 3 implementation/revision engine for a Codex-backed Hermes parent.
+- `codex-claude-implementation-loop` — SGG-only Phase 3 implementation/revision engine on a Codex-backed Hermes parent.
+- `codex-qwen-implementation-loop` — default non-SGG Phase 3 implementation/revision engine for planned issue work on a Codex-backed Hermes parent.
 
 ### Optional Delegation
 

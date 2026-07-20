@@ -267,6 +267,15 @@ def execute_worker(args: argparse.Namespace) -> dict[str, Any]:
             "login_method": login_method,
         }
 
+    guard_script = Path(__file__).with_name("sgg_route_guard.py")
+    guard = run_command(
+        [sys.executable, str(guard_script), "--workdir", args.workdir],
+        timeout=30,
+    )
+    if guard.returncode != 0:
+        detail = (guard.stderr or guard.stdout).strip()[-2000:]
+        raise WorkerError(f"Claude repository allowlist check failed: {detail}")
+
     root, baseline = resolve_repository(args.workdir)
     if args.mode == "implement":
         source_path, source_text = read_bounded(args.plan, "plan")

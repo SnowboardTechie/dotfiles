@@ -39,7 +39,7 @@ Detect the mode from arguments and context:
 
 ### 0.1 `pre-pr` (invoked from issue-work)
 
-Selected when the invoker passes an explicit `mode: pre-pr` argument alongside `state_dir`, `worktree_path`, `head_branch`, `base_branch`, `plan_path`, and optionally `source_issue` in `{owner}/{repo}#{N}` form. A Codex-backed `issue-work` caller may also pass `implementation_loop: codex-claude-implementation-loop` and `claude_session_id`; treat those as an opaque routing marker and worker resume ID, never as forge credentials. Mode is always explicit — never inferred from the state-dir path prefix, which would break under unusual `$HOME` or relocated state directories. In `pre-pr` mode:
+Selected when the invoker passes an explicit `mode: pre-pr` argument alongside `state_dir`, `worktree_path`, `head_branch`, `base_branch`, `plan_path`, and optionally `source_issue` in `{owner}/{repo}#{N}` form. A Codex-backed `issue-work` caller may also pass `implementation_loop` as exactly `codex-claude-implementation-loop` or `codex-qwen-implementation-loop`, plus `worker_session_id`; treat those as an opaque routing marker and worker resume ID, never as forge credentials. Reject any other loop value and reject a loop without a session ID. Mode is always explicit — never inferred from the state-dir path prefix, which would break under unusual `$HOME` or relocated state directories. In `pre-pr` mode:
 
 - Worktree path and branch are already set up.
 - The caller's `plan.md` exists in the state dir — use it as ground truth for reviewers.
@@ -74,7 +74,7 @@ Otherwise treat as `pr-url` mode from here on — same author check, same worktr
 Common to all three modes:
 
 - **Capability mapping.** Delegate isolated work with Hermes `delegate_task`, Claude/OpenCode/Pi `Task`/`Agent`, or the host equivalent. Use interactive clarification (Hermes: `clarify`) only for Phase 2.3's material intent-conflict escalation, and `requesting-code-review` for Hermes verification. If delegation is unavailable, run the same lenses serially; do not require Superpowers.
-- **Correction routing.** On a Codex-backed Hermes parent with `codex-claude-implementation-loop` installed, automatic code fixes go to Claude Opus and return to Codex for review. Resume `claude_session_id` when supplied by `issue-work`; otherwise start a fresh Opus implementation session from the validated-finding contract. Other hosts retain the native edit path.
+- **Correction routing.** Only a `pre-pr` caller's validated `implementation_loop` selects a delegated correction worker. Resume its `worker_session_id`, route findings back through that same Claude or Qwen worker, and return to Codex for independent review. Without that explicit marker, including standalone review on a Codex-backed parent, retain the native GPT/host edit path. Never infer Claude from the parent model.
 - `gh auth status` must pass for GitHub PRs; Forgejo needs `FORGEJO_TOKEN` (or `GITEA_TOKEN`) in env, same as `issue-work` Phase 1.5.
 - Working tree must be clean (no modified/staged files; untracked OK). Dirty → **refuse**: "Working tree has uncommitted changes. Commit, stash, or discard before starting a review loop." Do not silently stash.
 - Record mode, owner, repo, PR number, expected head branch (`headRefName` in standalone modes; `head_branch` in `pre-pr` mode), worktree path, and state-dir path in memory for the rest of the run.
@@ -239,7 +239,7 @@ The active agent owns disposition. Reviewer output is advice, not a ballot for t
 
 Do not ask the user to disposition routine findings. For each finding, choose one of these actions and record the evidence:
 
-- **fix** — the finding is valid and a reasonable correction preserves the documented intent. Apply it automatically, including Critical security/correctness fixes, tests, edge-case handling, and simplifications needed to deliver the promised behavior. On the native path, edit in the worktree and record the files touched in `fixes_per_pass[pass_count]`. On the Codex–Claude path, queue it in `pending_opus_fixes`; Phase 2.4 applies the batch with Opus and Codex reconciles the resulting diff. If the finding is valid but requires no code change, record an empty `files_touched` set so Phase 2.4 classifies it as an acknowledgment.
+- **fix** — the finding is valid and a reasonable correction preserves the documented intent. Apply it automatically, including Critical security/correctness fixes, tests, edge-case handling, and simplifications needed to deliver the promised behavior. On the native path, edit in the worktree and record the files touched in `fixes_per_pass[pass_count]`. On a delegated issue-work path, queue it in `pending_worker_fixes`; Phase 2.4 applies the batch with the caller-selected worker and Codex reconciles the resulting diff. If the finding is valid but requires no code change, record an empty `files_touched` set so Phase 2.4 classifies it as an acknowledgment.
 - **reject** — the finding is false, already handled, speculative, unsupported by evidence, or would make the code worse. Record a concrete rationale and the evidence checked, then add its key to the suppression set.
 - **defer** — the finding is valid but non-blocking and demonstrably owned by a separately tracked issue or settled decision outside this PR. Record the issue/note and why the current PR remains correct without the change, then suppress it. A related-context tag alone is not enough evidence to defer.
 - **escalate** — the finding is valid and blocking, but every reasonable correction would materially contradict the documented PR intent. This is the only finding disposition that asks the user.
@@ -282,10 +282,10 @@ escalations:        List<{key, conflict, recommendation, resolution}># material 
 bound_findings:     List<{key, file, line, lens, summary}>           # valid fixes blocked only by correction cap
 fixes_per_pass:     List<List<{key, file, line, lens, summary, files_touched: Set<string>}>>
                                                                      # populated at native disposition or Codex reconciliation; empty sets become acks
-pending_opus_fixes: List<{key, file, line, lens, severity, finding}> # Codex–Claude path only; cleared after each worker pass
+pending_worker_fixes: List<{key, file, line, lens, severity, finding}> # delegated issue-work paths only; cleared after each worker pass
 acks:               List<{key, file, line, lens, summary, pass}>     # fix-without-diff; for summary.md
 pass_count:         int
-opus_correction_passes: int                                          # bounded independently to 2 for this review run
+worker_correction_passes: int                                        # bounded independently to 2 for this review run
 ```
 
 All of it dies when the skill run ends. `{TRUNK_ROOT}/.hermes/pr-self-review/…/` holds only the JSON caches, the `review-{lens}.md` files, and the final `summary.md` — the disposition log is a *report*, not an input to future runs.
@@ -294,15 +294,17 @@ At the end of disposition, the pass has accumulated a set of automatic fixes.
 
 ### 2.4 Commit + mode-aware publication
 
-**Apply queued fixes first.** If `pending_opus_fixes` is non-empty on the Codex–Claude path:
+**Apply queued fixes first.** If `pending_worker_fixes` is non-empty on a delegated issue-work path:
 
 1. Write `{state-dir}/codex-review-pass-{pass_count}.md` with each validated finding's stable key, severity, location, observed behavior, expected behavior, and evidence. Treat this as a self-contained correction contract; do not pass chat history.
-2. If `claude_session_id` is available, run `claude_worker.py revise` against that same session. Otherwise write `{state-dir}/review-fixes-plan.md`, run `claude_worker.py implement`, and retain the returned session ID for later passes.
-3. Use `--model opus`. Retry only Opus through the wrapper; model unavailability stops the review and reports a blocker rather than silently downgrading.
-4. Save the worker envelope as `{state-dir}/claude-review-fixes-{pass_count}.json`. Codex then inspects the real diff, reconciles every automatic fix against the changed behavior, and independently reruns the targeted and broader checks. Worker-reported `findings_addressed` and tests are claims to verify, not proof.
-5. Populate each automatic fix's `files_touched` from Codex's diff reconciliation. Use an empty set when the finding required acknowledgment only or produced no relevant diff. Increment `opus_correction_passes`, then clear `pending_opus_fixes` after reconciliation.
+2. Resume `worker_session_id` with the wrapper selected by `implementation_loop`:
+   - `codex-claude-implementation-loop` → `claude_worker.py revise --model opus`
+   - `codex-qwen-implementation-loop` → `qwen_worker.py revise`
+3. Preserve worker purity. Claude may retry only Opus and never downgrade; Qwen must keep its exact loopback provider/model and never use a cloud fallback. Unavailability stops the review rather than switching workers.
+4. Save the worker envelope as `{state-dir}/{worker}-review-fixes-{pass_count}.json`. Codex then inspects the real diff, reconciles every automatic fix against the changed behavior, and independently reruns the targeted and broader checks. Worker-reported `findings_addressed` and tests are claims to verify, not proof.
+5. Populate each automatic fix's `files_touched` from Codex's diff reconciliation. Use an empty set when the finding required acknowledgment only or produced no relevant diff. Increment `worker_correction_passes`, then clear `pending_worker_fixes` after reconciliation.
 
-Allow at most two Opus correction passes during one `pr-self-review` run. If a third correction batch would be required, stop before editing, move those validated in-scope findings to `bound_findings`, and finish with `Ship Readiness: Correction bound reached — do not merge.` Do not ask the user to disposition the findings or continue the loop. A later explicit invocation may begin a fresh bounded review. Claude never commits or pushes; the active parent owns the existing commit/push gate below after Codex accepts the repository state.
+Allow at most two delegated-worker correction passes during one `pr-self-review` run. If a third correction batch would be required, stop before editing, move those validated in-scope findings to `bound_findings`, and finish with `Ship Readiness: Correction bound reached — do not merge.` Do not ask the user to disposition the findings or continue the loop. A later explicit invocation may begin a fresh bounded review. Delegated workers never commit or push; the active parent owns the existing commit/push gate below after Codex accepts the repository state.
 
 **Auto-ack reconciliation (run first).** Walk `fixes_per_pass[pass_count]` and check each entry's `files_touched` set (populated during disposition or Codex reconciliation). For any entry where `files_touched` is empty:
 
@@ -325,7 +327,7 @@ If no findings produced edits (all rejected / deferred / escalated / ack), skip 
 
 - **Zero unsuppressed findings on the pass** (nothing to disposition) → diff is clean. Exit the loop.
 - **No diff was committed this pass** (all rejected / deferred / escalated / bound / ack — i.e., post-reconciliation `fixes_per_pass[pass_count]` is empty) → the code didn't change; reviewing the same diff again would produce the same findings. Exit the loop.
-- **Any automatic fixes produced a diff** → loop back to Phase 2.1 (HEAD moved; the range is still `{base}...HEAD`). On the Codex–Claude path, cap correction passes at 2; validated findings requiring a third edit batch become `bound_findings`. On the native path, cap edits at 5 passes, then run one final review-only pass: if it is clean, exit normally; if any validated in-scope fixes remain, record them as `bound_findings`. Correction-cap exhaustion is a deterministic stop/report outcome, never a clarification prompt.
+- **Any automatic fixes produced a diff** → loop back to Phase 2.1 (HEAD moved; the range is still `{base}...HEAD`). On either delegated issue-work path, cap correction passes at 2; validated findings requiring a third edit batch become `bound_findings`. On the native path, cap edits at 5 passes, then run one final review-only pass: if it is clean, exit normally; if any validated in-scope fixes remain, record them as `bound_findings`. Correction-cap exhaustion is a deterministic stop/report outcome, never a clarification prompt.
 - **User says "done" at any point** → exit loop immediately.
 
 ---
@@ -334,7 +336,7 @@ If no findings produced edits (all rejected / deferred / escalated / ack), skip 
 
 ### 3.0 Verify the reviewed state
 
-The review loop may have committed automatic fixes across passes — so the current branch state is unverified even if a caller verified before this skill ran. On the Codex–Claude path, Codex's fresh post-revision gate is the independent verification context: cite its actual command output and rerun only checks invalidated after that gate; do not delegate the final verdict back to Claude or start a duplicate generic fixer. On other Hermes paths, load the installed `requesting-code-review` skill rather than cloning its procedure; other hosts use their independent verification context. Confirm the post-review test / lint / typecheck state is green.
+The review loop may have committed automatic fixes across passes — so the current branch state is unverified even if a caller verified before this skill ran. On either delegated issue-work path, Codex's fresh post-revision gate is the independent verification context: cite its actual command output and rerun only checks invalidated after that gate; do not delegate the final verdict back to the worker or start a duplicate generic fixer. On other Hermes paths, load the installed `requesting-code-review` skill rather than cloning its procedure; other hosts use their independent verification context. Confirm the post-review test / lint / typecheck state is green.
 
 Feed the result into `summary.md`'s **Ship Readiness** section (3.1). `bound_findings` is a hard blocker even when verification is green: use `Correction bound reached — do not merge.` Otherwise green verification permits the normal readiness verdict, while red verification requires `Do not merge — verification failed: {key output}` regardless of disposition. A clean review over a red suite is not shippable.
 
@@ -467,5 +469,6 @@ Frontmatter `ticket:` field is retained (not renamed) so tools that key on it ke
 - `ship` — invoked by `issue-work` Phase 4.3 after this skill returns (not by this skill directly).
 - `agent-workspace` — trunk-root resolution for `.notes/` access from a worktree.
 - `requesting-code-review` — Phase 3.0 pre-summary proof.
-- `codex-claude-implementation-loop` — applies automatic fixes with Opus while Codex retains the review and test gate.
+- `codex-claude-implementation-loop` — applies SGG issue-work fixes with Opus while Codex retains the review and test gate.
+- `codex-qwen-implementation-loop` — applies non-SGG issue-work fixes with local Qwen while Codex retains the review and test gate.
 - `ponytail:ponytail-review` — source philosophy for the `over-engineering` lens (carried inline in `diff-reviewer`; the skill is not invoked at runtime).

@@ -27,6 +27,7 @@
     "productivity/workday-briefing-automation",
     "security/self-hosted-agent-security",
     "software-development/codex-claude-implementation-loop",
+    "software-development/codex-qwen-implementation-loop",
     "software-development/cross-agent-skill-migration",
     "software-development/cross-repository-release-validation",
     "software-development/upstream-contribution-assessment"
