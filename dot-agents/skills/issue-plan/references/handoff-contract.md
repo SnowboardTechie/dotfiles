@@ -14,14 +14,19 @@ Every canonical issue plan contains this body section exactly once:
 - Issue: https://github.com/owner/repo/issues/123
 - Planning status: draft
 - Issue checked through: 2026-07-20T17:30:00Z
+- Comments checkpoint: sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 - Repository: owner/repo
+- Repository base: main
 - Repository revision: 0123456789abcdef0123456789abcdef01234567
 ```
 
 Forgejo uses its canonical issue URL in the same `Issue` field. `Planning status`
 is exactly `draft` or `approved`. The issue timestamp is the forge's
-`updatedAt`/`updated_at` value from the planning fetch. The repository revision
-is the full local trunk `HEAD` inspected during planning.
+`updatedAt`/`updated_at` value from the planning fetch. `Comments checkpoint` is
+the canonical SHA-256 digest defined in `issue-work`'s ticket-fetch reference.
+`Repository base` is the fetched default branch and `Repository revision` is the
+full remote-base commit SHA inspected during planning, never an arbitrary local
+`HEAD`.
 
 Vault-local frontmatter remains owned by `vault-pkm`; do not add conflicting
 frontmatter keys merely for this contract. The body section is deliberately
@@ -61,6 +66,7 @@ searches for the exact canonical issue URL. A candidate is consumable only when:
 - `Issue` exactly matches the current canonical URL.
 - `Planning status` is `approved`.
 - `Repository` matches the resolved origin owner/repo.
+- `Repository base` matches the current default branch.
 - All required plan content exists.
 - No linked decision/spec is still draft or unresolved.
 
@@ -69,10 +75,12 @@ one silently.
 
 ## Freshness validation
 
-Before importing a plan, `issue-work` fetches the current issue and comments and
-compares them with `Issue checked through`. It also compares the current base to
-`Repository revision` and inspects relevant changed paths when the revision has
-moved.
+Before importing a plan, `issue-work` fetches the current issue and every comment
+ID/update timestamp/body, then compares both the issue timestamp and canonical
+comment checkpoint. It resolves and fetches the current default branch before
+comparing its remote-base SHA with `Repository revision`; when the revision has
+moved, it inspects relevant changed paths before deciding whether drift is
+material.
 
 Drift is **material** when it changes any of:
 
@@ -101,6 +109,10 @@ plan_source: vault
 source_plan: /absolute/path/to/vault/note.md
 source_plan_status: approved
 source_plan_validated: <iso8601>
+issue_checked_through: <forge-updated-timestamp>
+comments_checkpoint: sha256:<digest>
+planning_base: <default-branch>
+planning_base_revision: <full-sha>
 ```
 
 The executor mutates checkboxes only in the derived snapshot. It does not turn
@@ -128,5 +140,7 @@ bounded surface, and a clear regression-test path. Length, labels, assignment,
 or milestone membership do not make an issue plan-ready.
 
 If any criterion fails, `issue-work` lists the missing planning inputs, recommends
-`issue-plan {url}`, and stops before repository pre-flight, worktree creation,
-code edits, or implementation delegation.
+`issue-plan {url}`, and stops before dirty-tree checks, worktree creation, code
+edits, or implementation delegation. Ticket reads, default-branch fetch, and the
+bounded read-only inspection are intake prerequisites for making this verdict,
+not permission to begin implementation.

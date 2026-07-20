@@ -31,19 +31,52 @@ Fields returned:
 gh issue view {N} --repo {owner}/{repo} --comments
 ```
 
-This returns a rendered text view. To get structured JSON for comments (needed for author + timestamp):
+This returns a rendered text view. To get structured JSON for comments (needed
+for stable identity, edit detection, author, and timestamps):
 
 ```bash
 gh api "repos/{owner}/{repo}/issues/{N}/comments" \
-  --jq '[.[] | {author: .user.login, created: .created_at, body: .body}]'
+  --jq '[.[] | {id, author: .user.login, created: .created_at, updated: .updated_at, body}]' \
+  > comments.json
 ```
 
 With pagination for issues with > 30 comments:
 
 ```bash
 gh api --paginate "repos/{owner}/{repo}/issues/{N}/comments" \
-  --jq '.[] | {author: .user.login, created: .created_at, body: .body}'
+  --jq '.[] | {id, author: .user.login, created: .created_at, updated: .updated_at, body}' \
+  | jq -s '.' > comments.json
 ```
+
+### Canonical comment checkpoint
+
+After either forge fetch, save the normalized comments as one JSON array in
+`comments.json`, then compute the same checkpoint during planning and every
+resume/freshness check:
+
+```bash
+python3 -c '
+import hashlib, json, pathlib
+comments = json.loads(pathlib.Path("comments.json").read_text())
+canonical = [
+    {
+        "id": str(item["id"]),
+        "updated": item.get("updated") or item.get("created") or "",
+        "body": item.get("body") or "",
+    }
+    for item in comments
+]
+canonical.sort(key=lambda item: item["id"])
+blob = json.dumps(
+    canonical, ensure_ascii=False, separators=(",", ":"), sort_keys=True
+).encode()
+print("sha256:" + hashlib.sha256(blob).hexdigest())
+'
+```
+
+Stable IDs detect deletion/addition, `updated` detects edits even when a comment
+predates the plan, and `body` makes the digest independently checkable. Do not
+use only the latest creation timestamp as the checkpoint.
 
 ### Pull Request — metadata + review comments
 
@@ -56,7 +89,7 @@ Note: `comments` on a PR view returns **issue comments** (the conversation tab).
 
 ```bash
 gh api "repos/{owner}/{repo}/pulls/{N}/comments" \
-  --jq '[.[] | {author: .user.login, created: .created_at, path: .path, line: .line, body: .body}]'
+  --jq '[.[] | {id, author: .user.login, created: .created_at, updated: .updated_at, path, line, body}]'
 ```
 
 ### Telling an issue from a PR
@@ -119,8 +152,11 @@ tea api --login "$LOGIN" --repo "$OWNER/$REPO" \
 ```bash
 tea api --login "$LOGIN" --repo "$OWNER/$REPO" \
   "/repos/$OWNER/$REPO/issues/$N/comments" \
-  | jq '[.[] | {author: .user.login, created: .created_at, body: .body}]'
+  | jq '[.[] | {id, author: .user.login, created: .created_at, updated: .updated_at, body}]' \
+  > comments.json
 ```
+
+Compute `Comments checkpoint` with the canonical recipe above.
 
 Paginate if needed:
 
@@ -132,7 +168,13 @@ while :; do
   [[ "$resp" == "[]" ]] && break
   echo "$resp"
   page=$((page + 1))
-done | jq -s 'add'
+done | jq -s 'add | map({
+  id,
+  author: .user.login,
+  created: .created_at,
+  updated: .updated_at,
+  body
+})' > comments.json
 ```
 
 ### PR-specific fields (if `is_pr: true`)

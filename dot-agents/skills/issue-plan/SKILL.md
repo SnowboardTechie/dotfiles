@@ -20,10 +20,11 @@ issue, codebase, and project vault; deliberates unresolved decisions with the
 user; invokes the appropriate design skills; and saves one canonical plan note
 that `issue-work` can consume later.
 
-Planning is read-only with respect to the code repository. Do not create a
-worktree, edit project files, commit code, post issue comments, or begin
-implementation. Vault writes and the vault's own commit/push discipline are the
-only intended mutations.
+Planning is read-only with respect to tracked code and the working tree. An
+authenticated ticket read and `git fetch` of the default branch are allowed so
+the plan is grounded in the current remote base. Do not create a worktree, edit
+project files, commit code, post issue comments, or begin implementation. Vault
+writes and the vault's own commit/push discipline are the only content mutations.
 
 ## When to Use
 
@@ -56,13 +57,23 @@ to a PR, route to the appropriate review workflow instead.
 ### 1. Resolve the issue and repository
 
 Use `issue-work`'s source detection, ticket-fetch, and repository-resolution
-references. Fetch the current issue body, `updatedAt`/`updated_at`, every comment,
-labels, linked references one level deep, and acceptance criteria. Resolve the
-local trunk checkout, but do not fetch, switch branches, or create a worktree.
-Read the current local `HEAD` SHA for provenance.
+references. Fetch the current issue body, `updatedAt`/`updated_at`, every comment
+with its stable ID and update timestamp, labels, linked references one level
+deep, and acceptance criteria. Compute the canonical comment checkpoint defined
+in the ticket-fetch reference.
 
-**Complete when:** the canonical issue URL, current issue update timestamp,
-repository identity, trunk path, and local revision are known.
+Resolve the local trunk checkout and the forge's actual default branch. Fetch
+that branch, bind `origin/{default}` (or the forge-equivalent remote ref) as the
+planning base, and record its full commit SHA. Do not switch branches or create a
+worktree. Inspect repository content against that fetched base; a dirty or stale
+local checkout is not provenance.
+
+If default-branch resolution or fetch fails, stop and surface the authentication
+or remote error. Never fall back to a stale local ref.
+
+**Complete when:** the canonical issue URL, issue update timestamp, comment
+checkpoint, repository identity, trunk path, default branch, and fetched base
+revision are known.
 
 ### 2. Resolve the project vault
 
@@ -112,11 +123,16 @@ are composable, not mutually exclusive:
 | A formal ADR/spec must conform to an established conventions index | `conforming-tech-specs` after decisions are settled |
 | Concrete implementation sequence, files, and checks | `plan` after design decisions are settled |
 
-On Hermes, load the named skills exactly. Other hosts may use their installed
-equivalent for generic plan authoring, but must not silently replace a missing
-specialized workflow such as `dx-target` or `adr-and-spec-coach` with generic
-drafting. Stop and hand the planning session to Hermes when an applicable
-specialized skill is unavailable.
+Runtime mapping is explicit:
+
+| Capability | Hermes | Claude / OpenCode |
+|---|---|---|
+| Generic task-plan authoring | installed `plan` | `superpowers:writing-plans` or an explicitly installed equivalent; stop if absent |
+| DX target exploration | installed `dx-target` | use `dx-target` only when installed; otherwise stop and hand the session to Hermes |
+| Decision coaching | installed `adr-and-spec-coach` | installed pooled `adr-and-spec-coach` |
+| Spec conformance | installed `conforming-tech-specs` | installed pooled `conforming-tech-specs` |
+
+Do not silently replace a missing specialized workflow with generic drafting.
 
 A skill's narrower applicability still governs. Do not force `dx-target` onto an
 internal bug fix or `conforming-tech-specs` onto a trivial change.
@@ -147,11 +163,12 @@ a new folder or MOC without approval.
 Supporting `dx-target`, ADR, or spec notes remain separate atomic notes and link
 to the implementation plan. The implementation plan is the canonical handoff.
 
-### 2. Invoke `plan` with a path override
+### 2. Invoke the mapped plan-authoring skill with a path override
 
-Load `plan` only after the design decisions are settled. Override its normal
-`.hermes/plans/` destination with the chosen vault note path and adapt its output
-to the vault's frontmatter and linking conventions. The plan must include:
+After design decisions are settled, load Hermes `plan` or the mapped host
+equivalent above. Override its normal workspace destination with the chosen vault
+note path and adapt its output to the vault's frontmatter and linking conventions.
+The plan must include:
 
 - Goal and externally observable outcome.
 - In-scope and out-of-scope boundaries.
@@ -180,7 +197,8 @@ On approval:
 
 1. Set `Planning status: approved` in the handoff section.
 2. Re-read the note and linked decision/design artifacts.
-3. Verify the issue URL, issue timestamp, repository identity, and revision.
+3. Verify the issue URL, issue timestamp, comment checkpoint, repository
+   identity, default branch, and fetched base revision.
 4. Ensure the relevant MOC or index has an inbound route to every new durable
    note.
 5. Follow `vault-pkm`'s vault-local commit and push discipline, staging only the
@@ -213,8 +231,8 @@ strategy drift is material.
 
 1. **Using generic `plan` alone.** It writes workspace execution state and does
    not perform vault lookup, decision coaching, or the issue handoff contract.
-2. **Creating a worktree "for exploration."** Planning stays on the trunk and is
-   read-only. A worktree means implementation has started too early.
+2. **Creating a worktree "for exploration."** Planning inspects the fetched base
+   read-only and never needs a worktree.
 3. **Saving only an exploration.** Candidate designs are supporting notes; the
    workflow still needs one approved canonical implementation plan.
 4. **Marking a plan approved with open architecture choices.** Unresolved
@@ -228,7 +246,9 @@ strategy drift is material.
 
 ## Verification Checklist
 
-- [ ] Current issue body, update timestamp, and all comments fetched
+- [ ] Current issue body, update timestamp, and all comment IDs/update timestamps fetched
+- [ ] Canonical comment checkpoint computed
+- [ ] Default branch fetched and plan grounded against its remote revision
 - [ ] Repository and project vault resolved without guessing
 - [ ] Vault-local instructions, index/MOC, and related notes read
 - [ ] Relevant code, tests, specs, and prior patterns inspected read-only

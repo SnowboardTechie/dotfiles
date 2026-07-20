@@ -59,12 +59,27 @@ If delegation is unavailable, perform the same bounded analysis serially. Missin
 
 After resolving `{TRUNK_ROOT}` in Phase 1.2, compute the state-dir path. If `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/progress.md` exists:
 
-1. Read its frontmatter `status:` field.
-2. Report to the user: "Found existing work on {ticket}. Status: {status}. Resume or refresh?"
-3. On **resume**, skip to the phase after the last completed status.
-4. On **refresh**, continue with the full flow (will overwrite prior files).
+1. Read `status:`, `plan_source:`, issue/comment checkpoints, planning-base
+   metadata, and, for `plan_source: vault`, source-plan path/status metadata.
+2. If the metadata required for that source is missing, classify the state as
+   **legacy**. Do not reuse or enter its worktree. Offer to refresh intake
+   through Phase 1; never infer a plan source for legacy state.
+3. Report: "Found existing work on {ticket}. Status: {status}. Resume or
+   refresh?"
+4. On **resume**, always re-fetch the issue/comments, recompute the comment
+   checkpoint, fetch the current default branch, and rerun the bounded inspection
+   plus Phase 1.5 authority validation before skipping phases:
+   - For `intake` or `planned`, do not reuse the worktree until the gate passes.
+   - For `implementing`, `reviewed`, or `blocked`, compare current authority with
+     the recorded approved snapshot. Immaterial drift is logged and resume may
+     continue. Material goal/scope/decision/acceptance drift stops for the user;
+     do not silently widen implementation or ship stale work.
+5. On **refresh**, continue with the full flow and replace prior intake/plan
+   state only after the new source passes.
 
-Do not re-fetch or re-plan unless the user says refresh.
+Resume always refreshes authority evidence. It does not regenerate the plan when
+evidence is unchanged; material drift routes through the source-specific rules
+below.
 
 ---
 
@@ -110,30 +125,57 @@ Create `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/` with the host file 
 
 ### 1.4 Fetch ticket context
 
-Use [references/fetch-ticket.md](references/fetch-ticket.md) to fetch the ticket body, comments, linked refs, and inferred open questions. Prefer an isolated intake child (`delegate_task` on Hermes; `Task`/`Agent` elsewhere), but run the same recipe inline when delegation is unavailable. Write `context.md` in the state directory and read it after completion.
+Use [references/fetch-ticket.md](references/fetch-ticket.md) to fetch the ticket
+body, update timestamp, comments with IDs/update timestamps, linked refs, and
+inferred open questions. Compute the canonical comment checkpoint. Prefer an
+isolated intake child (`delegate_task` on Hermes; `Task`/`Agent` elsewhere), but
+run the same recipe inline when delegation is unavailable. Write `context.md` in
+the state directory and read it after completion.
+
+Resolve the forge's current default branch, fetch it against the trunk, and bind
+the fetched remote ref and full SHA as `{PLANNING_BASE_REF}` and
+`{PLANNING_BASE_SHA}`:
+
+```bash
+DEFAULT_BRANCH=$(gh repo view {owner}/{repo} --json defaultBranchRef --jq .defaultBranchRef.name)
+# Forgejo: read .default_branch from the repository API.
+git -C "{TRUNK_ROOT}" fetch origin "$DEFAULT_BRANCH"
+PLANNING_BASE_REF="origin/$DEFAULT_BRANCH"
+PLANNING_BASE_SHA=$(git -C "{TRUNK_ROOT}" rev-parse "$PLANNING_BASE_REF")
+```
+
+If default-branch resolution or fetch fails, stop and surface the authentication
+or remote error. Never validate authority against a stale local ref.
+
+Before judging the issue fallback, perform a **bounded read-only inspection** of
+that fetched base: active repository instructions, issue-named files/symbols,
+neighboring implementation patterns, test locations, and relevant repo-owned
+specs/ADRs. Use `git diff`, `git show`, and `git ls-tree` against the fetched ref
+when the local checkout differs; never treat stale working-tree content as the
+base. A single read-only delegate is allowed when the surface spans distinct
+areas, but it must not create a worktree or edit code. Write the concise map to
+`intake-inspection.md` in the state directory.
+
+This intake refresh and inspection are prerequisites for deciding whether work
+may start. They are not worktree creation or implementation.
 
 ### 1.5 Plan-source readiness gate
 
-This gate runs **before** repository pre-flight (default-branch fetch and dirty-tree checks), worktree creation, branch creation, or implementation delegation. Read [`issue-plan`'s handoff contract](../issue-plan/references/handoff-contract.md), then evaluate these sources in order:
+This gate runs **after** the current ticket/base inspection but **before**
+dirty-tree checks, worktree reuse/creation, branch creation, or implementation
+delegation. Read [`issue-plan`'s handoff contract](../issue-plan/references/handoff-contract.md), then evaluate these sources in order:
 
-1. **Approved project-vault plan.** Load `vault-pkm`. Resolve only project-vault candidates: a path named by project instructions, `{TRUNK_ROOT}/vault`, then `~/code/notes/{repo}` when it clearly belongs to the repository. Search for the exact canonical issue URL and validate the handoff section, required plan content, linked decisions, current issue/comments, and repository drift. If one approved plan is current, record `plan_source: vault` and its absolute path. If it has material drift or multiple approved candidates disagree, stop and ask the user to reopen `issue-plan`; never silently choose or rewrite one.
-2. **Issue-as-plan fallback.** When no consumable vault plan exists, evaluate the current issue body, all comments, linked context, and inspected repository patterns against every clear-issue criterion in the handoff contract: outcome, boundary, acceptance, direction, and no unresolved load-bearing decisions. All five must pass. Record `plan_source: issue` and a concise criterion-by-criterion verdict in `context.md`.
-3. **Blocked.** If neither source passes, list the specific missing planning inputs, recommend `issue-plan {canonical-url}`, and stop. Do not continue to pre-flight, create/reuse a worktree, edit code, or delegate implementation. Labels, assignment, milestone membership, or issue length never substitute for the rubric.
+1. **Approved project-vault plan.** Load `vault-pkm`. Resolve only project-vault candidates: a path named by project instructions, `{TRUNK_ROOT}/vault`, then `~/code/notes/{repo}` when it clearly belongs to the repository. Search for the exact canonical issue URL and validate the handoff section, required plan content, linked decisions, issue timestamp, comment checkpoint, current default branch, and fetched-base drift. If one approved plan is current, record `plan_source: vault` and its absolute path. If it has material drift or multiple approved candidates disagree, stop and ask the user to reopen `issue-plan`; never silently choose or rewrite one.
+2. **Issue-as-plan fallback.** When no consumable vault plan exists, evaluate the current issue body, all comments, linked context, and `intake-inspection.md` against every clear-issue criterion in the handoff contract: outcome, boundary, acceptance, direction, and no unresolved load-bearing decisions. All five must pass. Record `plan_source: issue`, the issue/comment checkpoints, planning-base SHA, and a concise criterion-by-criterion verdict in `context.md`.
+3. **Blocked.** If neither source passes, list the specific missing planning inputs, recommend `issue-plan {canonical-url}`, and stop. Do not continue to dirty-tree checks, create/reuse a worktree, edit code, or delegate implementation. Labels, assignment, milestone membership, or issue length never substitute for the rubric.
 
 This is a readiness gate, not permission to publish. A clear issue authorizes detailed execution-plan synthesis but still follows Phase 2's approval checkpoint. A current vault plan whose handoff says `Planning status: approved` carries its prior plan approval forward unless Phase 2 materially changes its goal, scope, decisions, or acceptance contract.
 
 ### 1.6 Pre-flight checks
 
-Run all of these against the trunk (not a worktree).
-
-**First, detect the default branch** (don't assume `main`):
-
-```bash
-DEFAULT_BRANCH=$(gh repo view {owner}/{repo} --json defaultBranchRef --jq .defaultBranchRef.name)
-# Forgejo equivalent — use the API from references/fetch-ticket.md
-```
-
-**Then run the rest of the pre-flight:**
+Run the remaining checks against the trunk (not a worktree). The default branch
+was already resolved and fetched in Phase 1.4 so authority validation and the
+eventual worktree use the same base.
 
 ```bash
 # GitHub auth — stop if not logged in
@@ -144,9 +186,6 @@ if [[ "$forge" == "forgejo" && -z "${FORGEJO_TOKEN:-${GITEA_TOKEN:-}}" ]]; then
   echo "Set FORGEJO_TOKEN (or GITEA_TOKEN) in your shell env" >&2
   exit 1
 fi
-
-# Fetch the actual default branch
-git -C "{TRUNK_ROOT}" fetch origin "$DEFAULT_BRANCH"
 
 # Working tree clean? (modified or staged — ignore untracked)
 git -C "{TRUNK_ROOT}" status --porcelain | grep -E '^[ MADRC]'
@@ -174,8 +213,12 @@ ticket: {url-or-shorthand}
 worktree: {abs-path}
 branch: {branch-name}
 base: {default-branch}
+planning_base: {default-branch}
 plan_source: {vault|issue}
 source_plan: {absolute-vault-note-path-or-empty}
+issue_checked_through: {forge-updated-timestamp}
+comments_checkpoint: sha256:{digest}
+planning_base_revision: {full-sha}
 started: {iso8601}
 ---
 
@@ -184,6 +227,7 @@ started: {iso8601}
 - Context file: {TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/context.md
 - Worktree: {abs-path}
 - Base branch: {default-branch}
+- Base revision: {full-sha}
 - Plan source: {approved vault note | clear issue}
 ```
 
@@ -237,7 +281,16 @@ After exploration returns, load Hermes's installed `plan` skill or the host's eq
 - **Inputs:** `context.md`, the `explore-*.md` outputs from 2.1, any inline research from 2.2, and the validated vault note when `plan_source: vault`.
 - **Plan-path override:** `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`. Hermes `plan` normally writes under workspace `.hermes/plans/`; use this ticket-specific path so resume state stays together and never appears in the feature worktree's `git status`.
 
-For a vault source, preserve its goal, scope, accepted decisions, and acceptance contract. Compile it into executor-ready tasks and checkboxes rather than mutating the vault note. Record `plan_source: vault`, `source_plan`, `source_plan_status: approved`, and `source_plan_validated: {iso8601}` in frontmatter. For an issue source, synthesize the detailed execution plan from the issue's planning authority and repository exploration, recording `plan_source: issue`.
+For a vault source, first compare exploration findings with its goal, scope,
+accepted decisions, and acceptance contract. Any material mismatch is an
+unconditional stop that routes back to `issue-plan`; do not synthesize a
+superseding derived plan. Otherwise compile it into executor-ready tasks and
+checkboxes rather than mutating the vault note. Record `plan_source: vault`,
+`source_plan`, `source_plan_status: approved`, `source_plan_validated:
+{iso8601}`, issue/comment checkpoints, and planning-base metadata in frontmatter.
+For an issue source, synthesize the detailed execution plan from the issue's
+planning authority and repository exploration, recording the same checkpoints
+with `plan_source: issue`.
 
 The result is a bite-sized, checkbox-task plan (exact file paths, code, evidence-shaped expected results, commit boundaries) — the shape Phase 3's executor consumes. Do not invent exact test counts or command output that was not run. Make sure frontmatter carries `status: planned` and `ticket: {url}` so Phase 0.2 resume and the 2.4 approval gate keep working against it.
 
@@ -245,9 +298,14 @@ The result is a bite-sized, checkbox-task plan (exact file paths, code, evidence
 
 This is normally a hard stop. **Do not proceed to Phase 3 without explicit user approval or inherited approval from a current vault plan.**
 
-When `plan_source: vault`, compare the derived plan against the approved source. If synthesis only adds executor detail without changing the approved goal, scope, decisions, or acceptance contract, record `approval: inherited` and the source path in `plan.md`; present a concise validation/import summary and continue. If synthesis materially changes any of those, change the derived plan to `approval: pending` and use the full approval checkpoint below. Never update the approved vault note implicitly.
+When `plan_source: vault`, compare the derived plan against the approved source.
+If synthesis only adds executor detail without changing the approved goal, scope,
+decisions, or acceptance contract, record `approval: inherited` and the source
+path in `plan.md`; present a concise validation/import summary and continue. Any
+material change is an unconditional stop that routes back to `issue-plan`. It
+cannot be approved only in the derived execution snapshot.
 
-When `plan_source: issue`, or when vault-plan approval cannot be inherited, present the full approval checkpoint:
+When `plan_source: issue`, present the full approval checkpoint:
 
 Present the full `plan.md` contents inline to the user with a clear prompt:
 
@@ -259,7 +317,11 @@ Present the full `plan.md` contents inline to the user with a clear prompt:
 
 Then wait for the user's next message. Do not implement anything until you see an approval.
 
-On amendment: overwrite `plan.md` with the revised version, keep `status: planned` in frontmatter, and re-present. Iterate until approved. A material amendment to a vault-sourced goal, scope, decision, or acceptance contract also requires reopening the canonical plan through `issue-plan`; do not let the execution snapshot silently become the only record of the new design.
+On an issue-sourced amendment, overwrite `plan.md` with the revised version, keep
+`status: planned` in frontmatter, and re-present. Iterate until approved. For a
+vault source, executor-only clarification may update the derived snapshot;
+anything that changes goal, scope, decision, or acceptance routes back to
+`issue-plan` without inline approval.
 
 (If the harness happens to be in Plan Mode when this skill runs, `ExitPlanMode` is the harness-native approval gate and you can use it in place of the inline prompt above. Do not try to enter Plan Mode from inside the skill — that's not a thing.)
 
@@ -450,11 +512,13 @@ Present the review outcome inline in this order:
 | Ticket is a PR (review work, not new work) | Fetch the PR head, create/reuse a controlled `wt` worktree without switching trunk, swap Phase 3 for "review against plan"; Phase 4 reviewers still run |
 | Tests fail (2nd time on a task) | Escalate to `systematic-debugging`; hard cap 3 attempts, then stop and surface output |
 | Critical review findings | Present prominently; recommend fix-before-ship; never auto-ship |
-| User amends plan after approval | Overwrite `plan.md`; reset status `planned`; re-present inline and await approval again (see Phase 2.4) |
+| User amends an issue-sourced plan | Overwrite `plan.md`; reset status `planned`; re-present inline and await approval again (see Phase 2.4) |
+| User materially amends a vault-sourced plan | Stop and route to `issue-plan`; never supersede the canonical vault authority in derived state |
 | Approved vault plan is current | Import/compile it, record freshness validation, and inherit approval when no material planning contract changed |
 | Vault plan has material drift | Stop before worktree creation and route back to `issue-plan`; do not patch the vault note during intake |
 | No approved vault plan, but issue passes all five criteria | Record `plan_source: issue`, continue to exploration/synthesis, and use the normal Phase 2.4 approval gate |
-| Neither vault plan nor issue passes | List missing criteria, recommend `issue-plan {url}`, and stop before pre-flight/worktree/implementation |
+| Neither vault plan nor issue passes | List missing criteria, recommend `issue-plan {url}`, and stop before dirty-tree checks/worktree/implementation |
+| Legacy resume state lacks plan-source/checkpoint metadata | Do not reuse its worktree; refresh intake and validate authority first |
 | Repo not cloned locally | Ask before `gh repo clone` to `~/code/{repo}` |
 | Forgejo ticket | Intake uses the REST API in `references/fetch-ticket.md`; everything else is identical |
 | Pasted raw text (no URL) | Skip fetch; ask user for repo; `context.md` has only Body |
