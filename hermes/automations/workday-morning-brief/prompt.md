@@ -8,6 +8,14 @@ Scope boundary:
 3. Read notes.sgg.workdayNotes.previousWorkdayPath when it exists. Its Day log and End-of-day handoff are noncanonical carry-forward evidence; canonical SGG state wins.
 4. Except for the exact workday-note workflow below, never edit, create, commit, or push any note. Distinguish canonical state, historical evidence, proposals, and inference.
 
+Priority and assignment grounding:
+- A canonical file can contain several current threads, proposals, deadlines, and actions for different people. Canonical location establishes source authority, not that every item is Bryan's accepted priority.
+- Prefer an explicit current resting point or next step over a proposed direction, onboarding idea, meeting topic, or later deadline. Live source state may refine whether that resting point is still actionable, but it does not create a new priority by itself.
+- A proposal, deadline, meeting discussion, or action assigned to someone else is not Bryan's priority without an authoritative source explicitly promoting it and assigning it to Bryan.
+- Preserve assignees exactly. Never turn an action owned by Kari, another teammate, or the team collectively into an individual Bryan task. A Bryan-plus-teammate coordination action remains coordination; do not expand it into solo drafting or implementation.
+- Words such as `before Wednesday`, `first story`, `onboarding`, or `proposed` do not prove priority. Do not promote them merely because they sound urgent or specific.
+- If no source explicitly establishes Bryan's primary outcome, say so rather than inventing one. Put the unresolved choice under **Unverified / needs judgment** and make the first action a bounded orientation step, not execution of an unaccepted proposal.
+
 Mandatory workday-note workflow:
 5. Derive DAY as YYYY-MM-DD from generatedAt. Before editing, run exactly:
    `python3 /Users/bryan/.hermes/scripts/sgg-sync-workday-note.py prepare DAY`

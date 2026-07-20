@@ -32,6 +32,8 @@ Read in this order:
 
 `INDEX.md` and `status.md` are canonical. Dated plans, previews, session notes, `workdays/`, and `drafts/` are historical/noncanonical evidence unless explicitly promoted. Use Git history from the start of the previous business day to recover the recorded stopping point.
 
+Canonical placement does not make every recorded proposal or teammate action Bryan's priority. Prefer the explicit current resting point or accepted next step, preserve assignees exactly, and do not expand a coordination action into solo drafting or implementation. A deadline or detailed onboarding idea is not a priority signal by itself. If no authoritative source explicitly establishes Bryan's primary outcome, report that ambiguity instead of manufacturing one from the most recent or detailed thread.
+
 #### Workday-note pilot
 
 Through 2026-07-30, the job maintains `workdays/YYYY-MM-DD.md` as a lightweight operational handoff:

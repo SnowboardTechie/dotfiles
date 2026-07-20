@@ -44,6 +44,20 @@ class MorningBriefSplitContractTest(unittest.TestCase):
         self.assertIn('WORK_CALENDARS = {"Bryan @ Agile6"}', collector)
         self.assertIn("recentSecondBrainPaths", collector)
 
+    def test_work_brief_does_not_promote_proposals_or_other_peoples_actions(self) -> None:
+        prompt = WORK_PROMPT.read_text(encoding="utf-8")
+
+        self.assertIn(
+            "A proposal, deadline, meeting discussion, or action assigned to someone else is not Bryan's priority",
+            prompt,
+        )
+        self.assertIn("Prefer an explicit current resting point", prompt)
+        self.assertIn("Preserve assignees exactly", prompt)
+        self.assertIn(
+            "If no source explicitly establishes Bryan's primary outcome, say so rather than inventing one",
+            prompt,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

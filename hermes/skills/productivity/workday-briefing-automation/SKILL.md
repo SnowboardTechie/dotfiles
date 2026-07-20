@@ -88,6 +88,9 @@ Do not use script-only/no-agent mode when prioritization and reconciliation are 
 - Bound cross-vault discovery by time and changed paths; open only the few relevant Markdown files needed for current state.
 - Label proposals, drafts, observed current state, accepted decisions, and historical state distinctly.
 - Never let a dated plan override a canonical current surface.
+- Treat canonical placement as authority about what a note says, not proof that every thread in it is the user's priority. Prefer an explicit current resting point or accepted next step. Do not promote a proposal, deadline, meeting discussion, or onboarding idea merely because it is specific or time-bound.
+- Preserve assignees exactly. An action owned by a teammate or the team is not an individual task for the user, and a coordination action must not be expanded into solo drafting or implementation.
+- When no source explicitly establishes the user's primary outcome, report the ambiguity instead of manufacturing a recommendation from the most recent or detailed thread.
 - A morning brief should normally be read-only; flag stale notes rather than silently editing them.
 
 #### Opt-in workday-note companion
@@ -202,3 +205,4 @@ Before declaring the job complete:
 9. **Mistaking successful synthesis for successful delivery.** Verify the adapter connected and recorded a platform event/message ID.
 10. **Mentioning GitHub artifacts without links.** A PR number or title is not enough in a delivered brief. Require a verified clickable URL everywhere the artifact appears, including outcome and first-action sections, then test-fire and inspect the rendered output before approval.
 11. **Turning a companion note into a second status page.** Keep it noncanonical, generated-block bounded, and linked to canonical state; never let unattended synthesis rewrite the project MOC or status file.
+12. **Promoting a proposal into the user's priority.** Canonical notes often preserve proposals and actions for several people. Prefer an explicit resting point, keep assignees intact, and surface ambiguity rather than converting a teammate's onboarding task or a deadline into the user's first action.
