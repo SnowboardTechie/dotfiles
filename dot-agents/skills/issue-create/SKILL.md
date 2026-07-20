@@ -13,7 +13,7 @@ Turn a rough idea into a well-structured, template-faithful GitHub or Forgejo is
 - File discovery: Hermes `search_files`; other hosts `Glob` or equivalent.
 - Public mutation: always requires explicit user approval in the active run. Unattended execution may prepare a draft but must not post.
 
-Pairs with `issue-work` — the natural next step after posting is to start implementation in a fresh-context session by loading `issue-work` with `{url}`.
+Pairs with `issue-plan` and `issue-work`. After posting, use `issue-plan {url}` when implementation details or load-bearing decisions should be settled in the project vault before work starts. Use `issue-work {url}` directly when the issue is already clear enough to pass its plan-readiness gate.
 
 ---
 
@@ -834,6 +834,7 @@ Archived draft: {archive path}
 
 ## Related
 
-- [issue-work/SKILL.md](../issue-work/SKILL.md) — the implementation half; invoke manually with the posted URL when you're ready to start
+- [issue-plan/SKILL.md](../issue-plan/SKILL.md) — optional pre-implementation deliberation and vault-backed planning for the posted issue
+- [issue-work/SKILL.md](../issue-work/SKILL.md) — the implementation half; consumes an approved vault plan or requires the issue itself to be plan-ready
 - [agent-workspace/SKILL.md](../agent-workspace/SKILL.md) — drafts directory conventions + trunk resolution + archive pattern
 - [ship/SKILL.md](../ship/SKILL.md) — source of the forge-detection pattern reused here

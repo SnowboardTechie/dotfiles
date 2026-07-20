@@ -150,13 +150,13 @@ COMMON_SKILLS=(ship worktrunk git-master update-pr-description pr-self-review ag
 PI_SKILLS=("${COMMON_SKILLS[@]}")
 
 CLAUDE_SKILLS=("${COMMON_SKILLS[@]}"
-    manual-merge issue-create issue-work loop-issue sync-hold-branch
+    manual-merge issue-create issue-plan issue-work loop-issue sync-hold-branch
     adr-and-spec-coach conforming-tech-specs sprint-deliverable-update weekly-planning
     catalog-review dependency-review dependency-triage
     voice-bryan find-skills)
 
 OPENCODE_SKILLS=("${COMMON_SKILLS[@]}"
-    manual-merge issue-create issue-work loop-issue
+    manual-merge issue-create issue-plan issue-work loop-issue
     adr-and-spec-coach conforming-tech-specs
     voice-bryan gamedev)
 
@@ -165,7 +165,7 @@ OPENCODE_SKILLS=("${COMMON_SKILLS[@]}"
 # Hermes's curator and bundled-skill lifecycle stay separate.
 HERMES_SKILLS=(
     ship worktrunk update-pr-description pr-self-review
-    manual-merge issue-create issue-work loop-issue
+    manual-merge issue-create issue-plan issue-work loop-issue
     vault-capture skill-retrospective adr-and-spec-coach voice-bryan
     dx-target dx-preview conforming-tech-specs
     catalog-review dependency-review dependency-triage sprint-deliverable-update

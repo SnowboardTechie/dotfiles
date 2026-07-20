@@ -54,7 +54,7 @@ Argument matches `^https?://github\.com/([^/]+)/([^/]+)/pull/([0-9]+)` or the Fo
 - Resolve local clone (reuse pattern from `skills/issue-work/references/repo-resolution.md`). Ask before cloning if missing.
 - Fetch PR details: `gh pr view {N} --repo {owner}/{repo} --json number,title,headRefName,baseRefName,body,url,author`.
 - Confirm the PR author matches the current `gh auth status` user. If not, stop: "This skill is for PRs you authored. {author} authored this PR — use `/code-review` instead."
-- Create or reuse a controlled `wt` worktree using the `issue-work` Phase 1.6 convention, but with `pr-{N}` instead of `{N}`. Fetch the PR head into a local branch before switching: `git fetch origin refs/pull/{N}/head:{headRefName}` then `wt switch {headRefName}`. Hermes targets the resulting path with each tool's `workdir`; hosts with `EnterWorktree` may enter it. Never switch the trunk checkout in place.
+- Create or reuse a controlled `wt` worktree using the `issue-work` Phase 1.7 convention, but with `pr-{N}` instead of `{N}`. Fetch the PR head into a local branch before switching: `git fetch origin refs/pull/{N}/head:{headRefName}` then `wt switch {headRefName}`. Hermes targets the resulting path with each tool's `workdir`; hosts with `EnterWorktree` may enter it. Never switch the trunk checkout in place.
 
 ### 0.3 `branch-inference`
 

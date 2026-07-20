@@ -5,9 +5,9 @@ description: End-to-end GitHub/Forgejo ticket workflow. Use when the user shares
 
 # Issue Work
 
-End-to-end workflow for taking a GitHub or Forgejo ticket from URL to review-ready implementation. Four phases: **Intake → Plan → Implement → Self-Review**, with a human approval checkpoint between Plan and Implement.
+End-to-end workflow for taking a GitHub or Forgejo ticket from URL to review-ready implementation. Four phases: **Intake → Plan → Implement → Self-Review**. Intake includes a mandatory plan-source gate before any worktree or implementation work begins.
 
-Standalone — does not require any specific note system. Resolve the local clone first, then write durable state under `{TRUNK_ROOT}/.hermes/issue-work/` (not the notes vault). This workspace-local path is safe for Hermes profiles and remains usable by Claude, OpenCode, and Pi.
+Execution state lives under `{TRUNK_ROOT}/.hermes/issue-work/`. When the project has a vault, an approved `issue-plan` note is the preferred durable planning authority; the state-root `plan.md` is a derived execution snapshot. The workflow still works without a vault when the issue itself passes the plan-readiness rubric.
 
 **Ticket ownership rule:** when the request names one or more tracked issues and also names a narrower implementation workflow, keep `issue-work` as the umbrella unless the user explicitly limits the task to an implementation/review-only handoff. Load the narrower workflow in Phase 3 rather than replacing ticket intake, durable state, self-review, and the ship gate. A publication prohibition remains in force until Phase 4 obtains item-level approval; it is not a reason to skip the umbrella.
 
@@ -45,6 +45,7 @@ Use the host's native operations; do not require one agent framework or plugin:
 | Track implementation tasks | task list (`todo`) | native todo/task-list tool |
 | Delegate isolated research/review | `delegate_task` | `Task`, `Agent`, or equivalent |
 | Create/enter worktree | `wt switch --create` then run tools with that worktree as `workdir` | `EnterWorktree` or controlled `git worktree` fallback |
+| Resolve an approved project-vault plan | load Hermes `vault-pkm`; follow `issue-plan`'s handoff contract | host-native `vault-pkm` plus the same contract |
 | Write the approved plan | load Hermes `plan` | `superpowers:writing-plans` or equivalent |
 | Execute an approved plan | on a Codex-backed Hermes parent, route SGG to `codex-claude-implementation-loop`, route other repos to `codex-qwen-implementation-loop`, or use host-native GPT when explicitly requested | host-native implementation workflow |
 | Implement test-first | load Hermes `test-driven-development` | host TDD/execution workflow |
@@ -111,7 +112,17 @@ Create `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/` with the host file 
 
 Use [references/fetch-ticket.md](references/fetch-ticket.md) to fetch the ticket body, comments, linked refs, and inferred open questions. Prefer an isolated intake child (`delegate_task` on Hermes; `Task`/`Agent` elsewhere), but run the same recipe inline when delegation is unavailable. Write `context.md` in the state directory and read it after completion.
 
-### 1.5 Pre-flight checks
+### 1.5 Plan-source readiness gate
+
+This gate runs **before** repository pre-flight (default-branch fetch and dirty-tree checks), worktree creation, branch creation, or implementation delegation. Read [`issue-plan`'s handoff contract](../issue-plan/references/handoff-contract.md), then evaluate these sources in order:
+
+1. **Approved project-vault plan.** Load `vault-pkm`. Resolve only project-vault candidates: a path named by project instructions, `{TRUNK_ROOT}/vault`, then `~/code/notes/{repo}` when it clearly belongs to the repository. Search for the exact canonical issue URL and validate the handoff section, required plan content, linked decisions, current issue/comments, and repository drift. If one approved plan is current, record `plan_source: vault` and its absolute path. If it has material drift or multiple approved candidates disagree, stop and ask the user to reopen `issue-plan`; never silently choose or rewrite one.
+2. **Issue-as-plan fallback.** When no consumable vault plan exists, evaluate the current issue body, all comments, linked context, and inspected repository patterns against every clear-issue criterion in the handoff contract: outcome, boundary, acceptance, direction, and no unresolved load-bearing decisions. All five must pass. Record `plan_source: issue` and a concise criterion-by-criterion verdict in `context.md`.
+3. **Blocked.** If neither source passes, list the specific missing planning inputs, recommend `issue-plan {canonical-url}`, and stop. Do not continue to pre-flight, create/reuse a worktree, edit code, or delegate implementation. Labels, assignment, milestone membership, or issue length never substitute for the rubric.
+
+This is a readiness gate, not permission to publish. A clear issue authorizes detailed execution-plan synthesis but still follows Phase 2's approval checkpoint. A current vault plan whose handoff says `Planning status: approved` carries its prior plan approval forward unless Phase 2 materially changes its goal, scope, decisions, or acceptance contract.
+
+### 1.6 Pre-flight checks
 
 Run all of these against the trunk (not a worktree).
 
@@ -143,7 +154,7 @@ git -C "{TRUNK_ROOT}" status --porcelain | grep -E '^[ MADRC]'
 
 If either auth check fails, stop and surface the error to the user — do not proceed to worktree creation. If the trunk is dirty (modified/staged, not just untracked), stop and offer: stash / commit / abort. Do not silently stash.
 
-### 1.6 Create worktree
+### 1.7 Create worktree
 
 Use the [`worktrunk`](../worktrunk/SKILL.md) skill as the preferred controlled-worktree path.
 
@@ -154,7 +165,7 @@ Use the [`worktrunk`](../worktrunk/SKILL.md) skill as the preferred controlled-w
 
 Never switch the trunk checkout in place.
 
-### 1.7 Write initial progress.md
+### 1.8 Write initial progress.md
 
 ```markdown
 ---
@@ -163,6 +174,8 @@ ticket: {url-or-shorthand}
 worktree: {abs-path}
 branch: {branch-name}
 base: {default-branch}
+plan_source: {vault|issue}
+source_plan: {absolute-vault-note-path-or-empty}
 started: {iso8601}
 ---
 
@@ -171,6 +184,7 @@ started: {iso8601}
 - Context file: {TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/context.md
 - Worktree: {abs-path}
 - Base branch: {default-branch}
+- Plan source: {approved vault note | clear issue}
 ```
 
 ---
@@ -220,14 +234,20 @@ Use the host's read-only web search/fetch tools (Hermes browser/web tooling; Cla
 
 After exploration returns, load Hermes's installed `plan` skill or the host's equivalent plan-authoring workflow. Do not clone that skill's instructions here. Give it:
 
-- **Inputs:** `context.md`, the `explore-*.md` outputs from 2.1, and any inline research from 2.2.
+- **Inputs:** `context.md`, the `explore-*.md` outputs from 2.1, any inline research from 2.2, and the validated vault note when `plan_source: vault`.
 - **Plan-path override:** `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`. Hermes `plan` normally writes under workspace `.hermes/plans/`; use this ticket-specific path so resume state stays together and never appears in the feature worktree's `git status`.
 
-The result is a bite-sized, checkbox-task plan (exact file paths, code, expected command output, commit boundaries) — the shape Phase 3's executor consumes. Make sure its frontmatter carries `status: planned` and `ticket: {url}` so Phase 0.2 resume and the 2.4 approval gate keep working against it.
+For a vault source, preserve its goal, scope, accepted decisions, and acceptance contract. Compile it into executor-ready tasks and checkboxes rather than mutating the vault note. Record `plan_source: vault`, `source_plan`, `source_plan_status: approved`, and `source_plan_validated: {iso8601}` in frontmatter. For an issue source, synthesize the detailed execution plan from the issue's planning authority and repository exploration, recording `plan_source: issue`.
+
+The result is a bite-sized, checkbox-task plan (exact file paths, code, evidence-shaped expected results, commit boundaries) — the shape Phase 3's executor consumes. Do not invent exact test counts or command output that was not run. Make sure frontmatter carries `status: planned` and `ticket: {url}` so Phase 0.2 resume and the 2.4 approval gate keep working against it.
 
 ### 2.4 Approval checkpoint
 
-This is a hard stop. **Do not proceed to Phase 3 without explicit user approval.**
+This is normally a hard stop. **Do not proceed to Phase 3 without explicit user approval or inherited approval from a current vault plan.**
+
+When `plan_source: vault`, compare the derived plan against the approved source. If synthesis only adds executor detail without changing the approved goal, scope, decisions, or acceptance contract, record `approval: inherited` and the source path in `plan.md`; present a concise validation/import summary and continue. If synthesis materially changes any of those, change the derived plan to `approval: pending` and use the full approval checkpoint below. Never update the approved vault note implicitly.
+
+When `plan_source: issue`, or when vault-plan approval cannot be inherited, present the full approval checkpoint:
 
 Present the full `plan.md` contents inline to the user with a clear prompt:
 
@@ -239,7 +259,7 @@ Present the full `plan.md` contents inline to the user with a clear prompt:
 
 Then wait for the user's next message. Do not implement anything until you see an approval.
 
-On amendment: overwrite `plan.md` with the revised version, keep `status: planned` in frontmatter, and re-present. Iterate until approved.
+On amendment: overwrite `plan.md` with the revised version, keep `status: planned` in frontmatter, and re-present. Iterate until approved. A material amendment to a vault-sourced goal, scope, decision, or acceptance contract also requires reopening the canonical plan through `issue-plan`; do not let the execution snapshot silently become the only record of the new design.
 
 (If the harness happens to be in Plan Mode when this skill runs, `ExitPlanMode` is the harness-native approval gate and you can use it in place of the inline prompt above. Do not try to enter Plan Mode from inside the skill — that's not a thing.)
 
@@ -431,6 +451,10 @@ Present the review outcome inline in this order:
 | Tests fail (2nd time on a task) | Escalate to `systematic-debugging`; hard cap 3 attempts, then stop and surface output |
 | Critical review findings | Present prominently; recommend fix-before-ship; never auto-ship |
 | User amends plan after approval | Overwrite `plan.md`; reset status `planned`; re-present inline and await approval again (see Phase 2.4) |
+| Approved vault plan is current | Import/compile it, record freshness validation, and inherit approval when no material planning contract changed |
+| Vault plan has material drift | Stop before worktree creation and route back to `issue-plan`; do not patch the vault note during intake |
+| No approved vault plan, but issue passes all five criteria | Record `plan_source: issue`, continue to exploration/synthesis, and use the normal Phase 2.4 approval gate |
+| Neither vault plan nor issue passes | List missing criteria, recommend `issue-plan {url}`, and stop before pre-flight/worktree/implementation |
 | Repo not cloned locally | Ask before `gh repo clone` to `~/code/{repo}` |
 | Forgejo ticket | Intake uses the REST API in `references/fetch-ticket.md`; everything else is identical |
 | Pasted raw text (no URL) | Skip fetch; ask user for repo; `context.md` has only Body |
@@ -441,13 +465,13 @@ Present the review outcome inline in this order:
 ## Things This Skill Does NOT Do
 
 - Ship without explicit approval — Phase 4.3's ship gate is mandatory; silence is not consent. On `ship it` the skill hands off to `/ship`, which handles the push + PR creation.
-- Modify files outside the worktree and the state dir
+- Modify files outside the worktree and the state dir. Approved project-vault plans are read-only inputs; vault changes route through `issue-plan` or `vault-capture`.
 - Add AI signatures to commits or PRs
 - Skip hooks (`--no-verify`) or bypass signing
-- Write notes into `.notes/` or an external note system — state goes to
-  `{TRUNK_ROOT}/.hermes/issue-work/` only. Repository-owned planning artifacts
-  required by project instructions are implementation files and follow the
-  Phase 3.7 closeout gate.
+- Create or silently amend external vault notes. It may read an approved
+  `issue-plan` note and derive state under `{TRUNK_ROOT}/.hermes/issue-work/`.
+  Repository-owned planning artifacts required by project instructions are
+  implementation files and follow the Phase 3.7 closeout gate.
 
 ---
 
@@ -457,6 +481,7 @@ Detailed recipes that load on demand:
 
 - [references/fetch-ticket.md](references/fetch-ticket.md) — exact gh/tea CLI commands, pagination, rate limits, Forgejo API auth
 - [references/repo-resolution.md](references/repo-resolution.md) — local clone discovery, remote URL matching, clone-if-missing prompt
+- [`issue-plan` handoff contract](../issue-plan/references/handoff-contract.md) — vault-plan discovery, freshness, import metadata, and clear-issue fallback rubric
 
 ## Related Delegation Roles
 
@@ -467,7 +492,9 @@ Detailed recipes that load on demand:
 
 - `pr-self-review` — Phase 4 delegates here for the four-lens autonomous review-and-fix loop.
 - `ship` — Phase 4.3 hands off here on `ship it` for push + PR creation + template fill + label application.
-- `worktrunk` — Phase 1.6 controlled worktree setup.
+- `issue-plan` — prepares and approves the preferred durable vault-backed plan before implementation.
+- `vault-pkm` — resolves and reads project-vault plans without bypassing local vault rules.
+- `worktrunk` — Phase 1.7 controlled worktree setup.
 - `plan` — Phase 2.3 Hermes plan authoring (path-overridden to the state root).
 - `test-driven-development` — Phase 3 implementation discipline.
 - `systematic-debugging` — Phase 3.5 second-failure escalation.

@@ -47,6 +47,7 @@ them.
 | `obsidian` | Obsidian vault patterns | ✅ | ✅ | ✅ | bundled |
 | `manual-merge` | Forgejo local squash-merge | ✅ | ✅ | — | ✅ |
 | `issue-create` | draft & post an issue | ✅ | ✅ | — | ✅ |
+| `issue-plan` | prepare a vault-backed implementation plan | ✅ | ✅ | — | ✅ |
 | `issue-work` | end-to-end ticket workflow | ✅ | ✅ | — | ✅ |
 | `loop-issue` | autonomous backlog-drain loop | ✅ | ✅ | — | ✅ |
 | `adr-and-spec-coach` | guide an ADR/spec decision | ✅ | ✅ | — | ✅ |
@@ -63,7 +64,7 @@ them.
 | `weekly-planning` | retired weekly-planning machinery | ✅ | — | — | — |
 | `find-skills` | browse community skills.sh | ✅ | — | — | — |
 
-**Counts:** Claude 24 · OpenCode 18 · Pi 10 · Hermes 19 (27 distinct).
+**Counts:** Claude 25 · OpenCode 19 · Pi 10 · Hermes 20 (28 distinct).
 
 ## Adding or re-curating a skill
 

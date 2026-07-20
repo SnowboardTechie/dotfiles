@@ -16,14 +16,14 @@ gh auth status || { echo "Run: gh auth login"; exit 1; }
 
 ```bash
 gh issue view {N} --repo {owner}/{repo} \
-  --json number,title,body,state,labels,assignees,url,createdAt,closedAt,author
+  --json number,title,body,state,labels,assignees,url,createdAt,updatedAt,closedAt,author
 ```
 
 Fields returned:
 - `number`, `title`, `body`, `state` (OPEN/CLOSED)
 - `labels` — array of `{name, color, description}`
 - `assignees` — array of `{login}`
-- `author.login`, `createdAt`, `closedAt`
+- `author.login`, `createdAt`, `updatedAt`, `closedAt`
 
 ### Issue — comments
 
@@ -49,7 +49,7 @@ gh api --paginate "repos/{owner}/{repo}/issues/{N}/comments" \
 
 ```bash
 gh pr view {N} --repo {owner}/{repo} \
-  --json number,title,body,state,labels,assignees,url,createdAt,closedAt,mergedAt,author,baseRefName,headRefName,commits,files,reviews,comments
+  --json number,title,body,state,labels,assignees,url,createdAt,updatedAt,closedAt,mergedAt,author,baseRefName,headRefName,commits,files,reviews,comments
 ```
 
 Note: `comments` on a PR view returns **issue comments** (the conversation tab). **Review comments** (inline on diff) come from a separate endpoint:
@@ -108,7 +108,7 @@ tea api --login "$LOGIN" --repo "$OWNER/$REPO" \
       number, title, body, state,
       labels: [.labels[].name],
       author: .user.login,
-      created_at, closed_at,
+      created_at, updated_at, closed_at,
       is_pr: (.pull_request != null),
       html_url
     }'

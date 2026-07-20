@@ -110,7 +110,7 @@ Rules:
   ```
 
 - All `git fetch`, dirty-tree checks, and default-branch lookups should happen against the trunk.
-- Prefer `wt` for creation/switching. Hermes then targets the returned path through each tool's `workdir`; hosts that provide `EnterWorktree` may enter the already-created path. The controlled fallback is `git -C "{TRUNK_ROOT}" worktree add -b {branch} {path} origin/{DEFAULT_BRANCH}`. See `issue-work` Phase 1.6.
+- Prefer `wt` for creation/switching. Hermes then targets the returned path through each tool's `workdir`; hosts that provide `EnterWorktree` may enter the already-created path. The controlled fallback is `git -C "{TRUNK_ROOT}" worktree add -b {branch} {path} origin/{DEFAULT_BRANCH}`. See `issue-work` Phase 1.7.
 
 ---
 
