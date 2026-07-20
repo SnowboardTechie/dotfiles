@@ -1,6 +1,13 @@
 import EventKit
 import Foundation
 
+struct ParticipantSummary: Codable {
+    let name: String?
+    let isCurrentUser: Bool
+    let role: String
+    let status: String
+}
+
 struct CalendarEvent: Codable {
     let source: String
     let calendar: String
@@ -10,6 +17,9 @@ struct CalendarEvent: Codable {
     let allDay: Bool
     let location: String?
     let url: String?
+    let organizer: ParticipantSummary?
+    let currentUserAttendee: ParticipantSummary?
+    let attendeeCount: Int
 }
 
 func truncate(_ value: String?, to limit: Int) -> String? {
@@ -17,6 +27,45 @@ func truncate(_ value: String?, to limit: Int) -> String? {
     let cleaned = value.replacingOccurrences(of: "\u{0000}", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
     guard !cleaned.isEmpty else { return nil }
     return String(cleaned.prefix(limit))
+}
+
+func participantRole(_ role: EKParticipantRole) -> String {
+    switch role {
+    case .required: return "required"
+    case .optional: return "optional"
+    case .chair: return "chair"
+    case .nonParticipant: return "nonParticipant"
+    case .unknown: return "unknown"
+    @unknown default: return "unknown"
+    }
+}
+
+func participantStatus(_ status: EKParticipantStatus) -> String {
+    switch status {
+    case .pending: return "pending"
+    case .accepted: return "accepted"
+    case .declined: return "declined"
+    case .tentative: return "tentative"
+    case .delegated: return "delegated"
+    case .completed: return "completed"
+    case .inProcess: return "inProcess"
+    case .unknown: return "unknown"
+    @unknown default: return "unknown"
+    }
+}
+
+func participantSummary(_ participant: EKParticipant?) -> ParticipantSummary? {
+    guard let participant else { return nil }
+    return ParticipantSummary(
+        name: truncate(participant.name, to: 200),
+        isCurrentUser: participant.isCurrentUser,
+        role: participantRole(participant.participantRole),
+        status: participantStatus(participant.participantStatus)
+    )
+}
+
+func currentUserAttendee(_ attendees: [EKParticipant]?) -> ParticipantSummary? {
+    participantSummary(attendees?.first(where: { $0.isCurrentUser }))
 }
 
 let store = EKEventStore()
@@ -77,7 +126,10 @@ let records = store.events(matching: predicate)
             end: $0.endDate,
             allDay: $0.isAllDay,
             location: truncate($0.location, to: 300),
-            url: $0.url?.absoluteString
+            url: $0.url?.absoluteString,
+            organizer: participantSummary($0.organizer),
+            currentUserAttendee: currentUserAttendee($0.attendees),
+            attendeeCount: $0.attendees?.count ?? 0
         )
     }
 

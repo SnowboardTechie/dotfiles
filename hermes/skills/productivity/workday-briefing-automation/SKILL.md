@@ -109,6 +109,7 @@ The morning job must retain read-only behavior for mail, calendar, GitHub, canon
 - Separate all-day events from timed commitments.
 - Identify conflicts, meeting preparation, and realistic focus windows.
 - Reconcile duplicate events from synchronized/shared calendars.
+- Collect bounded organizer and current-user attendee metadata when available. Never infer that the user owns a presentation, demo, review, or preparation task from the event title alone; attendee status is not ownership.
 - If Apple Calendar is canonical, prefer read-only EventKit collection, with AppleScript as a fallback. Avoid unattended GUI driving for routine collection.
 - Verify source health or recent synchronization before treating an empty day as fact.
 

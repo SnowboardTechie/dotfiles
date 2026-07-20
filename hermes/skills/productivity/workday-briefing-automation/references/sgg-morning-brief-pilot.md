@@ -65,7 +65,7 @@ Session history can supply secondary context but never outranks current vault fi
 Apple Calendar on Studio is canonical because it includes the synchronized work Google calendar and broader scheduling constraints.
 
 - Collect read-only through EventKit; use AppleScript only as a fallback.
-- Separate timed and all-day events; infer focus windows and preparation needs.
+- Separate timed and all-day events; infer focus windows. Collect bounded organizer, current-user attendee, and attendee-count metadata. Assign preparation only when Bryan is the organizer or another authoritative source explicitly assigns it; never infer ownership from an event title or attendee status alone.
 - Mention private events only as scheduling constraints when relevant.
 - Do not collect calendar notes or meeting descriptions into the briefing payload because they can contain join credentials and passcodes.
 - Treat collector failure as source unavailability, not an empty day.
