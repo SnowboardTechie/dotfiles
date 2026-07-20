@@ -9,6 +9,7 @@ which must inspect the repository and rerun tests independently.
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import json
 import os
 import re
@@ -18,17 +19,65 @@ import sys
 import tempfile
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
+
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - Windows has no fcntl.
+    fcntl = None  # type: ignore[assignment]
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 REFERENCE_DIR = SKILL_DIR / "references"
 IMPLEMENT_SCHEMA = REFERENCE_DIR / "implementation-result-schema.json"
 REVISION_SCHEMA = REFERENCE_DIR / "revision-result-schema.json"
 MAX_INPUT_CHARS = 200_000
+DEFAULT_WORKER_CONFIG_DIR = Path.home() / ".hermes" / "claude-code-worker"
 
 
 class WorkerError(RuntimeError):
     """A fail-closed worker error suitable for a JSON response."""
+
+
+def resolve_worker_config_dir() -> Path:
+    """Return the credential namespace reserved for automated Claude workers."""
+    configured = os.environ.get("HERMES_CLAUDE_WORKER_CONFIG_DIR")
+    path = Path(configured).expanduser() if configured else DEFAULT_WORKER_CONFIG_DIR
+    path = path.resolve()
+    path.mkdir(parents=True, exist_ok=True, mode=0o700)
+    try:
+        path.chmod(0o700)
+    except OSError as exc:
+        raise WorkerError(f"could not secure Claude worker config directory: {exc}") from exc
+    return path
+
+
+@contextmanager
+def serialized_worker(config_dir: Path) -> Iterator[None]:
+    """Serialize subscription-token refreshes within the worker namespace."""
+    lock_path = config_dir / ".worker.lock"
+    handle = None
+    try:
+        handle = lock_path.open("a+", encoding="utf-8")
+        lock_path.chmod(0o600)
+        if fcntl is not None:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+    except OSError as exc:
+        if handle is not None:
+            handle.close()
+        raise WorkerError(f"could not lock Claude worker credential namespace: {exc}") from exc
+
+    try:
+        yield
+    finally:
+        try:
+            if fcntl is not None:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        except OSError as exc:
+            raise WorkerError(
+                f"could not unlock Claude worker credential namespace: {exc}"
+            ) from exc
+        finally:
+            handle.close()
 
 
 def run_command(
@@ -73,14 +122,16 @@ def read_bounded(path_text: str, label: str) -> tuple[Path, str]:
     return path, content
 
 
-def verify_subscription_auth(claude_bin: str) -> str:
-    if os.environ.get("ANTHROPIC_API_KEY"):
+def verify_subscription_auth(claude_bin: str, worker_env: dict[str, str]) -> str:
+    if worker_env.get("ANTHROPIC_API_KEY"):
         raise WorkerError(
             "ANTHROPIC_API_KEY is set; refusing to risk Anthropic API billing. "
             "Unset it before using the subscription-backed worker."
         )
 
-    status = run_command([claude_bin, "auth", "status", "--text"], timeout=30)
+    status = run_command(
+        [claude_bin, "auth", "status", "--text"], timeout=30, env=worker_env
+    )
     if status.returncode != 0:
         detail = (status.stderr or status.stdout).strip()[-2000:]
         raise WorkerError(f"Claude authentication check failed: {detail}")
@@ -130,16 +181,13 @@ def load_schema(path: Path) -> dict[str, Any]:
     return schema
 
 
-def disabled_user_plugin_settings() -> dict[str, Any]:
+def disabled_user_plugin_settings(config_dir: Path) -> dict[str, Any]:
     """Return a CLI settings override that disables user-enabled plugins.
 
     User settings are not loaded by the worker, but Claude's plugin registry is
     independent of setting-source selection. Explicit false entries prevent
     personal hooks from writing helper artifacts into the target repository.
     """
-    config_dir = Path(
-        os.environ.get("CLAUDE_CONFIG_DIR", str(Path.home() / ".claude"))
-    ).expanduser()
     settings_path = config_dir / "settings.json"
     if not settings_path.is_file():
         return {"enabledPlugins": {}}
@@ -226,6 +274,12 @@ def retryable_claude_failure(completed: subprocess.CompletedProcess[str]) -> boo
         return False
     if not isinstance(payload, dict):
         return False
+    result_text = str(payload.get("result") or "").lower()
+    if any(
+        marker in result_text
+        for marker in ("failed to authenticate", "oauth session expired", "not logged in")
+    ):
+        return False
     status = payload.get("api_error_status")
     return status in {429, 500, 502, 503, 529} or payload.get("terminal_reason") == "api_error"
 
@@ -254,16 +308,33 @@ def parse_claude_output(stdout: str) -> tuple[dict[str, Any], dict[str, Any]]:
 
 
 def execute_worker(args: argparse.Namespace) -> dict[str, Any]:
+    config_dir = resolve_worker_config_dir()
+    worker_env = os.environ.copy()
+    worker_env["CLAUDE_CONFIG_DIR"] = str(config_dir)
+    worker_env["PYTHONDONTWRITEBYTECODE"] = "1"
+    worker_env["NODE_COMPILE_CACHE"] = str(
+        Path(tempfile.gettempdir()) / "hermes-claude-worker-node-cache"
+    )
+    with serialized_worker(config_dir):
+        return execute_worker_locked(args, config_dir, worker_env)
+
+
+def execute_worker_locked(
+    args: argparse.Namespace,
+    config_dir: Path,
+    worker_env: dict[str, str],
+) -> dict[str, Any]:
     claude_bin = shutil.which("claude")
     if not claude_bin:
         raise WorkerError("claude executable was not found on PATH")
 
-    login_method = verify_subscription_auth(claude_bin)
+    login_method = verify_subscription_auth(claude_bin, worker_env)
     if args.mode == "check":
         return {
             "ok": True,
             "mode": "check",
             "claude_bin": claude_bin,
+            "claude_config_dir": str(config_dir),
             "login_method": login_method,
         }
 
@@ -293,8 +364,12 @@ def execute_worker(args: argparse.Namespace) -> dict[str, Any]:
         "--setting-sources",
         "project,local",
         "--settings",
-        json.dumps(disabled_user_plugin_settings(), separators=(",", ":")),
+        json.dumps(disabled_user_plugin_settings(config_dir), separators=(",", ":")),
         "--disable-slash-commands",
+        "--name",
+        "Hermes Opus implementation worker",
+        "--prompt-suggestions",
+        "false",
         "--model",
         args.model,
         "--permission-mode",
@@ -314,11 +389,6 @@ def execute_worker(args: argparse.Namespace) -> dict[str, Any]:
         command.extend(["--resume", args.session_id])
     command.append(prompt)
 
-    worker_env = os.environ.copy()
-    worker_env["PYTHONDONTWRITEBYTECODE"] = "1"
-    worker_env["NODE_COMPILE_CACHE"] = str(
-        Path(tempfile.gettempdir()) / "hermes-claude-worker-node-cache"
-    )
     completed: subprocess.CompletedProcess[str] | None = None
     for attempt in range(1, args.attempts + 1):
         completed = run_command(
@@ -350,17 +420,22 @@ def execute_worker(args: argparse.Namespace) -> dict[str, Any]:
         "mode": args.mode,
         "model": args.model,
         "login_method": login_method,
+        "claude_config_dir": str(config_dir),
         "workdir": str(root),
         "input_file": str(source_path),
         "initial_git_status": baseline,
         "session_id": session_id,
         "worker_result": structured,
         "claude_metadata": {
+            "model": envelope.get("model"),
+            "model_usage": envelope.get("modelUsage"),
             "num_turns": envelope.get("num_turns"),
             "duration_ms": envelope.get("duration_ms"),
             "duration_api_ms": envelope.get("duration_api_ms"),
             "is_error": envelope.get("is_error"),
             "stop_reason": envelope.get("stop_reason"),
+            "terminal_reason": envelope.get("terminal_reason"),
+            "total_cost_usd": envelope.get("total_cost_usd"),
         },
     }
 
