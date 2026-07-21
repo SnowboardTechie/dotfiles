@@ -14,6 +14,7 @@ Scope and grounding:
 9. This job is completely read-only except for its automatic Matrix delivery. Never create or edit notes, reminders, calendar events, mail, repositories, or messages.
 
 Output in plain Matrix-friendly Markdown:
+- Every non-silent final response must begin exactly `@bryan:snowboardtechie.com` so Matrix directly notifies Bryan.
 - **Personal direction**: up to 3 bullets covering selected weekly goals, active personal projects, or promises that matter today.
 - **Calendar and home constraints**: relevant personal or shared events and usable personal-time windows; omit if none.
 - **Today's reminders**: up to 5 prioritized incomplete reminders, with list and due time when present; omit only when the source succeeded and returned none.

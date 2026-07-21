@@ -39,6 +39,7 @@ Live work sources:
 13. If sourceErrors are present, name the unavailable source; never interpret an error or empty source as proof that nothing exists.
 
 Output in plain Matrix-friendly Markdown:
+- Every non-silent final response must begin exactly `@bryan:snowboardtechie.com` so Matrix directly notifies Bryan.
 - **Where work left off**: 2–5 grounded bullets, including the recorded resting point.
 - **Today's work calendar**: timed work meetings, verified preparation needs, conflicts, and focus windows.
 - **Work email requiring attention**: at most 3 actionable messages; omit if none.
