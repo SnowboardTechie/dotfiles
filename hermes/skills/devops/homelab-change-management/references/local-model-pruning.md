@@ -17,6 +17,34 @@ Use this reference when reducing Ollama/Open WebUI model storage on a homelab in
 6. With explicit approval, update consumer configuration before deleting model data. Stop a loaded model before removing its tags.
 7. Verify the exact retained tag set through both `ollama list` and `/api/tags`, rerun consumer configuration validation, and report before/after disk use.
 
+## Refreshing a tag that is already loaded
+
+A same-tag pull can leave three distinct states that must be reconciled:
+
+1. `ollama list` and `/api/tags` point to the newly pulled digest.
+2. `ollama ps` may still show the old digest running. After the tag moves,
+   `ollama stop <tag>` can resolve the new digest and leave the old runner untouched.
+3. The old model layers can remain as unreferenced blobs, so model-store usage
+   temporarily grows by roughly the size of the replacement.
+
+Use this verified sequence:
+
+1. Record the old tag digest, loaded digest, and model-store size.
+2. Pull the same exact tag and confirm the tag now points to the expected new digest.
+3. Send a bounded inference to that tag. The scheduler loads the new digest and
+   retires the stale runner; prove this with `ollama ps` rather than trusting
+   `ollama stop` output.
+4. Complete native/API/client smoke tests against the new digest before cleanup.
+5. If the supervised Ollama service has no active requests, restart it through its
+   declared service manager. Ollama's startup prune removes the now-unreferenced
+   layers. Do not delete blob files manually.
+6. Confirm the model-store size returned to the expected unique-digest total, then
+   warm the intended resident models and verify their loaded digests.
+
+A restart is a service interruption: keep it inside the approved refresh scope, use
+the declared launchd/systemd unit, wait on the health endpoint instead of sleeping
+blindly, and restore the prior resident set afterward.
+
 ## Open WebUI usage evidence
 
 Open WebUI commonly stores state in `~/.open-webui/data/webui.db`. Use SQLite read-only mode. The `model.is_active` flag describes WebUI visibility, not whether an Ollama blob is safe to remove. Parse `chat.chat` JSON and inspect both its top-level `models` array and message-level `model` fields; historical usage is supporting evidence, not an automatic keep rule.
