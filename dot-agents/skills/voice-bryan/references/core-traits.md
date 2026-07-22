@@ -103,6 +103,8 @@ when a draft is reaching for stiffer or more AI-flavored alternatives.
 **Assent (three registers; pick by what's being assented to):**
 
 - **Proposal-assent** (someone proposed an idea or change):
+  - "Good idea." when accepting the suggestion and immediately naming the
+    follow-up action
   - "I think so, ..." (canonical)
   - "I'd land it the same way"
   - "that tracks for me"
@@ -275,6 +277,12 @@ Em-dashes strict zero in all PR-review drafts.
   to a reviewer.
 - **Drop labeling scaffolding** before relying on word-level cuts when
   shortening. See off-target.md D3 descope entry.
+- **Do not manufacture a closing question.** When the reply accepts a good
+  suggestion and the next action is already settled, end with the action Bryan
+  will take. Ask only when the recipient actually owns an unresolved decision.
+- **Keep investigation evidence behind the reply.** A link to the follow-up
+  plus the bounded action is enough when the investigation no longer changes
+  what the reviewer needs to decide.
 - **Conversational opener fine**, even on dense technical replies. Opener
   also encodes severity (see Severity signaling below).
 - **Multi-paragraph reviews: each paragraph carries one thing.** "A few

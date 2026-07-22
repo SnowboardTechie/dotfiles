@@ -136,6 +136,27 @@ For Forgejo templates: same as legacy Markdown. Forgejo has no issue-type field,
 
 > **If this ticket is really a design exploration** — multiple valid approaches, unclear shape, "I'm not sure what we even want yet" — pause for conversational design exploration first, then return here to file a crisp issue. This is a soft pointer, not a hard dependency; the Q&A below handles well-formed tickets on its own.
 
+### 2.0 Lock the issue mode and closure boundary
+
+Before asking questions or drafting, classify the ticket as one of:
+
+- **exploration** — valid approaches or the desired outcome remain open;
+- **decision** — alternatives are known, but an explicit choice is still needed;
+- **implementation** — the direction is settled and the ticket should deliver it.
+
+Treat the user's accepted direction as authoritative. Once the conversation has settled a decision, do not reopen it with `decide`, `evaluate`, conditional `if selected`, or open-question wording in the title, summary, or acceptance criteria. State the implementation outcome directly and preserve rejected alternatives only as concise rationale when useful.
+
+Then define the **closure boundary** for the target repository. Every acceptance criterion should be:
+
+1. necessary to deliver the issue's stated outcome;
+2. observable or verifiable;
+3. completable within the target repository or artifact; and
+4. non-duplicative of another criterion.
+
+Prefer the smallest set of criteria that proves the public contract. Put downstream repository migrations, independently released packages, rollout sequencing, broad template cleanup, and optional compatibility matrices in related follow-up issues or a rollout note unless the user explicitly chose a cross-repository tracker. Avoid promoting implementation probes such as exact module identity, package-manager warning text, or negative installer behavior into acceptance criteria when a packed-consumer contract test already proves the supported path.
+
+**Completion criterion:** the draft reads as exploration, decision, or implementation consistently, and closing it does not depend on unspecified work in another repository.
+
 ### 2.1 Four open-ended areas
 
 Ask via conversational turns (open-ended answer space). Use the user's initial framing as the seed — if they already answered an area, skip the question.
