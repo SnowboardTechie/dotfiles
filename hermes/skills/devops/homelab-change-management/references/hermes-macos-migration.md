@@ -123,6 +123,21 @@ The durable fix was to:
 
 Focused verification should evaluate `environment.systemPackages` for each client, select the actual `hermes-desktop-<version>` package rather than the similarly named `.desktop` launcher derivation, inspect the selected derivation for both remote environment-variable names, and assert the host role separately. Label this an ad-hoc targeted check, not suite-wide proof. Run one client as a runtime canary before fleet rollout.
 
+## Tailscale Serve HTTPS for an authenticated Hermes dashboard
+
+Hermes dashboard bind scope is part of its authentication behavior. Binding the primary remote dashboard to `127.0.0.1` can make Hermes treat it as a trusted local endpoint and disable the remote authentication gate. Do not migrate an authenticated remote backend to loopback merely because Tailscale Serve normally fronts loopback services.
+
+The verified Studio topology keeps the dashboard bound to its non-loopback Tailscale IP and uses a loopback Caddy bridge:
+
+1. Hermes dashboard listens on the Studio Tailscale IP and retains `auth_required: true`.
+2. Caddy listens on an unused loopback port, proxies to the authenticated dashboard, sets `Host` to the dashboard's Tailscale-IP listener, and sets `X-Forwarded-Proto: https`.
+3. Tailscale Serve terminates HTTPS on the MagicDNS hostname and forwards to Caddy's loopback port.
+4. Existing direct Tailscale-IP clients remain usable while clients migrate to the HTTPS hostname.
+
+On this host, configuring Tailscale Serve to proxy directly to the node's own `100.x` dashboard address produced a self-hairpin timeout. Always prove the complete path before changing clients: certificate validation, HTTPS `/api/status`, `auth_required: true`, an unauthenticated `/api/ws` upgrade rejected by Hermes rather than timing out, and a real authenticated Desktop WebSocket connection. Verify the legacy endpoint remains authenticated during migration, the generated Caddy configuration validates, the activated `/run/current-system` equals the evaluated Nix generation, and temporary recovery LaunchAgents/configs are removed.
+
+Do not switch the dashboard bind and restart the active remote session before this canary. A Nix build or HTTP status response alone does not prove that authentication and WebSocket routing survived.
+
 ## Intel Darwin client packaging
 
 The later inix rollout added an `x86_64-darwin` client-only host. The Hermes flake exposed package outputs for Apple Silicon Darwin and Linux but omitted `packages.x86_64-darwin`, even though its external overlay and package definitions supported Intel Darwin.
