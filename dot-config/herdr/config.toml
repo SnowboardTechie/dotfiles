@@ -32,9 +32,11 @@ focus_pane_right = "ctrl+alt+right"
 
 resize_mode = ["prefix+ctrl+left", "prefix+ctrl+down", "prefix+ctrl+up", "prefix+ctrl+right"]
 
-# Omarchy also sets resize_pane_{left,down,up,right} on ctrl+alt+shift+arrows and
-# move_tab_{previous,next} on alt+shift+left/right — herdr 0.8.0 (Homebrew stable)
-# rejects those keys as unknown. Re-add when the mac build catches up.
+# Resize the focused pane without entering resize mode (herdr 0.8.2+)
+resize_pane_left = "ctrl+alt+shift+left"
+resize_pane_down = "ctrl+alt+shift+down"
+resize_pane_up = "ctrl+alt+shift+up"
+resize_pane_right = "ctrl+alt+shift+right"
 
 # herdr's default prefix+shift+p is taken by previous_workspace below
 rename_pane = "prefix+shift+o"
@@ -46,6 +48,10 @@ close_tab = "prefix+k"
 switch_tab = ["prefix+1..9", "alt+1..9"]
 previous_tab = ["prefix+p", "alt+left"]
 next_tab = ["prefix+n", "alt+right"]
+
+# Reorder the active tab in place, wrapping at either end (herdr 0.8.2+)
+move_tab_previous = "alt+shift+left"
+move_tab_next = "alt+shift+right"
 
 # Sessions -> workspaces
 new_workspace = "prefix+shift+c"
