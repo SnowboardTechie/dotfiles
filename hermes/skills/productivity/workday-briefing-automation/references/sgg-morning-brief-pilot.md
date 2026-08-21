@@ -46,11 +46,31 @@ generic repository summaries, personal material, and completed initiatives
 without new activity. A Hindsight-only item cannot enter the resting point,
 recommended outcome, or first action without substantive previous-workday
 corroboration or an explicit currently active marker in a canonical surface. A
-recall failure is a visible source error.
+A recall failure is a visible source error.
 
 The vault remains Bryan's curated review interface and exact-artifact layer.
 It is not the sole agent-memory system and must not be bulk-ingested into
 Hindsight by this job.
+
+#### Granola meeting review
+
+The cron reviews completed SGG meeting notes from the previous-business-day
+boundary through briefing time. It first lists meeting metadata, excludes every
+meeting that is not demonstrably SGG/CommonGrants/P&D work, then fetches details
+for at most ten in one bounded call. It never fetches an ambiguous meeting to
+decide whether that meeting is relevant.
+
+The cron-facing `granola` MCP alias exposes only `list_meetings` and
+`get_meetings`; MCP resources and prompts are disabled. The separate
+`granola_full` alias preserves all interactive Granola tools for user-directed
+research. Declarative cron reconciliation fails closed unless both aliases,
+their OAuth endpoint, and their exact tool filters match the manifest.
+
+Meeting-derived claims preserve title, date, meeting ID, explicit owner, action
+verb/object, and epistemic status. A source URL is included only when Granola
+returns one. Meeting notes cannot silently override canonical vault or live
+GitHub state. The cron never retrieves transcripts, archives notes, or retains
+meeting content into Hindsight; every Granola source failure remains visible.
 
 #### Concluded workday-note pilot
 
@@ -99,12 +119,13 @@ Check authored PRs, assigned reviews, actionable comments/requested changes, mea
 ## Output contract
 
 1. **Where work left off** — 1–4 grounded bullets covering work that actually changed or remained active since the previous workday.
-2. **Today's work calendar** — commitments, verified preparation, conflicts, and focus windows.
-3. **Work email requiring attention** — at most 3 actionable messages; omit when empty.
-4. **GitHub watch list** — at most 3 genuinely actionable or materially changed items.
-5. **Recommended primary work outcome** — exactly one result.
-6. **Suggested first action** — exactly one concrete next step.
-7. **Unverified / needs judgment** — only real source failures, disagreements, or assumptions.
+2. **Recent meeting context** — at most 3 relevant Granola-derived actions, decisions, status changes, or contradictions with meeting provenance; omit when empty.
+3. **Today's work calendar** — commitments, verified preparation, conflicts, and focus windows.
+4. **Work email requiring attention** — at most 3 actionable messages; omit when empty.
+5. **GitHub watch list** — at most 3 genuinely actionable or materially changed items.
+6. **Recommended primary work outcome** — exactly one result.
+7. **Suggested first action** — exactly one concrete next step.
+8. **Unverified / needs judgment** — every source failure plus real disagreements or assumptions.
 
 Aim for under two minutes and about ten or fewer substantive bullets. Distinguish verified live state, durable Hindsight context, canonical recorded state, historical evidence, proposals, and inference.
 

@@ -69,6 +69,14 @@ def resolved(path: Path) -> Path:
     return path.resolve(strict=True)
 
 
+def require_managed_destination(destination: Path, hermes_home: Path) -> None:
+    """Refuse writes whose resolved parent escapes HERMES_HOME."""
+    managed_root = hermes_home.expanduser().resolve(strict=False)
+    resolved_parent = destination.expanduser().parent.resolve(strict=False)
+    if resolved_parent != managed_root and managed_root not in resolved_parent.parents:
+        raise InstallError(f"destination parent escapes Hermes home: {destination}")
+
+
 def install_link(
     source: Path,
     destination: Path,
@@ -80,6 +88,7 @@ def install_link(
     if not source.exists():
         raise InstallError(f"managed source does not exist: {source}")
 
+    require_managed_destination(destination, hermes_home)
     destination.parent.mkdir(parents=True, exist_ok=True)
     if destination.is_symlink():
         try:
@@ -108,10 +117,17 @@ def install_link(
     return "linked"
 
 
-def install_copy(source: Path, destination: Path, *, backup_root: Path) -> str:
+def install_copy(
+    source: Path,
+    destination: Path,
+    *,
+    hermes_home: Path,
+    backup_root: Path,
+) -> str:
     """Install a regular-file copy for Hermes paths that reject external symlinks."""
     if not source.is_file():
         raise InstallError(f"managed copy source is not a file: {source}")
+    require_managed_destination(destination, hermes_home)
     destination.parent.mkdir(parents=True, exist_ok=True)
 
     if destination.is_symlink():
@@ -137,6 +153,31 @@ def install_copy(source: Path, destination: Path, *, backup_root: Path) -> str:
 
     shutil.copy2(source, destination)
     return "copied"
+
+
+def remove_managed_script(
+    name: str,
+    *,
+    hermes_home: Path,
+    asset_root: Path,
+) -> str:
+    """Remove only a managed script symlink inside HERMES_HOME."""
+    if Path(name).name != name:
+        raise InstallError(f"unsafe removed script name in manifest: {name}")
+    destination = hermes_home / "scripts" / name
+    require_managed_destination(destination, hermes_home)
+    expected_source = (asset_root / "scripts" / name).resolve(strict=False)
+    if destination.is_symlink():
+        link_target = Path(os.readlink(destination))
+        if not link_target.is_absolute():
+            link_target = destination.parent / link_target
+        if link_target.resolve(strict=False) != expected_source:
+            raise InstallError(f"refusing to remove foreign script symlink: {destination}")
+        destination.unlink()
+        return "removed"
+    if destination.exists():
+        raise InstallError(f"refusing to remove non-symlink script: {destination}")
+    return "absent"
 
 
 def compile_calendar(hermes_home: Path) -> str:
@@ -227,7 +268,12 @@ def main() -> int:
         source = ASSET_ROOT / "scripts" / name
         destination = hermes_home / "scripts" / name
         if name in copied_scripts:
-            outcome = install_copy(source, destination, backup_root=backup_root / "scripts")
+            outcome = install_copy(
+                source,
+                destination,
+                hermes_home=hermes_home,
+                backup_root=backup_root / "scripts",
+            )
         else:
             outcome = install_link(
                 source,
@@ -237,6 +283,31 @@ def main() -> int:
                 backup_root=backup_root,
             )
         results.append(f"script {name}: {outcome}")
+
+    for name in manifest.get("removedScripts", []):
+        outcome = remove_managed_script(
+            name,
+            hermes_home=hermes_home,
+            asset_root=ASSET_ROOT,
+        )
+        results.append(f"retired script {name}: {outcome}")
+
+    hindsight_relative = Path(manifest["hindsightConfig"])
+    if hindsight_relative.is_absolute() or ".." in hindsight_relative.parts:
+        raise InstallError(f"unsafe Hindsight config path in manifest: {hindsight_relative}")
+    hindsight_source = ASSET_ROOT / hindsight_relative
+    resolved_asset_root = ASSET_ROOT.resolve(strict=True)
+    resolved_hindsight_source = hindsight_source.resolve(strict=True)
+    if resolved_asset_root not in resolved_hindsight_source.parents:
+        raise InstallError(f"Hindsight config source escapes managed asset root: {hindsight_source}")
+    outcome = install_link(
+        hindsight_source,
+        hermes_home / "hindsight" / "config.json",
+        hermes_home=hermes_home,
+        adopt_identical=args.adopt_identical,
+        backup_root=backup_root,
+    )
+    results.append(f"Hindsight config: {outcome}")
 
     for relative_text in manifest["skills"]:
         relative = Path(relative_text)

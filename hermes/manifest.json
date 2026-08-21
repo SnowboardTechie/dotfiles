@@ -1,9 +1,33 @@
 {
   "schemaVersion": 1,
   "studioLocalHostName": "Bryans-Mac-Studio",
+  "hindsightConfig": "hindsight/config.json",
+  "mcpRequirements": {
+    "granola": {
+      "url": "https://mcp.granola.ai/mcp",
+      "auth": "oauth",
+      "enabled": true,
+      "tools": {
+        "include": ["list_meetings", "get_meetings"],
+        "exclude": [],
+        "resources": false,
+        "prompts": false
+      }
+    },
+    "granola_full": {
+      "url": "https://mcp.granola.ai/mcp",
+      "auth": "oauth",
+      "enabled": true,
+      "tools": {
+        "include": [],
+        "exclude": [],
+        "resources": true,
+        "prompts": true
+      }
+    }
+  },
   "scripts": [
     "sgg-morning-brief.py",
-    "sgg-sync-workday-note.py",
     "sgg-calendar-events.swift",
     "sgg-mail-messages.js",
     "sgg-pr-review-event.py",
@@ -12,6 +36,9 @@
     "personal-alignment-brief.py",
     "personal-mail-messages.js",
     "check-mattpocock-skill-updates.py"
+  ],
+  "removedScripts": [
+    "sgg-sync-workday-note.py"
   ],
   "copiedScripts": [
     "sgg-morning-brief.py",
@@ -52,7 +79,9 @@
       "noAgent": false,
       "enabledToolsets": [
         "file",
-        "terminal"
+        "terminal",
+        "granola",
+        "no_mcp"
       ],
       "workdir": "/Users/bryan/code/sgg",
       "attachToSession": true,

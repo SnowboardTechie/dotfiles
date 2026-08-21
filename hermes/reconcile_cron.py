@@ -88,6 +88,54 @@ def monitor_script_value(definition: dict) -> str | None:
     return monitor_script
 
 
+def verify_mcp_requirements(manifest: dict) -> None:
+    """Fail closed when a managed cron's MCP prerequisite has drifted."""
+    requirements = manifest.get("mcpRequirements") or {}
+    if not requirements:
+        return
+
+    try:
+        import yaml  # pyright: ignore[reportMissingImports]
+    except ImportError:
+        fail("PyYAML is required to verify managed MCP prerequisites")
+
+    hermes_home = Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes"))
+    config_path = hermes_home / "config.yaml"
+    if not config_path.is_file():
+        fail(f"Hermes config not found while verifying MCP prerequisites: {config_path}")
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+    configured = config.get("mcp_servers") or {}
+
+    for name, expected in requirements.items():
+        actual = configured.get(name)
+        if not isinstance(actual, dict):
+            fail(f"required MCP server {name!r} is not configured")
+        for key in ("url", "auth", "enabled"):
+            if actual.get(key) != expected.get(key):
+                fail(
+                    f"MCP server {name!r} has {key}={actual.get(key)!r}; "
+                    f"expected {expected.get(key)!r}"
+                )
+        expected_tools = expected.get("tools") or {}
+        actual_tools = actual.get("tools") or {}
+        for key in ("include", "exclude"):
+            expected_names = expected_tools.get(key) or []
+            actual_names = actual_tools.get(key) or []
+            if sorted(actual_names) != sorted(expected_names):
+                fail(
+                    f"MCP server {name!r} tools.{key}={actual_names!r}; "
+                    f"expected {expected_names!r}"
+                )
+        for key in ("resources", "prompts"):
+            expected_value = expected_tools.get(key, True)
+            actual_value = actual_tools.get(key, True)
+            if actual_value is not expected_value:
+                fail(
+                    f"MCP server {name!r} tools.{key}={actual_value!r}; "
+                    f"expected {expected_value!r}"
+                )
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         fail("usage: reconcile_cron.py MANIFEST")
@@ -103,6 +151,7 @@ def main() -> int:
     from tools.cronjob_tools import cronjob  # pyright: ignore[reportMissingImports]  # noqa: PLC0415
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    verify_mcp_requirements(manifest)
     summaries: list[dict[str, str]] = []
     for definition in manifest["cronJobs"]:
         name = definition["name"]

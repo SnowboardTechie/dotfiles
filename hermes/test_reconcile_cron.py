@@ -72,6 +72,113 @@ class ContinuationOriginTest(unittest.TestCase):
             MODULE.continuation_origin(definition)
 
 
+class MCPRequirementTest(unittest.TestCase):
+    def write_config(self, root: Path, servers: dict) -> None:
+        import yaml
+
+        root.mkdir(parents=True, exist_ok=True)
+        (root / "config.yaml").write_text(
+            yaml.safe_dump({"mcp_servers": servers}), encoding="utf-8"
+        )
+
+    def requirements(self) -> dict:
+        return {
+            "mcpRequirements": {
+                "granola": {
+                    "url": "https://mcp.granola.ai/mcp",
+                    "auth": "oauth",
+                    "enabled": True,
+                    "tools": {
+                        "include": ["list_meetings", "get_meetings"],
+                        "exclude": [],
+                        "resources": False,
+                        "prompts": False,
+                    },
+                }
+            }
+        }
+
+    def test_accepts_exact_restricted_granola_configuration(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_config(
+                root,
+                {
+                    "granola": {
+                        "url": "https://mcp.granola.ai/mcp",
+                        "auth": "oauth",
+                        "enabled": True,
+                        "tools": {
+                            "include": ["get_meetings", "list_meetings"],
+                            "exclude": [],
+                            "resources": False,
+                            "prompts": False,
+                        },
+                    }
+                },
+            )
+            with patch.dict(os.environ, {"HERMES_HOME": str(root)}):
+                MODULE.verify_mcp_requirements(self.requirements())
+
+    def test_rejects_missing_or_overbroad_granola_configuration(self) -> None:
+        import tempfile
+
+        cases = (
+            {},
+            {
+                "granola": {
+                    "url": "https://mcp.granola.ai/mcp",
+                    "auth": "oauth",
+                    "enabled": True,
+                }
+            },
+        )
+        for servers in cases:
+            with self.subTest(servers=servers), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.write_config(root, servers)
+                with patch.dict(os.environ, {"HERMES_HOME": str(root)}):
+                    with self.assertRaises(SystemExit):
+                        MODULE.verify_mcp_requirements(self.requirements())
+
+    def test_rejects_filtered_full_interactive_alias(self) -> None:
+        import tempfile
+
+        requirements = {
+            "mcpRequirements": {
+                "granola_full": {
+                    "url": "https://mcp.granola.ai/mcp",
+                    "auth": "oauth",
+                    "enabled": True,
+                    "tools": {
+                        "include": [],
+                        "exclude": [],
+                        "resources": True,
+                        "prompts": True,
+                    },
+                }
+            }
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_config(
+                root,
+                {
+                    "granola_full": {
+                        "url": "https://mcp.granola.ai/mcp",
+                        "auth": "oauth",
+                        "enabled": True,
+                        "tools": {"exclude": ["get_meeting_transcript"]},
+                    }
+                },
+            )
+            with patch.dict(os.environ, {"HERMES_HOME": str(root)}):
+                with self.assertRaises(SystemExit):
+                    MODULE.verify_mcp_requirements(requirements)
+
+
 class MonitorScriptTest(unittest.TestCase):
     """`monitorScript` reaches the scheduler and is verified on readback.
 

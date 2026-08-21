@@ -8,10 +8,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 MANIFEST = ROOT / "manifest.json"
 WORK_PROMPT = ROOT / "automations" / "workday-morning-brief" / "prompt.md"
+HINDSIGHT_CONFIG = ROOT / "hindsight" / "config.json"
 PERSONAL_PROMPT = ROOT / "automations" / "personal-morning-brief" / "prompt.md"
 WEEKLY_ORIENTATION_PROMPT = ROOT / "automations" / "personal-weekly-orientation" / "prompt.md"
 WORK_COLLECTOR = ROOT / "scripts" / "sgg-morning-brief.py"
-WORK_SYNC = ROOT / "scripts" / "sgg-sync-workday-note.py"
 PERSONAL_COLLECTOR = ROOT / "scripts" / "personal-morning-brief.py"
 WEEKLY_ORIENTATION_COLLECTOR = ROOT / "scripts" / "personal-weekly-orientation.py"
 ALIGNMENT_COLLECTOR = ROOT / "scripts" / "personal-alignment-brief.py"
@@ -111,20 +111,58 @@ class MorningBriefSplitContractTest(unittest.TestCase):
         self.assertNotIn("collect_reminders", collector)
         self.assertIn('WORK_CALENDARS = {"Bryan @ Agile6"}', collector)
 
-    def test_work_brief_uses_project_owned_sgg_vault(self) -> None:
+    def test_work_brief_uses_project_owned_sgg_vault_read_only(self) -> None:
         prompt = WORK_PROMPT.read_text(encoding="utf-8")
         collector = WORK_COLLECTOR.read_text(encoding="utf-8")
-        sync_helper = WORK_SYNC.read_text(encoding="utf-8")
 
         self.assertIn("/Users/bryan/code/sgg/vault/AGENTS.md", prompt)
-        self.assertIn("/Users/bryan/code/sgg/vault/workdays/DAY.md", prompt)
+        self.assertIn("The workday-note pilot is concluded", prompt)
+        self.assertNotIn("sgg-sync-workday-note.py", prompt)
+        self.assertNotIn("Workday note: synced.", prompt)
         self.assertNotIn("/Users/bryan/code/notes/sgg", prompt)
         self.assertIn('VAULT_ROOT = SGG_ROOT / "vault"', collector)
-        self.assertIn('git_history(SGG_ROOT, since, "vault")', collector)
+        self.assertIn('"previousWorkdayHistory": sgg_history[:15000]', collector)
+        self.assertIn('        "vault",', collector)
         self.assertNotIn("NOTES_ROOT", collector)
-        self.assertIn('WORKSPACE_ROOT / "vault" / "workdays"', sync_helper)
-        self.assertIn('relative = f"vault/workdays/{day}.md"', sync_helper)
-        self.assertNotIn('Path.home() / "code" / "notes"', sync_helper)
+
+    def test_work_brief_reviews_only_granola_mcp_and_does_not_retain(self) -> None:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        job = next(job for job in manifest["cronJobs"] if job["name"] == "Workday Morning Brief")
+        prompt = WORK_PROMPT.read_text(encoding="utf-8")
+        hindsight = json.loads(HINDSIGHT_CONFIG.read_text(encoding="utf-8"))
+
+        self.assertEqual(job["enabledToolsets"], ["file", "terminal", "granola", "no_mcp"])
+        self.assertNotIn("memory", job["enabledToolsets"])
+        self.assertNotIn("sgg-sync-workday-note.py", manifest["scripts"])
+        self.assertIn("sgg-sync-workday-note.py", manifest["removedScripts"])
+        self.assertEqual(manifest["hindsightConfig"], "hindsight/config.json")
+        self.assertEqual(hindsight["memory_mode"], "tools")
+        self.assertIs(hindsight["auto_recall"], False)
+        self.assertIs(hindsight["auto_retain"], False)
+        self.assertEqual(
+            manifest["mcpRequirements"]["granola"]["tools"]["include"],
+            ["list_meetings", "get_meetings"],
+        )
+        self.assertIs(
+            manifest["mcpRequirements"]["granola"]["tools"]["resources"], False
+        )
+        self.assertIs(
+            manifest["mcpRequirements"]["granola"]["tools"]["prompts"], False
+        )
+        self.assertEqual(
+            manifest["mcpRequirements"]["granola_full"]["tools"]["exclude"], []
+        )
+        self.assertIn("Review completed Granola meetings", prompt)
+        self.assertIn("not demonstrably about SGG", prompt)
+        self.assertIn("never fetch their details to decide relevance", prompt)
+        self.assertIn("call `get_meetings` once", prompt)
+        self.assertNotIn("query_granola_meetings", prompt)
+        self.assertIn("meeting title, date, and meeting ID", prompt)
+        self.assertIn("Do not invent a link", prompt)
+        self.assertIn("Do not retrieve transcripts", prompt)
+        self.assertIn("Do not retain meeting content to Hindsight", prompt)
+        self.assertIn("A successful empty result", prompt)
+        self.assertIn("Report every nonempty `sourceErrors` entry", prompt)
 
     def test_personal_brief_excludes_sgg_work_details(self) -> None:
         prompt = PERSONAL_PROMPT.read_text(encoding="utf-8")
