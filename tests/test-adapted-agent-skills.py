@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Contract tests for the adapted planning/delivery skill topology.
 
-These lock the *accepted target* from the reviewed adoption plan:
+These lock the *accepted target* from the reviewed adoption plan. Ordinary
+explanatory prose may be rewritten freely, but workflow phase headings,
+canonical output strings, and fail-closed shell shapes asserted below are
+load-bearing contract surfaces:
 adapted upstream cores under `dot-agents/skills/`, a machine-readable
 provenance ledger, deterministic review-lane selection, curation that
 matches the intended per-runtime roles, and a timestamp-free upstream
@@ -344,8 +347,9 @@ class CurationTest(unittest.TestCase):
             with self.subTest(tool=tool):
                 self.assertNotIn("guided-learning", self.arrays.get(tool, []))
 
-    def test_pi_receives_no_new_scope(self) -> None:
-        for name in ALL_NEW_SKILLS:
+    def test_pi_receives_only_the_review_dependency_from_new_scope(self) -> None:
+        self.assertIn("code-review", self.arrays.get("PI_SKILLS", []))
+        for name in set(ALL_NEW_SKILLS) - {"code-review"}:
             with self.subTest(skill=name):
                 self.assertNotIn(name, self.arrays.get("PI_SKILLS", []))
 
@@ -434,11 +438,21 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
 
 
 class ReviewContractTest(_MatchMixin, unittest.TestCase):
-    """Standards + Spec always; Risk on trigger; a hard two-pass bound."""
+    """Three primary lanes plus a mandatory final Ponytail quality gate."""
 
     @classmethod
     def setUpClass(cls) -> None:
         cls.body = read(POOL / "pr-self-review" / "SKILL.md")
+        cls.code_review = read(POOL / "code-review" / "SKILL.md")
+        cls.issue_work = read(POOL / "issue-work" / "SKILL.md")
+        cls.lane_reviewer = read(REPO_ROOT / "dot-claude" / "agents" / "lane-reviewer.md")
+        cls.review_overview = cls.body.split("## Phase 2 — Review pass", 1)[1].split("### 2.1", 1)[0]
+        cls.dispatch = cls.body.split("### 2.2 Run the primary lanes, then Ponytail", 1)[1].split("### 2.2.1", 1)[0]
+        cls.ponytail_dispatch = cls.dispatch.split("After the primary batch", 1)[1]
+        cls.correction = cls.body.split("### 2.5 Correction bound", 1)[1].split("## Phase 3", 1)[0]
+        cls.summary = cls.body.split("### 3.1 Write summary.md", 1)[1].split("### 3.2", 1)[0]
+        cls.preflight = cls.body.split("### 0.4 Pre-flight", 1)[1].split("## Phase 1", 1)[0]
+        cls.ponytail_contract = cls.code_review.split("### Ponytail quality gate", 1)[1].split("## 5. Report", 1)[0]
 
     def test_lane_selector_and_its_tests_exist(self) -> None:
         self.assertTrue((POOL / "pr-self-review" / "scripts" / "select_review_lanes.py").is_file())
@@ -448,6 +462,135 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
         for token in ("review-standards.md", "review-spec.md", "review-risk.md", "summary.md"):
             with self.subTest(artifact=token):
                 self.assertIn(token, self.body)
+
+    def test_ponytail_is_a_mandatory_final_pass_not_a_fourth_primary_lane(self) -> None:
+        self.assertIn("classifier-selected primary lanes", self.review_overview)
+        self.assertIn("followed by mandatory Ponytail", self.review_overview)
+        self.assertIn("not a fourth primary lane", self.review_overview)
+        self.assertIn("Ponytail runs on every review candidate", self.review_overview)
+        self.assertIn("After the primary batch", self.dispatch)
+        self.assertIn("the same diff range", self.dispatch)
+        self.assertIn("candidate_identity", self.dispatch)
+        self.assertIn("review-ponytail.md", self.dispatch)
+        for field in ("base_sha", "head_sha", "merge_base_sha", "diff_sha256"):
+            with self.subTest(ponytail_identity=field):
+                self.assertIn(field, self.ponytail_dispatch)
+
+    def test_ponytail_contract_is_host_independent_and_narrow(self) -> None:
+        for token in (
+            "over-engineering only",
+            "delete",
+            "yagni",
+            "stdlib",
+            "native",
+            "shrink",
+            "never invent deletions",
+            "Lean already. Ship.",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token.lower(), self.ponytail_contract.lower())
+        self.assertIn("does **not** report correctness, security", self.ponytail_contract)
+        for body in (self.body, self.code_review, self.lane_reviewer):
+            self.assertNotIn("ponytail:ponytail-review", body)
+        self.assertIn("Do not invoke `/ponytail-review`", self.review_overview)
+        self.assertIn("depend on a Claude plugin or user-scope", self.review_overview)
+
+    def test_correction_and_terminal_rereviews_require_ponytail(self) -> None:
+        self.assertIn("all selected primary lanes", self.correction)
+        self.assertIn("Ponytail last", self.correction)
+        self.assertNotIn("affected lanes only", self.correction.lower())
+        self.assertIn("The `final_review_only` pass", self.correction)
+        self.assertIn("review-ponytail.md", self.correction)
+        self.assertIn("validated fix", self.correction)
+        self.assertIn("candidate must be reviewed again", self.correction)
+
+    def test_summary_and_readiness_make_missing_ponytail_visible(self) -> None:
+        for token in ("candidate: {head_sha}", "quality_gates: [ponytail]", "## Ponytail Quality Gate", "review-ponytail.md"):
+            with self.subTest(token=token):
+                self.assertIn(token, self.summary)
+        for field in ("base_sha", "head_sha", "merge_base_sha", "diff_sha256"):
+            with self.subTest(field=field):
+                self.assertIn(f"{field}: {{{field}}}", self.lane_reviewer)
+                self.assertIn(field, self.body)
+        self.assert_matches(
+            self.body,
+            r"(?is)compare.*base_sha.*head_sha.*merge_base_sha.*diff_sha256.*before.*after",
+            "every review stage must verify the complete immutable candidate identity",
+        )
+        self.assertIn("Ponytail review missing — do not merge", self.summary)
+        self.assertIn("Ship Readiness also checks `review-ponytail.md`", self.summary)
+
+    def test_state_directory_is_created_confined_and_symlink_safe(self) -> None:
+        self.assertIn("standalone", self.preflight.lower())
+        self.assertIn("create", self.preflight.lower())
+        self.assertIn("pre-pr", self.preflight.lower())
+        self.assertIn("canonical", self.preflight.lower())
+        self.assertIn("authorized `.hermes/` state root", self.preflight)
+        self.assertIn('D="{state-dir}"', self.body)
+        self.assertIn('! -d "$D"', self.body)
+        self.assertIn("set -euo pipefail", self.body)
+        self.assertIn("trap cleanup_candidate_inputs EXIT", self.body)
+        for artifact in ("candidate.diff", "name-status", "unified.diff"):
+            with self.subTest(artifact=artifact):
+                self.assertIn(f'mktemp "$D/{artifact}.XXXXXX"', self.body)
+        self.assertIn('$base_sha...$head_sha', self.body)
+        self.assertNotIn('{base}...HEAD -- > "$name_status_file"', self.body)
+
+    def test_issue_work_requires_and_presents_the_ponytail_artifact(self) -> None:
+        self.assertIn("review-ponytail.md", self.issue_work)
+        self.assert_matches(
+            self.issue_work,
+            r"(?is)review-ponytail\.md.*(missing|absent).*(blocked|do not merge|stop)",
+            "issue-work must not accept an incomplete self-review handoff",
+        )
+        self.assert_matches(
+            self.issue_work,
+            r"(?is)Ponytail.*(status|selection)",
+            "issue-work must present Ponytail selection/status",
+        )
+
+    def test_lane_reviewer_can_receive_the_shared_ponytail_contract(self) -> None:
+        self.assertIn("`ponytail`", self.lane_reviewer)
+        self.assertIn("review-ponytail.md", self.lane_reviewer)
+        self.assert_matches(
+            self.lane_reviewer,
+            r"(?is)git diff --binary -M -C --find-copies-harder.*\{base_sha\}\.\.\.\{head_sha\}.*diff_sha256",
+            "every reviewer must recompute the parent's exact canonical binary-diff fingerprint",
+        )
+        for token in (
+            "actual_head_sha",
+            "actual_merge_base_sha",
+            "{head_sha}",
+            "{merge_base_sha}",
+            "git status --porcelain --untracked-files=all",
+        ):
+            with self.subTest(identity_check=token):
+                self.assertIn(token, self.lane_reviewer)
+        self.assertIn("git status --porcelain --untracked-files=all", self.body)
+        self.assert_matches(
+            self.lane_reviewer,
+            r"(?is)code-review.*canonical.*ponytail",
+            "Claude's reviewer must consume the shared contract rather than a plugin",
+        )
+
+    def test_standalone_code_review_pins_classifier_and_ponytail_identity(self) -> None:
+        self.assertIn('git rev-parse "<fixed-point>^{commit}"', self.code_review)
+        self.assertIn("{base_sha}...{head_sha}", self.code_review)
+        self.assertIn("git diff --binary -M -C --find-copies-harder", self.code_review)
+        self.assertIn("diff_sha256=", self.code_review)
+        self.assertNotIn("<fixed-point>...HEAD -- > name-status", self.code_review)
+        ponytail_dispatch = self.code_review.split("After every selected primary lane", 1)[1].split("### Standards lane", 1)[0]
+        self.assertIn("expected_head_branch", ponytail_dispatch)
+        for field in ("base_sha", "head_sha", "merge_base_sha", "diff_sha256"):
+            with self.subTest(field=field):
+                self.assertIn(field, ponytail_dispatch)
+
+    def test_every_identity_boundary_rejects_same_commit_branch_switches(self) -> None:
+        self.assertIn("expected_head_branch", self.body)
+        self.assertIn("git branch --show-current", self.body)
+        self.assertIn("current branch", self.body.lower())
+        self.assertIn("expected_head_branch", self.lane_reviewer)
+        self.assertIn("git branch --show-current", self.lane_reviewer)
 
     def test_skill_documents_the_cairnos_always_risk_rule(self) -> None:
         self.assert_matches(self.body, r"(?i)cairn", f"missing required wording: {r"(?i)cairn"!r}")

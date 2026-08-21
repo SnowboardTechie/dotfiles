@@ -80,14 +80,15 @@ if [[ -z "$SKILLS_SRC" || ! -d "$SKILLS_SRC" ]]; then
 fi
 
 # Common core shared by Claude, OpenCode, and Pi: dev/PR, PKM, and workflow learning.
-COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review
+COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review code-review
     vault-pkm vault-capture skill-retrospective obsidian)
 
 # Planning and delivery cores adapted from an upstream suite (see
 # dot-agents/upstreams/mattpocock-skills.json). Curated for the three runtimes
 # Bryan actually plans and implements on. `guided-learning` is Hermes-only until
-# real use earns wider distribution; Pi stays lean and receives none of these.
-ADAPTED_CORES=(grilling wayfinder tdd diagnosing-bugs code-review codebase-architecture)
+# real use earns wider distribution; Pi stays lean but receives `code-review`
+# through COMMON_SKILLS because its shared `pr-self-review` workflow requires it.
+ADAPTED_CORES=(grilling wayfinder tdd diagnosing-bugs codebase-architecture)
 
 PI_SKILLS=("${COMMON_SKILLS[@]}")
 
@@ -108,7 +109,7 @@ OPENCODE_SKILLS=("${COMMON_SKILLS[@]}"
 # skills live in a dedicated category so the shared pool remains canonical while
 # Hermes's curator and bundled-skill lifecycle stay separate.
 HERMES_SKILLS=(
-    ship worktrunk update-pr-description pr-self-review
+    ship worktrunk update-pr-description pr-self-review code-review
     manual-merge issue-create issue-plan issue-work loop-issue
     vault-capture skill-retrospective adr-and-spec-coach voice-bryan
     dx-target dx-preview conforming-tech-specs

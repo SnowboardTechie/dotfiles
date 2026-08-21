@@ -928,8 +928,8 @@ class StrictStatusParsingTest(unittest.TestCase):
                 LANES.main(["--repo", "bryan/x", "--name-status-from", str(path)])
         self.assertIn("unusable name-status inventory", err.getvalue())
 
-    def test_the_documented_command_is_one_literal_everywhere(self) -> None:
-        """Drift between the skills and the script is the failure mode here."""
+    def test_documented_commands_preserve_the_load_bearing_flags(self) -> None:
+        """Orchestrators pin SHAs, but none may weaken the Git inventory flags."""
         command = LANES.NAME_STATUS_COMMAND
         self.assertEqual(
             command,

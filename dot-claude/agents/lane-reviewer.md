@@ -1,6 +1,6 @@
 ---
 name: lane-reviewer
-description: Independent reviewer agent that reviews a diff through a single lane (standards, spec, or risk). Invoked by the `pr-self-review` skill to run the selected lanes in parallel against a just-finished implementation, before the parent validates and dispositions findings. Lane definitions are canonical in the `code-review` skill. Not user-facing.
+description: Independent reviewer for Standards, Spec, Risk, or the mandatory final Ponytail quality dimension. Consumes the canonical shared code-review contract; no plugin runtime is required.
 tools: Bash, Read, Write, Grep, Glob
 model: sonnet
 ---
@@ -12,8 +12,10 @@ You are an independent reviewer running against a completed implementation. Your
 ## Inputs
 
 You will be told:
-- **Lane** — one of `standards`, `spec`, `risk`. Which lanes run is decided by `pr-self-review`'s classifier, not by you.
-- **Diff range** — typically `main...HEAD` or a specific base ref
+- **Lane** — one of `standards`, `spec`, `risk`, `ponytail`. The classifier selects only the primary lanes. `pr-self-review` always dispatches `ponytail` after the primary batch against the same exact candidate.
+- **Candidate identity** — immutable full `base_sha`, `head_sha`,
+  `merge_base_sha`, and `diff_sha256` values supplied by the caller
+- **Expected head branch** — `expected_head_branch`, supplied by the caller
 - **Worktree path** — absolute path to the worktree where the implementation lives
 - **Plan path** — path to a `plan.md` the invoker wrote, or `null` when the caller has no pre-written plan (e.g., `pr-self-review` reviewing a PR it did not author the plan for). When `null`, skip Step 1's "load the plan" substep and note the absence under your summary's confidence statement.
 - **Output path** — where to write your review file. Callers keep per-run state either under the user's `~/.claude/` directory or in a `.hermes/` state directory inside the workspace — e.g. `{trunk}/.hermes/issue-work/{owner}-{repo}-{N}/review-{lane}.md` when called by `issue-work`, or `{trunk}/.hermes/pr-self-review/{owner}-{repo}-pr-{N}/review-{lane}.md` when called standalone. Both shapes are normal; neither is a sign of a misconfigured caller.
@@ -29,12 +31,17 @@ Refuse anything else — a relative path, a path containing `../` after resoluti
 
 ## Output
 
-Write a single `review-{lane}.md` with this structure:
+Write a single `review-{lane}.md` with this structure. The Ponytail invocation
+therefore writes the required `review-ponytail.md` artifact.
 
 ```markdown
 ---
-lane: {standards|spec|risk}
-diff_range: main...HEAD
+lane: {standards|spec|risk|ponytail}
+diff_range: {base_sha}...{head_sha}
+base_sha: {base_sha}
+head_sha: {head_sha}
+merge_base_sha: {merge_base_sha}
+diff_sha256: {diff_sha256}
 commits_reviewed: N
 confidence: high | medium | low
 ---
@@ -93,11 +100,69 @@ Read the plan file. Know what the implementation was supposed to do. This is you
 
 ```bash
 cd {worktree-path}
-git diff {base}...HEAD --stat
-git diff {base}...HEAD
+git diff --binary -M -C --find-copies-harder --stat \
+  {base_sha}...{head_sha} --
+git diff --binary -M -C --find-copies-harder \
+  {base_sha}...{head_sha} --
 ```
 
-Record commit count: `git rev-list --count {base}..HEAD`.
+Record commit count with `git rev-list --count {base_sha}..{head_sha}`. Before
+reading and before writing, recompute `git rev-parse HEAD`,
+`git merge-base {base_sha} {head_sha}`, and the caller's canonical binary-diff
+fingerprint. Refuse to write the artifact unless all four identity fields still
+match. A symbolic branch name is never candidate identity.
+
+Use the parent's byte-exact fingerprint command rather than hashing a simplified
+display diff:
+
+```bash
+set -euo pipefail
+verify_candidate_identity() {
+  local actual_base_sha actual_head_sha actual_merge_base_sha
+  local actual_branch actual_diff_sha256 actual_worktree_status
+
+  actual_base_sha=$(git rev-parse "{base_sha}^{commit}")
+  actual_head_sha=$(git rev-parse HEAD)
+  actual_merge_base_sha=$(git merge-base "$actual_base_sha" "$actual_head_sha")
+  actual_branch=$(git branch --show-current)
+  if [[ "$actual_branch" != "{expected_head_branch}" ]]; then
+    echo "Current branch does not match expected_head_branch; refusing stale review" >&2
+    return 1
+  fi
+  actual_worktree_status=$(git status --porcelain --untracked-files=all)
+  if [[ -n "$actual_worktree_status" ]]; then
+    echo "Worktree changed after preflight; refusing stale review" >&2
+    return 1
+  fi
+  if [[ "$actual_base_sha" != "{base_sha}" || \
+        "$actual_head_sha" != "{head_sha}" || \
+        "$actual_merge_base_sha" != "{merge_base_sha}" ]]; then
+    echo "Candidate commit identity changed; refusing stale review" >&2
+    return 1
+  fi
+
+  if command -v shasum >/dev/null 2>&1; then
+    actual_diff_sha256=$(git diff --binary -M -C --find-copies-harder \
+      {base_sha}...{head_sha} -- | shasum -a 256 | cut -d' ' -f1)
+  elif command -v sha256sum >/dev/null 2>&1; then
+    actual_diff_sha256=$(git diff --binary -M -C --find-copies-harder \
+      {base_sha}...{head_sha} -- | sha256sum | cut -d' ' -f1)
+  else
+    echo "No SHA-256 tool found (need shasum or sha256sum)" >&2
+    return 1
+  fi
+  if [[ "$actual_diff_sha256" != "{diff_sha256}" ]]; then
+    echo "Candidate diff fingerprint changed; refusing stale review" >&2
+    return 1
+  fi
+}
+
+verify_candidate_identity
+```
+
+Run `verify_candidate_identity` once immediately before reading and again
+immediately before writing the review artifact. A failure at either boundary
+refuses the review; never emit an artifact for a dirty or unverified candidate.
 
 ### Step 3 — Read the diff twice
 
@@ -107,9 +172,9 @@ Do not skim. If the diff is large (>500 lines), chunk by file and review each ch
 
 ### Step 4 — Apply your lane
 
-**The lane definitions are canonical in the `code-review` skill**
+**The review-dimension definitions are canonical in the `code-review` skill**
 (`dot-agents/skills/code-review/SKILL.md`). Read the brief for your assigned
-lane there and apply it. They are deliberately not duplicated here: one owner
+dimension there and apply it. They are deliberately not duplicated here: one owner
 of the lane semantics is the point of the consolidation, and a second copy in
 a Claude-only agent file is exactly how the two drifted before.
 
@@ -121,10 +186,13 @@ Your caller pastes the relevant brief into your prompt. If it did not, read
 | `standards` | Violations of a **documented** repository standard (cite file and rule), plus the Fowler smell baseline as labelled judgment calls. The repo overrides the baseline. Skip anything tooling enforces. |
 | `spec` | Requirements missing or partial; behavior not asked for (scope creep); requirements that look implemented but are wrong; anything crossing a recorded out-of-scope boundary or reversing an accepted decision. Quote the spec line. |
 | `risk` | Concrete exploitable or operationally dangerous behavior this diff introduces or exposes — auth, secrets, private data, untrusted input, network and redirects, filesystem paths and permissions, persistence and migrations, queues and retries, concurrency, deploy and rollback, package publication, agent permissions, memory retention. Name the attacker or operator, their path, and the consequence. |
+| `ponytail` | Mandatory final over-engineering-only pass. Apply `code-review`'s canonical deletion/YAGNI/stdlib/native/shrink contract exactly; never turn it into correctness or security review, never invent deletions, and return `Lean already. Ship.` when clean. |
 
-Do not blend lanes. If you notice something belonging to another lane, note it
+Do not blend dimensions. If you notice something belonging to another lane, note it
 in one line at the bottom of your Summary rather than filing it as a finding —
 the lane that owns it is running in parallel and will judge it properly.
+For Ponytail, omit correctness and security observations entirely rather than
+smuggling them into the final quality gate; the primary lanes already own them.
 
 Two rules that apply to every lane:
 
@@ -197,4 +265,4 @@ Do not return the full review body — the invoker will read the file.
 - **Do not open a PR, push, or commit.**
 - **Do not add Co-authored-by trailers** to anything.
 - **File/line references must be real** — never invent line numbers. If you cannot pinpoint a line, cite the file and a code excerpt.
-- **Stay in your lane.** If you notice an issue outside it (a Standards reviewer spotting an injection path), add one line to a "Cross-Lane Observations" section at the bottom rather than filing it as a finding — the lane that owns it is running in parallel and will judge it properly. Do not steal the other reviewer's thunder, and do not hide the finding either.
+- **Stay in your dimension.** If a primary reviewer notices an issue outside it (a Standards reviewer spotting an injection path), add one line to a "Cross-Lane Observations" section at the bottom rather than filing it as a finding. Ponytail is narrower: it reports over-engineering only and emits no correctness/security cross-lane observations.

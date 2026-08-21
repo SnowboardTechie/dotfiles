@@ -1,6 +1,6 @@
 ---
 name: issue-work
-description: End-to-end GitHub/Forgejo ticket workflow. Use when the user shares a ticket URL (github.com/owner/repo/issues/N or /pull/N), a shorthand like owner/repo#123, asks to "start on ticket", "pick up this issue", "work on this ticket", or pastes issue text asking for implementation. Fetches ticket with all comments and linked work, creates a worktree, spawns parallel exploration agents, proposes an implementation plan for approval, implements, runs tests, then runs parallel self-review (Standards and Spec always, plus Risk when the change touches security, data, or unattended behavior) before returning for human review.
+description: End-to-end GitHub/Forgejo ticket workflow. Intake, plan approval, isolated implementation, verification, Standards/Spec/conditional Risk review, mandatory final Ponytail quality review, then an explicit ship gate.
 ---
 
 # Issue Work
@@ -465,7 +465,7 @@ If verification fails, do **not** advance to Phase 4. Return to Phase 3's failur
 
 ### 4.1 Delegate to `/pr-self-review`
 
-Phase 4 hands off to the [`pr-self-review`](../pr-self-review/SKILL.md) skill in its `pre-pr` mode. It selects the review lanes deterministically — Standards and Spec always, Risk when the changed paths trigger it or the repository is CairnOS — runs them as parallel children, fetches pre-review context, and owns finding disposition. It automatically fixes validated in-scope findings, rejects false positives, and defers demonstrably separate non-blocking work, asking only when a valid blocking finding has no fix that preserves the approved PR intent. Corrections are capped at one normal pass plus one conditional final pass. Hermes runs at most three children at a time. The worktree, branch, and state dir already exist; pass them in:
+Phase 4 hands off to the [`pr-self-review`](../pr-self-review/SKILL.md) skill in its `pre-pr` mode. It selects the primary review lanes deterministically — Standards and Spec always, Risk when the changed paths trigger it or the repository is CairnOS — runs them as parallel children, then runs mandatory Ponytail as the final over-engineering quality pass against the same exact candidate. It fetches pre-review context and owns finding disposition. It automatically fixes validated in-scope findings, rejects false positives, and defers demonstrably separate non-blocking work, asking only when a valid blocking finding has no fix that preserves the approved PR intent. Corrections are capped at one normal pass plus one conditional final pass; every correction rereview and the terminal review-only pass includes Ponytail last. Hermes runs at most three children at a time, so Ponytail runs after the primary batch. The worktree, branch, and state dir already exist; pass them in:
 
 - `mode`: `pre-pr`
 - `state_dir`: `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/`
@@ -477,9 +477,9 @@ Phase 4 hands off to the [`pr-self-review`](../pr-self-review/SKILL.md) skill in
 - `worker_session_id`: the value recorded in `progress.md` when Phase 3 used a delegated implementation loop; otherwise omit it.
 - `implementation_loop`: the exact selected value, `codex-claude-implementation-loop` or `codex-qwen-implementation-loop`, when `worker_session_id` is present; otherwise omit it.
 
-Load the skill through the host's skill mechanism. It writes `review-standards.md`, `review-spec.md`, `review-risk.md` when that lane was selected, and a final `summary.md` into the state dir, matching the shape Phase 4.3 reads below. A missing `review-risk.md` means the classifier did not select Risk; `summary.md`'s Lane Selection section records why.
+Load the skill through the host's skill mechanism. It writes `review-standards.md`, `review-spec.md`, `review-risk.md` when that lane was selected, mandatory `review-ponytail.md`, and a final `summary.md` into the state dir, matching the shape Phase 4.3 reads below. A missing `review-risk.md` means the classifier did not select Risk; `summary.md`'s Lane Selection section records why. A missing or stale `review-ponytail.md` means the self-review is incomplete, not clean.
 
-After the skill returns, inspect `summary.md` Ship Readiness. If it says `Correction bound reached — do not merge`, set `progress.md` `status: blocked`, present the remaining correction-bound findings, and stop without entering Phase 4.3 or asking for ship approval. Otherwise set `progress.md` `status: reviewed` and continue.
+After the skill returns, require `review-ponytail.md`, then inspect `summary.md`'s Ponytail selection/status and Ship Readiness. If the Ponytail artifact is missing or stale, or the summary does not record it as selected for the exact candidate, set `progress.md` `status: blocked` and stop; a missing Ponytail pass can never satisfy the handoff. If Ship Readiness says `Correction bound reached — do not merge` or any other do-not-merge verdict, set `progress.md` `status: blocked`, present the blocker, and stop without entering Phase 4.3 or asking for ship approval. Only then set `progress.md` `status: reviewed` and continue.
 
 ### 4.3 Present to user and ask for ship approval
 
@@ -488,9 +488,10 @@ Present the review outcome inline in this order:
 1. **Headline** — the one-line summary from `summary.md`.
 2. **Critical + Major findings** — full bullets, not just counts. If none, say so explicitly ("No critical or major findings").
 3. **Minor / Nit counts** — single line, e.g. "Minor: 3, Nit: 1. Full detail in review-*.md."
-4. **Lane selection** — which lanes ran, and why Risk did or did not.
-5. **Paths** — `summary.md` + each written `review-{lane}.md`, as clickable Markdown links when the surface supports them.
-6. **Ship prompt.** End the message with a direct question — do not stop silently:
+4. **Lane selection** — which primary lanes ran, and why Risk did or did not.
+5. **Ponytail selection/status** — mandatory and selected, plus clean/findings/blocker status from `summary.md`.
+6. **Paths** — `summary.md`, each written primary `review-{lane}.md`, and required `review-ponytail.md`, as clickable Markdown links when the surface supports them.
+7. **Ship prompt.** End the message with a direct question — do not stop silently:
 
    > Ready to push the branch and open the draft PR? Reply `ship it` to proceed, or flag anything you want changed first.
 
@@ -551,14 +552,14 @@ Detailed recipes that load on demand:
 ## Related Delegation Roles
 
 - Intake child — Phase 1 fetch + digest; use `delegate_task`, `Task`, or `Agent` when available.
-- Lane reviewer — Phase 4 reviewer with a `lane` argument (`standards` | `spec` | `risk`); invoked through `pr-self-review` in host-appropriate batches.
+- Review-dimension reviewer — Phase 4 reviewer with a `lane` argument (`standards` | `spec` | `risk` | `ponytail`); primary lanes run in a host-appropriate batch and Ponytail runs last.
 
 ## Related Skills
 
 - `pr-self-review` — Phase 4 delegates here for the lane-selected autonomous review-and-fix loop.
 - `tdd` — Phase 3 implementation discipline; the plan pre-agrees the seam.
 - `diagnosing-bugs` — Phase 3.5 second-failure escalation.
-- `code-review` — owns the Standards, Spec, and Risk lane definitions `pr-self-review` dispatches.
+- `code-review` — owns the Standards, Spec, Risk, and mandatory Ponytail definitions `pr-self-review` dispatches.
 - `ship` — Phase 4.3 hands off here on `ship it` for push + PR creation + template fill + label application.
 - `issue-plan` — prepares and approves the preferred durable vault-backed plan before implementation.
 - `vault-pkm` — resolves and reads project-vault plans without bypassing local vault rules.

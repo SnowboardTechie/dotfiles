@@ -79,9 +79,16 @@ out="$(HOME="$H" "$RECONCILER" --apply 2>&1)"; rc=$?
 check "t1: apply exits 0 on a fresh home" test "$rc" -eq 0
 check "t1: Claude receives 29 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 29
 check "t1: OpenCode receives 23 pool links" test "$(links_into_pool "$H/.config/opencode/skills")" -eq 23
-check "t1: Pi receives 8 pool links"        test "$(links_into_pool "$H/.pi/agent/skills")" -eq 8
+check "t1: Pi receives 9 pool links"        test "$(links_into_pool "$H/.pi/agent/skills")" -eq 9
 check "t1: Hermes receives 27 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 27
 check "t1: Claude-only skill is linked"     link_resolves_to "$H/.claude/skills/find-skills" "$POOL/find-skills"
+check "t1: Claude gets Ponytail workflow"     link_resolves_to "$H/.claude/skills/pr-self-review" "$POOL/pr-self-review"
+check "t1: Claude gets shared review contract" link_resolves_to "$H/.claude/skills/code-review" "$POOL/code-review"
+check "t1: OpenCode gets Ponytail workflow"   link_resolves_to "$H/.config/opencode/skills/pr-self-review" "$POOL/pr-self-review"
+check "t1: OpenCode gets shared review contract" link_resolves_to "$H/.config/opencode/skills/code-review" "$POOL/code-review"
+check "t1: Pi gets shared review contract"   link_resolves_to "$H/.pi/agent/skills/code-review" "$POOL/code-review"
+check "t1: Hermes gets Ponytail workflow"     link_resolves_to "$H/.hermes/skills/personal/pr-self-review" "$POOL/pr-self-review"
+check "t1: Hermes gets shared review contract" link_resolves_to "$H/.hermes/skills/personal/code-review" "$POOL/code-review"
 check "t1: OpenCode gets gamedev"           link_resolves_to "$H/.config/opencode/skills/gamedev" "$POOL/gamedev"
 check "t1: Pi does not get manual-merge"    test ! -e "$H/.pi/agent/skills/manual-merge"
 check "t1: Hermes excludes obsidian"        test ! -e "$H/.hermes/skills/personal/obsidian"
