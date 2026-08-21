@@ -134,7 +134,12 @@ def collect_github(since: datetime) -> tuple[dict[str, Any], list[str]]:
             )
     return {"openPRs": list(prs.values()), "notifications": relevant_notifications[:30]}, errors
 
-def git_history(repo: Path, since: datetime, pathspec: str | None = None) -> tuple[str, str | None]:
+def git_history(
+    repo: Path,
+    since: datetime,
+    pathspec: str | None = None,
+    until: datetime | None = None,
+) -> tuple[str, str | None]:
     args = [
         "git",
         "log",
@@ -144,6 +149,8 @@ def git_history(repo: Path, since: datetime, pathspec: str | None = None) -> tup
         "--name-only",
         "--max-count=50",
     ]
+    if until:
+        args.insert(3, f"--until={until.isoformat()}")
     if pathspec:
         args.extend(["--", pathspec])
     return command(args, timeout=30, cwd=repo)
@@ -151,7 +158,13 @@ def git_history(repo: Path, since: datetime, pathspec: str | None = None) -> tup
 
 def collect_notes(since: datetime) -> tuple[dict[str, Any], list[str]]:
     errors: list[str] = []
-    sgg_history, error = git_history(SGG_ROOT, since, "vault")
+    previous_workday_end = since + timedelta(days=1)
+    sgg_history, error = git_history(
+        SGG_ROOT,
+        since,
+        "vault",
+        until=previous_workday_end,
+    )
     if error:
         errors.append(f"SGG vault: {error}")
 
@@ -163,6 +176,7 @@ def collect_notes(since: datetime) -> tuple[dict[str, Any], list[str]]:
                 str(VAULT_ROOT / "status.md"),
             ],
             "previousWorkdayHistory": sgg_history[:15000],
+            "previousWorkdayEnd": previous_workday_end.isoformat(),
         },
     }, errors
 

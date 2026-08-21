@@ -43,7 +43,10 @@ conclusions; it does not establish volatile PR state or today's priority by
 itself. Cross-check those claims against live systems and exact vault/Git
 artifacts. Suppress generated-workday refreshes, routine sync/migration logs,
 generic repository summaries, personal material, and completed initiatives
-without new activity. A recall failure is a visible source error.
+without new activity. A Hindsight-only item cannot enter the resting point,
+recommended outcome, or first action without substantive previous-workday
+corroboration or an explicit currently active marker in a canonical surface. A
+recall failure is a visible source error.
 
 The vault remains Bryan's curated review interface and exact-artifact layer.
 It is not the sole agent-memory system and must not be bulk-ingested into
@@ -55,6 +58,10 @@ The scheduled `workdays/YYYY-MM-DD.md` experiment ended on 2026-08-21 after
 running beyond its 2026-07-30 review date. The job no longer reads, creates,
 refreshes, commits, or carries those notes forward. Existing workday notes are
 historical evidence for explicitly dated investigations only.
+
+The collector's vault Git window ends at the close of the previous business
+day. Current-day briefing/configuration maintenance is not previous-workday SGG
+delivery and must not appear as work left off.
 
 ## Calendar
 
@@ -100,6 +107,11 @@ Check authored PRs, assigned reviews, actionable comments/requested changes, mea
 7. **Unverified / needs judgment** — only real source failures, disagreements, or assumptions.
 
 Aim for under two minutes and about ten or fewer substantive bullets. Distinguish verified live state, durable Hindsight context, canonical recorded state, historical evidence, proposals, and inference.
+
+When no accepted primary outcome is recorded, do not promote a recently updated
+PR into the first action. Use a neutral orientation/decision step. Likewise, do
+not invent meeting preparation or suggest bringing a topic into a meeting unless
+an authoritative source assigns it or places it on the agenda.
 
 ## Studio gateway ownership and delivery verification
 
