@@ -57,6 +57,10 @@ Read back the PR and its current checks immediately before merging. Verify:
 - every required CI check is green;
 - head SHA matches the branch SHA being merged;
 - base branch is the repository's default branch;
+- the repository has Forgejo's `manually-merged` merge style enabled before the
+  local squash changes the default branch. If it is disabled, stop and enable
+  the repository setting first; otherwise the signed commit can reach `main`
+  while Forgejo refuses to record the PR as merged;
 - active project instructions' completion requirements are satisfied: required
   tracked spec, plan, status, or decision updates are included in the reviewed
   PR, or a concrete no-update rationale identifies what was inspected and why
