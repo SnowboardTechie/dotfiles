@@ -1,8 +1,8 @@
-# Workday Morning Brief — Bryan / SGG Pilot
+# Workday Morning Brief — Bryan / SGG
 
 ## Purpose
 
-Prepare Bryan for SGG work by reconstructing the previous business day's resting point, showing work constraints, and recommending one concrete work outcome. Personal projects, personal reminders, and personal calendar events are handled by the separate Second Brain morning brief. The SGG brief is read-only across work mail, the work calendar, GitHub, canonical SGG notes, and project repositories. An explicitly approved two-week pilot may additionally maintain one path-bounded, noncanonical SGG workday note.
+Prepare Bryan for SGG work by reconstructing the previous business day's resting point, showing work constraints, and recommending one concrete work outcome. Personal projects, personal reminders, and personal calendar events are handled by the separate Second Brain morning brief. The SGG brief is read-only across work mail, the work calendar, GitHub, the `coding-agent::sgg` Hindsight bank, canonical SGG notes, and project repositories.
 
 ## Operational contract
 
@@ -13,7 +13,7 @@ Prepare Bryan for SGG work by reconstructing the previous business day's resting
   session so replies retain the brief as context.
 - Retain local cron output for audit/troubleshooting.
 - Use an LLM-driven job with a deterministic bounded pre-run collector.
-- The job may read notes, Calendar, Mail, and GitHub. It may write only the exact dated SGG workday note under the approved pilot contract below; every other source and path remains read-only.
+- The job may read Hindsight, notes, Calendar, Mail, and GitHub. It never writes notes or mutates any source.
 
 ## Notes scope and authority
 
@@ -30,25 +30,31 @@ Read in this order:
 3. `status.md`
 4. Topic-specific current surfaces named by the canonical files
 
-`INDEX.md` and `status.md` are canonical. Dated plans, previews, session notes, `workdays/`, and `drafts/` are historical/noncanonical evidence unless explicitly promoted. Use vault-scoped Git history from the private SGG workspace repository from the start of the previous business day to recover the recorded stopping point.
+`INDEX.md` and `status.md` are canonical. Dated plans, previews, session notes, `workdays/`, and `drafts/` are historical/noncanonical evidence unless explicitly promoted. Use vault-scoped Git history from the private SGG workspace repository from the start of the previous business day as recent-change evidence, not as proof that every changed note is a current priority.
 
 Canonical placement does not make every recorded proposal or teammate action Bryan's priority. Prefer the explicit current resting point or accepted next step, preserve assignees exactly, and do not expand a coordination action into solo drafting or implementation. A deadline or detailed onboarding idea is not a priority signal by itself. If no authoritative source explicitly establishes Bryan's primary outcome, report that ambiguity instead of manufacturing one from the most recent or detailed thread.
 
-#### Workday-note pilot
+#### Hindsight and the vault
 
-Through 2026-07-30, the job maintains `workdays/YYYY-MM-DD.md` as a lightweight operational handoff:
+The collector performs one bounded, read-only recall against
+`coding-agent::sgg`, grounded with current open SGG pull requests and recent
+vault commit subjects. Hindsight supplies durable decisions, commitments, and
+conclusions; it does not establish volatile PR state or today's priority by
+itself. Cross-check those claims against live systems and exact vault/Git
+artifacts. Suppress generated-workday refreshes, routine sync/migration logs,
+generic repository summaries, personal material, and completed initiatives
+without new activity. A recall failure is a visible source error.
 
-- Read the previous business day's note for Day log and End-of-day carry-forward, but let canonical notes override it.
-- For a new note, include `tags: [workday, area/sgg]`, date, `status: open`, generation timestamp, and links to `[[status]]`, `[[technical/custom-filters-spec-state]]`, and `[[technical/sgg-custom-filters-example-plan]]`.
-- Put only Starting point, Intended outcome, First action, Schedule constraints, and Active watch list between `<!-- BEGIN GENERATED MORNING BRIEF -->` and `<!-- END GENERATED MORNING BRIEF -->`.
-- On rerun, replace only the marker-bounded block. Preserve frontmatter, Day log, End-of-day handoff, canonical links, and all manual content outside the markers.
-- Synchronize through a deterministic prepare/commit helper. Fetch first, require `main` to fast-forward safely, reject unrelated tracked or staged changes, validate one marker pair, stage only the dated note, push, and verify `HEAD == origin/main`.
-- Preserve unrelated untracked content. Never force, reset, stash, or silently repair divergence. A failure becomes a Matrix warning, not a claim of synchronization.
-- End a successful brief with `Workday note: synced.` only after remote verification.
+The vault remains Bryan's curated review interface and exact-artifact layer.
+It is not the sole agent-memory system and must not be bulk-ingested into
+Hindsight by this job.
 
-The implementation helper lives at `/Users/bryan/.hermes/scripts/sgg-sync-workday-note.py`; the collector exposes today's and the previous workday's note paths. The pilot intentionally does not add an automatic end-of-day job.
+#### Concluded workday-note pilot
 
-Session history can supply secondary context but never outranks current vault files or live systems.
+The scheduled `workdays/YYYY-MM-DD.md` experiment ended on 2026-08-21 after
+running beyond its 2026-07-30 review date. The job no longer reads, creates,
+refreshes, commits, or carries those notes forward. Existing workday notes are
+historical evidence for explicitly dated investigations only.
 
 ## Calendar
 
@@ -85,15 +91,15 @@ Check authored PRs, assigned reviews, actionable comments/requested changes, mea
 
 ## Output contract
 
-1. **Where work left off** — 2–5 grounded bullets and the recorded next resting point.
+1. **Where work left off** — 1–4 grounded bullets covering work that actually changed or remained active since the previous workday.
 2. **Today's work calendar** — commitments, verified preparation, conflicts, and focus windows.
 3. **Work email requiring attention** — at most 3 actionable messages; omit when empty.
-4. **GitHub watch list** — at most 3 items unless something is actively broken.
+4. **GitHub watch list** — at most 3 genuinely actionable or materially changed items.
 5. **Recommended primary work outcome** — exactly one result.
 6. **Suggested first action** — exactly one concrete next step.
 7. **Unverified / needs judgment** — only real source failures, disagreements, or assumptions.
 
-Aim for under two minutes and about fifteen or fewer substantive bullets. Distinguish verified live state, canonical recorded state, historical evidence, proposals, and inference.
+Aim for under two minutes and about ten or fewer substantive bullets. Distinguish verified live state, durable Hindsight context, canonical recorded state, historical evidence, proposals, and inference.
 
 ## Studio gateway ownership and delivery verification
 
@@ -114,12 +120,13 @@ A cron run is not proven delivered merely because synthesis completed, a local o
 
 When Hermes cannot restart its own gateway safely, put the exact external-terminal command in the same visible user question that asks for the result; do not ask whether they ran an instruction that may not have been shown.
 
-## Rollout and tuning
+## Operational verification and tuning
 
 1. Test every collector read path independently.
 2. Run one integrated brief manually.
 3. Verify the actual Matrix event, privacy, source health, previous-business-day behavior, and output length.
-4. Enable the weekday pilot.
-5. Remove noisy inputs before adding new ones.
-6. Review the workday-note pilot on or after 2026-07-30: did it improve restart/handoff continuity, were manual sections used, and was Git churn acceptable?
-7. Add an end-of-day companion only if the pilot repeatedly cannot recover a useful stopping point and Bryan actually uses the manual handoff fields.
+4. Verify Hindsight recall uses `coding-agent::sgg`, never prints its API token,
+   and fails visibly without blocking the other sources.
+5. Remove noisy recall patterns before broadening the query or adding sources.
+6. Keep CairnOS excluded until Bryan explicitly accepts it as a mature tracking
+   source.

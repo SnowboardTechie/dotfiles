@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
+import stat
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
@@ -16,6 +18,8 @@ HOME = Path.home()
 HERMES_HOME = Path(os.environ.get("HERMES_HOME", HOME / ".hermes"))
 SGG_ROOT = HOME / "code" / "sgg"
 VAULT_ROOT = SGG_ROOT / "vault"
+HINDSIGHT_CONFIG = HOME / ".hindsight" / "coding-agent.json"
+HINDSIGHT_BANK = "coding-agent::sgg"
 PACIFIC = ZoneInfo("America/Los_Angeles")
 WORK_CALENDARS = {"Bryan @ Agile6"}
 REPOS = (
@@ -145,7 +149,7 @@ def git_history(repo: Path, since: datetime, pathspec: str | None = None) -> tup
     return command(args, timeout=30, cwd=repo)
 
 
-def collect_notes(since: datetime, now: datetime) -> tuple[dict[str, Any], list[str]]:
+def collect_notes(since: datetime) -> tuple[dict[str, Any], list[str]]:
     errors: list[str] = []
     sgg_history, error = git_history(SGG_ROOT, since, "vault")
     if error:
@@ -159,15 +163,77 @@ def collect_notes(since: datetime, now: datetime) -> tuple[dict[str, Any], list[
                 str(VAULT_ROOT / "status.md"),
             ],
             "previousWorkdayHistory": sgg_history[:15000],
-            "workdayNotes": {
-                "todayPath": str(VAULT_ROOT / "workdays" / f"{now.date().isoformat()}.md"),
-                "previousWorkdayPath": str(
-                    VAULT_ROOT / "workdays" / f"{since.date().isoformat()}.md"
-                ),
-                "pilotReviewDate": "2026-07-30",
-            },
         },
     }, errors
+
+
+async def _recall_sgg_hindsight(query: str, config: dict[str, Any]) -> list[str]:
+    from hindsight_client import Hindsight
+
+    client = Hindsight(
+        base_url=str(config["apiUrl"]),
+        api_key=str(config["apiToken"]),
+        timeout=30.0,
+    )
+    try:
+        response = await client.arecall(
+            bank_id=HINDSIGHT_BANK,
+            query=query,
+            budget="low",
+            max_tokens=900,
+        )
+        return [item.text for item in (response.results or []) if item.text]
+    finally:
+        await client.aclose()
+
+
+def collect_hindsight(
+    since: datetime,
+    github: dict[str, Any],
+    recent_vault_history: str,
+) -> tuple[dict[str, Any], str | None]:
+    try:
+        mode = stat.S_IMODE(HINDSIGHT_CONFIG.stat().st_mode)
+        if mode != 0o600:
+            return {}, f"{HINDSIGHT_CONFIG} must be mode 0600 (is {mode:04o})"
+        config = json.loads(HINDSIGHT_CONFIG.read_text(encoding="utf-8"))
+        if not config.get("apiUrl") or not config.get("apiToken"):
+            return {}, f"{HINDSIGHT_CONFIG} is missing apiUrl or apiToken"
+
+        open_items = [
+            f"{item.get('repository')}#{item.get('number')} {str(item.get('title') or '')[:100]}"
+            for item in github.get("openPRs", [])[:6]
+        ]
+        recent_commits = [
+            line.removeprefix("COMMIT ").strip()[:120]
+            for line in recent_vault_history.splitlines()
+            if line.startswith("COMMIT ")
+        ][:6]
+        query = (
+            "Retrieve durable SGG work context that could materially change today's "
+            f"brief after {since.date().isoformat()}. Focus on Bryan's explicit decisions, "
+            "accepted priorities, unresolved commitments, and meaningful completed or "
+            "changed work. Exclude generated workday-note refreshes, routine sync or "
+            "workspace-migration logs, completed initiatives without new activity, stale "
+            "PR status, and personal projects. Do not invent a priority. Current open "
+            f"GitHub items: {'; '.join(open_items) or 'none collected'}. Recent SGG vault "
+            f"commit records: {'; '.join(recent_commits) or 'none collected'}."
+        )[:1800]
+        raw_results = asyncio.run(_recall_sgg_hindsight(query, config))
+        results = [
+            text
+            for text in raw_results
+            if "sgg(workday)" not in text.lower()
+            and "workday component" not in text.lower()
+        ][:10]
+        return {
+            "bank": HINDSIGHT_BANK,
+            "authority": "durable context only; live systems and canonical vault artifacts win",
+            "querySince": since.isoformat(),
+            "results": results,
+        }, None
+    except Exception as exc:
+        return {}, str(exc)
 
 
 def main() -> int:
@@ -176,7 +242,12 @@ def main() -> int:
     calendar_rows, calendar_error = collect_calendar()
     apple_mail, apple_mail_error = collect_apple_mail(since)
     github, github_errors = collect_github(since)
-    notes, notes_errors = collect_notes(since, now)
+    notes, notes_errors = collect_notes(since)
+    hindsight, hindsight_error = collect_hindsight(
+        since,
+        github,
+        notes.get("sgg", {}).get("previousWorkdayHistory", ""),
+    )
 
     errors = {
         key: value
@@ -185,6 +256,7 @@ def main() -> int:
             "appleMail": apple_mail_error,
             "notes": notes_errors or None,
             "github": github_errors or None,
+            "hindsight": hindsight_error,
         }.items()
         if value
     }
@@ -197,6 +269,7 @@ def main() -> int:
         "email": apple_mail,
         "emailSourceCounts": {"appleMail": len(apple_mail)},
         "github": github,
+        "hindsight": hindsight,
         "notes": notes,
     }
     json.dump(payload, sys.stdout, indent=2, sort_keys=True)
