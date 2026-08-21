@@ -38,6 +38,10 @@ Channel-specific phrasings live in the per-channel sections below.
    this one) get included with an explicit out-of-scope frame, e.g. "not
    this PR's job to fix, but flagging in case it's useful before that branch
    merges."
+   **Action-taken follow-ups:** when a teammate asks for a ticket audit, name
+   what was closed, how it was closed, and what remains current or moved. That
+   distinction supplies the rationale; do not summarize the underlying audit
+   unless it changes the teammate's next decision.
 
 4. **"Shorten" means cut scaffolding, not vocabulary.** Drop labeling
    preambles ("Two things make it safe to drop for now:"), restated-asides

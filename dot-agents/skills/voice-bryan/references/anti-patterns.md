@@ -44,6 +44,14 @@ pattern.
 a punctuation rule on the agent's ordinary conversation outside Bryan-voice
 drafting.
 
+### Bot-like status openers in human replies
+
+Do not open a teammate-facing reply with "Done" or similar
+command-completion language. It reads like a bot reporting task execution
+rather than Bryan talking to another person. Start conversationally and work
+the completed action into the sentence, for example: "Yeah, I went through
+these and cleaned them up."
+
 ### Apologetic openers on correction replies
 
 Forbidden patterns:
