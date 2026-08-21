@@ -65,6 +65,29 @@ def continuation_origin(definition: dict) -> dict | None:
     }
 
 
+def monitor_script_value(definition: dict) -> str | None:
+    """Validate the declarative `monitorScript` key before it reaches the API.
+
+    The scheduler enforces the same containment rule, but it rejects *after*
+    this reconciler would otherwise have reported the job synchronized. Failing
+    here keeps a bad definition from looking applied.
+    """
+    monitor_script = definition.get("monitorScript")
+    if monitor_script is None:
+        return None
+    name = definition["name"]
+    if not isinstance(monitor_script, str) or not monitor_script.strip():
+        fail(f"{name!r} has an empty monitorScript")
+    if "/" in monitor_script or "\\" in monitor_script or monitor_script.startswith("."):
+        fail(
+            f"{name!r} monitorScript must be a bare filename under HERMES_HOME/scripts, "
+            f"got {monitor_script!r}"
+        )
+    if definition.get("noAgent"):
+        fail(f"{name!r} cannot combine monitorScript with noAgent; a monitor gates an agent run")
+    return monitor_script
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         fail("usage: reconcile_cron.py MANIFEST")
@@ -91,6 +114,8 @@ def main() -> int:
             summaries.append({"name": name, "action": "preserve-absent", "jobId": ""})
             continue
 
+        monitor_script = monitor_script_value(definition)
+
         prompt_path = (asset_root / definition["promptFile"]).resolve()
         if asset_root not in prompt_path.parents:
             fail(f"prompt escapes managed asset root: {prompt_path}")
@@ -111,6 +136,11 @@ def main() -> int:
             "attach_to_session": definition["attachToSession"],
             "continuity": bool(definition.get("carryPreviousOutput", False)),
         }
+        # Always send the field. Omitting it on a job whose manifest entry
+        # dropped `monitorScript` would leave the live monitor in place, and
+        # the reconciler would report the job synchronized anyway. An empty
+        # string is how the cron API clears it.
+        common["monitor_script"] = monitor_script or ""
         # Apply finite repeat counts only on creation. Reconciliation must not
         # reset completed pilot runs.
         if not matches and "repeat" in definition:
@@ -165,6 +195,7 @@ def main() -> int:
             "enabled_toolsets": definition["enabledToolsets"],
             "workdir": definition["workdir"],
         }
+        expected["monitor_script"] = monitor_script or None
         mismatches = {
             key: {"expected": value, "actual": job.get(key)}
             for key, value in expected.items()

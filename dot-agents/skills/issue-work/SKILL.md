@@ -1,6 +1,6 @@
 ---
 name: issue-work
-description: End-to-end GitHub/Forgejo ticket workflow. Use when the user shares a ticket URL (github.com/owner/repo/issues/N or /pull/N), a shorthand like owner/repo#123, asks to "start on ticket", "pick up this issue", "work on this ticket", or pastes issue text asking for implementation. Fetches ticket with all comments and linked work, creates a worktree, spawns parallel exploration agents, proposes an implementation plan for approval, implements, runs tests, then runs parallel self-review (correctness/security/simplicity) before returning for human review.
+description: End-to-end GitHub/Forgejo ticket workflow. Use when the user shares a ticket URL (github.com/owner/repo/issues/N or /pull/N), a shorthand like owner/repo#123, asks to "start on ticket", "pick up this issue", "work on this ticket", or pastes issue text asking for implementation. Fetches ticket with all comments and linked work, creates a worktree, spawns parallel exploration agents, proposes an implementation plan for approval, implements, runs tests, then runs parallel self-review (Standards and Spec always, plus Risk when the change touches security, data, or unattended behavior) before returning for human review.
 ---
 
 # Issue Work
@@ -48,9 +48,9 @@ Use the host's native operations; do not require one agent framework or plugin:
 | Resolve an approved project-vault plan | load Hermes `vault-pkm`; follow `issue-plan`'s handoff contract | host-native `vault-pkm` plus the same contract |
 | Write the approved plan | load Hermes `plan` | `superpowers:writing-plans` or equivalent |
 | Execute an approved plan | on a Codex-backed Hermes parent, route SGG to `codex-claude-implementation-loop`, route other repos to `codex-qwen-implementation-loop`, or use host-native GPT when explicitly requested | host-native implementation workflow |
-| Implement test-first | load Hermes `test-driven-development` | host TDD/execution workflow |
-| Debug repeated failures | load Hermes `systematic-debugging` | equivalent root-cause workflow |
-| Independent final review | load Hermes `requesting-code-review` | equivalent verification/reviewer workflow |
+| Implement test-first | load `tdd` | load `tdd` |
+| Debug repeated failures | load `diagnosing-bugs` | load `diagnosing-bugs` |
+| Independent final review | a verification context independent of the implementation context | equivalent verification/reviewer workflow |
 | Push and open the approved draft PR | load Hermes `ship` | host-native `ship` workflow |
 
 If delegation is unavailable, perform the same bounded analysis serially. Missing a framework-specific plugin is never by itself a blocker.
@@ -117,7 +117,7 @@ Glob(pattern="$HOME/code/*/*/.git")
 
 If no local clone: ask before running `gh repo clone {owner}/{repo} ~/code/{repo}`.
 
-Bind the resolved clone path as `{TRUNK_ROOT}` — later phases reference it. If the resolved path is itself a worktree, resolve to the trunk via `git -C {path} rev-parse --path-format=absolute --git-common-dir` and strip the trailing `/.git` (same pattern used for worktree-aware resolution; see [`agent-workspace/SKILL.md`](../agent-workspace/SKILL.md) → *Worktree-Aware Resolution*).
+Bind the resolved clone path as `{TRUNK_ROOT}` — later phases reference it. If the resolved path is itself a worktree, resolve to the trunk via `git -C {path} rev-parse --path-format=absolute --git-common-dir` and strip the trailing `/.git` (the canonical `resolve_trunk_root` pattern; see [`worktrunk/SKILL.md`](../worktrunk/SKILL.md) → *Canonical trunk resolution*).
 
 ### 1.3 Create state directory
 
@@ -381,7 +381,7 @@ When Bryan explicitly selects GPT implementation, execute task-by-task with the 
 
 #### Other hosts or a non-Codex Hermes parent
 
-Execute task-by-task with the host-native workflow. Load `test-driven-development` for behavior changes and `systematic-debugging` for failures. Pass through:
+Execute task-by-task with the host-native workflow. Load `tdd` for behavior changes; the approved `plan.md` is where the test seam was pre-agreed, which is what lets this run unattended. Escalate repeated failures per 3.5. Pass through:
 
 - **plan_path:** `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`
 - **worktree path:** the absolute path from `progress.md`
@@ -406,7 +406,7 @@ Lint + typecheck when configured: TypeScript `tsc --noEmit`; Python `ruff check`
 
 ### 3.5 On failure
 
-On the host-native path, first failure of a task's tests: attempt a direct fix → commit → rerun. **Second consecutive failure of the same task:** escalate to `systematic-debugging` (the `Skill` tool) rather than guessing again — it drives a root-cause pass instead of another patch. **Hard cap at 3 attempts total.** On the 4th failure, stop and report the failing output to the user.
+On the host-native path, first failure of a task's tests: attempt a direct fix → commit → rerun. **Second consecutive failure of the same task:** load `diagnosing-bugs` rather than guessing again — it builds a tight failing loop and tests ranked hypotheses instead of applying another patch. **Hard cap at 3 attempts total.** On the 4th failure, stop and report the failing output to the user.
 
 On either delegated path, Codex first determines whether the failure is a plan defect, implementation defect, pre-existing failure, or external blocker. Send implementation defects back through the same retained worker session under the two-revision bound. A plan defect, ambiguity, destructive conflict, unavailable selected worker, or exhausted revision budget stops for the user instead of switching workers or guessing.
 
@@ -445,7 +445,7 @@ by project instructions.
 
 ### 3.8 Verify before handing off
 
-Before Phase 4 spawns review, prove the suite is green rather than trust the implementation context. If Phase 3 used either delegated implementation loop, its final Codex review/retest gate satisfies this step; cite that fresh gate output rather than spawning a duplicate generic reviewer, and rerun only checks invalidated by the parent's post-gate local commit operation. Otherwise load `requesting-code-review` on Hermes (or the host's independent verification workflow), rerun the project's test / lint / typecheck commands, and preserve actual output.
+Before Phase 4 spawns review, prove the suite is green rather than trust the implementation context. If Phase 3 used either delegated implementation loop, its final Codex review/retest gate satisfies this step; cite that fresh gate output rather than spawning a duplicate generic reviewer, and rerun only checks invalidated by the parent's post-gate local commit operation. Otherwise use a verification context independent of the one that wrote the code, rerun the project's test / lint / typecheck commands, and preserve actual output.
 
 Append the result to `progress.md` under a `## Verification` heading:
 
@@ -465,7 +465,7 @@ If verification fails, do **not** advance to Phase 4. Return to Phase 3's failur
 
 ### 4.1 Delegate to `/pr-self-review`
 
-Phase 4 hands off to the [`pr-self-review`](../pr-self-review/SKILL.md) skill in its `pre-pr` mode — all four review lenses, plus a pre-review context fetch and agent-owned finding disposition. The agent automatically fixes validated in-scope findings, rejects false positives, and defers demonstrably separate non-blocking work. It asks the user only when a valid blocking finding has no reasonable fix that preserves the approved PR intent. Hermes runs the four lenses in batches of at most three children; other hosts may run all four concurrently. The worktree, branch, and state dir already exist; pass them in:
+Phase 4 hands off to the [`pr-self-review`](../pr-self-review/SKILL.md) skill in its `pre-pr` mode. It selects the review lanes deterministically — Standards and Spec always, Risk when the changed paths trigger it or the repository is CairnOS — runs them as parallel children, fetches pre-review context, and owns finding disposition. It automatically fixes validated in-scope findings, rejects false positives, and defers demonstrably separate non-blocking work, asking only when a valid blocking finding has no fix that preserves the approved PR intent. Corrections are capped at one normal pass plus one conditional final pass. Hermes runs at most three children at a time. The worktree, branch, and state dir already exist; pass them in:
 
 - `mode`: `pre-pr`
 - `state_dir`: `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/`
@@ -477,7 +477,7 @@ Phase 4 hands off to the [`pr-self-review`](../pr-self-review/SKILL.md) skill in
 - `worker_session_id`: the value recorded in `progress.md` when Phase 3 used a delegated implementation loop; otherwise omit it.
 - `implementation_loop`: the exact selected value, `codex-claude-implementation-loop` or `codex-qwen-implementation-loop`, when `worker_session_id` is present; otherwise omit it.
 
-Load the skill through the host's skill mechanism. It writes `review-{lens}.md` files and a final `summary.md` into the state dir, matching the shape Phase 4.3 reads below.
+Load the skill through the host's skill mechanism. It writes `review-standards.md`, `review-spec.md`, `review-risk.md` when that lane was selected, and a final `summary.md` into the state dir, matching the shape Phase 4.3 reads below. A missing `review-risk.md` means the classifier did not select Risk; `summary.md`'s Lane Selection section records why.
 
 After the skill returns, inspect `summary.md` Ship Readiness. If it says `Correction bound reached — do not merge`, set `progress.md` `status: blocked`, present the remaining correction-bound findings, and stop without entering Phase 4.3 or asking for ship approval. Otherwise set `progress.md` `status: reviewed` and continue.
 
@@ -488,8 +488,9 @@ Present the review outcome inline in this order:
 1. **Headline** — the one-line summary from `summary.md`.
 2. **Critical + Major findings** — full bullets, not just counts. If none, say so explicitly ("No critical or major findings").
 3. **Minor / Nit counts** — single line, e.g. "Minor: 3, Nit: 1. Full detail in review-*.md."
-4. **Paths** — `summary.md` + individual `review-{lens}.md` files, as clickable Markdown links when the surface supports them.
-5. **Ship prompt.** End the message with a direct question — do not stop silently:
+4. **Lane selection** — which lanes ran, and why Risk did or did not.
+5. **Paths** — `summary.md` + each written `review-{lane}.md`, as clickable Markdown links when the surface supports them.
+6. **Ship prompt.** End the message with a direct question — do not stop silently:
 
    > Ready to push the branch and open the draft PR? Reply `ship it` to proceed, or flag anything you want changed first.
 
@@ -510,7 +511,7 @@ Present the review outcome inline in this order:
 | Worktree already exists for this ticket | Reuse it after `wt list` / `git worktree list`; resume from `progress.md` status |
 | Trunk dirty (modified/staged) | Stop. List files. Offer stash / commit / abort |
 | Ticket is a PR (review work, not new work) | Fetch the PR head, create/reuse a controlled `wt` worktree without switching trunk, swap Phase 3 for "review against plan"; Phase 4 reviewers still run |
-| Tests fail (2nd time on a task) | Escalate to `systematic-debugging`; hard cap 3 attempts, then stop and surface output |
+| Tests fail (2nd time on a task) | Load `diagnosing-bugs`; hard cap 3 attempts, then stop and surface output |
 | Critical review findings | Present prominently; recommend fix-before-ship; never auto-ship |
 | User amends an issue-sourced plan | Overwrite `plan.md`; reset status `planned`; re-present inline and await approval again (see Phase 2.4) |
 | User materially amends a vault-sourced plan | Stop and route to `issue-plan`; never supersede the canonical vault authority in derived state |
@@ -550,19 +551,19 @@ Detailed recipes that load on demand:
 ## Related Delegation Roles
 
 - Intake child — Phase 1 fetch + digest; use `delegate_task`, `Task`, or `Agent` when available.
-- Diff reviewer — Phase 4 reviewer with a `lens` argument; invoked through `pr-self-review` in host-appropriate batches.
+- Lane reviewer — Phase 4 reviewer with a `lane` argument (`standards` | `spec` | `risk`); invoked through `pr-self-review` in host-appropriate batches.
 
 ## Related Skills
 
-- `pr-self-review` — Phase 4 delegates here for the four-lens autonomous review-and-fix loop.
+- `pr-self-review` — Phase 4 delegates here for the lane-selected autonomous review-and-fix loop.
+- `tdd` — Phase 3 implementation discipline; the plan pre-agrees the seam.
+- `diagnosing-bugs` — Phase 3.5 second-failure escalation.
+- `code-review` — owns the Standards, Spec, and Risk lane definitions `pr-self-review` dispatches.
 - `ship` — Phase 4.3 hands off here on `ship it` for push + PR creation + template fill + label application.
 - `issue-plan` — prepares and approves the preferred durable vault-backed plan before implementation.
 - `vault-pkm` — resolves and reads project-vault plans without bypassing local vault rules.
 - `worktrunk` — Phase 1.7 controlled worktree setup.
 - `plan` — Phase 2.3 Hermes plan authoring (path-overridden to the state root).
-- `test-driven-development` — Phase 3 implementation discipline.
-- `systematic-debugging` — Phase 3.5 second-failure escalation.
-- `requesting-code-review` — Phase 3.8 independent verification.
 - `codex-claude-implementation-loop` — SGG-only Phase 3 implementation/revision engine on a Codex-backed Hermes parent.
 - `codex-qwen-implementation-loop` — default non-SGG Phase 3 implementation/revision engine for planned issue work on a Codex-backed Hermes parent.
 
@@ -570,5 +571,4 @@ Detailed recipes that load on demand:
 
 Soft references — the skill works without them, but if the host environment has them installed they can be invoked on demand during a run:
 
-- `engineering:debug` — optional alternative to `systematic-debugging` at Phase 3.5, if that environment-specific debugger is installed and preferred
 - `engineering:testing-strategy` — optional, when Phase 2 exploration surfaces a test-architecture gap deep enough to warrant its own plan

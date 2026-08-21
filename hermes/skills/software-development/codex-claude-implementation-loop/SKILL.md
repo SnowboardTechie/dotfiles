@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [codex, claude, implementation, review, testing, subscription, orchestration]
-    related_skills: [plan, test-driven-development, requesting-code-review, claude-code, codex, coding-agent-model-purity]
+    related_skills: [plan, tdd, code-review, claude-code, codex, coding-agent-model-purity]
 ---
 
 # Codex–Claude Implementation Loop

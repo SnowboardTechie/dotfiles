@@ -57,7 +57,16 @@ links_into_pool() { # count symlinks in <dir> that resolve into the pool
 }
 
 snapshot() { # stable listing of a home's tree, including link targets
-    find "$1" -mindepth 1 \( -type l -printf '%p -> %l\n' \) -o -printf '%p\n' | sort
+    # Portable: BSD/macOS find has no -printf, and an empty snapshot would make
+    # the idempotency comparison below pass vacuously.
+    local entry
+    find "$1" -mindepth 1 | sort | while IFS= read -r entry; do
+        if [[ -L "$entry" ]]; then
+            echo "$entry -> $(readlink "$entry")"
+        else
+            echo "$entry"
+        fi
+    done
 }
 
 link_resolves_to() { # <link> <expected-target>
@@ -68,10 +77,10 @@ link_resolves_to() { # <link> <expected-target>
 H="$(new_home)"
 out="$(HOME="$H" "$RECONCILER" --apply 2>&1)"; rc=$?
 check "t1: apply exits 0 on a fresh home" test "$rc" -eq 0
-check "t1: Claude receives 25 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 25
-check "t1: OpenCode receives 19 pool links" test "$(links_into_pool "$H/.config/opencode/skills")" -eq 19
-check "t1: Pi receives 10 pool links"       test "$(links_into_pool "$H/.pi/agent/skills")" -eq 10
-check "t1: Hermes receives 20 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 20
+check "t1: Claude receives 29 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 29
+check "t1: OpenCode receives 23 pool links" test "$(links_into_pool "$H/.config/opencode/skills")" -eq 23
+check "t1: Pi receives 8 pool links"        test "$(links_into_pool "$H/.pi/agent/skills")" -eq 8
+check "t1: Hermes receives 27 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 27
 check "t1: Claude-only skill is linked"     link_resolves_to "$H/.claude/skills/find-skills" "$POOL/find-skills"
 check "t1: OpenCode gets gamedev"           link_resolves_to "$H/.config/opencode/skills/gamedev" "$POOL/gamedev"
 check "t1: Pi does not get manual-merge"    test ! -e "$H/.pi/agent/skills/manual-merge"
@@ -134,6 +143,48 @@ out="$(cd / && HOME="$H3" "$RECONCILER" --check 2>&1)"; rc=$?
 check "t9: check from outside the repo exits 0"  test "$rc" -eq 0
 check "t9: source pool resolves independent of cwd" bash -c 'grep -q "would create link: ship" <<<"$1"' _ "$out"
 check "t9: check on a fresh home creates nothing"   test -z "$(find "$H3" -mindepth 1)"
+
+# --- Test 11: retired pool links prune even when resolution is blind ---------
+# `Cwd::abs_path` returns empty for a dangling link whose parent is missing, so a
+# resolution-based classifier would call these "foreign" and keep them forever.
+H11="$(new_home)"
+mkdir -p "$H11/.claude/skills" "$H11/other-pack"
+GONE_POOL="$H11/never-existed/dot-agents/skills"
+ln -s "$GONE_POOL/agent-workspace" "$H11/.claude/skills/agent-workspace"
+# Same retired names, but pointing at THIS repo's pool (also missing now).
+ln -s "$POOL/agent-workspace" "$H11/.claude/skills/legacy-in-pool"
+ln -s "$POOL/git-master"      "$H11/.claude/skills/legacy-in-pool-2"
+# Unrelated broken and foreign links that must survive.
+ln -s "$H11/nowhere"    "$H11/.claude/skills/diagnose-crash"
+ln -s "$H11/other-pack" "$H11/.claude/skills/omarchy"
+
+out="$(HOME="$H11" "$RECONCILER" --check 2>&1)"; rc=$?
+check "t11: check exits 0 with dangling legacy links" test "$rc" -eq 0
+# Either branch is a correct prune: where `Cwd::abs_path` can still resolve a
+# dangling leaf it lands in the stale-pool branch, and where it returns empty the
+# raw-target allowlist catches it. The raw-target rule is what makes the outcome
+# the same on every platform, so assert the outcome, not which branch reported it.
+check "t11: check plans a prune for the retired link"  bash -c 'grep -qE "would prune (stale|retired) pool link: legacy-in-pool$" <<<"$1"' _ "$out"
+check "t11: check plans the second retired prune"      bash -c 'grep -qE "would prune (stale|retired) pool link: legacy-in-pool-2$" <<<"$1"' _ "$out"
+check "t11: unrelated broken link is preserved"       bash -c 'grep -q "preserved (foreign symlink): diagnose-crash" <<<"$1"' _ "$out"
+check "t11: foreign package link is preserved"        bash -c 'grep -q "preserved (foreign symlink): omarchy" <<<"$1"' _ "$out"
+check "t11: another pool path is preserved"           bash -c 'grep -q "preserved (foreign symlink): agent-workspace" <<<"$1"' _ "$out"
+check "t11: check did not mutate"                     test -L "$H11/.claude/skills/legacy-in-pool"
+
+out="$(HOME="$H11" "$RECONCILER" --apply 2>&1)"; rc=$?
+check "t11: apply exits 0"                            test "$rc" -eq 0
+check "t11: retired pool link is gone"                test ! -L "$H11/.claude/skills/legacy-in-pool"
+check "t11: second retired pool link is gone"         test ! -L "$H11/.claude/skills/legacy-in-pool-2"
+check "t11: unrelated broken link survived apply"     test -L "$H11/.claude/skills/diagnose-crash"
+check "t11: foreign package link survived apply"      test -L "$H11/.claude/skills/omarchy"
+check "t11: another pool path survived apply"         test -L "$H11/.claude/skills/agent-workspace"
+
+before11="$(snapshot "$H11")"
+out="$(HOME="$H11" "$RECONCILER" --apply 2>&1)"; rc=$?
+after11="$(snapshot "$H11")"
+check "t11: second apply exits 0"                     test "$rc" -eq 0
+check "t11: prune is idempotent"                      test "$before11" = "$after11"
+check "t11: second apply plans no legacy prune"        bash -c '! grep -qE "prune (stale|retired) pool link: legacy-in-pool" <<<"$1"' _ "$out"
 
 # --- Test 10: missing or malformed arguments fail without mutation ------------
 H4="$(new_home)"

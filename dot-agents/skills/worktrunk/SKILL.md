@@ -27,6 +27,53 @@ git worktree list --porcelain | head -1
 
 ---
 
+## Canonical trunk resolution
+
+This skill **owns** trunk/worktree resolution for the whole shared pool. Other
+skills cite this section; none of them re-spell the logic. Anything that needs
+the trunk — repo-scoped state directories, project vaults, shared caches,
+per-repo config — resolves it here first.
+
+`git rev-parse --show-toplevel` gives the *current* checkout, which is the
+worktree when you are inside one. The trunk is the parent of the shared
+`--git-common-dir`:
+
+```bash
+resolve_trunk_root() {
+  local toplevel common_dir
+  toplevel=$(git rev-parse --show-toplevel) || return 1
+
+  if [ -f "$toplevel/.git" ]; then
+    # Inside a worktree: .git is a regular file pointing at the shared store.
+    # --git-common-dir is the trunk's .git directory; its parent is the trunk.
+    common_dir=$(git rev-parse --path-format=absolute --git-common-dir) || return 1
+    dirname "$common_dir"
+  else
+    echo "$toplevel"
+  fi
+}
+
+TRUNK_ROOT=$(resolve_trunk_root)
+PROJECT_NAME=$(basename "$TRUNK_ROOT")
+```
+
+| Where you are | `--show-toplevel` | `resolve_trunk_root` |
+|---|---|---|
+| Trunk `simpler-grants-protocol/` | `…/simpler-grants-protocol` | `…/simpler-grants-protocol` |
+| Worktree `simpler-grants-protocol.feat-auth/` | `…/simpler-grants-protocol.feat-auth` | `…/simpler-grants-protocol` |
+
+Pass `--path-format=absolute` explicitly: without it Git may return
+`--git-common-dir` relative to the current directory, and `dirname` on a
+relative path silently yields the wrong trunk.
+
+**Repo-scoped state lives in the trunk, never per worktree.** Sibling worktrees
+of one repository share it, so a review, plan, or cache written from a worktree
+must be written under `{TRUNK_ROOT}` to be visible to the next session. Reading
+that state is not permission to create it: a skill that finds no state directory
+reports the absence and continues, rather than scaffolding one.
+
+---
+
 ## Directory Layout
 
 Worktrunk uses a **sibling directory layout** by default:

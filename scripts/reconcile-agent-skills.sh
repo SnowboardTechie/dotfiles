@@ -50,6 +50,28 @@ resolve_path() {
     perl -MCwd -le 'print Cwd::abs_path($ARGV[0])' "$1"
 }
 
+# Retired pool skills. Their source directories no longer exist, so links to
+# them are dangling — and `Cwd::abs_path` returns EMPTY for a dangling link whose
+# *parent* component is also missing, which would classify them as "foreign" and
+# preserve them forever. Match the raw `readlink` target instead: it needs no
+# filesystem to resolve, so the outcome is the same on every platform.
+#
+# This is an exact allowlist of two historical targets, never a pattern. Every
+# other broken or foreign link is still preserved untouched.
+RETIRED_POOL_TARGETS=(agent-workspace git-master)
+
+is_legacy_pool_link() { # <link-path> -> 0 when it names a retired pool skill
+    local raw legacy
+    raw="$(readlink "$1" 2>/dev/null || true)"
+    [[ -n "$raw" ]] || return 1
+    for legacy in "${RETIRED_POOL_TARGETS[@]}"; do
+        if [[ "$raw" == "$SKILLS_SRC/$legacy" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 SKILLS_SRC="$(resolve_path "$REPO_ROOT/dot-agents/skills")"
 
 if [[ -z "$SKILLS_SRC" || ! -d "$SKILLS_SRC" ]]; then
@@ -58,8 +80,14 @@ if [[ -z "$SKILLS_SRC" || ! -d "$SKILLS_SRC" ]]; then
 fi
 
 # Common core shared by Claude, OpenCode, and Pi: dev/PR, PKM, and workflow learning.
-COMMON_SKILLS=(ship worktrunk git-master update-pr-description pr-self-review agent-workspace
+COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review
     vault-pkm vault-capture skill-retrospective obsidian)
+
+# Planning and delivery cores adapted from an upstream suite (see
+# dot-agents/upstreams/mattpocock-skills.json). Curated for the three runtimes
+# Bryan actually plans and implements on. `guided-learning` is Hermes-only until
+# real use earns wider distribution; Pi stays lean and receives none of these.
+ADAPTED_CORES=(grilling wayfinder tdd diagnosing-bugs code-review codebase-architecture)
 
 PI_SKILLS=("${COMMON_SKILLS[@]}")
 
@@ -67,12 +95,14 @@ CLAUDE_SKILLS=("${COMMON_SKILLS[@]}"
     manual-merge issue-create issue-plan issue-work loop-issue sync-hold-branch
     adr-and-spec-coach conforming-tech-specs sprint-deliverable-update weekly-planning
     catalog-review dependency-review dependency-triage
-    voice-bryan find-skills)
+    voice-bryan find-skills
+    "${ADAPTED_CORES[@]}")
 
 OPENCODE_SKILLS=("${COMMON_SKILLS[@]}"
     manual-merge issue-create issue-plan issue-work loop-issue
     adr-and-spec-coach conforming-tech-specs
-    voice-bryan gamedev)
+    voice-bryan gamedev
+    "${ADAPTED_CORES[@]}")
 
 # Hermes keeps its bundled/local obsidian and vault-pkm implementations. Personal
 # skills live in a dedicated category so the shared pool remains canonical while
@@ -83,6 +113,8 @@ HERMES_SKILLS=(
     vault-capture skill-retrospective adr-and-spec-coach voice-bryan
     dx-target dx-preview conforming-tech-specs
     catalog-review dependency-review dependency-triage sprint-deliverable-update
+    "${ADAPTED_CORES[@]}"
+    guided-learning
 )
 
 # Print an operation line. Operations mutate only under --apply; check mode
@@ -159,10 +191,18 @@ reconcile_tool() {
                         fi
                         ;;
                     *)
-                        # Foreign or broken symlink (e.g. Omarchy package skills):
-                        # never touched. Curated-name collisions are reported in
-                        # the link pass instead.
-                        if [[ $keep -eq 0 ]]; then
+                        if [[ $keep -eq 0 ]] && is_legacy_pool_link "$existing"; then
+                            # A dangling link to a retired pool skill. Resolution
+                            # cannot see through it, so the raw target decides.
+                            op "prune retired pool link" "$name"
+                            if [[ "$MODE" == "apply" ]]; then
+                                rm "$existing"
+                            fi
+                            n_prune=$((n_prune + 1))
+                        elif [[ $keep -eq 0 ]]; then
+                            # Foreign or broken symlink (e.g. Omarchy package skills):
+                            # never touched. Curated-name collisions are reported in
+                            # the link pass instead.
                             echo "  preserved (foreign symlink): $name"
                             n_foreign=$((n_foreign + 1))
                         fi

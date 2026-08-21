@@ -32,6 +32,37 @@ locks, caches, and `cron/jobs.json` remain local and untracked.
 6. Binds continuable Matrix jobs to one explicit room and the single local
    `MATRIX_ALLOWED_USERS` principal without committing that account identifier.
 
+## Monitor jobs
+
+A cron job may declare `monitorScript`: a bare filename under `scripts/` that
+the scheduler runs **before** the agent, on every tick. It hashes the script's
+exact stdout bytes and suppresses the whole run — no model call, no delivery —
+when they are unchanged. That makes a monitor job nearly free on quiet weeks and
+loud only when its source actually moves.
+
+Two rules follow, and both are enforced rather than documented and hoped for:
+
+- **The output must be stable.** No timestamp, no dict-order leakage, no local
+  path. Anything that varies run to run makes every tick look like a change and
+  turns the job into noise.
+- **A source failure must exit non-zero.** The scheduler records it as an error;
+  a monitor that returns success after failing to reach its source reports
+  "nothing changed", which is the one lie that matters here.
+
+`reconcile_cron.py` validates `monitorScript` before calling the API — a bare
+filename, no path, never combined with `noAgent` — because the scheduler's own
+rejection arrives after the reconciler would have reported the job synchronized.
+It is verified on readback like every other field, and sent on *every* job
+(empty to clear) so dropping the key from a manifest entry actually removes the
+live monitor.
+
+**A monitor script must be in `copiedScripts`.** `_run_job_script` resolves the
+path and then requires containment in `HERMES_HOME/scripts`; `.resolve()`
+follows symlinks, so a symlink into this repository resolves outside the sandbox
+and is rejected at fire time. A copied script cannot locate repository files
+from `__file__` either — it should use the job's `workdir`, which the scheduler
+sets as the process cwd, or an explicit non-secret environment variable.
+
 Continuable jobs require an existing per-user Matrix session in the target
 room. Send one message in the room before the first scheduled delivery. The
 installer preserves finite repeat progress while reconciling delivery,

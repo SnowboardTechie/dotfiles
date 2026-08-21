@@ -10,14 +10,16 @@
     "personal-morning-brief.py",
     "personal-weekly-orientation.py",
     "personal-alignment-brief.py",
-    "personal-mail-messages.js"
+    "personal-mail-messages.js",
+    "check-mattpocock-skill-updates.py"
   ],
   "copiedScripts": [
     "sgg-morning-brief.py",
     "sgg-pr-review-event.py",
     "personal-morning-brief.py",
     "personal-weekly-orientation.py",
-    "personal-alignment-brief.py"
+    "personal-alignment-brief.py",
+    "check-mattpocock-skill-updates.py"
   ],
   "skills": [
     "apple/apple-mail",
@@ -172,6 +174,21 @@
       "noAgent": false,
       "enabledToolsets": ["terminal", "delegation", "skills"],
       "workdir": "/Users/bryan/code/sgg",
+      "attachToSession": false
+    },
+    {
+      "name": "Watch Matt Pocock skill updates",
+      "schedule": "5 9 * * 1",
+      "model": "gpt-5.6-terra",
+      "provider": "openai-codex",
+      "promptFile": "automations/mattpocock-skill-update-watch/prompt.md",
+      "monitorScript": "check-mattpocock-skill-updates.py",
+      "deliver": "matrix",
+      "skills": ["cross-agent-skill-migration"],
+      "script": null,
+      "noAgent": false,
+      "enabledToolsets": ["web", "no_mcp"],
+      "workdir": "/Users/bryan/code/dotfiles",
       "attachToSession": false
     }
   ]

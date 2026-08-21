@@ -26,24 +26,42 @@ def load_personal_collector():
 
 
 class MorningBriefSplitContractTest(unittest.TestCase):
-    def test_manifest_pins_each_agent_job_to_its_intended_model(self) -> None:
+    # Scoped to the brief/alignment jobs this module owns. An exhaustive
+    # manifest census here made every unrelated cron addition fail a
+    # morning-brief test, which is test sensitivity, not coverage — each job
+    # family pins its own models in its own tests.
+    OWNED_JOBS = {
+        "Workday Morning Brief": ("gpt-5.6-terra", "openai-codex", None),
+        "Personal Morning Brief": ("gpt-5.6-terra", "openai-codex", None),
+        "Personal Weekly Orientation": ("gemma4:31b-mlx", "custom:local-gemma4", "http://127.0.0.1:11434/v1"),
+        "Personal Weekday Close": ("gemma4:31b-mlx", "custom:local-gemma4", "http://127.0.0.1:11434/v1"),
+        "Personal Saturday Orientation": ("gemma4:31b-mlx", "custom:local-gemma4", "http://127.0.0.1:11434/v1"),
+        "Personal Sunday Reset": ("gemma4:31b-mlx", "custom:local-gemma4", "http://127.0.0.1:11434/v1"),
+        "Workday Dependency Triage": ("gpt-5.6-sol", "openai-codex", None),
+    }
+
+    def test_manifest_pins_each_owned_job_to_its_intended_model(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         jobs = {job["name"]: job for job in manifest["cronJobs"]}
-        expected = {
-            "Workday Morning Brief": ("gpt-5.6-terra", "openai-codex", None),
-            "Personal Morning Brief": ("gpt-5.6-terra", "openai-codex", None),
-            "Personal Weekly Orientation": ("gemma4:31b-mlx", "custom:local-gemma4", "http://127.0.0.1:11434/v1"),
-            "Personal Weekday Close": ("gemma4:31b-mlx", "custom:local-gemma4", "http://127.0.0.1:11434/v1"),
-            "Personal Saturday Orientation": ("gemma4:31b-mlx", "custom:local-gemma4", "http://127.0.0.1:11434/v1"),
-            "Personal Sunday Reset": ("gemma4:31b-mlx", "custom:local-gemma4", "http://127.0.0.1:11434/v1"),
-            "Workday Dependency Triage": ("gpt-5.6-sol", "openai-codex", None),
-        }
+        missing = sorted(set(self.OWNED_JOBS) - set(jobs))
+        self.assertEqual(missing, [], f"manifest lost owned job(s): {missing}")
+        for name, (model, provider, base_url) in self.OWNED_JOBS.items():
+            with self.subTest(job=name):
+                self.assertEqual(jobs[name]["model"], model)
+                self.assertEqual(jobs[name]["provider"], provider)
+                self.assertEqual(jobs[name].get("baseUrl"), base_url)
 
-        self.assertEqual(set(jobs), set(expected))
-        for name, (model, provider, base_url) in expected.items():
-            self.assertEqual(jobs[name]["model"], model)
-            self.assertEqual(jobs[name]["provider"], provider)
-            self.assertEqual(jobs[name].get("baseUrl"), base_url)
+    def test_every_local_model_job_stays_on_a_loopback_base_url(self) -> None:
+        """The property this module actually cares about, for any job it owns."""
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        for job in manifest["cronJobs"]:
+            if job["name"] not in self.OWNED_JOBS:
+                continue
+            with self.subTest(job=job["name"]):
+                if job["provider"].startswith("custom:"):
+                    self.assertIn("127.0.0.1", job["baseUrl"])
+                else:
+                    self.assertIsNone(job.get("baseUrl"))
 
     def test_manifest_routes_personal_morning_brief_to_second_brain(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))

@@ -13,7 +13,7 @@ tools:
   grep: true
   delegate_task: true
 skills:
-  - agent-workspace
+  - worktrunk
   - obsidian
 ---
 
@@ -265,7 +265,7 @@ questions, and anything tagged 'content-seed' or 'could-be-a-post'
 
 **Saving drafts:**
 ```
-@scribe Save this draft to .notes/.agents/calliope/drafts/{slug}.md
+@scribe Save this draft to {TRUNK_ROOT}/.hermes/agents/calliope/drafts/{slug}.md
 ```
 
 **Research for posts:**
@@ -276,7 +276,11 @@ looking for contrast to Bryan's voice, not templates to copy
 
 ### Saving Your Work
 
-Save drafts to: `.notes/.agents/calliope/drafts/`
+Save drafts to: `{TRUNK_ROOT}/.hermes/agents/calliope/drafts/`, resolving
+`{TRUNK_ROOT}` with `worktrunk`'s `resolve_trunk_root` first — a relative path
+forks the drafts directory per worktree, which is how a draft goes missing.
+These are ephemeral working drafts; a piece worth keeping graduates into the
+vault under `vault-pkm`'s conventions.
 
 Filename pattern: `{platform}-{slug}.md`
 

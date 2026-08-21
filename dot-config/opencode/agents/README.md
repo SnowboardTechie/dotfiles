@@ -43,8 +43,7 @@ Each agent is defined in `~/.config/opencode/agents/{name}.md` with YAML frontma
 
 | Skill | Purpose |
 |-------|---------|
-| `agent-workspace` | Working directory conventions, worktree resolution, `.notes` setup |
 | `obsidian` | Vault paths, wikilinks, formatting |
 | `workday-*` | Specific workday workflows (morning, eod, prs, reviews, sprint, pr-review) |
 | `gamedev` | Burnt Ice project context |
-| `worktrunk` | Git worktree management via worktrunk (wt) |
+| `worktrunk` | Worktree management, plus the canonical trunk resolution every agent uses for trunk-scoped state paths |

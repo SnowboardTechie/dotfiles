@@ -149,6 +149,19 @@ Reject candidates that merely say "be careful," restate generic engineering
 practice, preserve version-specific syntax without a discovery step, or encode
 negative capability claims from one failed environment.
 
+**Treat documentation that repeats a cheap lookup as a stale cache.** A skill
+that restates what a manifest, config file, directory listing, or `--help`
+output already says has copied a value that will drift, and the copy stays
+trusted long after it stops being true. If an agent can obtain the fact in one
+command at the moment it needs it, the skill should say *which command* and
+*what to do with the answer* — not enshrine last month's answer.
+
+What genuinely belongs in a skill is what no lookup returns: the rationale
+behind a choice, conventions nobody wrote down, who holds authority over what,
+and the traps that are expensive to rediscover. When a candidate patch is mostly
+a list of current values, that is the signal to replace it with a discovery step
+plus the judgment that follows it.
+
 For a repeated-workflow candidate, record its **current maturity** and the
 **next justified layer**. Use this progression as a diagnostic, not a mandate:
 

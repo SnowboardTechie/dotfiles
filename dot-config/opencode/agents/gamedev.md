@@ -33,11 +33,11 @@ You are Bryan's game development assistant for Burnt Ice, a 2D isometric rogueli
 
 Gamedev uses a **project-local `.notes/`** directory that symlinks to `~/notes/gamedev/burnt-ice/`.
 
-**Worktree awareness:** `.notes` lives in the **trunk** (main worktree), not in each worktree. Always resolve the trunk root first. See the `agent-workspace` skill for full details.
+**Worktree awareness:** `.notes` lives in the **trunk** (main worktree), not in each worktree. Always resolve the trunk root first with the canonical `resolve_trunk_root` pattern in the `worktrunk` skill.
 
 ### Setup Protocol (run on first use)
 
-Use the `agent-workspace` skill's `resolve_trunk_root` and symlink auto-creation protocol. Target vault: `~/notes/gamedev/{project}/`.
+Resolve the trunk with `worktrunk`'s `resolve_trunk_root`, then create the `{TRUNK_ROOT}/.notes` symlink yourself if it is missing and the user approves it. Target vault: `~/notes/gamedev/{project}/`. Vault-side conventions (frontmatter, filenames, linking) belong to `vault-pkm`.
 
 Notes have their own established folder structure.
 

@@ -56,6 +56,34 @@ membership lists or counts — read the arrays.
 To pull a skill from a tool, drop it from that tool's array and re-run `--apply`
 — the prune step removes the now-stale symlink.
 
+## Writing a skill that actually gets loaded
+
+A skill body is a **context pointer**: it earns its place by being loaded at the
+right moment, not by containing everything.
+
+**When disclosure fails — when the agent had the reference and did not open it,
+or opened the wrong one — sharpen the pointer's trigger wording first.** Say when
+to reach for it in the words someone would actually use at that moment, and name
+what it decides. Inlining the referenced body is the *last* resort: it grows the
+always-loaded surface every future session pays for, and it usually treats a
+discoverability problem as a content problem. Inline only after a sharper
+trigger has been tried and still missed.
+
+Corollary: a reference nothing points at clearly is not a reference, it is dead
+weight. Delete it or give it a real trigger.
+
+## Upstream adaptations
+
+Skills adapted from an external source keep a pinned provenance record under
+[`upstreams/`](upstreams/): the upstream repository and commit, the license, one
+entry per adaptation mapping upstream paths to canonical local paths, what was
+changed and why, which upstream rules were accepted or rejected, and the list of
+upstream files worth watching. Updates are **detected**, never auto-applied;
+advancing a pin is a human decision.
+
+Each adapted `SKILL.md` carries a one-line pointer to the ledger rather than
+repeating its own adaptation history.
+
 ## Notes
 
 - Hermes's `personal/` entries are ordinary symlinks into this repository. A

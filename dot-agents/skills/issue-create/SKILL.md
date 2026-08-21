@@ -873,5 +873,5 @@ Archived draft: {archive path}
 
 - [issue-plan/SKILL.md](../issue-plan/SKILL.md) — optional pre-implementation deliberation and vault-backed planning for the posted issue
 - [issue-work/SKILL.md](../issue-work/SKILL.md) — the implementation half; consumes an approved vault plan or requires the issue itself to be plan-ready
-- [agent-workspace/SKILL.md](../agent-workspace/SKILL.md) — drafts directory conventions + trunk resolution + archive pattern
+- [worktrunk/SKILL.md](../worktrunk/SKILL.md) — canonical trunk resolution for the trunk-scoped `.hermes/issue-create/drafts` directory
 - [ship/SKILL.md](../ship/SKILL.md) — source of the forge-detection pattern reused here

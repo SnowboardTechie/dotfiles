@@ -18,7 +18,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping, Sequence
 from urllib.error import URLError
 from urllib.request import urlopen
 
@@ -27,6 +27,17 @@ PROVIDER = "custom:local-qwen"
 BASE_URL = "http://127.0.0.1:11434/v1"
 OLLAMA_TAGS_URL = "http://127.0.0.1:11434/api/tags"
 DEFAULT_WORKER_HOME = Path.home() / ".hermes" / "local-qwen-worker"
+
+# The worker runs with HERMES_HOME pointed at its own isolated home, which has
+# no `skills/` directory — so reconciling the *normal* home cannot give it the
+# canonical delivery cores. Point it at the repository pool read-only instead.
+# `skills.external_dirs` is walked recursively, so the pool's flat layout
+# (`<pool>/tdd/SKILL.md`) resolves without needing a category directory.
+CANONICAL_SKILL_POOL_ENV = "HERMES_CANONICAL_SKILL_POOL"
+DEFAULT_CANONICAL_SKILL_POOL = Path.home() / "code" / "dotfiles" / "dot-agents" / "skills"
+# Selected by name at launch. Both must resolve in the worker home or the loop
+# is running without the discipline it claims to apply.
+WORKER_SKILLS = ("tdd", "diagnosing-bugs")
 SANDBOX_EXEC = Path("/usr/bin/sandbox-exec")
 MAX_INPUT_CHARS = 200_000
 CLOUD_CREDENTIAL_KEYS = {
@@ -157,8 +168,25 @@ def resolve_worker_home() -> Path:
     return home
 
 
-def worker_config_text() -> str:
+def resolve_canonical_skill_pool() -> Path:
+    """The read-only canonical skill pool this worker should see.
+
+    Derived from the repository, never copied into the worker home: a copy would
+    drift from the pool the rest of the fleet reconciles against.
+    """
+    configured = os.environ.get(CANONICAL_SKILL_POOL_ENV, "").strip()
+    return (
+        Path(configured).expanduser().resolve()
+        if configured
+        else DEFAULT_CANONICAL_SKILL_POOL
+    )
+
+
+def worker_config_text(skill_pool: Path | None = None) -> str:
+    pool = skill_pool if skill_pool is not None else resolve_canonical_skill_pool()
     return f"""_config_version: 33
+skills:
+  external_dirs: {pool}
 model:
   default: {MODEL}
   provider: {PROVIDER}
@@ -205,9 +233,19 @@ def ensure_worker_config(home: Path) -> Path:
     validate_worker_home_credentials(home)
     config_path = home / "config.yaml"
     expected = worker_config_text()
+    verify_canonical_skill_pool(resolve_canonical_skill_pool())
+    _write_worker_config(home, config_path, expected)
+    # Resolution is checked *after* the config is in place: the config is what
+    # points Hermes at the pool, so probing before writing it proves nothing.
+    verify_worker_skill_resolution(home, resolve_canonical_skill_pool())
+    return config_path
+
+
+def _write_worker_config(home: Path, config_path: Path, expected: str) -> None:
+    """Atomically install the worker config, or leave an identical one alone."""
     if config_path.is_file() and config_path.read_text(encoding="utf-8") == expected:
         config_path.chmod(0o600)
-        return config_path
+        return
 
     fd, temp_name = tempfile.mkstemp(prefix="config-", suffix=".yaml", dir=home)
     try:
@@ -219,7 +257,142 @@ def ensure_worker_config(home: Path) -> Path:
         if os.path.exists(temp_name):
             os.unlink(temp_name)
     config_path.chmod(0o600)
-    return config_path
+
+
+# Resolves each skill name the way Hermes itself does — same scan directories,
+# same iterator, same first-wins precedence — and prints every candidate path.
+# File presence in the pool is not resolution: a stale copy in the worker home
+# shadows the pool, and Hermes would load *that* one without complaining.
+_RESOLUTION_PROBE = """
+import json, os, sys
+sys.path.insert(0, os.environ["HERMES_SOURCE_ROOT"])
+from agent.skill_utils import (
+    get_external_skills_dirs,
+    get_project_skills_dirs,
+    iter_skill_index_files,
+)
+from hermes_constants import get_skills_dir
+
+dirs = list(get_project_skills_dirs())
+local = get_skills_dir()
+if local.exists():
+    dirs.append(local)
+dirs.extend(get_external_skills_dirs())
+
+found = {}
+for directory in dirs:
+    for skill_md in iter_skill_index_files(directory, "SKILL.md"):
+        found.setdefault(skill_md.parent.name, []).append(str(skill_md))
+print(json.dumps({name: found.get(name, []) for name in sys.argv[1:]}, sort_keys=True))
+"""
+
+
+def resolve_hermes_source_root() -> Path:
+    configured = os.environ.get("HERMES_SOURCE_ROOT", "").strip()
+    return (
+        Path(configured).expanduser()
+        if configured
+        else Path.home() / ".hermes" / "hermes-agent"
+    )
+
+
+def probe_skill_resolution(
+    home: Path,
+    names: Sequence[str],
+    *,
+    source_root: Path | None = None,
+    runner: Callable[..., subprocess.CompletedProcess] | None = None,
+) -> dict[str, list[str]]:
+    """Ask Hermes, in *this* home, which file each skill name resolves to."""
+    root = source_root if source_root is not None else resolve_hermes_source_root()
+    if not root.is_dir():
+        raise WorkerError(
+            f"Hermes source root not found at {root}; set HERMES_SOURCE_ROOT so skill "
+            "resolution can be verified before launch"
+        )
+    run = runner or subprocess.run
+    env = dict(os.environ, HERMES_HOME=str(home), HERMES_SOURCE_ROOT=str(root))
+    try:
+        completed = run(
+            [sys.executable, "-c", _RESOLUTION_PROBE, *names],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=120,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise WorkerError(f"skill resolution probe failed: {type(exc).__name__}") from None
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout).strip()[-600:]
+        raise WorkerError(f"skill resolution probe failed: {detail}")
+    try:
+        return json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        raise WorkerError(f"skill resolution probe returned non-JSON: {exc}") from None
+
+
+def verify_canonical_skill_pool(pool: Path) -> None:
+    """The pool exists and carries the skills. Necessary, not sufficient."""
+    if not pool.is_dir():
+        raise WorkerError(
+            f"canonical skill pool not found at {pool}; set {CANONICAL_SKILL_POOL_ENV} "
+            "to the repository's dot-agents/skills directory"
+        )
+    missing = [name for name in WORKER_SKILLS if not (pool / name / "SKILL.md").is_file()]
+    if missing:
+        raise WorkerError(
+            f"canonical skill pool {pool} is missing {', '.join(missing)}; "
+            "the worker would run without the discipline it claims to apply"
+        )
+
+
+def verify_worker_skill_resolution(
+    home: Path,
+    pool: Path,
+    *,
+    source_root: Path | None = None,
+    runner: Callable[..., subprocess.CompletedProcess] | None = None,
+) -> dict[str, str]:
+    """Prove each worker skill resolves to the canonical pool file, in this home.
+
+    Presence in the pool is not the property that matters. Hermes scans the
+    worker home's own `skills/` directory *before* the external pool and takes
+    the first match, so a stale `worker-home/skills/tdd` left by an earlier
+    experiment silently wins — and Hermes does not error on an unresolvable or
+    shadowed `--skills` name either way. The worker would then run with the
+    wrong `tdd`, or none, and report success.
+
+    So: exactly one candidate per name, and that candidate must be the pool
+    file. Anything else fails here, before the model is launched.
+    """
+    verify_canonical_skill_pool(pool)
+    resolved = probe_skill_resolution(home, WORKER_SKILLS, source_root=source_root, runner=runner)
+    confirmed: dict[str, str] = {}
+    problems: list[str] = []
+    for name in WORKER_SKILLS:
+        expected = (pool / name / "SKILL.md").resolve()
+        candidates = [Path(c).resolve() for c in resolved.get(name, [])]
+        if not candidates:
+            problems.append(f"{name}: does not resolve in {home}")
+            continue
+        if len(candidates) > 1:
+            shadowing = ", ".join(str(c) for c in candidates if c != expected)
+            problems.append(
+                f"{name}: {len(candidates)} candidates — {shadowing} shadows the canonical "
+                f"{expected}. Hermes takes the first match, so the worker would load the "
+                "wrong skill. Remove the stale copy."
+            )
+            continue
+        if candidates[0] != expected:
+            problems.append(f"{name}: resolves to {candidates[0]}, not the canonical {expected}")
+            continue
+        confirmed[name] = str(expected)
+    if problems:
+        raise WorkerError(
+            "worker skill resolution failed in " + str(home) + ": " + "; ".join(problems)
+        )
+    return confirmed
 
 
 def build_worker_env(
@@ -666,7 +839,11 @@ def build_hermes_command(
         "--toolsets",
         "terminal,file",
         "--skills",
-        "test-driven-development,systematic-debugging",
+        # The canonical adapted cores, replacing the bundled
+        # test-driven-development and systematic-debugging skills this loop used
+        # to select. They reach the isolated worker home through
+        # `skills.external_dirs`, not through the normal home's symlinks.
+        ",".join(WORKER_SKILLS),
         "--source",
         "tool",
         "--max-turns",

@@ -51,6 +51,7 @@ dotfiles/
 | Add Claude Code agent | `dot-claude/agents/` | User-global, personal |
 | Add opencode agent | `dot-config/opencode/agents/` | See opencode/AGENTS.md for identity |
 | Hindsight memory client wiring | `scripts/reconcile-hindsight.sh` + `hindsight/coding-agent.template.json` | Renders `~/.hindsight/coding-agent.json` (token from `~/.secrets/hindsight/api-bearer`, mode 0600, never in Git) and runs the pinned `@vectorize-io/hindsight-coding-agents` installer. Claude hooks / OpenCode plugin entries are committed in `dot-claude/settings.json` / `dot-config/opencode/opencode.json`; the installer is idempotent over them. |
+| Adapt an upstream agent skill | `dot-agents/skills/<name>/` + `dot-agents/upstreams/<source>.json` | The ledger pins the upstream commit, maps upstream paths to local ones, records what diverged and which upstream rules were rejected, and lists the files worth watching. Updates are detected by `hermes/scripts/check-mattpocock-skill-updates.py`, never auto-applied; advancing a pin is a reviewed change. |
 | Register/audit exact Git plans in Hindsight | `scripts/hindsight-plan-registry.py` | `register --plan PATH --banks a,b` upserts a deterministic reference doc (repo/path/commit/blob, `execution_authorized=false` unless `--authorize`); `audit --banks a,b` is read-only drift detection. Git stays the exact artifact transport. |
 
 ## DEPLOYMENT PROFILES

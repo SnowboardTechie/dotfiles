@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [issues, planning, vaults, implementation]
-    related_skills: [issue-work, plan, vault-pkm, adr-and-spec-coach, dx-target, conforming-tech-specs]
+    related_skills: [issue-work, plan, vault-pkm, grilling, wayfinder, adr-and-spec-coach, dx-target, conforming-tech-specs]
 ---
 
 # Issue Plan
@@ -119,7 +119,8 @@ are composable, not mutually exclusive:
 |---|---|
 | Vault discovery, note shape, links, synchronization | `vault-pkm` throughout |
 | Consumer/plugin-author-facing SGG or CommonGrants surface | `dx-target` before task planning; its chosen target is an acceptance oracle |
-| A load-bearing architectural choice is still open | `adr-and-spec-coach`; the user chooses one decision at a time |
+| A load-bearing architectural choice is still open | `grilling` **or** `adr-and-spec-coach` — ask which; both are live during the pilot (below) |
+| The effort plainly exceeds one planning session | Stop and offer `wayfinder`; a map is a separate effort, not a phase of this one |
 | A formal ADR/spec must conform to an established conventions index | `conforming-tech-specs` after decisions are settled |
 | Concrete implementation sequence, files, and checks | `plan` after design decisions are settled |
 
@@ -129,10 +130,21 @@ Runtime mapping is explicit:
 |---|---|---|
 | Generic task-plan authoring | installed `plan` | `superpowers:writing-plans` or an explicitly installed equivalent; stop if absent |
 | DX target exploration | installed `dx-target` | use `dx-target` only when installed; otherwise stop and hand the session to Hermes |
-| Decision coaching | installed `adr-and-spec-coach` | installed pooled `adr-and-spec-coach` |
+| Decision coaching | pooled `grilling` or `adr-and-spec-coach` | pooled `grilling` or `adr-and-spec-coach` |
 | Spec conformance | installed `conforming-tech-specs` | installed pooled `conforming-tech-specs` |
 
 Do not silently replace a missing specialized workflow with generic drafting.
+
+**Decision-coaching pilot.** `grilling` and `adr-and-spec-coach` are two methods
+for the same job and are deliberately both available. Ask Bryan which one to
+use, once, at the point the first load-bearing decision surfaces — the pilot
+produces evidence only if the choice is deliberate rather than habitual. Neither
+is the default, and do not run both on one effort.
+
+`grilling` works a decision tree frontier-first and researches facts itself;
+`adr-and-spec-coach` is the established route and remains the comparison
+control. Record which one was used in the plan's frontmatter so the comparison
+is reconstructable later.
 
 A skill's narrower applicability still governs. Do not force `dx-target` onto an
 internal bug fix or `conforming-tech-specs` onto a trivial change.

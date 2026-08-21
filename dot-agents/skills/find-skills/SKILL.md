@@ -23,12 +23,23 @@ Instead, we:
 1. **Search** skills.sh via their API
 2. **Fetch** the raw `SKILL.md` from GitHub
 3. **Present** the content for the user to review
-4. **Adapt** it into Claude Code skill format if the user wants to add it
+4. **Adapt** it into the canonical pool if the user wants to keep it
 
-Claude Code skills live at one of:
-- `~/.claude/skills/{skill-name}/SKILL.md` (user-level, available everywhere)
-- `{project}/.claude/skills/{skill-name}/SKILL.md` (project-level)
-- Bundled inside a plugin's `skills/` directory
+**Adopted skills are authored in the canonical pool, never written straight into
+a runtime directory.** `~/.claude/skills/`, `~/.config/opencode/skills/`, and
+`~/.hermes/skills/personal/` are *outputs*: they hold per-skill symlinks that
+`scripts/reconcile-agent-skills.sh` creates from `dot-agents/skills/`. A file
+written directly into one of them is unmanaged — untracked, absent on every
+other machine, invisible to the curation arrays, and liable to be pruned or to
+shadow a pooled skill of the same name.
+
+So an adoption lands in three places, all of them in the repository:
+
+| What | Where |
+|---|---|
+| The adapted skill | `dot-agents/skills/{name}/SKILL.md` |
+| Its upstream provenance | `dot-agents/upstreams/{source}.json` |
+| Which runtimes get it | the `*_SKILLS` arrays in `scripts/reconcile-agent-skills.sh` |
 
 ---
 
@@ -151,26 +162,55 @@ Instructions adapted for your workflow...
 4. Adjust file paths to match your conventions
 5. Keep the actual procedural knowledge — that's the valuable part
 
-### Create the skill:
+### Create the skill in the canonical pool
 
 ```bash
-mkdir -p ~/.claude/skills/{skill-name}
-# Write adapted content to SKILL.md
+mkdir -p dot-agents/skills/{skill-name}
+# Write the adapted content to dot-agents/skills/{skill-name}/SKILL.md
 ```
+
+### Record its provenance
+
+An adapted copy without a pin is a silent fork. Add an entry to
+`dot-agents/upstreams/{source}.json` — or create that ledger if the source is
+new — carrying the upstream repository and **exact commit**, the license and
+where it is retained, the upstream paths this adaptation came from, the local
+paths, what was changed locally and why, which upstream rules were accepted or
+rejected, and the upstream files worth watching. See
+[`dot-agents/README.md`](../../README.md) → *Upstream adaptations*.
+
+### Curate the runtimes
+
+Add the name to the `*_SKILLS` array(s) in
+`scripts/reconcile-agent-skills.sh` for the runtimes that should receive it.
+Curating nothing means nothing loads it. Pi is deliberately lean — do not add to
+it without a reason.
 
 ---
 
-## Step 4: Verify Installation
+## Step 4: Verify through the reconciler
 
-After creating the skill file, confirm it exists using the **Read** tool:
+Existence in the pool is not availability. Distribution is what makes a skill
+load, and the reconciler owns it:
 
+```bash
+./scripts/reconcile-agent-skills.sh --check     # review the planned links
+./scripts/reconcile-agent-skills.sh --apply     # after the plan looks right
 ```
-Read(file_path="~/.claude/skills/{skill-name}/SKILL.md")
+
+`--check` must show `would create link: {skill-name}` for each intended runtime.
+If it says `WARNING: skill '{skill-name}' not in pool`, the file is in the wrong
+place. If it says nothing about the skill at all, it is not curated.
+
+Then confirm the link resolves back into the pool, and start a fresh session so
+the runtime rescans:
+
+```bash
+readlink ~/.claude/skills/{skill-name}      # -> …/dot-agents/skills/{skill-name}
 ```
 
-If Read returns the content, installation succeeded. The skill becomes available to Claude Code automatically via description-based triggering — no config needed. Start a new session to pick it up.
-
-(If Step 3 was delegated to `superpowers:writing-skills`, its own works-check already covers verification; this Read is just a final existence confirmation. The general "prove it before claiming done" discipline is `superpowers:verification-before-completion`.)
+A skill is done when the link resolves into the pool **and** the trigger
+actually fires in a fresh session — not when the file exists.
 
 ---
 
@@ -210,12 +250,14 @@ If the search returns no results:
 
 ## Example Workflow
 
-**User:** "Find me a skill for systematic debugging"
+**User:** "Find me a skill for reviewing accessibility"
 
 **Agent:**
 
-1. Search: `curl -s "https://skills.sh/api/search?q=debugging&limit=10"`
-2. Find: `obra/superpowers/systematic-debugging` (9.0K installs)
-3. Fetch: `curl -s "https://raw.githubusercontent.com/obra/superpowers/main/skills/systematic-debugging/SKILL.md"`
+1. Search: `curl -s "https://skills.sh/api/search?q=accessibility&limit=10"`
+2. Find: `someorg/some-pack/a11y-review` (9.0K installs)
+3. Fetch: `curl -s "https://raw.githubusercontent.com/someorg/some-pack/main/skills/a11y-review/SKILL.md"`
 4. Present content to user
-5. If user wants it: create `~/.claude/skills/systematic-debugging/SKILL.md` with adapted content
+5. If user wants it: adapt it into `dot-agents/skills/a11y-review/`, record its upstream
+   provenance under `dot-agents/upstreams/`, and curate it in the reconciler arrays —
+   never write an unmanaged copy straight into `~/.claude/skills/`

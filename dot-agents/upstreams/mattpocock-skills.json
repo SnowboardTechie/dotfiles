@@ -1,0 +1,323 @@
+{
+  "upstream": "https://github.com/mattpocock/skills",
+  "version": "1.2.3",
+  "commit": "885e2ca4d842d139e9aef4e48d366c63cb1b8013",
+  "license": "MIT",
+  "licenseFile": "mattpocock-skills-LICENSE",
+  "attribution": "Portions adapted from Matt Pocock's agent skills, MIT licensed, Copyright (c) 2026 Matt Pocock. Retained in mattpocock-skills-LICENSE.",
+  "verifiedOn": "2026-08-19",
+  "notes": [
+    "Adapted copies, not vendored ones: each local skill diverges deliberately and is reviewed as local source.",
+    "Upstream promotes 25 skills via .claude-plugin/plugin.json. Only the adaptations below are adopted; the rest are deliberately out of scope.",
+    "Upstream paths are relative to the repository root at the pinned commit."
+  ],
+  "updatePolicy": {
+    "readOnlyDetection": true,
+    "humanApprovedPinAdvance": true,
+    "autoApply": false,
+    "monitor": "hermes/scripts/check-mattpocock-skill-updates.py",
+    "description": "The weekly watcher hashes the watched files below and reports only changes plausibly worth adopting. It never edits a file, advances the pin, opens a branch, or installs anything. Advancing `commit` is a reviewed local change."
+  },
+  "adaptations": [
+    {
+      "skill": "grilling",
+      "upstreamPaths": [
+        "skills/productivity/grilling/SKILL.md",
+        "skills/productivity/to-questionnaire/SKILL.md"
+      ],
+      "localPaths": [
+        "dot-agents/skills/grilling/SKILL.md",
+        "dot-agents/skills/grilling/references/questionnaire.md"
+      ],
+      "localChanges": [
+        "Requires explicit invocation in both frontmatter and body; upstream leaves grilling model-invocable.",
+        "Adds a verified/inferred/proposed/accepted epistemic-status table, matching Bryan's existing planning discipline.",
+        "Adds an explicit reopening rule: a correction invalidates the decision's basis, not just its wording.",
+        "Adds a batching test — batch only questions whose answers do not reshape each other — instead of always asking the whole frontier.",
+        "Requires genuine options, trade-offs, and a reasoned recommendation per consequential question.",
+        "Folds upstream `to-questionnaire` in as a disclosed reference owned by grilling rather than a top-level skill, and forbids sending the questionnaire.",
+        "Routes oversized efforts to `wayfinder` rather than silently charting a map."
+      ],
+      "acceptedUpstreamRules": [
+        "Decision tree worked frontier-first in rounds.",
+        "Facts are the agent's job; decisions are the user's.",
+        "Numbered questions each carrying a recommended answer.",
+        "Stop before acting until the user confirms shared understanding.",
+        "Questionnaire interviews the send, not the subject.",
+        "Questionnaire document structure and most-important-first ordering."
+      ],
+      "rejectedUpstreamRules": [
+        "Unconditionally asking the entire frontier every round — batching an unsettled foundation produces answers the user must retract.",
+        "Writing the questionnaire to a fixed filename in the current directory; the path is chosen explicitly and may be vault-native."
+      ],
+      "watchedFiles": [
+        "skills/productivity/grilling/SKILL.md",
+        "skills/productivity/to-questionnaire/SKILL.md"
+      ]
+    },
+    {
+      "skill": "wayfinder",
+      "upstreamPaths": [
+        "skills/engineering/wayfinder/SKILL.md",
+        "skills/engineering/prototype/SKILL.md",
+        "skills/engineering/prototype/LOGIC.md",
+        "skills/engineering/prototype/UI.md"
+      ],
+      "localPaths": [
+        "dot-agents/skills/wayfinder/SKILL.md",
+        "dot-agents/skills/wayfinder/references/forgejo-tracker.md",
+        "dot-agents/skills/wayfinder/references/prototype-routing.md",
+        "dot-agents/skills/wayfinder/scripts/forgejo_wayfinder.py",
+        "dot-agents/skills/wayfinder/tests/test_forgejo_wayfinder.py"
+      ],
+      "localChanges": [
+        "Replaces upstream's tracker-agnostic prose with a deterministic Forgejo adapter and an offline test suite; the skill body no longer carries API instructions that drift.",
+        "Requires a private tracker and refuses a repository the API reports as public — several of Bryan's repositories on the same host are public.",
+        "Requires the tracker be chosen explicitly alongside the origin remote; it is never inferred.",
+        "Every mutation previews by default and needs an explicit apply after Bryan sees the exact content.",
+        "Map parentage is a managed metadata block, because Forgejo 16.0.1 has no sub-issue endpoint; blocking uses native issue dependencies.",
+        "Arbitrates claims by Forgejo's monotonic comment id, not by body overwrite: claim and release are append-only comments replayed in id order, and the earliest unreleased operation wins. `updated_at` is *set by* the write on this API, so it can only guard staleness — it cannot decide a race.",
+        "Claims are bound to an ownership **identity tuple** `(operation, session)`, not a single token: session alone is not ownership (one session runs nested or concurrent operations) and operation alone is not ownership either (every id is written into a tracker comment, so anyone who can read the issue can quote it back; an id is a handle, not a credential).",
+        "Never edits any issue body after creation. Forgejo exposes no compare-and-swap or transaction on issue update, so a body PATCH can always overwrite a human edit that lands between the adapter's last read and its write; no client-side lock or readback closes that window. Every piece of adapter-owned state is therefore append-only — created issues and created comments — and the map's decision index is the deterministic replay of exact-schema `index` comments on the map (comment-id order, first record per resolution key), never a section of the body. Concurrent resolutions append two records and cannot overwrite each other or Bryan; there is no map lock, no lock recovery, and no held state a crashed session can leave behind.",
+        "Resolution idempotency and indexing are bound to one map, one ticket, one key, one normalized answer: the resolution key digests (map, ticket, answer), the index record carries the key plus the exact ticket and gist, and replay's first-record-per-key rule makes a reworded retry converge on one entry while an identical gist for another ticket can never satisfy this one.",
+        "A crash-interrupted claim is surfaced for explicit recovery — never expired or stolen — because a holder that looks abandoned may be mid-write; `release` (with the exact operation and session) is the named recovery path and reaches a queued acquisition as well as the current holder, verifying the winner is untouched.",
+        "Managed records have exact per-kind v1 schemas (claim/release: session, operation, at; resolution: session, key, map; index: session, key, map, ticket, gist, at). A block with a malformed line, duplicate key, unknown key, missing key, empty value, wrong version, or out-of-pattern value is discarded whole — it can neither arbitrate nor satisfy readback, idempotency, or the index replay. Rendering shares the same schemas, so the adapter cannot emit a record its own reader would reject.",
+        "Nonpositive server ids never cross an identity or arbitration boundary: a record carried by a comment id below 1 has no position in the replay order and is discarded, a comment POST whose echo lacks a positive id fails its readback, and a create that returns issue number 0 or below is a failed create.",
+        "A resolution is reported successful only when an index record with its exact key replays on the map; anything else returns explicit retry guidance, and re-running the same resolve performs only the steps that did not land.",
+        "Readback is exact per write family, and measured against a pre-write snapshot: a created issue must be a positive number that did not exist before, with byte-exact title, body, and label set; a comment record must be a comment absent from the snapshot, under the positive id the API returned, with a byte-exact body; an assignment must equal the requested set; a dependency must equal the snapshot plus the one requested edge. Without the snapshots, an echoed existing issue or an earlier attempt's record passes as proof of a write that never happened.",
+        "Adds a when-this-is-the-wrong-tool section, so a small effort is not charted as a map.",
+        "Adds an explicit handoff section: the map ends at a Git artifact and normal issue authority.",
+        "Folds upstream `prototype` in as a routing reference rather than a skill, mapping SGG interface questions to the existing `dx-target` and `dx-preview` workflows and writing the three general shapes out inline.",
+        "A contender that posts a claim and then loses withdraws its own claim record before standing down, so the winner's release cannot silently transfer the ticket to a session that already walked away.",
+        "Re-preflights privacy, issue identity, labels, metadata version, map association, and the active claim immediately before *every* resolution write, not once at entry.",
+        "Parses resolution markers structurally across all managed blocks in a comment, requiring exact kind, version, key, map, and session — answer prose can never satisfy idempotency or readback.",
+        "Validates the map index entry as a single safe line before preview or mutation, so a decision cannot alter the map's section structure.",
+        "Every external write goes through one guarded helper, and **privacy is the last network read before the single mutation** — identity, metadata, ownership, and dependency reads all complete first, and the write closure reads nothing. Checking privacy first and then issuing three more reads leaves a window in which the repository goes public while the adapter is still deciding. There is consequently no GET-then-PATCH helper: read preparation and the direct PATCH/POST are separate.",
+        "Adds `claim-status`, so the exact operation id holding a ticket — and the command to release it — is inspectable rather than guessable.",
+        "Value validation is real rather than shape-matching: ticket and map numbers must be positive integers (Forgejo numbers issues from 1, so zero is a missing value dressed as one, and the synthetic `ticket: 0` fallback is gone), and a timestamp must parse to a real UTC instant — `2026-99-99T99:99:99Z` matches every plausible regex. Blank lines inside a managed block are rejected rather than skipped, because padding a reader tolerates is padding a forger can hide behind.",
+        "Map and ticket identity are exact: a map needs exactly one balanced current-version managed region (zero is not a map; two is worse, since a decision would be merged into one while a reader sees the other), and a ticket needs both `wayfinder:ticket` and the `wayfinder:{type}` label agreeing with exact `map`/`type` metadata — a label that contradicts the body is two sources of truth, and this adapter refuses to pick one."
+      ],
+      "acceptedUpstreamRules": [
+        "Destination named first; it fixes the scope.",
+        "Plan, don't do: tickets resolve decisions, and a task ticket earns its place only by unblocking one.",
+        "The map is an index, not a store; a decision lives in exactly one place.",
+        "Refer to maps and tickets by name, never by bare id.",
+        "Native tracker blocking so the frontier renders in the tracker's own UI.",
+        "The frontier is the open, unblocked, unclaimed children.",
+        "Claim before any work, so concurrent sessions skip a taken ticket (upstream leaves the mechanism to the tracker; this adapter supplies the server-ordered one).",
+        "HITL versus AFK ticket types; the agent never stands in for the human's side of a HITL ticket.",
+        "Fog of war, and the fog-or-ticket test: can you state the question precisely now?",
+        "Out of scope is a scoping act: close the ticket, index it separately, never on the walked route.",
+        "Two invocation modes; never more than one non-research ticket per session.",
+        "Charting stops after creating the map; it hand-resolves nothing.",
+        "Logic prototypes surface complete state with guided happy, edge, and illegal scenarios.",
+        "UI variants prefer a real existing page, differ structurally, and switch on a stable `?variant=` parameter."
+      ],
+      "rejectedUpstreamRules": [
+        "The local-markdown tracker default and the `/setup-matt-pocock-skills` bootstrap.",
+        "Automatically committing prototype branches and preserving every prototype; retention follows the owning project's publication gates.",
+        "Routing to upstream's `research` and `domain-modeling` skills, which are not adopted."
+      ],
+      "watchedFiles": [
+        "skills/engineering/wayfinder/SKILL.md",
+        "skills/engineering/prototype/SKILL.md",
+        "skills/engineering/prototype/LOGIC.md",
+        "skills/engineering/prototype/UI.md"
+      ]
+    },
+    {
+      "skill": "tdd",
+      "upstreamPaths": [
+        "skills/engineering/tdd/SKILL.md",
+        "skills/engineering/tdd/tests.md",
+        "skills/engineering/tdd/mocking.md"
+      ],
+      "localPaths": [
+        "dot-agents/skills/tdd/SKILL.md",
+        "dot-agents/skills/tdd/references/tests.md",
+        "dot-agents/skills/tdd/references/mocking.md"
+      ],
+      "localChanges": [
+        "Adds the pre-agreed-seam path: an issue, spec, or approved plan may fix the seam, which is what makes unattended `issue-work` implementation possible.",
+        "Adds an explicit red-for-the-right-reason step — the first failure must be missing behavior, not a syntax or setup error.",
+        "Separates targeted checks during development from the project's full gate before completion.",
+        "States what the skill does not impose: no coverage quota, no blanket delete-and-restart.",
+        "Escalates a twice-unexplained failure to `diagnosing-bugs`.",
+        "Prefers a local substitute over a mock where one exists (PGlite, tmpdir, fake clock)."
+      ],
+      "acceptedUpstreamRules": [
+        "Tests verify behavior through public interfaces, not implementation details.",
+        "Seams are confirmed before any test is written.",
+        "Vertical tracer-bullet slices; never horizontal slicing.",
+        "Expected values come from an independent source, never recomputed the way the code computes them.",
+        "Mock at real system boundaries only.",
+        "Red before green; only enough code to pass.",
+        "Refactor is not part of the red/green cycle."
+      ],
+      "rejectedUpstreamRules": [
+        "Reading a `CONTEXT.md` domain glossary as a required step — that file is an upstream convention Bryan's repositories do not use."
+      ],
+      "watchedFiles": [
+        "skills/engineering/tdd/SKILL.md",
+        "skills/engineering/tdd/tests.md",
+        "skills/engineering/tdd/mocking.md"
+      ]
+    },
+    {
+      "skill": "diagnosing-bugs",
+      "upstreamPaths": [
+        "skills/engineering/diagnosing-bugs/SKILL.md"
+      ],
+      "localPaths": [
+        "dot-agents/skills/diagnosing-bugs/SKILL.md"
+      ],
+      "localChanges": [
+        "Retains multi-component boundary tracing and upstream data-flow tracing from the bundled `systematic-debugging` workflow this skill replaces.",
+        "Adds an explicit stop condition: repeated failed fixes that reveal systemic coupling become an architecture discussion, not another patch.",
+        "Requires exactly one root-cause fix per cycle.",
+        "Describes the human-in-the-loop last resort without shipping upstream's `scripts/hitl-loop.template.sh`."
+      ],
+      "acceptedUpstreamRules": [
+        "Redact secrets before showing any command, output, or captured artifact.",
+        "Phase 1 is the skill: build a tight red-capable loop before hypothesizing.",
+        "Named completion criterion — one already-run command that is red-capable, deterministic, fast, and agent-runnable.",
+        "Raise the reproduction rate for non-deterministic bugs rather than chasing a clean repro.",
+        "Minimize until every remaining element is load-bearing.",
+        "Three to five ranked falsifiable hypotheses before testing any.",
+        "One variable per probe; debugger over targeted logs over broad logging.",
+        "Tag instrumentation with a unique prefix and grep it out at the end.",
+        "Regression test before the fix, but only at a correct seam; no correct seam is itself the finding.",
+        "Measure first for performance regressions."
+      ],
+      "rejectedUpstreamRules": [
+        "Reading a `CONTEXT.md` domain glossary as a required step.",
+        "Shipping the HITL bash template as a script asset; the rule is kept, the file is not."
+      ],
+      "watchedFiles": [
+        "skills/engineering/diagnosing-bugs/SKILL.md"
+      ]
+    },
+    {
+      "skill": "code-review",
+      "upstreamPaths": [
+        "skills/engineering/code-review/SKILL.md"
+      ],
+      "localPaths": [
+        "dot-agents/skills/code-review/SKILL.md",
+        "dot-agents/skills/pr-self-review/scripts/select_review_lanes.py",
+        "dot-agents/skills/pr-self-review/tests/test_select_review_lanes.py"
+      ],
+      "localChanges": [
+        "Adds a third conditional Risk lane and delegates lane selection to `select_review_lanes.py` so the choice is deterministic rather than a judgment call.",
+        "Adds excess test sensitivity and over-wide interface shape to the Standards baseline.",
+        "Adds out-of-scope-boundary and reversed-accepted-decision checks to the Spec lane.",
+        "States that an empty Spec report is not proof the acceptance criteria are met, and defers the independent sweep to the caller.",
+        "States that lane convergence raises the cost of an error, not confidence in it.",
+        "Defines the lanes as a primitive consumed by `pr-self-review`, which owns disposition and the correction bound.",
+        "Review lane selection uses one documented literal authority command, `git diff --name-status -z -M -C --find-copies-harder {base}...HEAD --`, quoted identically in `code-review`, `pr-self-review`, the script's help, and the tests. `--find-copies-harder` is load-bearing: plain `-C` only inspects modified files, so copying a risky *untouched* source emits a bare `A` and the risky source is never classified. Parsing is strict — a suffixed status, an impossible similarity score, a misaligned empty field, truncation, an empty path, a control character, or undecodable bytes all refuse, because a guess here is a silently narrowed review.",
+        "The deterministic selector and its tests live under pr-self-review (scripts/select_review_lanes.py, tests/test_select_review_lanes.py) and are consumed by both code-review and pr-self-review; the Git name-status parser validates exact status bytes before any normalization and rejects every control character in a path, tab included."
+      ],
+      "acceptedUpstreamRules": [
+        "Pin the fixed point and confirm it resolves with a non-empty diff before dispatching reviewers.",
+        "Three-dot diff against the merge-base.",
+        "Standards and Spec run as separate parallel children so they cannot pollute each other's context.",
+        "The full Fowler smell baseline travels inline with the Standards brief.",
+        "A documented repository standard overrides the baseline; baseline smells are always judgment calls; skip what tooling enforces.",
+        "Do not merge or rerank findings across lanes.",
+        "Under-400-word briefs."
+      ],
+      "rejectedUpstreamRules": [
+        "Pure two-axis review — it leaves security and operational risk implicit.",
+        "Requiring `docs/agents/issue-tracker.md` and telling the user to run `/setup-matt-pocock-skills`; Bryan's forge adapters already exist."
+      ],
+      "watchedFiles": [
+        "skills/engineering/code-review/SKILL.md"
+      ]
+    },
+    {
+      "skill": "codebase-architecture",
+      "upstreamPaths": [
+        "skills/engineering/codebase-design/SKILL.md",
+        "skills/engineering/codebase-design/DEEPENING.md",
+        "skills/engineering/codebase-design/DESIGN-IT-TWICE.md",
+        "skills/engineering/improve-codebase-architecture/SKILL.md"
+      ],
+      "localPaths": [
+        "dot-agents/skills/codebase-architecture/SKILL.md",
+        "dot-agents/skills/codebase-architecture/references/deepening.md",
+        "dot-agents/skills/codebase-architecture/references/design-it-twice.md"
+      ],
+      "localChanges": [
+        "Merges upstream `codebase-design` and `improve-codebase-architecture` into one skill with two documented uses — vocabulary lookup and codebase survey — so there is one owner of the terms.",
+        "Replaces the generated Tailwind + Mermaid HTML report with candidates presented in the conversation; the rejection is stated inline in the skill.",
+        "Prefers a local substitute over a mock in the local-substitutable dependency category.",
+        "Allows serial drafting of design-it-twice alternatives, warning that reading one before writing the next collapses their independence."
+      ],
+      "acceptedUpstreamRules": [
+        "The exact glossary: module, interface, implementation, depth, seam, adapter, leverage, locality, with the avoid-lists.",
+        "Depth is a property of the interface, not the implementation.",
+        "The deletion test.",
+        "The interface is the test surface.",
+        "One adapter is a hypothetical seam; two is a real one.",
+        "Scope the survey by commit-history hot spots before scanning.",
+        "Four dependency categories and their testing strategies.",
+        "Replace-don't-layer: delete shallow-module unit tests once interface tests exist.",
+        "Design it twice under explicitly different constraints, then compare on depth, locality, and seam placement with an opinionated recommendation.",
+        "Surface an ADR conflict only when the friction warrants reopening the ADR."
+      ],
+      "rejectedUpstreamRules": [
+        "The generated HTML report and its CDN dependencies (`HTML-REPORT.md` is not adapted).",
+        "Requiring `CONTEXT.md` and `docs/adr/` at fixed paths.",
+        "Splitting the vocabulary and the survey across two skills."
+      ],
+      "watchedFiles": [
+        "skills/engineering/codebase-design/SKILL.md",
+        "skills/engineering/codebase-design/DEEPENING.md",
+        "skills/engineering/codebase-design/DESIGN-IT-TWICE.md",
+        "skills/engineering/improve-codebase-architecture/SKILL.md"
+      ]
+    },
+    {
+      "skill": "guided-learning",
+      "upstreamPaths": [
+        "skills/productivity/teach/SKILL.md",
+        "skills/productivity/teach/LEARNING-RECORD-FORMAT.md"
+      ],
+      "localPaths": [
+        "dot-agents/skills/guided-learning/SKILL.md",
+        "dot-agents/skills/guided-learning/references/workspace-contract.md",
+        "dot-agents/skills/guided-learning/references/learning-record.md"
+      ],
+      "localChanges": [
+        "Requires an absolute workspace path and refuses to write into the installed skill directory; upstream treats the current directory as the workspace.",
+        "Reduces the workspace to INDEX.md, RESOURCES.md, and a lazily created learning-records/ directory.",
+        "Adds a short assessment before selecting new material, and an explicit exposure-versus-demonstrated-understanding rule.",
+        "Requires an approved slate before any learning record is written, and mandatory evidence in the record.",
+        "Makes real Wayfinder and grilling work the preferred application surface instead of synthetic exercises.",
+        "Forbids copying the zone into Hindsight and forbids treating a recalled memory as proof of learning.",
+        "Defers to the vault's own AGENTS.md for frontmatter, filenames, linking, and commits."
+      ],
+      "acceptedUpstreamRules": [
+        "Learning is stateful across sessions and grounded in an explicit mission.",
+        "Never teach from parametric knowledge; gather from high-trust resources and cite them.",
+        "Fluency strength is not storage strength; prefer retrieval, spacing, and interleaving.",
+        "Teach inside the zone of proximal development, computed from the existing records.",
+        "Learning records are the ADRs of learning: sequentially numbered, short, decision-grade.",
+        "The four write-a-record triggers, and the coverage-is-not-learning exclusion.",
+        "Supersede rather than delete when understanding changes.",
+        "Confirm before changing the mission, and record the change."
+      ],
+      "rejectedUpstreamRules": [
+        "HTML lessons, an assets/ component library, a shared stylesheet, quizzes, simulators, and HTML reference sheets.",
+        "MISSION.md and NOTES.md as separate files; both fold into INDEX.md.",
+        "A GLOSSARY.md convention.",
+        "Delegating wisdom to online communities.",
+        "Optional evidence on a learning record; evidence is required here."
+      ],
+      "watchedFiles": [
+        "skills/productivity/teach/SKILL.md",
+        "skills/productivity/teach/LEARNING-RECORD-FORMAT.md"
+      ]
+    }
+  ]
+}

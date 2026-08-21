@@ -8,7 +8,7 @@ platforms: [macos]
 metadata:
   hermes:
     tags: [codex, qwen, local-model, implementation, review, testing, orchestration]
-    related_skills: [issue-work, plan, test-driven-development, systematic-debugging, requesting-code-review, codex-claude-implementation-loop]
+    related_skills: [issue-work, plan, tdd, diagnosing-bugs, code-review, codex-claude-implementation-loop]
 ---
 
 # Codex–Qwen Implementation Loop

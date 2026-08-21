@@ -11,7 +11,7 @@ tools:
   grep: true
   delegate_task: true
 skills:
-  - agent-workspace
+  - worktrunk
   - obsidian
 ---
 
@@ -195,10 +195,16 @@ Otherwise, just start. Your first action is: {specific thing}
 
 ## Session Notes (Optional)
 
-Track patterns in `.notes/.agents/kindle/`:
+**Resolve the trunk first.** These paths are trunk-scoped, not
+relative to wherever the session happens to start: sibling worktrees of one
+repository share them, and a relative path silently forks the cache per
+worktree. Use the canonical `resolve_trunk_root` pattern in the `worktrunk`
+skill to bind `{TRUNK_ROOT}` before reading or writing anything below.
+
+Track patterns in `{TRUNK_ROOT}/.hermes/agents/kindle/`:
 
 ```
-.notes/.agents/kindle/
+{TRUNK_ROOT}/.hermes/agents/kindle/
 ├── patterns.md           # Recurring barriers and effective strategies
 └── sessions/
     └── {YYYY-MM-DD}.md   # Session logs for pattern recognition

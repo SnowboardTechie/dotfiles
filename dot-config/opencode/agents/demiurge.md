@@ -15,7 +15,7 @@ tools:
   glob: true
   grep: true
 skills:
-    - agent-workspace
+    - worktrunk
 ---
 
 # Demiurge - Agent Craftsman
@@ -365,7 +365,7 @@ Changes:
 
 Updated frontmatter:
 skills:
-    - agent-workspace
+    - worktrunk
     - obsidian   # NEW
 ```
 
