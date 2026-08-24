@@ -216,7 +216,7 @@
       "skills": ["cross-agent-skill-migration"],
       "script": null,
       "noAgent": false,
-      "enabledToolsets": ["web", "no_mcp"],
+      "enabledToolsets": ["web", "terminal", "no_mcp"],
       "workdir": "/Users/bryan/code/dotfiles",
       "attachToSession": false
     }
