@@ -217,14 +217,16 @@ gh pr checkout {number}
 | GitHub Actions | `pnpm install --frozen-lockfile` | Validates lockfile integrity |
 | Catalog | `pnpm run ci` | Full workspace (catalog deps affect all packages) |
 
-Use `pnpm run ci`, not `pnpm ci`: pnpm 10.33 reserves the latter as an
-unimplemented native command (`ERR_PNPM_CI_NOT_IMPLEMENTED`).
+Use `pnpm run ci`, not `pnpm ci`: pnpm still reserves the latter as an
+unimplemented native command (`ERR_PNPM_CI_NOT_IMPLEMENTED`). Verified against
+pnpm 11.20.0, the version this repo pins in `packageManager`.
 
 If running the full workspace CI is too slow, use the package-specific command for the affected lane:
 
 - `pnpm run ci:core` — core package
 - `pnpm run ci:cli` — CLI package
 - `pnpm run ci:sdk` — TypeScript SDK
+- `pnpm run ci:changelog-emitter` — changelog-emitter (unpublished, but it has its own CI)
 - `pnpm run ci:website` — website
 
 Skip local verification only when the PR is green on GitHub CI and changes are clearly dev-only patches.
