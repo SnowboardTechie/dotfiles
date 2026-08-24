@@ -28,12 +28,12 @@ If zero PRs: respond with exactly "No dependency PRs open." and stop.
 - B. Red but attributable (one obvious failing surface)
 - C. Red and broad (hold, narrow, or supersede)
 - D. Special handling: GitHub Actions, catalog workflow, major version bumps,
-  or changeset-relevant runtime deps in published packages
+  or consumer-facing dep moves in published packages
 
 Special handling is still a manual review by you — it's the "review manually
 with this elevated-risk reason flagged upfront" bucket. Items routed here go
 through your eyes, but the report tags *why* (major bump / GitHub Actions /
-catalog / changeset-relevant runtime) so you weigh the right thing on intake.
+catalog / consumer-facing dep) so you weigh the right thing on intake.
 
 ## Step 2b: Supersedes
 
@@ -170,29 +170,59 @@ Surface the severity in the report flag line, e.g.
 `security: CRITICAL (GHSA-xxxx-xxxx-xxxx)`. Critical and high jump to the
 top of the order regardless of lane.
 
-## Step 5: Changeset presence
+## Step 5: Release attribution
 
-For PRs that touch runtime or peer dependencies in published packages,
-verify a changeset entry is present in the PR's files.
+Decide whether merging the PR actually ships a version bump. Changesets is
+gone — ADR-0027 replaced it with release-please on 2026-08-14, and there is no
+`.changeset/` directory. Never flag `no changeset` and never tell the reader to
+add one or run `pnpm changeset`; the tool does not exist.
 
-Runtime/peer-relevant package files:
+release-please cuts a release only when the PR clears **both** gates:
 
-- `lib/core/package.json` (peer or runtime change)
-- `lib/cli/package.json` (runtime change)
-- `lib/ts-sdk/package.json` (runtime change)
-- `lib/python-sdk/pyproject.toml` (runtime change)
+- **Path gate.** Commits are attributed to packages purely by touched file
+  path (`commit-split.ts`: "Commits that only touch files under paths not
+  specified here are ignored"). Released paths: `lib/core/`, `lib/cli/`,
+  `lib/ts-sdk/`, `lib/python-sdk/`. `pnpm-workspace.yaml`, `pnpm-lock.yaml`,
+  `website/`, and `lib/changelog-emitter/` are **not** released paths. The
+  conventional-commit scope in the title is irrelevant to attribution.
+- **Type gate.** The title's type must render a changelog entry: `feat` →
+  minor; `fix`/`perf`/`revert`/`docs`/`refactor`/`build` → patch; any `!` →
+  breaking (minor while pre-1.0). `chore`, `ci`, `test` are hidden and cut no
+  release. Dependabot is configured `prefix: "chore"` and the catalog
+  workflow titles its PR `chore(deps): ...`, so **the default title on every
+  bot PR fails this gate.**
 
-devDependency-only bumps do not need a changeset. Read the diff of the
-package file to confirm whether the change is in `dependencies`,
-`peerDependencies`, or `devDependencies`:
+First determine whether the moved dependency is consumer-facing. Read the
+diff, do not infer from the title:
 
 ```bash
-gh pr diff <N> -- lib/core/package.json
+gh pr diff <N> -- lib/core/package.json lib/cli/package.json \
+  lib/ts-sdk/package.json lib/python-sdk/pyproject.toml
+gh pr diff <N> -- pnpm-workspace.yaml
 ```
 
-If a runtime or peer dep moved and the PR's file list contains no
-`.changeset/*.md` entry, flag `no changeset` and surface the PR in the
-"Changeset review needed for" Notes line.
+Consumer-facing means `dependencies` or `peerDependencies` in a
+`package.json`, `[project] dependencies` in `pyproject.toml`, or a pnpm
+`overrides` entry in `pnpm-workspace.yaml` (overrides change the transitive
+versions that ship inside the published packages). devDependency-only moves
+are correctly unreleased — nothing to flag.
+
+Then assign exactly one flag:
+
+- **`retitle needed`** — consumer-facing move that *does* touch a released
+  path, but the title's type is `chore`/`ci`/`test`. This is actionable:
+  retitling to `fix(<scope>): …` before squash-merge cuts a patch release.
+  Surface it in the "Retitle needed" Notes line.
+- **`unreleasable by path`** — consumer-facing move that touches **only**
+  non-released paths (`pnpm-workspace.yaml` / `pnpm-lock.yaml` — the catalog
+  and pnpm-`overrides` lanes). No title fixes this: a retitle clears the type
+  gate while the path gate still blocks. Surface it in the "Unreleasable by
+  path" Notes line, say the change reaches consumers with no version bump
+  behind it, and stop there. Do not propose a remedy — how the repo should
+  declare these ranges is an open question for the team, not for this report.
+
+Note that `lib/core`'s `peerDependencies` are all declared `catalog:`, so any
+`@typespec/*` catalog bump is the `unreleasable by path` case.
 
 ## Step 6: Order
 
@@ -210,15 +240,15 @@ Merge now / Review manually / Special handling / Hold / Close-supersede.
 Routing rules:
 
 - **Merge now**: green CI, isolated lane, no breaking changes flagged in
-  Step 3, not stale, no `conflict` flag, no `no changeset` flag. Auto-merge
+  Step 3, not stale, no `conflict` flag, no Step 5 flag. Auto-merge
   PRs do NOT go here — they land via GitHub once green and only need a Notes
   mention.
 - **Review manually**: red but attributable, OR `conflict` flag, OR Step 3
   surfaced a breaking change in a non-major bump, OR `unknown` changelog
   status for a published-package runtime dep.
 - **Special handling**: major version bumps, GitHub Actions PRs, catalog
-  workflow PRs, runtime/peer dep changes flagged `no changeset`. Tagged with
-  the elevated-risk reason on intake.
+  workflow PRs, and any PR carrying a `retitle needed` or `unreleasable by
+  path` flag. Tagged with the elevated-risk reason on intake.
 - **Hold**: red and broad, no clean attribution, not urgent.
 - **Close / supersede**: superseded by a broader PR, OR red and broad and
   stale.
@@ -234,7 +264,8 @@ Otherwise emit the report. Only include buckets that have PRs. Preserve PR
 links. Every PR line must include a `Versions:` and a `Changelog:` sub-line
 — say `none flagged` when the changelog is clean, never omit the field.
 Add a `Flags:` sub-line only when there is something to flag (auto-merge,
-stale, conflict, no changeset, security severity); skip it otherwise.
+stale, conflict, retitle needed, unreleasable by path, security severity);
+skip it otherwise.
 
 ```markdown
 ## Dependency Triage (YYYY-MM-DD)
@@ -249,7 +280,7 @@ stale, conflict, no changeset, security severity); skip it otherwise.
   - Versions: `astro 5.13.2 → 6.1.0` (major)
   - Changelog: drops Node 18; `getStaticPaths` return shape changed — see
     [release notes](https://github.com/withastro/astro/releases/tag/astro%406.0.0)
-  - Flags: stale (18d), no changeset
+  - Flags: stale (18d), retitle needed
 
 ### Special handling
 - #N [title](url) — major bump
@@ -263,7 +294,10 @@ stale, conflict, no changeset, security severity); skip it otherwise.
 ### Notes
 - Auto-merge enabled (FYI): #N, #N
 - Stale (>14d) and green: #N (24d)
-- Changeset review needed for: #N
+- Retitle needed before merge (consumer-facing dep on a released path; `chore`
+  title releases nothing): #N
+- Unreleasable by path (consumer-facing change, touches only
+  `pnpm-workspace.yaml` / `pnpm-lock.yaml`; no retitle fixes it): #N
 - Hold (FYI only): #N, #N
 ```
 
@@ -271,7 +305,13 @@ stale, conflict, no changeset, security severity); skip it otherwise.
 
 - No auto-merge recommendations for broad workspace PRs
 - No CI-weakening
-- No ignoring changeset requirements
+- Never flag `no changeset`, recommend adding a changeset, or mention
+  `pnpm changeset` — Changesets was removed in ADR-0027 and `.changeset/`
+  does not exist
+- Do not recommend a retitle for a PR confined to `pnpm-workspace.yaml` /
+  `pnpm-lock.yaml`; that is `unreleasable by path` and has no remedy to offer
+- Do not let a consumer-facing dep move pass without one Step 5 flag or an
+  explicit statement that it is devDependency-only
 - Every reported PR must carry a `Versions:` line and a `Changelog:` line.
   When you can't read the changelog, say `unknown — <why>`. Silence is not
   acceptable, because silence is what the previous version of this routine

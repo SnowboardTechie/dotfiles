@@ -31,7 +31,8 @@ Do:
 
 Constraints:
 - Do not force-push.
-- Do not edit changeset files under .changeset/.
+- Do not edit release-automation artifacts: package version fields,
+  CHANGELOG.md, or .release-please-manifest.json. release-please owns them.
 - Do not edit source beyond what the merge produces.
 - If the merge is empty (nothing new on main), skip steps 4-6 and
   report "no-op: main unchanged since last sync."

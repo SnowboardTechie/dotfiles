@@ -7,7 +7,7 @@ description: Triage open dependency PRs in the SGG / CommonGrants monorepo by bl
 
 Review open dependency pull requests, sort them into the right review order, dispatch a parallel read-only review of every PR worth reviewing, and recommend which to merge, review manually, hold, or close.
 
-This skill is intentionally specific to low-overhead weekly dependency maintenance in the SGG / CommonGrants monorepo, with its Dependabot groups, catalog lane, published packages, and CI layout. Do not generalize its package or changeset rules to unrelated repositories.
+This skill is intentionally specific to low-overhead weekly dependency maintenance in the SGG / CommonGrants monorepo, with its Dependabot groups, catalog lane, published packages, and CI layout. Do not generalize its package or release-attribution rules to unrelated repositories.
 
 ---
 
@@ -116,7 +116,9 @@ Always call out separately:
 - GitHub Actions PRs
 - catalog workflow PRs
 - major version bumps
-- PRs that may require a changeset because they touch runtime deps in published packages
+- PRs that move a **consumer-facing** dependency in a published package (`dependencies` / `peerDependencies` / `[project] dependencies`), because the release will or will not happen for reasons the CI badge does not show
+
+On that last one: releases come from release-please, not Changesets — `.changeset/` was removed in ADR-0027 (2026-08-14). A dependency change ships a version bump only if the PR touches a released package path **and** carries a releasing commit type. Both bots default to `chore(...)`, which releases nothing. `dependency-review` Step 4 owns the full two-gate check; at triage you only need to know that a green consumer-facing dep PR is exactly where a silent no-release hides, so it still gets routed for review.
 
 ---
 
@@ -176,7 +178,7 @@ Once the queue is classified (Step 2) and ordered (Step 3), review **every PR wo
 Review every open PR **except** those whose fate is already decided by inspection:
 
 - **Skip** explicitly-held PRs: `DO NOT MERGE` / hold branches, and PRs already marked superseded in Step 2b. Their disposition is settled — a review adds nothing. Say in the report that you skipped them and why.
-- **Review everything else**, *including green isolated PRs*. A green PR is exactly where a missed changeset on a runtime dep in a published package slips through, so it still gets a (light) read-only pass — for a green PR there are no failing checks to diagnose, so the review is mostly the changeset-impact check.
+- **Review everything else**, *including green isolated PRs*. A green PR is exactly where a consumer-facing dep bump slips through with no release behind it, so it still gets a (light) read-only pass — for a green PR there are no failing checks to diagnose, so the review is mostly the release-attribution check.
 
 Cap **concurrency, not coverage**. Hermes delegation is capped at three concurrent tasks, so run `ceil(reviewable / 3)` batches — do not drop the tail. If you defer any reviewable PR, name it in the report; never silently truncate.
 
@@ -185,7 +187,7 @@ Cap **concurrency, not coverage**. Hermes delegation is capped at three concurre
 | PR | Reviewer skill | What the subagent runs | Serial follow-up by the main agent |
 |----|----------------|------------------------|-------------------------------------|
 | Catalog workflow PR | `catalog-review` | the whole skill — it has no local-build step (it judges the CI validation path) | none; the verdict is complete |
-| Every other lane (green isolated, website-framework, tooling, runtime, GitHub Actions, major bump, broad grouped) | `dependency-review` | **read-only analysis only — its Steps 0–4** (metadata, lane, fix-status, CI-log diagnosis, changeset impact) | local verification, if and only if the verdict warrants it (below) |
+| Every other lane (green isolated, website-framework, tooling, runtime, GitHub Actions, major bump, broad grouped) | `dependency-review` | **read-only analysis only — its Steps 0–4** (metadata, lane, fix-status, CI-log diagnosis, release attribution) | local verification, if and only if the verdict warrants it (below) |
 
 The only routing decision you make here is *catalog vs. not* (a catalog PR changes `pnpm-workspace.yaml` / catalog-managed versions). Each subagent self-classifies its finer lane, so triage and the reviewer never diverge.
 
@@ -212,7 +214,7 @@ Nothing goes to the user between those two messages. Do **not** post an update a
 
 Using the review verdicts from Step 3b (not the heuristic classification alone), recommend one of:
 
-- **Merge now** — green, low blast radius, review found no extra release handling needed
+- **Merge now** — green, low blast radius, review found no outstanding release-attribution issue
 - **Review manually** — worth a focused fix or serial local-verification pass
 - **Hold** — do not spend time yet; wait for another cycle or lane cleanup
 - **Close / supersede** — broad grouped PR is not worth debugging in current form
@@ -234,7 +236,7 @@ Return a concise triage report in this format:
 ## Dependency Triage
 
 ### Merge now
-- [#123](https://github.com/{owner}/{repo}/pull/123) `chore(deps): ...` — green, isolated Python lane; review confirms no changeset
+- [#123](https://github.com/{owner}/{repo}/pull/123) `chore(deps): ...` — green, isolated Python lane; review confirms devDependency-only, correctly no release
 
 ### Review manually
 - [#124](https://github.com/{owner}/{repo}/pull/124) `chore(deps): ...` — website-only failures, attributable (per review)
@@ -246,7 +248,8 @@ Return a concise triage report in this format:
 - [#126](https://github.com/{owner}/{repo}/pull/126) `chore(deps): ...` — GitHub Actions PR, keep manual
 
 ### Notes
-- Changeset review needed for: [#127](https://github.com/{owner}/{repo}/pull/127)
+- Retitle needed before merge (consumer-facing dep on a released path, `chore` title releases nothing): [#127](https://github.com/{owner}/{repo}/pull/127)
+- Unreleasable by path (consumer-facing change, but the PR touches only `pnpm-workspace.yaml` / `pnpm-lock.yaml`; no retitle fixes it): [#129](https://github.com/{owner}/{repo}/pull/129)
 - Older superseded PRs: [#121](https://github.com/{owner}/{repo}/pull/121)
 - Skipped (not reviewed): [#128](https://github.com/{owner}/{repo}/pull/128) — DO NOT MERGE hold branch
 ```
@@ -262,7 +265,9 @@ Be specific about *why* each PR landed in that bucket, and ground the reason in 
 - Do not recommend auto-merging broad workspace PRs
 - Do not recommend weakening CI just to get dependency PRs merged
 - Do not treat audit exceptions as the default path forward
-- Do not ignore changeset requirements when runtime deps in published packages change
+- Do not let a consumer-facing dep change in a published package pass without stating whether it actually ships a version bump
+- Never recommend adding a changeset or running `pnpm changeset` — the tool was removed in ADR-0027
+- Do not recommend a retitle for a PR confined to `pnpm-workspace.yaml` / `pnpm-lock.yaml`; report it as unreleasable by path and leave the resolution to the team
 - Every reviewable PR gets a read-only review via Step 3b (parallel); never parallelize the local builds — `dependency-review` Step 5 stays serial, one PR at a time
 - Do not hide uncertainty; if a reviewed PR still needs deeper single-PR local verification, run `dependency-review` Step 5 on it serially
 - This workflow recommends actions only. Closing, commenting on, approving, or merging a PR is public-facing and requires the user's explicit approval immediately before the forge command.

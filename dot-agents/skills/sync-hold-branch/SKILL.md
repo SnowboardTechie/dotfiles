@@ -146,7 +146,7 @@ Use `gh pr comment <number> --body "..."`. Categorize via conventional-commit pr
 ## Constraints (hard rules)
 
 - **No force-push.** Ever. Not with `--force-with-lease`. Not "just this once."
-- **No edits to `.changeset/`.** Changeset files are managed by their own automation.
+- **No edits to release-automation artifacts.** Version fields, `CHANGELOG.md`, and release manifests (`.release-please-manifest.json` and the like) are owned by the project's release tooling — a sync never hand-edits them.
 - **No source edits beyond what the merge produces.** If you find yourself editing a file mid-merge, stop — that's a conflict resolution, which requires human judgment per step 4.
 - **No `--no-verify`** on git operations. If a hook fails, surface it.
 - **No auto-resolution of merge conflicts.** The skill's job is to detect and report, not to resolve.

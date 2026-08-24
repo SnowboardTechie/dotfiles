@@ -1,12 +1,12 @@
 ---
 name: dependency-review
-description: Review one SGG / CommonGrants dependency PR for risk, failing checks, changeset impact, and merge readiness
+description: Review one SGG / CommonGrants dependency PR for risk, failing checks, release impact, and merge readiness
 argument-hint: <pr-number-or-url>
 ---
 
 # Dependency Review
 
-Review a single dependency pull request in the SGG / CommonGrants monorepo and decide whether it is safe to merge, needs a focused fix, should be held, or should be closed as not worth the churn. Its package lanes, commands, and changeset rules are project-specific.
+Review a single dependency pull request in the SGG / CommonGrants monorepo and decide whether it is safe to merge, needs a focused fix, should be held, or should be closed as not worth the churn. Its package lanes, commands, and release-attribution rules are project-specific.
 
 ---
 
@@ -130,7 +130,7 @@ For every failing check, answer three questions:
 | Import or compile error after bump | Breaking API change in updated dependency | Read the dep's changelog (linked in PR body), search codebase for affected API, migrate |
 | `pnpm audit` failure | New transitive vulnerabilities | Add `pnpm.auditConfig.ignoreGhsas` entries only after reading the advisory; prefer upgrading over suppressing |
 | Missing secret (e.g., `FIDER_API_TOKEN`) | Dependabot PRs lack access to repo secrets | Add `&& env.SECRET_NAME != ''` guard to the workflow step condition |
-| Publish dry-run failure | Release metadata or changeset issue | Check whether release handling is missing or a changeset is needed |
+| Publish dry-run failure | Release metadata or packaging issue | Check the package's `files`/`exports` and version state; releases themselves are cut by release-please, not by anything in the PR |
 
 ### Attribution examples
 
@@ -140,19 +140,60 @@ For every failing check, answer three questions:
 
 ---
 
-## Step 4: Check Changeset Impact
+## Step 4: Check Release Attribution
 
-Review whether the update touched runtime or peer dependencies in published packages.
+Decide whether merging this PR actually ships a version bump for the affected
+published package. There is no `.changeset/` directory in any of these repos —
+[ADR-0027](https://github.com/HHS/simpler-grants-protocol/blob/main/website/src/content/docs/governance/adr/0027-release-please.md)
+replaced Changesets with release-please on 2026-08-14. Releases are now derived
+from the squashed PR title and the touched file paths, and a dependency change
+ships a bump only if it clears **both** gates below.
 
-Use the repository's dependency-management rules:
+### Gate 1 — path
 
-- `lib/core` — peer dependency range changes may need a changeset
-- `lib/cli` — runtime dependency changes may need a changeset
-- `lib/ts-sdk` — runtime dependency changes may need a changeset
-- `lib/python-sdk` — runtime dependency changes may need release handling
-- devDependency-only bumps do **not** need a changeset
+release-please attributes a commit to a package purely by the files it touches
+(`src/util/commit-split.ts`: "Commits that only touch files under paths not
+specified here are ignored"). The conventional-commit **scope** in the title
+plays no part in attribution.
 
-Do not guess. Read the relevant `package.json` or `pyproject.toml` files if needed.
+- `simpler-grants-protocol` released paths: `lib/core/`, `lib/cli/`,
+  `lib/ts-sdk/`, `lib/python-sdk/`. Everything else — `pnpm-workspace.yaml`,
+  `pnpm-lock.yaml`, `website/`, `lib/changelog-emitter/` — is **not** a
+  released path, so a commit confined to those is ignored outright.
+- `ts-cg-grants-gov` and `py-cg-grants-gov` each publish a **single package
+  rooted at `.`**, which release-please assigns every commit regardless of
+  path. **This gate does not exist in the plugin repos** — do not carry the
+  protocol repo's path rule over to them.
+
+### Gate 2 — type
+
+The title's conventional-commit type must render a changelog entry: `feat` →
+minor, `fix` / `perf` / `revert` / `docs` / `refactor` / `build` → patch, any
+`!` → breaking (minor while pre-1.0). `chore`, `ci`, and `test` are `hidden` in
+`changelog-sections`, render nothing, and cut no release.
+
+Both bots default to a type that **fails** this gate: Dependabot is configured
+`commit-message.prefix: "chore"`, and the catalog workflow titles its PR
+`chore(deps): update catalog dependencies`.
+
+### Classify into one of three outcomes
+
+Read the diff to decide whether the moved dependency is consumer-visible —
+`dependencies` / `peerDependencies` in a `package.json`, or `[project]
+dependencies` in `pyproject.toml`. Do not guess; open the file.
+
+| What the PR changes | Outcome | What to report |
+|---|---|---|
+| devDependencies only | Correctly no release | Nothing to flag. |
+| A consumer-visible dep, **and** it touches a released path | Blocked by gate 2 only | **Actionable** — flag `retitle needed`. Retitling to `fix(<scope>): …` before squash-merge cuts a patch release. |
+| A consumer-visible dep, but touches **only** non-released paths (the catalog lane and pnpm `overrides` lane, which live in `pnpm-workspace.yaml` / `pnpm-lock.yaml`) | Blocked by gate 1 | Flag `unreleasable by path`. **No title change fixes this** — retitling clears gate 2 while gate 1 still blocks. Report it and stop there. |
+
+That last row is a real gap with no mechanism behind it, not an oversight you
+should route around. Say plainly that the change reaches consumers without a
+version bump, and leave it there: how the repo should declare these ranges is
+an open question for the team, not a call this review makes. Do not propose
+restructuring `catalog:` usage, and do not recommend a changeset — the tool is
+gone.
 
 ---
 
@@ -239,8 +280,8 @@ Use this format:
 - `build` — tsconfig incompatibility in website only
 - `validate-workspace` — same root cause cascades outward
 
-### Changeset impact
-- No changeset needed; devDependency-only changes
+### Release impact
+- devDependency-only; correctly no release
 
 ### Why
 - Failure appears attributable and contained to the tooling lane, so this is worth fixing.
@@ -251,7 +292,9 @@ Use this format:
 ## Hard Rules
 
 - Do not say “safe to merge” without checking status checks
-- Do not recommend a changeset without verifying the dependency is runtime or peer-facing
+- Do not recommend a retitle without first reading the diff to confirm the dependency is consumer-facing (`dependencies` / `peerDependencies` / `[project] dependencies`)
+- Do not recommend a retitle for a PR confined to `pnpm-workspace.yaml` / `pnpm-lock.yaml` — gate 1 blocks it regardless of title. Report `unreleasable by path` and stop; do not invent a remedy
+- Never tell the reader to add a changeset or run `pnpm changeset` — Changesets was removed in ADR-0027 and `.changeset/` does not exist
 - Do not recommend audit exceptions just because CI is noisy
 - Do not bury the decision; the report must contain one explicit recommendation
 - The review is advisory. Pushing, commenting on, approving, closing, or merging the PR is public-facing and requires the user's explicit approval immediately before the action.

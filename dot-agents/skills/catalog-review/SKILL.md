@@ -24,7 +24,20 @@ Do not use this skill for ordinary pip, website-framework, tooling, runtime, or 
 
 This lane is specific to `HHS/simpler-grants-protocol`. Confirm the PR belongs to that repository before continuing; plugin-repo dependency PRs route to `dependency-review`.
 
-Note: The catalog workflow (`deps-catalog-check.yml`) runs weekly on Mondays and opens PRs on the `chore/update-catalog-deps` branch. It manages `@typespec/*`, `vitest`, `@vitest/*`, `eslint-plugin-vitest`, and `@types/node` — these are excluded from Dependabot due to known pnpm catalog bugs.
+Note: there are **two** catalog workflows, both weekly on Mondays at 15:00 UTC. Everything in the `catalog:` block of `pnpm-workspace.yaml` is excluded from Dependabot (known pnpm catalog bugs) and managed by these instead:
+
+| Workflow | Branch | PR title | State |
+|---|---|---|---|
+| `deps-catalog-check.yml` | `chore/update-catalog-deps` | `chore(deps): update catalog dependencies` | normal PR, within-major bumps only |
+| `deps-catalog-check-majors.yml` | `chore/update-catalog-deps-majors` | `chore(deps-major): catalog major-version bumps — REQUIRES MANUAL REVIEW` | **draft** PR, cross-major bumps |
+
+Read the current `catalog:` block rather than trusting a list here — it moves. As of 2026-08-24 it holds 21 entries, and the ones that matter for this review are the **consumer-facing** ones:
+
+- `@typespec/*` — all seven are `peerDependencies` of `lib/core` (declared `catalog:`)
+- `zod` — a runtime `dependencies` entry of both `lib/ts-sdk` and `lib/cli`
+- `@typespec/compiler` — also a runtime `dependencies` entry of `lib/cli`
+
+The rest (`typescript`, `eslint`, `prettier`, `vitest`, `@vitest/*`, `globals`, `ts-node`, `typescript-eslint`, `@types/node`, `eslint-config-prettier`, `eslint-plugin-prettier`, `@eslint/js`) are dev-tooling. Note `eslint-plugin-vitest` was renamed upstream to `@vitest/eslint-plugin`; the old name still appears in Dependabot's ignore list but not in the catalog.
 
 ---
 
@@ -32,11 +45,12 @@ Note: The catalog workflow (`deps-catalog-check.yml`) runs weekly on Mondays and
 
 Check for catalog indicators:
 
-- branch or title like `chore(deps): update catalog dependencies`
+- branch `chore/update-catalog-deps` or title `chore(deps): update catalog dependencies` (within-major lane)
+- branch `chore/update-catalog-deps-majors` or a `chore(deps-major):` title (majors lane — opened as a **draft**; treat a draft here as "not ready to merge, review the migration cost," not as a reason to skip the review)
 - changes to `pnpm-workspace.yaml`
 - changes to catalog-managed packages in the root ignore list or lockfile
 
-If it is not a catalog PR, stop and use `dependency-review` instead.
+Both catalog lanes belong to this skill. If it is not a catalog PR at all, stop and use `dependency-review` instead.
 
 ---
 
@@ -129,11 +143,34 @@ Never recommend a blanket exception just to get the PR merged.
 
 ---
 
-## Step 6: Check Release / Changeset Impact
+## Step 6: Check Release Attribution
 
-Most catalog updates are dev-tooling changes and do not need a changeset.
+Most catalog updates are dev-tooling changes that correctly produce no release. But when one moves a consumer-facing range, the catalog lane hits a structural limit you need to report accurately rather than route around.
 
-However, verify whether any published package changed a runtime or peer-facing dependency range as a result of the catalog update. If so, call that out explicitly.
+Since [ADR-0027](https://github.com/HHS/simpler-grants-protocol/blob/main/website/src/content/docs/governance/adr/0027-release-please.md) (merged 2026-08-14) releases are cut by release-please, not Changesets; `.changeset/` no longer exists. release-please attributes a commit to a package **purely by the file paths it touches** (`src/util/commit-split.ts`: "Commits that only touch files under paths not specified here are ignored"). The released paths are `lib/core/`, `lib/cli/`, `lib/ts-sdk/`, and `lib/python-sdk/`. The conventional-commit scope in the title plays no part in attribution.
+
+A catalog PR touches `pnpm-workspace.yaml` and `pnpm-lock.yaml`. **Neither is under a released path**, so release-please ignores the commit entirely.
+
+That matters because `lib/core/package.json` declares every one of its `peerDependencies` as `catalog:`. pnpm substitutes the resolved range at publish time, so a `@typespec/*` catalog bump does change the peer range consumers of the published `@common-grants/core` see — while the commit that caused it is invisible to release-please.
+
+### What to report
+
+- **Catalog move is dev-tooling only** (vitest, `@types/node`, eslint — devDependencies everywhere they appear): correctly no release. Nothing to flag.
+- **Catalog move changes a consumer-facing range**: flag **`unreleasable by path`**. State plainly that the published range moves for consumers with no version bump behind it. This fires for any `@typespec/*` bump (core's `catalog:` peer ranges, and `lib/cli`'s runtime `@typespec/compiler`) and for any `zod` bump (a runtime `dependencies` entry of both `lib/ts-sdk` and `lib/cli`) — so a catalog PR is **not** automatically dev-tooling-only.
+
+Verify rather than assume: read `lib/core/package.json` and the other `lib/*/package.json` files to confirm which block (`peerDependencies`, `dependencies`, `devDependencies`) each moved catalog entry appears in.
+
+**This flag is a reporting obligation, not a merge blocker.** It does not change the Step 4 decision on its own: a green catalog PR whose only outstanding item is `unreleasable by path` is still a Merge. Every `@typespec/*` bump trips this gate, so holding on it would stall catalog maintenance indefinitely and still not produce a release. Record the flag in the report and let the merge decision rest on validation, audit, and downstream impact as it did before.
+
+### Do not route around it
+
+Retitling does **not** fix this, and the reviewer checklist in the catalog workflow's own PR body currently says it does:
+
+> If peerDep ranges changed for `@common-grants/core`, retitle this PR `fix(core): ...` so the change ships in a release (`chore(deps)` does not trigger a version bump)
+
+Retitling to `fix(core):` clears the commit-type gate, but the path gate still blocks — no file under `lib/core/` is touched, so there is nothing for release-please to attribute the commit to. Note the discrepancy in your review if it is load-bearing for the decision; do not silently follow the checklist item as though it works.
+
+There is no mechanism in this lane that turns a catalog bump into a release. Report the gap and stop. Whether the repo should declare these ranges literally instead of via `catalog:`, and what those ranges should promise consumers, is an open question headed for team discussion — not a call this review makes. Do not propose a restructuring, and do not recommend a changeset; the tool is gone.
 
 ---
 
@@ -160,6 +197,9 @@ Use this format:
 ### Audit impact
 - No new exception justified
 
+### Release attribution
+- `unreleasable by path` — the `@typespec/*` move changes `@common-grants/core`'s published peer range, but the PR touches only `pnpm-workspace.yaml` / `pnpm-lock.yaml`, so release-please attributes nothing. No retitle fixes this.
+
 ### Why
 - This is a real compatibility break, not grouped-update noise, so it should be fixed deliberately or held.
 ```
@@ -172,6 +212,8 @@ Use this format:
 - Do not recommend merging based on one green package alone
 - Do not recommend blanket audit suppressions
 - Do not skip downstream impact analysis when TypeSpec packages changed
+- Do not recommend a changeset or `pnpm changeset` — Changesets was removed in ADR-0027
+- Do not recommend a retitle to force a release; the path gate blocks catalog PRs regardless of title. Report `unreleasable by path` and leave the resolution to the team
 - The review is advisory. Pushing, commenting on, approving, closing, or merging the PR is public-facing and requires the user's explicit approval immediately before the action.
 
 ## Related Skills

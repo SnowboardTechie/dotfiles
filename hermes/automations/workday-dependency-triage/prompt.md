@@ -6,7 +6,7 @@ Scope: scan all three dependency queues Bryan maintains, every run:
 - /Users/bryan/code/sgg/common-grants/ts-cg-grants-gov (common-grants/ts-cg-grants-gov)
 Explicitly exclude HHS/simpler-grants-gov. Do not ask for clarification; this three-repository scope is intentional.
 
-Follow the dependency-triage skill to gather current open dependency PRs, CI/check state, overlaps/supersession, special-handling lanes, fix status, and changeset/release impact. Fan out read-only PR analysis in batches of at most three via delegate_task, directing catalog PRs to catalog-review and all other reviewable PRs to dependency-review Steps 0–4. Cover every reviewable PR; do not silently truncate.
+Follow the dependency-triage skill to gather current open dependency PRs, CI/check state, overlaps/supersession, special-handling lanes, fix status, and release attribution (whether a merge actually ships a version bump). Fan out read-only PR analysis in batches of at most three via delegate_task, directing catalog PRs to catalog-review and all other reviewable PRs to dependency-review Steps 0–4. Cover every reviewable PR; do not silently truncate.
 
 This unattended automation is report-only and read-only. Do not check out PR branches, modify working trees, run local builds, comment, approve, close, merge, label, push, or otherwise mutate repositories or GitHub. If a candidate needs local verification, place it under Review manually and say what verification remains. Because cron delivers only the final response, do not emit the dependency-triage skill's dispatch/progress message; return one final consolidated report.
 
