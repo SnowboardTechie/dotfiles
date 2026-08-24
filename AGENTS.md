@@ -172,12 +172,7 @@ git diff --check                 # Trailing whitespace check
 - Global gitignore lives at `dot-config/git/ignore` → `~/.config/git/ignore` (XDG path, referenced by `dot-gitconfig` excludesfile)
 - This repo syncs to 3 remotes: git.snowboardtechie.com (primary), Codeberg, GitHub
 - `AGENTS.md` is globally gitignored via `dot-config/git/ignore`. Repos that need to track it (dotfiles, nix-configs) use `!AGENTS.md` in their `.gitignore` to override.
-- `tea` (Forgejo CLI) fails inside this repo with `core.repositoryformatversion does not support extension: worktreeconfig`. The repo sets `extensions.worktreeconfig=true` (per-worktree hooks); tea's go-git backend doesn't support that extension. Workaround: run tea from a throwaway `git init` directory with an explicit `--repo`:
-  ```
-  TMPDIR=$(mktemp -d) && cd "$TMPDIR" && git init -q \
-    && git remote add origin ssh://forgejo@git.snowboardtechie.com/bryan/dotfiles.git \
-    && tea pulls create --login git.snowboardtechie.com --repo bryan/dotfiles --head <branch> --base main ...
-  ```
+- `extensions.worktreeconfig` is deliberately OFF here (`core.repositoryformatversion = 0`). It was on with format version 1, which made strict git backends refuse to open the repo — `tea` errored with `does not support extension: worktreeconfig`, and p10k's bundled gitstatusd silently dropped the git prompt segment. Nothing used per-worktree config. If a `git worktree` or `sparse-checkout` operation re-enables it, the prompt goes quiet again: `git config --unset extensions.worktreeConfig && git config core.repositoryformatversion 0`.
 
 ## Notes vault
 
