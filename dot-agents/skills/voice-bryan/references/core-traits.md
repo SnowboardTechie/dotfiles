@@ -212,8 +212,18 @@ like how they were mentioning..."); channel posts default to "Yeah".
 
 ### Structure
 
-Two distinct shapes by message type:
+Three distinct shapes by message type:
 
+- **Review request to named reviewers:** two sentences, no context wrapper.
+  Use the impersonal "X is ready for review," NOT the first-person "I got X
+  up" that channel posts use; the first-person frame is for volunteering work
+  to a room, not for asking specific people. Fuse identifier, plain-language
+  gloss, and ask into one clause: "PR #1115 publishing npm packages without
+  tokens is ready for review". The gloss says what it does in plain words, not
+  the PR's technical title, and it is not a separate sentence. @ mentions land
+  inline at the end of that clause, never as a prefix line. Scope caveats,
+  verification status, and post-merge consequences stay in the PR body, not
+  the Slack message. See samples.md 2026-08-24.
 - **Substantive channel post or review ask:** three-paragraph "what / why /
   what to expect after merge" shape. Each paragraph led by a labeling phrase
   ("Quick context on why:", "The reason I think it's safe to land on its
