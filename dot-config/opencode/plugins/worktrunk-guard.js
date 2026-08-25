@@ -152,6 +152,19 @@ export const WorktrunkGuardPlugin = async ({ worktree }) => {
   const adoptedWorktrees = new Map();
 
   return {
+    event: async ({ event }) => {
+      const info = event.properties?.info;
+      if (event.type === "session.created" && info?.parentID) {
+        const adoptedWorktree = adoptedWorktrees.get(info.parentID);
+        const sessionID = event.properties.sessionID || info.id;
+        if (adoptedWorktree && sessionID) {
+          adoptedWorktrees.set(sessionID, adoptedWorktree);
+        }
+      }
+      if (event.type === "session.deleted") {
+        adoptedWorktrees.delete(event.properties?.sessionID || info?.id);
+      }
+    },
     tool: {
       worktrunk_workspace: tool({
         description:

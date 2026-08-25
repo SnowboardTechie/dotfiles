@@ -87,6 +87,21 @@ test("adopts a linked workspace and reroutes the current session", async () => {
       new RegExp(`Add File: ${result.metadata.worktree_path}/nested/example\\.txt`),
     );
 
+    await hooks.event({
+      event: {
+        type: "session.created",
+        properties: {
+          info: { id: "session-child", parentID: "session-a" },
+        },
+      },
+    });
+    const childBash = {};
+    await hooks["tool.execute.before"](
+      { tool: "bash", sessionID: "session-child" },
+      { args: childBash },
+    );
+    assert.equal(childBash.workdir, result.metadata.worktree_path);
+
     await assert.rejects(
       hooks["tool.execute.before"](
         { tool: "bash", sessionID: "session-b" },
