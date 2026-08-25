@@ -72,6 +72,41 @@ class ContinuationOriginTest(unittest.TestCase):
             MODULE.continuation_origin(definition)
 
 
+class InferenceRouteTest(unittest.TestCase):
+    def definition(self, **overrides: object) -> dict:
+        definition = {
+            "name": "Test Brief",
+            "model": "gpt-5.6-terra",
+            "provider": "openai-codex",
+            "noAgent": False,
+        }
+        definition.update(overrides)
+        return definition
+
+    def test_accepts_codex_subscription_route(self) -> None:
+        MODULE.verify_inference_route(self.definition())
+
+    def test_accepts_model_free_no_agent_job(self) -> None:
+        MODULE.verify_inference_route(
+            self.definition(model=None, provider=None, noAgent=True)
+        )
+
+    def test_rejects_non_codex_agent_routes(self) -> None:
+        cases = (
+            {"provider": "openrouter"},
+            {"provider": "custom:local-gemma4", "model": "gemma4:31b-mlx"},
+            {"baseUrl": "https://openrouter.ai/api/v1"},
+            {"model": None},
+        )
+        for overrides in cases:
+            with self.subTest(overrides=overrides), self.assertRaises(SystemExit):
+                MODULE.verify_inference_route(self.definition(**overrides))
+
+    def test_rejects_inference_fields_on_no_agent_job(self) -> None:
+        with self.assertRaises(SystemExit):
+            MODULE.verify_inference_route(self.definition(noAgent=True))
+
+
 class MCPRequirementTest(unittest.TestCase):
     def write_config(self, root: Path, servers: dict) -> None:
         import yaml

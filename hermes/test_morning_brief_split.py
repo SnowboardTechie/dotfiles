@@ -33,10 +33,10 @@ class MorningBriefSplitContractTest(unittest.TestCase):
     OWNED_JOBS = {
         "Workday Morning Brief": ("gpt-5.6-terra", "openai-codex", None),
         "Personal Morning Brief": ("gpt-5.6-terra", "openai-codex", None),
-        "Personal Weekly Orientation": ("gemma4:31b-mlx", "custom:local-gemma4", "http://127.0.0.1:11434/v1"),
-        "Personal Weekday Close": ("gemma4:31b-mlx", "custom:local-gemma4", "http://127.0.0.1:11434/v1"),
-        "Personal Saturday Orientation": ("gemma4:31b-mlx", "custom:local-gemma4", "http://127.0.0.1:11434/v1"),
-        "Personal Sunday Reset": ("gemma4:31b-mlx", "custom:local-gemma4", "http://127.0.0.1:11434/v1"),
+        "Personal Weekly Orientation": ("gpt-5.6-terra", "openai-codex", None),
+        "Personal Weekday Close": ("gpt-5.6-terra", "openai-codex", None),
+        "Personal Saturday Orientation": ("gpt-5.6-terra", "openai-codex", None),
+        "Personal Sunday Reset": ("gpt-5.6-terra", "openai-codex", None),
         "Workday Dependency Triage": ("gpt-5.6-sol", "openai-codex", None),
     }
 
@@ -51,17 +51,17 @@ class MorningBriefSplitContractTest(unittest.TestCase):
                 self.assertEqual(jobs[name]["provider"], provider)
                 self.assertEqual(jobs[name].get("baseUrl"), base_url)
 
-    def test_every_local_model_job_stays_on_a_loopback_base_url(self) -> None:
-        """The property this module actually cares about, for any job it owns."""
+    def test_every_agent_job_uses_the_codex_subscription(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         for job in manifest["cronJobs"]:
-            if job["name"] not in self.OWNED_JOBS:
-                continue
             with self.subTest(job=job["name"]):
-                if job["provider"].startswith("custom:"):
-                    self.assertIn("127.0.0.1", job["baseUrl"])
+                if job["noAgent"]:
+                    self.assertIsNone(job["model"])
+                    self.assertIsNone(job["provider"])
                 else:
-                    self.assertIsNone(job.get("baseUrl"))
+                    self.assertTrue(job["model"].startswith("gpt-"))
+                    self.assertEqual(job["provider"], "openai-codex")
+                self.assertIsNone(job.get("baseUrl"))
 
     def test_manifest_routes_personal_morning_brief_to_second_brain(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))

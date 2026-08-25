@@ -88,6 +88,24 @@ def monitor_script_value(definition: dict) -> str | None:
     return monitor_script
 
 
+def verify_inference_route(definition: dict) -> None:
+    """Keep unattended inference on Codex unless the manifest policy changes."""
+    name = definition["name"]
+    model = definition.get("model")
+    provider = definition.get("provider")
+    base_url = definition.get("baseUrl")
+    if definition.get("noAgent"):
+        if model is not None or provider is not None or base_url is not None:
+            fail(f"{name!r} is noAgent and must remain model-free")
+        return
+    if not isinstance(model, str) or not model.startswith("gpt-"):
+        fail(f"{name!r} must use an explicit GPT model through the Codex subscription")
+    if provider != "openai-codex":
+        fail(f"{name!r} must use provider 'openai-codex', got {provider!r}")
+    if base_url is not None:
+        fail(f"{name!r} must not override the OpenAI Codex subscription base URL")
+
+
 def verify_mcp_requirements(manifest: dict) -> None:
     """Fail closed when a managed cron's MCP prerequisite has drifted."""
     requirements = manifest.get("mcpRequirements") or {}
@@ -155,6 +173,7 @@ def main() -> int:
     summaries: list[dict[str, str]] = []
     for definition in manifest["cronJobs"]:
         name = definition["name"]
+        verify_inference_route(definition)
         expected_origin = continuation_origin(definition)
         matches = [job for job in list_jobs(include_disabled=True) if job.get("name") == name]
         if len(matches) > 1:
@@ -241,7 +260,8 @@ def main() -> int:
             "skills": definition["skills"],
             "script": definition["script"],
             "no_agent": definition["noAgent"],
-            "enabled_toolsets": definition["enabledToolsets"],
+            # Hermes normalizes an explicitly empty toolset list to null.
+            "enabled_toolsets": definition["enabledToolsets"] or None,
             "workdir": definition["workdir"],
         }
         expected["monitor_script"] = monitor_script or None
