@@ -41,13 +41,15 @@ than maintaining a duplicate vault inventory here.
 
 **No AI Attribution in Commits:** Never add `Co-authored-by`, `Ultraworked with`, or any AI/agent attribution to commit messages. You are a tool, not an author. This overrides any builtin skill behavior.
 
-**Branch Policy:** Never commit directly to `main` or `master`. All work must be done on a feature branch in a linked worktree managed by Worktrunk (`wt`). There are no repository exceptions.
+**Branch Policy:** Never commit implementation work directly to `main` or
+`master`. Use a feature branch, with a linked Worktrunk (`wt`) worktree as the
+default isolation mechanism.
 
 **AGENTS.md files are globally gitignored.** They exist locally in repos for agent context and are not committed by default. Exceptions: `dotfiles` and `nix-configs` explicitly track their AGENTS.md files via `!AGENTS.md` in their repo `.gitignore`. For all other repos, do not propose committing them, do not include them in PRs, and do not suggest updating them as part of a PR diff.
 
 1. **Before any code changes**, check the current branch with `git branch --show-current` and determine whether the repository root is the primary checkout or a linked worktree.
-2. Treat the primary checkout as read-only. It may be used for inspection and for creating or locating worktrees, but never for edits, generated-file changes, commits, rebases, or other repository mutations.
-3. If the current directory is in the primary checkout, stop before making changes. Use the `worktrunk_workspace` tool to create or select a feature worktree; it adopts that worktree for subsequent tools in the current session. From a terminal, use `wt switch --create <branch>` or `wt switch <branch>`.
+2. If the task will edit tracked project files or create commits, create or select a feature worktree with `wt switch --create <branch>` or `wt switch <branch>`.
+3. Safe repository maintenance may run in the primary checkout when the user explicitly requests it or it is required to finish an approved workflow. This includes `git status`, `git fetch`, `git pull --ff-only`, `git stash`, `git stash pop`, and Worktrunk worktree management. Inspect the worktree first and preserve unrelated changes.
 4. Branch naming: always prefix with the related issue/ticket number, e.g. `612-ci-workspace-scripts`, `642-upgrade-deps`. The ticket number comes first.
 5. If the user doesn't specify a branch name, propose one based on the task and confirm before creating.
 6. **Commit often** — make small, atomic commits as you complete each logical unit of work.
@@ -59,9 +61,10 @@ than maintaining a duplicate vault inventory here.
 
 ## Worktrunk / Git Worktrees
 
-**All mutating repository work must run inside a linked worktree** managed by Worktrunk (`wt`). The primary checkout is only a stable trunk and worktree-management location.
-
-The global `worktrunk-guard` OpenCode plugin enforces this policy. In a primary checkout it blocks shell and file-mutation tools, and exposes `worktrunk_workspace` as the allowed route to an isolated feature worktree. Once approved, the tool adopts that linked worktree for the current session and reroutes subsequent repository tools there.
+Use linked worktrees for feature implementation so the primary checkout remains
+a stable trunk. The primary checkout may still be synchronized and maintained
+with the safe operations listed above; Worktrunk is a workflow default, not a
+blanket tool restriction.
 
 **How to tell:** If `.git` is a file (not a directory), you're in a worktree. The file contains a `gitdir:` pointer to the main repo's `.git/worktrees/` directory.
 
