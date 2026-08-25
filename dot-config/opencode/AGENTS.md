@@ -14,49 +14,13 @@
 
 ---
 
-## Obsidian Vault Integration
+## Vault Integration
 
-**Known Vaults:**
-
-| Vault | Path | Purpose |
-|-------|------|---------|
-| Workday | `~/notes/workday` | Work — Simpler Grants |
-| Second Brain | `~/notes/second-brain` | Personal — vehicles, hobbies, learning |
-| Burnt Ice | `~/notes/burnt-ice` | Personal — Game development |
-
-### Workday Vault
-
-**Vault Path:** `~/notes/workday`
-
-| Folder | Purpose |
-|--------|---------|
-| `daily/` | Daily notes (format: `DDMonYYYY.md`) |
-| `Projects/WIP/` | Active project documentation |
-| `Agent 🤖/Working/` | In-progress collaboration state |
-| `Agent 🤖/PR Reviews/` | Preliminary code reviews |
-
-**Daily Note Sections:**
-- **For Agent** — Tasks user wants help with
-- **Agent Updates** — Agent logs completed work here
-- **End of Day** — EOD summary section
-
-### Second Brain Vault
-
-**Vault Path:** `~/notes/second-brain`
-
-| Folder | Purpose |
-|--------|---------|
-| `Explorations/` | Exploratory notes and ideas |
-| `Templates/` | Note templates |
-| Root level | Vehicle/project notes, hub pages |
-
-**Patterns:**
-- Tags: `#area/{topic}` (e.g., `#area/moto`), `#type/{note-type}`
-- Aliases: `#project/{category}/{name}` (e.g., `#project/learn-auto/te300`)
-- Hub pages: `Moto.md`, `Learn automotive skills.md` — link to sub-notes
-- Vehicle notes link to: build plans, service logs, engine/system reference notes
-
-**Linking:** Use Obsidian wikilinks `[[Project Name|display text]]`
+`~/notes/**` is an archived legacy path pattern, not an active vault or write
+destination. Active personal knowledge lives in `~/second-brain/`; project
+knowledge follows each repository's top-level `vault/` conventions. Follow the
+`vault-pkm` routing rules under **Project vaults & personal vaults** below rather
+than maintaining a duplicate vault inventory here.
 
 ---
 
@@ -200,12 +164,19 @@ When I encounter a missing or unavailable LSP:
 
 ## Project vaults & personal vaults
 
-Several repos under `~/code/` have a top-level `vault/` directory (symlinked to
-`~/code/notes/<project>/`). Also `~/second-brain/` is Bryan's personal-knowledge
-vault. When working in any of these — or when capturing decisions, taking notes,
+Several repos under `~/code/` have a top-level `vault/` directory, either as a
+tracked project-owned vault or a legacy symlink. `~/code/notes/` contains
+retained dormant or historical project snapshots; inspect each vault's
+`INDEX.md` disposition before treating it as current. `~/notes/**` is an
+archived legacy path pattern and must not be treated as an active source or
+write destination unless Bryan explicitly directs otherwise. `~/second-brain/`
+is Bryan's active personal-knowledge vault.
+
+When working in any of these — or when capturing decisions, taking notes,
 investigating debugs, recording learnings, or making sense of project context
-that doesn't live in code — read `~/code/dotfiles/dot-agents/skills/vault-pkm/SKILL.md`
-(and its `references/`) before writing anything to a vault.
+that doesn't live in code — read
+`~/code/dotfiles/dot-agents/skills/vault-pkm/SKILL.md` (and its `references/`)
+before writing anything to a vault.
 
 If a vault has its own `AGENTS.md` at its root (`vault/AGENTS.md` for project
 vaults; `~/second-brain/AGENTS.md` for the personal vault), read it after the
