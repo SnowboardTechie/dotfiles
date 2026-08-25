@@ -35,7 +35,8 @@
     "personal-weekly-orientation.py",
     "personal-alignment-brief.py",
     "personal-mail-messages.js",
-    "check-mattpocock-skill-updates.py"
+    "check-mattpocock-skill-updates.py",
+    "check-herdr-homebrew-atuin-fix.py"
   ],
   "removedScripts": [
     "sgg-sync-workday-note.py"
@@ -46,7 +47,8 @@
     "personal-morning-brief.py",
     "personal-weekly-orientation.py",
     "personal-alignment-brief.py",
-    "check-mattpocock-skill-updates.py"
+    "check-mattpocock-skill-updates.py",
+    "check-herdr-homebrew-atuin-fix.py"
   ],
   "skills": [
     "apple/apple-mail",
@@ -217,6 +219,20 @@
       "script": null,
       "noAgent": false,
       "enabledToolsets": ["web", "terminal", "no_mcp"],
+      "workdir": "/Users/bryan/code/dotfiles",
+      "attachToSession": false
+    },
+    {
+      "name": "Watch Herdr Homebrew Atuin fix",
+      "schedule": "35 9 * * *",
+      "model": null,
+      "provider": null,
+      "promptFile": "automations/herdr-homebrew-atuin-fix-watch/prompt.md",
+      "deliver": "matrix:!CsY4wEHn3w715wk78Uz9RQ9lNv2hV9CFPr6T6YgQNgE",
+      "skills": [],
+      "script": "check-herdr-homebrew-atuin-fix.py",
+      "noAgent": true,
+      "enabledToolsets": [],
       "workdir": "/Users/bryan/code/dotfiles",
       "attachToSession": false
     }

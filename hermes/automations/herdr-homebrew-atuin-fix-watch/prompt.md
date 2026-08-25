@@ -1,0 +1,1 @@
+This is a script-only watcher. Deliver the script's non-empty stdout verbatim; empty stdout is silent. The script is read-only except for its one-time notification state under ~/.hermes/state and must never install or restart Herdr itself.
