@@ -9,10 +9,14 @@ CACHE_TTL=300
 command -v jq >/dev/null 2>&1 || exit 0
 command -v curl >/dev/null 2>&1 || exit 0
 
+CREDS_FILE="$HOME/.claude/.credentials.json"
 if [[ "$OSTYPE" == "darwin"* ]]; then
     CREDS_JSON=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null)
+    if [[ -z "$CREDS_JSON" ]]; then
+        [[ -f "$CREDS_FILE" ]] || exit 0
+        CREDS_JSON=$(<"$CREDS_FILE")
+    fi
 else
-    CREDS_FILE="$HOME/.claude/.credentials.json"
     [[ -f "$CREDS_FILE" ]] || exit 0
     CREDS_JSON=$(<"$CREDS_FILE")
 fi
