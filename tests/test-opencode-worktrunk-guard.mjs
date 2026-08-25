@@ -44,24 +44,56 @@ test("blocks mutating tools only in the primary checkout", async () => {
   }
 });
 
-test("creates a linked workspace through Worktrunk", async () => {
+test("adopts a linked workspace and reroutes the current session", async () => {
   const { parent, repository } = await createRepository();
 
   try {
     const hooks = await WorktrunkGuardPlugin({ worktree: repository });
     const result = await hooks.tool.worktrunk_workspace.execute(
       { branch: "feature-tool", create: true },
-      { worktree: repository },
+      { sessionID: "session-a", worktree: repository },
     );
 
-    assert.match(result.output, /Worktree ready/);
+    assert.match(result.output, /Workspace adopted/);
     assert.equal(result.metadata.branch, "feature-tool");
     assert.ok(result.metadata.worktree_path);
 
-    const linkedHooks = await WorktrunkGuardPlugin({
-      worktree: result.metadata.worktree_path,
-    });
-    await linkedHooks["tool.execute.before"]({ tool: "bash" });
+    const bash = { workdir: repository };
+    await hooks["tool.execute.before"](
+      { tool: "bash", sessionID: "session-a" },
+      { args: bash },
+    );
+    assert.equal(bash.workdir, result.metadata.worktree_path);
+
+    const read = { filePath: path.join(repository, "README.md") };
+    await hooks["tool.execute.before"](
+      { tool: "read", sessionID: "session-a" },
+      { args: read },
+    );
+    assert.equal(
+      read.filePath,
+      path.join(result.metadata.worktree_path, "README.md"),
+    );
+
+    const patch = {
+      patchText: "*** Begin Patch\n*** Add File: nested/example.txt\n+test\n*** End Patch",
+    };
+    await hooks["tool.execute.before"](
+      { tool: "apply_patch", sessionID: "session-a" },
+      { args: patch },
+    );
+    assert.match(
+      patch.patchText,
+      new RegExp(`Add File: ${result.metadata.worktree_path}/nested/example\\.txt`),
+    );
+
+    await assert.rejects(
+      hooks["tool.execute.before"](
+        { tool: "bash", sessionID: "session-b" },
+        { args: {} },
+      ),
+      /blocked bash in the primary checkout/,
+    );
   } finally {
     await rm(parent, { recursive: true, force: true });
   }

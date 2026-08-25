@@ -1,5 +1,6 @@
 import { execFile as execFileCallback } from "node:child_process";
 import { realpath } from "node:fs/promises";
+import path from "node:path";
 import { promisify } from "node:util";
 
 import { tool } from "@opencode-ai/plugin";
@@ -11,6 +12,16 @@ const BLOCKED_PRIMARY_TOOLS = new Set([
   "edit",
   "patch",
   "write",
+]);
+const PATH_ARGUMENTS = new Map([
+  ["bash", "workdir"],
+  ["edit", "filePath"],
+  ["glob", "path"],
+  ["grep", "path"],
+  ["lsp", "filePath"],
+  ["patch", "filePath"],
+  ["read", "filePath"],
+  ["write", "filePath"],
 ]);
 
 async function gitPath(root, argument) {
@@ -102,8 +113,43 @@ async function prepareWorktree(root, { branch, create, base }) {
   return { path, warning };
 }
 
+function reroutePath(value, primaryRoot, worktreeRoot) {
+  if (!value) {
+    return worktreeRoot;
+  }
+  if (!path.isAbsolute(value)) {
+    return path.resolve(worktreeRoot, value);
+  }
+
+  const relative = path.relative(primaryRoot, value);
+  if (relative === "" || (!relative.startsWith(`..${path.sep}`) && relative !== "..")) {
+    return path.resolve(worktreeRoot, relative);
+  }
+  return value;
+}
+
+function rerouteTool(toolName, args, primaryRoot, worktreeRoot) {
+  const pathArgument = PATH_ARGUMENTS.get(toolName);
+  if (pathArgument && (args[pathArgument] || ["bash", "glob", "grep"].includes(toolName))) {
+    args[pathArgument] = reroutePath(
+      args[pathArgument],
+      primaryRoot,
+      worktreeRoot,
+    );
+  }
+
+  if (toolName === "apply_patch" && args.patchText) {
+    args.patchText = args.patchText.replace(
+      /^(\*\*\* (?:Add File|Delete File|Update File|Move to): )(.+)$/gm,
+      (_line, prefix, filePath) =>
+        `${prefix}${reroutePath(filePath, primaryRoot, worktreeRoot)}`,
+    );
+  }
+}
+
 export const WorktrunkGuardPlugin = async ({ worktree }) => {
   const primaryCheckout = await isPrimaryCheckout(worktree);
+  const adoptedWorktrees = new Map();
 
   return {
     tool: {
@@ -130,13 +176,14 @@ export const WorktrunkGuardPlugin = async ({ worktree }) => {
           }
 
           const result = await prepareWorktree(context.worktree, args);
+          adoptedWorktrees.set(context.sessionID, result.path);
           const warning = result.warning
             ? `\n\nWorktrunk warning:\n${result.warning}`
             : "";
           return {
             output:
-              `Worktree ready at ${result.path}. ` +
-              `Start or continue OpenCode from that path; this session's primary checkout remains read-only.${warning}`,
+              `Workspace adopted at ${result.path}. ` +
+              `Subsequent tools in this session will run from the linked worktree.${warning}`,
             metadata: {
               branch: args.branch,
               worktree_path: result.path,
@@ -146,19 +193,24 @@ export const WorktrunkGuardPlugin = async ({ worktree }) => {
         },
       }),
     },
-    "experimental.chat.system.transform": async (_input, output) => {
-      if (!primaryCheckout) {
+    "experimental.chat.system.transform": async (input, output) => {
+      if (!primaryCheckout || adoptedWorktrees.has(input.sessionID)) {
         return;
       }
       output.system.push(
-        "WORKTRUNK GUARD: This session is running in the repository's primary checkout. It is read-only. Use worktrunk_workspace to create or locate a linked feature worktree before any repository mutation, then continue OpenCode from the returned path.",
+        "WORKTRUNK GUARD: This session is running in the repository's primary checkout. It is read-only. Use worktrunk_workspace to create or locate and adopt a linked feature worktree before any repository mutation.",
       );
     },
-    "tool.execute.before": async (input) => {
+    "tool.execute.before": async (input, output) => {
+      const adoptedWorktree = adoptedWorktrees.get(input.sessionID);
+      if (adoptedWorktree) {
+        rerouteTool(input.tool, output.args, worktree, adoptedWorktree);
+        return;
+      }
       if (primaryCheckout && BLOCKED_PRIMARY_TOOLS.has(input.tool)) {
         throw new Error(
           `Worktrunk guard blocked ${input.tool} in the primary checkout. ` +
-            "Use worktrunk_workspace, then continue OpenCode from the returned linked worktree path.",
+            "Use worktrunk_workspace to adopt a linked worktree in this session.",
         );
       }
     },

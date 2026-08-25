@@ -47,7 +47,7 @@ than maintaining a duplicate vault inventory here.
 
 1. **Before any code changes**, check the current branch with `git branch --show-current` and determine whether the repository root is the primary checkout or a linked worktree.
 2. Treat the primary checkout as read-only. It may be used for inspection and for creating or locating worktrees, but never for edits, generated-file changes, commits, rebases, or other repository mutations.
-3. If the current directory is in the primary checkout, stop before making changes. Use the `worktrunk_workspace` tool to create or select a feature worktree, then continue OpenCode from the returned path. From a terminal, use `wt switch --create <branch>` or `wt switch <branch>`.
+3. If the current directory is in the primary checkout, stop before making changes. Use the `worktrunk_workspace` tool to create or select a feature worktree; it adopts that worktree for subsequent tools in the current session. From a terminal, use `wt switch --create <branch>` or `wt switch <branch>`.
 4. Branch naming: always prefix with the related issue/ticket number, e.g. `612-ci-workspace-scripts`, `642-upgrade-deps`. The ticket number comes first.
 5. If the user doesn't specify a branch name, propose one based on the task and confirm before creating.
 6. **Commit often** — make small, atomic commits as you complete each logical unit of work.
@@ -61,7 +61,7 @@ than maintaining a duplicate vault inventory here.
 
 **All mutating repository work must run inside a linked worktree** managed by Worktrunk (`wt`). The primary checkout is only a stable trunk and worktree-management location.
 
-The global `worktrunk-guard` OpenCode plugin enforces this policy. In a primary checkout it blocks shell and file-mutation tools, and exposes `worktrunk_workspace` as the allowed route to an isolated feature worktree. A running OpenCode session cannot change its own workspace root, so continue from a new OpenCode session at the returned path.
+The global `worktrunk-guard` OpenCode plugin enforces this policy. In a primary checkout it blocks shell and file-mutation tools, and exposes `worktrunk_workspace` as the allowed route to an isolated feature worktree. Once approved, the tool adopts that linked worktree for the current session and reroutes subsequent repository tools there.
 
 **How to tell:** If `.git` is a file (not a directory), you're in a worktree. The file contains a `gitdir:` pointer to the main repo's `.git/worktrees/` directory.
 
