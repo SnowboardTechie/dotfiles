@@ -58,7 +58,6 @@
     }
   },
   "instructions": [
-    "README.md",
     "AGENTS.md"
   ],
   "permission": {
