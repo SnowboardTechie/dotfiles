@@ -30,7 +30,7 @@ nvim/
 | Add keybinding | `lua/bryan/core/keymaps.lua` | Or in plugin's config function if plugin-specific |
 | Change editor option | `lua/bryan/core/options.lua` | |
 | Add LSP server | `lua/bryan/plugins/lsp.lua` | Add to `vim.lsp.enable()` list; server must be on PATH via Nix |
-| Change colors | `lua/bryan/core/colors.lua` | Lualine + nvim-tree auto-inherit; also update tmux + alacritty |
+| Change colors | `lua/bryan/core/colors.lua` | Lualine + nvim-tree auto-inherit; also update Alacritty |
 
 ## CONVENTIONS
 
@@ -56,4 +56,4 @@ nvim/
 
 ## PLUGIN STACK (17 plugins)
 
-colorscheme (nightfly), lsp + fidget, blink.cmp, telescope, treesitter, lualine, nvim-tree, bufferline, gitsigns, comment, autopairs, surround, indent-blankline, which-key, vim-tmux-navigator, vim-maximizer, vim-be-good, opencode
+colorscheme (nightfly), lsp + fidget, blink.cmp, telescope, treesitter, lualine, nvim-tree, bufferline, gitsigns, comment, autopairs, surround, indent-blankline, which-key, vim-maximizer, vim-be-good, opencode

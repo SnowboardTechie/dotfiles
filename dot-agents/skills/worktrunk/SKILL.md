@@ -126,9 +126,6 @@ Global hooks that run for all repos:
 ```toml
 [post-create]
 direnv = "[ -f .envrc ] && direnv allow"
-
-[post-switch]
-tmux = '[ -n "$TMUX" ] && tmux rename-window {{ branch | sanitize }}'
 ```
 
 ### Project Config (`.config/wt.toml` in repo root)
@@ -155,7 +152,7 @@ test = "yarn test:changed"
 |------|------|----------|
 | `post-create` | After worktree creation | Install deps, allow direnv |
 | `post-start` | After worktree starts | Copy build caches |
-| `post-switch` | After switching to worktree | Rename tmux window |
+| `post-switch` | After switching to worktree | Refresh shell or editor context |
 | `pre-commit` | Before committing | Lint changed files |
 | `pre-merge` | Before merging | Run tests on changed files |
 | `post-merge` | After merging | Clean up, notify |
@@ -262,30 +259,4 @@ wls   # wt list
 wsw   # wt switch
 wrm   # wt remove
 wmg   # wt merge
-```
-
-### wcode Function
-
-`wcode` is the OpenCode-specific launcher. For other agents, use `wt switch -c -x hermes <branch>`, `-x claude`, or `-x pi` directly:
-
-```bash
-wcode feat-auth                    # Create worktree + tmux window + opencode
-wcode feat-auth "Fix the login"    # Same, but sends a prompt to opencode
-```
-
-This is the primary workflow for launching parallel agent sessions.
-
----
-
-## Tmux Integration
-
-When inside tmux, worktrunk automatically renames the current window to the branch name on `wt switch` (via the `post-switch` hook). The `wcode` function creates a new tmux window per worktree.
-
-Typical tmux layout with parallel agents:
-
-```
-[0] main        — trunk, manual work
-[1] feat-auth   — agent working on auth
-[2] fix-nav     — agent fixing navigation
-[3] chore-deps  — agent updating deps
 ```

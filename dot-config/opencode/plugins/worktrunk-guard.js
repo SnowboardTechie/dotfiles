@@ -97,7 +97,7 @@ async function prepareWorktree(root, { branch, create, base }) {
   try {
     await execFile("wt", args, {
       encoding: "utf8",
-      env: { ...process.env, WT_SKIP_TMUX_RENAME: "1" },
+      env: process.env,
     });
   } catch (error) {
     warning = (error.stderr || error.message || String(error)).trim();

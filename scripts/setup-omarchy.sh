@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # setup-omarchy.sh — conservative, additive dotfiles setup for Omarchy hosts.
 #
-# Omarchy owns its own environment (shell, terminal, editor, Git, tmux, GPG,
+# Omarchy owns its own environment (shell, terminal, editor, Git, GPG,
 # Zed, and tool settings). This entry point deploys only additive personal
 # assets — currently the curated agent-skill links — and never runs Stow,
 # installs packages, or uses elevated privileges.
@@ -95,7 +95,6 @@ Ownership summary:
     - terminal configuration (foot/alacritty)
     - ~/.config/nvim
     - Git configuration (~/.config/git, ~/.gitconfig)
-    - tmux configuration
     - ~/.gnupg
     - Zed, OpenCode, and Claude settings files
     - anything under /usr/share/omarchy

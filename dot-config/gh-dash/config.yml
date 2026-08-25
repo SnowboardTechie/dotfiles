@@ -95,7 +95,6 @@ keybindings:
 # NIGHTFLY THEME
 # Colors match the centralized Nightfly palette used across:
 # - nvim: dot-config/nvim/lua/bryan/core/colors.lua
-# - tmux: dot-tmux.conf (NIGHTFLY_* variables)
 # - alacritty: dot-config/alacritty/alacritty-base.toml
 # ==============================================================================
 theme:

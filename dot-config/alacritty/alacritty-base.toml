@@ -4,7 +4,6 @@
 # To change the theme, update these color values to match your desired palette
 # These colors should match:
 # - nvim: dot-config/nvim/lua/bryan/core/colors.lua
-# - tmux: dot-tmux.conf (NIGHTFLY_* variables)
 # ==============================================================================
 
 
@@ -31,5 +30,4 @@ TERM = "xterm-256color"
 
 [window]
 opacity = 1.0
-
 

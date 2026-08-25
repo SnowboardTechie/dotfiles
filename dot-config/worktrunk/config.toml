@@ -22,6 +22,3 @@ copy-ignored = "wt step copy-ignored"
 
 [[pre-start]]
 direnv = "[ -f .envrc ] && direnv allow"
-
-[post-switch]
-tmux = "[ -n \"$WT_SKIP_TMUX_RENAME\" ] && exit 0; [ -n \"$TMUX\" ] && tmux rename-window {{ branch | sanitize }}"

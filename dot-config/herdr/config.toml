@@ -6,7 +6,7 @@ onboarding = false
 # Theme/[ui] settings from upstream are deliberately not copied here.
 
 [terminal]
-# Omarchy: new panes/tabs/workspaces inherit the source cwd (tmux -c behavior)
+# New panes, tabs, and workspaces inherit the source working directory.
 new_cwd = "follow"
 
 [keys]
@@ -65,3 +65,13 @@ next_workspace = ["prefix+shift+n", "alt+down"]
 [theme]
 name = "tokyo-night"
 auto_switch = false
+
+[ui]
+tab_bar_right = [
+  { type = "zoom" },
+  { type = "command", command = "~/.config/herdr/claude-usage.sh", interval_seconds = 60, timeout_seconds = 5 },
+  { type = "command", command = "~/.config/herdr/openrouter-spend.py", interval_seconds = 60, timeout_seconds = 2 },
+  { type = "hostname" },
+  { type = "datetime", format = "%H:%M" },
+]
+tab_bar_right_separator = " | "

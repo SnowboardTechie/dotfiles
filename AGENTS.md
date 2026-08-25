@@ -20,17 +20,15 @@ dotfiles/
 │   ├── opencode/        # AI agent system: agents/, model configs (skills live in dot-agents/)
 │   └── zsh/             # Modular shell: env -> options -> plugins -> functions -> aliases
 ├── dot-gnupg/           # GPG agent (pinentry-mac hardcoded, NixOS must override)
-├── dot-tmux/            # Tmux sessions: code-editor.sh, second-brain.sh
 ├── dot-git-hooks/       # Global pre-commit: validates user.email is set
 ├── dot-gitconfig        # Identity + GPG signing; includes snowboardtechie + local
 ├── dot-zshrc            # Shell loader: P10k + modular config sourcing
-├── dot-tmux.conf        # Nightfly theme, vim keybinds, TPM plugin configuration
 ├── dot-p10k.zsh         # Powerlevel10k prompt theme
 ├── scripts/             # Repo-internal deployment scripts (stow-ignored, never stowed to ~)
 │   ├── reconcile-agent-skills.sh  # OWNS skill distribution: canonical *_SKILLS arrays + linking
 │   └── setup-omarchy.sh           # Additive Omarchy entry point (agent skills only)
 ├── tests/               # Integration tests for deployment scripts (stow-ignored)
-├── setup-platform-configs.sh  # Post-stow compat entry point: alacritty, tmux plugins, secrets, AGENTS.md; delegates skills to scripts/reconcile-agent-skills.sh
+├── setup-platform-configs.sh  # Post-stow compat entry point: alacritty, retired-link cleanup, secrets, AGENTS.md; delegates skills to scripts/reconcile-agent-skills.sh
 └── zsa-keyboard-layouts/  # Binary firmware, stored but never stowed
 ```
 
@@ -39,12 +37,11 @@ dotfiles/
 | Task | Location | Notes |
 |------|----------|-------|
 | Add shell alias | `dot-config/shell/aliases.sh` if portable (bash+zsh, `command -v`-guarded); `dot-config/zsh/aliases.zsh` for zsh/mac/nix-only (eza ls-family, Nix, ssh) | Shared file is sourced by zsh config and by Omarchy's ~/.bashrc |
-| Add shell function | `dot-config/zsh/functions.zsh` | git/worktree helpers, `code` launcher |
+| Add shell function | `dot-config/zsh/functions.zsh` | Git and Obsidian helpers |
 | Add env variable | `dot-config/zsh/env.zsh` | Use `${VAR:-default}` pattern |
 | Add zsh plugin | `dot-config/zsh/plugins.zsh` | Must add 3-path fallback (Homebrew/NixOS/Linux) |
 | Add neovim plugin | `dot-config/nvim/lua/bryan/plugins/` | See `nvim/AGENTS.md` |
-| Change color theme | See "Nightfly Theme" section below | 3 files must stay in sync |
-| Add tmux session | `dot-tmux/` | Follow code-editor.sh pattern |
+| Change color theme | See "Nightfly Theme" section below | 2 files must stay in sync |
 | Add git identity | `dot-gitconfig` | Add `includeIf` + new identity file |
 | Change platform behavior | `setup-platform-configs.sh` | Handles stow edge cases |
 | Add a shared agent skill | `dot-agents/skills/` | Pool shared by Claude/Pi/OpenCode/Hermes; curate which tool gets it in the `*_SKILLS` arrays in `scripts/reconcile-agent-skills.sh`. See `dot-agents/README.md` |
@@ -57,7 +54,7 @@ dotfiles/
 ## DEPLOYMENT PROFILES
 
 - **macOS / NixOS (full ownership)**: `stow . --dotfiles --target $HOME` then `./setup-platform-configs.sh`. The setup script remains the compatibility entry point; its agent-skill step delegates to `scripts/reconcile-agent-skills.sh --apply`.
-- **Omarchy (additive only)**: `./scripts/setup-omarchy.sh --check` then `--apply`. Omarchy owns shell, terminal, Neovim, tmux, Git, GPG, and tool settings — full-replacement application configs are NOT deployed there by default. Never run `stow .` or `stow --adopt` on an Omarchy host. Additive payload: per-tool agent-skill links (`scripts/reconcile-agent-skills.sh`) + one marked `source` line in `~/.bashrc` loading `dot-config/shell/aliases.sh` (`scripts/reconcile-shell-additions.sh`). Omarchy's own aliases (eza ls-family, zoxide cd, etc.) keep priority — the shared file deliberately omits colliding names.
+- **Omarchy (additive only)**: `./scripts/setup-omarchy.sh --check` then `--apply`. Omarchy owns shell, terminal, Neovim, Git, GPG, and tool settings; full-replacement application configs are NOT deployed there by default. Never run `stow .` or `stow --adopt` on an Omarchy host. Additive payload: per-tool agent-skill links (`scripts/reconcile-agent-skills.sh`) + one marked `source` line in `~/.bashrc` loading `dot-config/shell/aliases.sh` (`scripts/reconcile-shell-additions.sh`). Omarchy's own aliases (eza ls-family, zoxide cd, etc.) keep priority; the shared file deliberately omits colliding names.
 - **Skill distribution is owned by `scripts/reconcile-agent-skills.sh`**: its `*_SKILLS` arrays are the single curation authority (`dot-agents/README.md` documents rationale only, no mirrored lists). It prunes only symlinks resolving into `dot-agents/skills/` and preserves real dirs, files, foreign/broken symlinks (e.g. Omarchy's `omarchy`/`diagnose-crash` links).
 - **Future reconcilers and profile logic belong under `scripts/`**, invoked from `setup-omarchy.sh`'s reconciler list — never as inline mutation logic in an entry point. New root-level project dirs must get root-anchored `.stow-local-ignore` entries (`^/name$`) so legacy root stow can't deploy them.
 
@@ -95,11 +92,10 @@ Platform detection: `[[ "$OSTYPE" == "darwin"* ]]`
 - First line: 50 chars max
 - Blank line then details if needed
 
-### Nightfly Theme (3-file sync)
-Colors are centralized but defined in three places that MUST stay in sync:
+### Nightfly Theme (2-file sync)
+Colors are centralized but defined in two places that MUST stay in sync:
 1. **Neovim**: `dot-config/nvim/lua/bryan/core/colors.lua` (Lua table)
-2. **Tmux**: `dot-tmux.conf` (top-level `NIGHTFLY_*` variables)
-3. **Alacritty**: `dot-config/alacritty/alacritty-base.toml` (`[colors.primary]`)
+2. **Alacritty**: `dot-config/alacritty/alacritty-base.toml` (`[colors.primary]`)
 
 ## ANTI-PATTERNS
 
@@ -119,7 +115,7 @@ Colors are centralized but defined in three places that MUST stay in sync:
 - `setup-platform-configs.sh` compensates by manually symlinking `opencode/AGENTS.md`
 - GPG config requires manual: `ln -s ~/code/dotfiles/dot-gnupg/gpg-agent.conf ~/.gnupg/gpg-agent.conf`
 - `alacritty.toml` is a generated platform-conditional symlink, gitignored
-- Tmux plugins are pinned as Git submodules under `dot-tmux/plugins/`; the setup script initializes them and exposes them at `~/.tmux/plugins`
+- `setup-platform-configs.sh` removes symlinks to the retired tmux configuration while preserving foreign files and links
 
 ## GIT IDENTITY
 
@@ -149,11 +145,8 @@ bash tests/test-reconcile-agent-skills.sh
 # Shell reload
 source ~/.zshrc
 
-# Tmux reload
-tmux source-file ~/.tmux.conf    # or prefix + r
-
-# Project editor session
-code <project>                   # Opens tmux with cli + opencode + nvim
+# Remote Studio workspace
+herdr-studio
 
 # Nix rebuild (per-machine aliases)
 update-mbp / update-a6mbp / update-studio / update-gnarbox
@@ -165,7 +158,7 @@ git diff --check                 # Trailing whitespace check
 
 ## NOTES
 
-- `code` function shadows VS Code intentionally — opens tmux+opencode+nvim session
+- `herdr-studio` attaches to the persistent Herdr server on Studio
 - `dot-config/opencode/` has its own `.gitignore` with selective whitelisting (track configs, ignore node_modules)
 - `grb` function: `grb` = rebase last 3, `grb N` = rebase last N, `grb branch` = rebase onto branch
 - `gpg-agent.conf` hardcodes `pinentry-mac` — NixOS users must override manually

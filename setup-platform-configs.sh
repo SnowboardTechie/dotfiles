@@ -16,6 +16,12 @@ fi
 
 echo "Detected platform: $PLATFORM"
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+resolve_path() {
+    perl -MCwd -le 'print Cwd::abs_path($ARGV[0])' "$1"
+}
+
 # Alacritty configuration
 echo ""
 echo "Setting up Alacritty for $PLATFORM..."
@@ -33,55 +39,39 @@ elif [[ "$PLATFORM" == "macos" ]]; then
     echo "  Linked alacritty.toml -> alacritty-macos.toml"
 fi
 
-# Tmux plugin setup
+# Retired tmux links from earlier stow deployments
 echo ""
-echo "Setting up Tmux plugins..."
+echo "Removing retired tmux links..."
 
-TMUX_PLUGINS_DIR="$HOME/.tmux/plugins"
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_PLUGINS_DIR="$REPO_ROOT/dot-tmux/plugins"
+remove_retired_tmux_link() {
+    local link_path="$1"
+    local link_target
 
-resolve_path() {
-    perl -MCwd -le 'print Cwd::abs_path($ARGV[0])' "$1"
+    [[ -L "$link_path" ]] || return 0
+    link_target=$(readlink "$link_path")
+    case "$link_target" in
+        *dotfiles*/dot-tmux.conf|*dotfiles*/dot-tmux|*dotfiles*/dot-tmux/*)
+            rm "$link_path"
+            echo "  Removed $link_path"
+            ;;
+        *)
+            echo "  WARNING: $link_path is not managed by this repository, skipping"
+            ;;
+    esac
 }
 
-if [[ ! -f "$REPO_PLUGINS_DIR/tpm/tpm" ]]; then
-    echo "  Initializing Tmux plugin submodules..."
-    git -C "$REPO_ROOT" submodule update --init --recursive -- dot-tmux/plugins
-fi
-
-if [[ ! -f "$REPO_PLUGINS_DIR/tpm/tpm" ]]; then
-    echo "  ERROR: TPM was not found at $REPO_PLUGINS_DIR/tpm/tpm."
-    echo "  Ensure the repository and its submodules are intact before re-running this script."
-    exit 1
-fi
-
-mkdir -p "$HOME/.tmux"
-SOURCE_TARGET="$(resolve_path "$REPO_PLUGINS_DIR")"
-
-if [[ -e "$TMUX_PLUGINS_DIR" ]]; then
-    LINK_TARGET="$(resolve_path "$TMUX_PLUGINS_DIR")"
-    if [[ "$LINK_TARGET" == "$SOURCE_TARGET" ]]; then
-        echo "  ~/.tmux/plugins already resolves to the plugin submodules. Nothing to do."
-    elif [[ -L "$TMUX_PLUGINS_DIR" ]]; then
-        echo "  WARNING: ~/.tmux/plugins points to $LINK_TARGET (expected $SOURCE_TARGET)."
-        echo "  Leaving the existing link untouched to avoid clobbering local data."
-    elif [[ -d "$TMUX_PLUGINS_DIR" ]] &&
-        [[ -z "$(find "$TMUX_PLUGINS_DIR" -mindepth 1 ! -type d -print -quit)" ]]; then
-        find "$TMUX_PLUGINS_DIR" -depth -type d -exec rmdir {} \;
-        ln -s "$REPO_PLUGINS_DIR" "$TMUX_PLUGINS_DIR"
-        echo "  Replaced the empty local plugin tree with a link to the plugin submodules."
-    else
-        echo "  WARNING: Found existing data at ~/.tmux/plugins."
-        echo "  Leaving it untouched to avoid clobbering locally managed plugins."
-    fi
-elif [[ -L "$TMUX_PLUGINS_DIR" ]]; then
-    echo "  WARNING: ~/.tmux/plugins is a broken symlink."
-    echo "  Leaving the existing link untouched to avoid clobbering local data."
-else
-    ln -s "$REPO_PLUGINS_DIR" "$TMUX_PLUGINS_DIR"
-    echo "  Linked ~/.tmux/plugins -> $REPO_PLUGINS_DIR"
-fi
+remove_retired_tmux_link "$HOME/.tmux.conf"
+for retired_path in \
+    "$HOME/.tmux/claude-status.sh" \
+    "$HOME/.tmux/claude-usage.sh" \
+    "$HOME/.tmux/code-editor.sh" \
+    "$HOME/.tmux/pair-agents.sh" \
+    "$HOME/.tmux/second-brain.sh" \
+    "$HOME/.tmux/token-usage-cost.py" \
+    "$HOME/.tmux/plugins" \
+    "$HOME/.tmux"; do
+    remove_retired_tmux_link "$retired_path"
+done
 
 # Secrets directory setup
 echo ""
@@ -164,4 +154,3 @@ echo "Note: Run this script after 'stow . --dotfiles --target \$HOME'"
 echo ""
 echo "Additional manual steps:"
 echo "  - GPG: ln -s ~/code/dotfiles/dot-gnupg/gpg-agent.conf ~/.gnupg/gpg-agent.conf"
-echo "  - Tmux: Run 'tmux source-file ~/.tmux.conf' if tmux is already running"

@@ -31,9 +31,6 @@ fi
 if command -v fzf >/dev/null 2>&1; then
   alias fman="compgen -c | fzf | xargs man"
 fi
-if [[ -x "$HOME/.tmux/second-brain.sh" ]]; then
-  alias 2nd-brain="$HOME/.tmux/second-brain.sh"
-fi
 alias herdr-studio="herdr --remote bryan@bryans-mac-studio"
 
 # Studio-only Claude agent view for Hermes-managed background sessions.

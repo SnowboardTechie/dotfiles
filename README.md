@@ -5,7 +5,7 @@ Personal development environment configuration.
 Two deployment models are supported:
 
 - **Full workstation ownership** (macOS, NixOS): GNU Stow symlinks the whole
-  environment — shell, terminal, editor, Git, tmux, GPG, and agent tooling.
+  environment: shell, terminal, editor, Git, GPG, and agent tooling.
 - **Additive assets** (Omarchy): the OS already owns the desktop and development
   environment; only curated personal agent skills are linked in. See
   [Omarchy Installation](#omarchy-installation-additive-only).
@@ -46,7 +46,7 @@ If you're using [nix-configs](https://github.com/bryan-thompsoncodes/nix-configs
    ```bash
    brew install stow
    brew install powerlevel10k zsh-autosuggestions zsh-syntax-highlighting
-   brew install bat eza fzf direnv tmux tpm
+   brew install bat eza fzf direnv herdr
    brew install neovim git gnupg
    brew install --cask font-meslo-lg-nerd-font
    ```
@@ -74,8 +74,6 @@ environment.systemPackages = with pkgs; [
   eza
   fzf
   direnv
-  tmux
-  tmuxPlugins.tpm
   (nerdfonts.override { fonts = [ "Meslo" ]; })
   neovim
   git
@@ -99,7 +97,7 @@ stow . --dotfiles --target $HOME
 ./setup-platform-configs.sh
 ```
 
-This will symlink all dotfiles to your home directory, configure platform-specific overrides (Alacritty), install tmux plugins, and set up the secrets directory.
+This symlinks the dotfiles, configures platform-specific Alacritty settings, removes retired tmux links, and sets up the secrets directory.
 
 **Additional Manual Step:**
 
@@ -109,15 +107,9 @@ This will symlink all dotfiles to your home directory, configure platform-specif
 ln -s ~/code/dotfiles/dot-gnupg/gpg-agent.conf ~/.gnupg/gpg-agent.conf
 ```
 
-If tmux is already running, reload the config to apply the newly installed plugins:
-
-```bash
-tmux source-file ~/.tmux.conf
-```
-
 ### Omarchy Installation (Additive Only)
 
-Omarchy ships its own coherent Bash/Foot/Neovim/tmux/Git/GPG configuration.
+Omarchy ships its own coherent Bash, Foot, Neovim, Git, and GPG configuration.
 Do **not** run `stow .` or `stow --adopt` on an Omarchy host:
 
 - `stow .` conflicts with files Omarchy already owns and, where it would
@@ -139,7 +131,7 @@ What it changes: per-tool symlinks for curated personal agent skills in
 existing `~/.bashrc` (Omarchy's designated personal-additions section) that
 loads the portable aliases from `dot-config/shell/aliases.sh` — nothing else.
 
-What it intentionally leaves untouched: login shell selection, terminal, Neovim, tmux,
+What it intentionally leaves untouched: login shell selection, terminal, Neovim,
 Git, GPG, Zed/OpenCode/Claude settings, installed packages, and everything under
 `/usr/share/omarchy`. Omarchy-provided skill links (e.g. `omarchy`,
 `diagnose-crash`) are preserved as-is.
@@ -177,9 +169,6 @@ dotfiles/
 │       └── plugins.zsh      # Cross-platform plugin loading
 ├── dot-gnupg/           # GPG configuration (~/.gnupg/)
 │   └── gpg-agent.conf   # GPG agent settings
-├── dot-tmux/            # Tmux session templates (~/.tmux/)
-│   ├── code-editor.sh   # Editor session launched by the `code` function
-│   └── second-brain.sh  # Personal notes session
 ├── hermes/              # Curated Hermes skills, scripts, and cron definitions
 ├── scripts/             # Repo-internal deployment scripts (never stowed)
 │   ├── reconcile-agent-skills.sh  # Canonical skill curation + per-tool linking
@@ -188,7 +177,6 @@ dotfiles/
 ├── dot-gitconfig        # Git configuration (~/.gitconfig)
 ├── dot-gitconfig.local  # Git signing key (~/.gitconfig.local, not tracked)
 ├── dot-zshrc            # Zsh shell loader (~/.zshrc) - sources modular configs
-├── dot-tmux.conf        # Tmux terminal multiplexer (~/.tmux.conf)
 ├── dot-p10k.zsh         # Powerlevel10k theme (~/.p10k.zsh)
 └── zsa-keyboard-layouts/  # ZSA keyboard firmware
 ```
@@ -202,7 +190,7 @@ dotfiles/
 - Direnv integration for per-project environments
 - **Modular configuration** in `~/.config/zsh/`:
   - `aliases.zsh` - Git, tools (bat/eza/nvim), Nix rebuild, navigation
-  - `functions.zsh` - git helpers, worktree (`wcode`) helper, `code` launcher
+  - `functions.zsh` - git and Obsidian helpers
   - `env.zsh` - EDITOR, GPG_TTY, paths, NODE_OPTIONS
   - `options.zsh` - setopt, vi-mode, completion styles
   - `plugins.zsh` - Cross-platform plugin loading, direnv
@@ -212,6 +200,12 @@ dotfiles/
 - GPU-accelerated terminal
 - Custom theme and opacity
 - MesloLGS NF font for Powerlevel10k
+
+### Workspace Manager (Herdr)
+
+- Persistent local and remote terminal workspaces
+- `herdr-studio` attaches to the Studio server
+- The tab bar conditionally shows Claude quota and recent OpenRouter spend
 
 ### Editor (Neovim)
 
@@ -234,7 +228,6 @@ dotfiles/
 ### Tools
 
 - **direnv**: Automatic environment switching with nix-direnv for fast Nix shell caching
-- **tmux**: Terminal multiplexer with vim keybindings
 
 ### AI / OpenCode
 
@@ -252,20 +245,13 @@ dotfiles/
 - Built-in Hermes skills come from the Hermes installation rather than being copied into dotfiles.
 - See [`hermes/README.md`](hermes/README.md) for the managed boundary and restore process.
 
-### Tmux Session Templates
-
-Pre-configured tmux sessions for common development workflows, in `dot-tmux/`:
-
-- `code-editor.sh` — editor session launched by the `code` shell function
-- `second-brain.sh` — personal notes session (`2nd-brain` alias)
-
 ## Updating Configurations
 
 After modifying any dotfiles:
 
 1. Changes are automatically reflected (symlinks point to this repo)
 2. For shell changes: `source ~/.zshrc`
-3. For tmux changes: `tmux source-file ~/.tmux.conf` or `prefix + r`
+3. For Herdr changes: `herdr server reload-config`
 
 ## Uninstalling
 
@@ -282,7 +268,7 @@ These dotfiles are designed to work on both macOS and NixOS with minimal platfor
 
 ### How It Works
 
-**Shell configurations** (`dot-zshrc`, `dot-tmux.conf`) use a "source if exists" pattern that checks multiple paths:
+**Shell configuration** (`dot-zshrc`) uses a "source if exists" pattern that checks multiple paths:
 
 - macOS (Homebrew): `/opt/homebrew/share/...`
 - NixOS (system): `/run/current-system/sw/share/...`

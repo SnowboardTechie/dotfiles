@@ -15,6 +15,5 @@ return {
   require("bryan.plugins.treesitter"),
   require("bryan.plugins.vim-be-good"),
   require("bryan.plugins.vim-maximizer"),
-  require("bryan.plugins.vim-tmux-navigator"),
   require("bryan.plugins.which-key"),
 }

@@ -65,9 +65,11 @@ dot-git-hooks/pre-push
 # Zed - track settings/keymap, ignore the LMDB prompt-library store (machine-local, binary)
 dot-config/zed/prompts/
 
-# Herdr - track keybinding config, ignore runtime state (logs, sockets, session)
+# Herdr - track config and status commands, ignore runtime state
 dot-config/herdr/*
 !dot-config/herdr/config.toml
+!dot-config/herdr/claude-usage.sh
+!dot-config/herdr/openrouter-spend.py
 
 # Secrets in tool config dirs (tokens/oauth), never track
 dot-config/context7/

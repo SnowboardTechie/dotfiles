@@ -1,44 +1,30 @@
 #!/usr/bin/env bash
 
-# Claude Max 5-hour usage monitor for tmux status bar.
-# Displays utilization % and reset countdown in orange, always.
-# Requires: curl, jq
-# macOS: reads OAuth token from Keychain ("Claude Code-credentials")
-# Linux: reads OAuth token from ~/.claude/.credentials.json
-#
-# NOTE: This script is read-only — it never refreshes or writes tokens.
-# Claude Code owns the OAuth lifecycle. Refreshing here would race with
-# Claude Code's single-use token rotation and invalidate its credentials.
+# Claude Max 5-hour usage for Herdr's conditional command status entry.
+# This is read-only: Claude Code owns OAuth token refresh and rotation.
 
-# ── Constants ─────────────────────────────────────────────────────────────────
-CACHE_FILE="${XDG_RUNTIME_DIR:-/tmp}/tmux-claude-usage-cache"
+CACHE_FILE="${XDG_RUNTIME_DIR:-/tmp}/herdr-claude-usage-cache"
 CACHE_TTL=300
 
-# Hardcoded — tmux %hidden vars are inaccessible from #() shell calls.
-COLOR_ORANGE="#FF9E64"
-
-# ── Prerequisites ─────────────────────────────────────────────────────────────
 command -v jq >/dev/null 2>&1 || exit 0
 command -v curl >/dev/null 2>&1 || exit 0
 
-# ── Read credentials ──────────────────────────────────────────────────────────
 if [[ "$OSTYPE" == "darwin"* ]]; then
     CREDS_JSON=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null)
 else
     CREDS_FILE="$HOME/.claude/.credentials.json"
     [[ -f "$CREDS_FILE" ]] || exit 0
-    CREDS_JSON=$(cat "$CREDS_FILE" 2>/dev/null)
+    CREDS_JSON=$(<"$CREDS_FILE")
 fi
 [[ -n "$CREDS_JSON" ]] || exit 0
 
 TOKEN=$(printf '%s' "$CREDS_JSON" | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null)
 [[ -n "$TOKEN" ]] || exit 0
 
-# ── Cache: stores raw values, refreshes via API every CACHE_TTL seconds ───────
 cache_age() {
     local mtime
     mtime=$(stat -c %Y "$CACHE_FILE" 2>/dev/null || stat -f %m "$CACHE_FILE" 2>/dev/null)
-    echo $(( $(date +%s) - ${mtime:-0} ))
+    printf '%s\n' "$(( $(date +%s) - ${mtime:-0} ))"
 }
 
 if [[ -f "$CACHE_FILE" ]] && [[ $(cache_age) -lt $CACHE_TTL ]]; then
@@ -62,7 +48,6 @@ else
     RESET_EPOCH=$(printf '%s' "$HEADERS" | grep -i 'anthropic-ratelimit-unified-5h-reset' | sed 's/.*: *//' | grep -oE '[0-9]+' | head -1)
 
     if [[ -z "$UTILIZATION" || -z "$RESET_EPOCH" ]]; then
-        # Serve stale cache if API failed (expired token, network issue, etc.)
         if [[ -f "$CACHE_FILE" ]]; then
             UTILIZATION=$(sed -n '1p' "$CACHE_FILE")
             RESET_EPOCH=$(sed -n '2p' "$CACHE_FILE")
@@ -77,15 +62,10 @@ fi
 
 [[ -n "$UTILIZATION" && -n "$RESET_EPOCH" ]] || exit 0
 
-# ── Compute display (fresh every render) ──────────────────────────────────────
 PCT=$(awk "BEGIN {printf \"%.0f\", $UTILIZATION * 100}" 2>/dev/null)
-
-NOW=$(date +%s)
-REMAINING=$(( RESET_EPOCH - NOW ))
+REMAINING=$(( RESET_EPOCH - $(date +%s) ))
 [[ $REMAINING -lt 0 ]] && REMAINING=0
 HOURS=$(( REMAINING / 3600 ))
 MINS=$(printf "%02d" $(( (REMAINING % 3600) / 60 )))
 
-# Trailing " | " separator — script owns its separator so status bar looks clean
-# when script outputs nothing (no orphaned pipes).
-printf '#[fg=%s]✨ %s%% ↻ %s:%s#[fg=default] | ' "$COLOR_ORANGE" "$PCT" "$HOURS" "$MINS"
+printf 'Claude %s%% reset %s:%s\n' "$PCT" "$HOURS" "$MINS"
