@@ -21,6 +21,7 @@ dot-config/opencode/*
 !dot-config/opencode/plugins/
 dot-config/opencode/plugins/*
 !dot-config/opencode/plugins/ollama-models.js
+!dot-config/opencode/plugins/worktrunk-guard.js
 dot-config/alacritty/alacritty.toml
 dot-config/fj-dash/
 dot-config/gh/

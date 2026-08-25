@@ -75,13 +75,14 @@
     "todowrite": "allow",
     "skill": "allow",
     "question": "allow",
+    "worktrunk_workspace": "allow",
     "webfetch": "allow",
     "websearch": "allow",
     "codesearch": "allow",
     "external_directory": "ask",
     "doom_loop": "ask"
   },
-  "model": "ollama/qwen3.6:35b-a3b-coding-nvfp4",
+  "model": "openai/gpt-5.6-sol",
   "plugin": [
     "/Users/bryan/.hindsight/coding-agents"
   ],
