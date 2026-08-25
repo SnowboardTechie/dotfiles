@@ -22,7 +22,7 @@
     "provider": "zed",
     "open_ai_compatible_api": {
       "model": "qwen3.6:35b-a3b-coding-nvfp4",
-      "api_url": "https://ai.thompson.codes/ollama/v1",
+      "api_url": "http://100.121.238.48:11434/v1",
     },
   },
   "project_panel": {

@@ -99,7 +99,7 @@ stow . --dotfiles --target $HOME
 ./setup-platform-configs.sh
 ```
 
-This will symlink all dotfiles to your home directory, configure platform-specific overrides (Alacritty), install tmux plugins, and set up the secrets directory (populating the OpenCode API key from Keychain on macOS).
+This will symlink all dotfiles to your home directory, configure platform-specific overrides (Alacritty), install tmux plugins, and set up the secrets directory.
 
 **Additional Manual Step:**
 
@@ -169,7 +169,7 @@ dotfiles/
 │   ├── opencode/        # OpenCode AI assistant
 │   │   ├── AGENTS.md            # Global agent instructions
 │   │   ├── oh-my-openagent.json  # OhMyOpenAgent agent model assignments
-│   │   └── opencode.json        # Provider config (uses {file:...} for API key)
+│   │   └── opencode.json        # Provider and model configuration
 │   └── zsh/             # Modular zsh configuration (~/.config/zsh/)
 │       ├── aliases.zsh      # All aliases (git, tools, nix, navigation)
 │       ├── env.zsh          # Environment variables
@@ -240,12 +240,9 @@ dotfiles/
 ### AI / OpenCode
 
 - Config lives in `dot-config/opencode/opencode.json` (tracked, stowed to `~/.config/opencode/`)
-- API key is stored in `~/.secrets/opencode-api-key` (outside repo, never tracked)
-- Config uses `{file:~/.secrets/opencode-api-key}` reference for safe stowing
-- `setup-platform-configs.sh` creates `~/.secrets/` and populates the key from Keychain (macOS)
-- On macOS, store your API key in Keychain:
-  `security add-generic-password -a "$LOGNAME" -s ai.thompson.codes-openwebui -w '<api-key>'`
-- On Linux, manually create `~/.secrets/opencode-api-key` with your API key
+- The default local model provider connects directly to Studio Ollama over Tailscale at `http://100.121.238.48:11434/v1`
+- The Ollama endpoint is available only inside the tailnet and does not require an API key
+- `plugins/ollama-models.js` refreshes the provider's model inventory from Studio whenever OpenCode starts
 - For repo-specific tweaks (extra docs, different permissions, etc.), create `.opencode/project.json` inside the repo
 
 ### AI / Hermes

@@ -97,29 +97,6 @@ else
     echo "  $SECRETS_DIR already exists"
 fi
 
-# OpenCode API key from Keychain (macOS only)
-OPENCODE_SECRET_FILE="$SECRETS_DIR/opencode-api-key"
-
-if [[ ! -f "$OPENCODE_SECRET_FILE" ]]; then
-    if [[ "$PLATFORM" == "macos" ]]; then
-        echo "  Attempting to retrieve OpenCode API key from Keychain..."
-        if API_KEY=$(security find-generic-password -a "$LOGNAME" -s ai.thompson.codes-openwebui -w 2>/dev/null); then
-            echo "$API_KEY" > "$OPENCODE_SECRET_FILE"
-            chmod 600 "$OPENCODE_SECRET_FILE"
-            echo "  Wrote API key to $OPENCODE_SECRET_FILE from Keychain"
-        else
-            echo "  No Keychain entry found for ai.thompson.codes-openwebui"
-            echo "  To add your API key to Keychain, run:"
-            echo "    security add-generic-password -a \"\$LOGNAME\" -s ai.thompson.codes-openwebui -w '<api-key>'"
-            echo "  Then re-run this script, or manually create $OPENCODE_SECRET_FILE"
-        fi
-    else
-        echo "  Please create $OPENCODE_SECRET_FILE with your OpenCode API key"
-    fi
-else
-    echo "  $OPENCODE_SECRET_FILE already exists"
-fi
-
 # Personal weather location (kept out of the public dotfiles repository)
 PERSONAL_WEATHER_LOCATION_FILE="$SECRETS_DIR/personal-weather-location"
 
@@ -188,4 +165,3 @@ echo ""
 echo "Additional manual steps:"
 echo "  - GPG: ln -s ~/code/dotfiles/dot-gnupg/gpg-agent.conf ~/.gnupg/gpg-agent.conf"
 echo "  - Tmux: Run 'tmux source-file ~/.tmux.conf' if tmux is already running"
-
