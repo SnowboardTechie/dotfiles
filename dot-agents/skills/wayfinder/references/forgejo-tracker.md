@@ -240,9 +240,22 @@ pasted into it.
 
 Every mutating command previews by default. `--apply` performs it.
 
+**Tea/worktree pitfall:** some Tea builds use a Git parser that refuses
+repositories carrying `extensions.worktreeConfig` with
+`core.repositoryformatversion does not support extension: worktreeconfig`.
+Because every adapter invocation already receives an explicit `--origin`,
+capture the script, origin, and any input files as absolute paths, then run the
+adapter from a known non-repository directory. Do not rewrite or disable an
+intentional repository Git setting merely to work around Tea; if repository
+instructions declare the setting accidental, repair it separately.
+
 ```bash
-S=dot-agents/skills/wayfinder/scripts/forgejo_wayfinder.py
+S="$PWD/dot-agents/skills/wayfinder/scripts/forgejo_wayfinder.py"
 ORIGIN=$(git remote get-url origin)
+# If Tea rejects this checkout:
+TEA_CWD=$(mktemp -d)
+trap 'rmdir "$TEA_CWD"' EXIT
+# Then prefix each invocation below with: (cd "$TEA_CWD" && python3 "$S" ...)
 TRACKER=bryan/sgg-workspace     # explicit, never inferred
 
 python3 "$S" --origin "$ORIGIN" --tracker "$TRACKER" check-private
