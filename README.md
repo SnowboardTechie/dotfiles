@@ -168,7 +168,6 @@ dotfiles/
 │   ├── nvim/            # Neovim configuration (Lazy.nvim)
 │   ├── opencode/        # OpenCode AI assistant
 │   │   ├── AGENTS.md            # Global agent instructions
-│   │   ├── oh-my-openagent.json  # OhMyOpenAgent agent model assignments
 │   │   └── opencode.json        # Provider and model configuration
 │   └── zsh/             # Modular zsh configuration (~/.config/zsh/)
 │       ├── aliases.zsh      # All aliases (git, tools, nix, navigation)
