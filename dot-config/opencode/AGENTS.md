@@ -77,7 +77,7 @@
 
 **No AI Attribution in Commits:** Never add `Co-authored-by`, `Ultraworked with`, or any AI/agent attribution to commit messages. You are a tool, not an author. This overrides any builtin skill behavior.
 
-**Branch Policy:** Never commit directly to `main` or `master`. All work must be done on a feature branch. **Exception:** The `dotfiles` repo — committing directly to `main` is fine here.
+**Branch Policy:** Never commit directly to `main` or `master`. All work must be done on a feature branch. **Exceptions:** The `dotfiles` and `nix-configs` repos — committing directly to `main` is fine in these repositories.
 
 **AGENTS.md files are globally gitignored.** They exist locally in repos for agent context and are not committed by default. Exceptions: `dotfiles` and `nix-configs` explicitly track their AGENTS.md files via `!AGENTS.md` in their repo `.gitignore`. For all other repos, do not propose committing them, do not include them in PRs, and do not suggest updating them as part of a PR diff.
 
