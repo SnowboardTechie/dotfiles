@@ -80,7 +80,7 @@ Verify the returned agent resolves to the new pane, intended cwd, a real Claude
 session identity, and `working`. If the prompt stalls or the agent is blocked,
 inspect the UI and report the blocker rather than creating another worker.
 
-## Watch and focus
+## Watch without changing focus
 
 Visibility and supervision are separate. Once `working` is verified, start a
 tracked background watcher in the parent runtime:
@@ -100,7 +100,10 @@ If the wait times out, inspect the same agent. Re-arm one bounded watcher if it
 is still `working`; inspect terminal state if it is `unknown` or absent. A
 timeout is not permission to start a duplicate worker.
 
-After the watcher exists, put Claude in front of Bryan:
+Do not run `agent focus` after creation, prompting, watcher startup, or worker
+updates. The pane is available in the caller's layout, but Bryan's active
+window, workspace, tab, and pane must remain unchanged. If Bryan explicitly
+asks to see this worker, focus the recorded agent at that time:
 
 ```sh
 "$HERDR_BIN_PATH" agent focus <agent-name>
@@ -132,8 +135,8 @@ Send a follow-up to the existing name:
 
 Verify the same pane and Claude session identity return to `working`, then start
 a new tracked wait for that turn if completion reporting is still promised.
-Use `agent focus` through the recorded binary when Bryan asked to see the
-follow-up.
+Do not focus updates by default. Use `agent focus` through the recorded binary
+only when Bryan explicitly asks to see the follow-up.
 
 If the agent is `blocked`, read its terminal and ask Bryan before answering a
 question or approval. Never submit an automatic prompt suggestion already

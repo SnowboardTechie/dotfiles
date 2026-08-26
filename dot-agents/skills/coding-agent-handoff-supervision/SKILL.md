@@ -1,7 +1,7 @@
 ---
 name: coding-agent-handoff-supervision
 description: Use for supervised Claude handoffs, including Herdr panes.
-version: 1.1.3
+version: 1.1.4
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
@@ -17,8 +17,8 @@ metadata:
 Hand approved implementation to Claude Code, Codex, OpenCode, or another coding
 worker while the parent remains responsible for supervision, review, and
 delivery. For Bryan, a Claude handoff made from inside Herdr is visible by
-default: launch it in a sibling pane, put the working session in front of him,
-and keep a completion watcher attached to the parent.
+default: launch it in a sibling pane without changing the active window,
+workspace, tab, or pane, and keep a completion watcher attached to the parent.
 
 ## When to Use
 
@@ -52,12 +52,12 @@ and publication boundary without being handed an imagined implementation.
 
 For a Claude handoff, use the Herdr-native path when `HERDR_ENV=1` unless Bryan
 explicitly asks to keep the worker in the background. Split the exact caller
-pane to the right, start and prompt Claude before changing focus, then put that
-working pane in front of him. Start a tracked watcher so foreground visibility
-does not replace parent supervision.
+pane to the right with `--no-focus`, then start and prompt Claude without
+changing the active window, workspace, tab, or pane. Start a tracked watcher;
+focus the worker only when Bryan explicitly asks to see it.
 
-Read `references/herdr-claude-handoff.md` for the exact discovery, dispatch,
-focus, monitoring, continuation, failure, and cleanup sequence.
+Read `references/herdr-claude-handoff.md` for the exact discovery, non-focusing
+dispatch, monitoring, continuation, failure, and cleanup sequence.
 
 When the parent is outside Herdr, Herdr control is unavailable, or Bryan asks
 for background-only work, use a named Claude Agent View session instead. Read
@@ -124,8 +124,9 @@ Do not close a foreground Herdr pane while Bryan may still be using it.
 
 1. **Splitting Herdr's globally focused pane.** Target the injected
    `HERDR_PANE_ID`; Bryan may be viewing another tab while the handoff is built.
-2. **Focusing an empty pane.** Start Claude, submit the brief, verify `working`,
-   and only then focus it.
+2. **Stealing Bryan's focus.** Pane creation, startup, prompting, and updates
+   must preserve his active window, workspace, tab, and pane. Run `agent focus`
+   only after an explicit request to see that worker.
 3. **Calling visibility monitoring.** A visible worker still needs a tracked
    `herdr agent wait` or equivalent watcher when the parent promises follow-up.
 4. **Resolving Herdr through shell `PATH`.** Foreground and background shells
@@ -147,7 +148,7 @@ Do not close a foreground Herdr pane while Bryan may still be using it.
 - [ ] Herdr path used when available unless background-only was requested
 - [ ] Exact caller pane targeted and new pane ID parsed from Herdr JSON
 - [ ] Worker identity, cwd, session ID, and `working` state verified
-- [ ] Worker focused only after startup and prompt submission
+- [ ] Active window, workspace, tab, and pane preserved unless focus was requested
 - [ ] Tracked watcher uses the verified Herdr client and a finite timeout
 - [ ] Follow-ups preserve the original session
 - [ ] Candidate independently reviewed and tested
