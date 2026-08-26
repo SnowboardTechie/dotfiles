@@ -118,14 +118,19 @@ def analytics_response(rows: list[dict], truncated: bool = False) -> dict:
     }
 
 
-# 1. The happy path: rows are summed and rendered behind the gauge glyph.
+# 1. The happy path: hourly buckets are summed and rendered behind the gauge.
 #    total_usage arrives as a string in some rows, per OpenRouter's own docs.
 out, calls = run(
     key="test-management-key",
-    response=analytics_response([{"total_usage": 3.5}, {"total_usage": "0.45"}]),
+    response=analytics_response(
+        [
+            {"date__hour": "2026-08-25 18:00:00", "total_usage": 3.5},
+            {"date__hour": "2026-08-25 19:00:00", "total_usage": "0.45"},
+        ]
+    ),
 )
 check(
-    "sums total_usage and prints it behind the U+F04C5 gauge",
+    "sums hourly buckets and prints the total behind the U+F04C5 gauge",
     out == "%s $3.95\n" % GAUGE,
     "got %r" % out,
 )
@@ -161,6 +166,20 @@ check(
     "asks for account-wide spend: total_usage, no dimensions",
     body.get("metrics") == ["total_usage"] and not body.get("dimensions"),
     "got %r" % (body,),
+)
+
+# Without hourly granularity the API snaps time_range out to whole UTC days and
+# answers a 24h request with up to 48 hours of spend (measured at 2.04x live).
+# The window assertion above cannot catch that: the request still *says* 24h.
+check(
+    "requests hourly buckets, the only shape the API clips to the real window",
+    body.get("granularity") == "hour",
+    "got granularity=%r" % (body.get("granularity"),),
+)
+check(
+    "sets a limit above the 25 buckets 24h can span, so nothing is clipped",
+    isinstance(body.get("limit"), int) and body["limit"] > 25,
+    "got limit=%r" % (body.get("limit"),),
 )
 
 # 4. No management key means no output and no network call — the rail entry is
@@ -199,8 +218,10 @@ check(
 )
 
 # 8. Zero spend keeps the module conditional: nothing to show, nothing shown.
-out, _ = run(key="test-management-key", response=analytics_response([{"total_usage": 0}]))
-check("prints nothing when the account spent nothing", out == "", "got %r" % out)
+#    Hourly granularity omits quiet hours rather than returning zeroes, so a
+#    genuinely idle 24 hours comes back as no rows at all — a total, not a fault.
+out, _ = run(key="test-management-key", response=analytics_response([]))
+check("treats an empty bucket list as $0 and prints nothing", out == "", "got %r" % out)
 
 if failures:
     print("\n%d check(s) failed" % len(failures), file=sys.stderr)

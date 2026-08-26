@@ -7,8 +7,10 @@ so every machine on the rail reports the same figure. It used to be summed out
 of the local OpenCode database, which silently scoped it to one host's OpenCode
 traffic and ignored every other client and machine.
 
-`POST /analytics/query` takes an arbitrary `time_range`, so the window really is
-the trailing 24 hours rather than a UTC calendar day. It needs a *management*
+`POST /analytics/query` reports the trailing 24 hours rather than a UTC calendar
+day, but only when asked for hourly buckets — see the comment on `granularity`
+in fetch_spend_usd, which is the one detail that makes this honest. It needs a
+*management*
 key (openrouter.ai/settings/management-keys); an `sk-or-v1` inference key is
 answered with `403 Only management keys can access analytics`. Management keys
 cannot make model requests, so this stays read-only. The key is read from a file
@@ -68,6 +70,19 @@ def fetch_spend_usd(key: str) -> float:
     payload = json.dumps(
         {
             "metrics": ["total_usage"],
+            # granularity is load-bearing, not cosmetic. Without it the API
+            # snaps time_range out to whole UTC days: asking for one minute of
+            # 2026-08-25 returns all of 2026-08-25, so a trailing-24h request
+            # silently becomes "yesterday in full plus today so far" — 24 to 48
+            # hours wide depending on the clock, measured at 42.4 hours and
+            # 2.04x the true figure when this was written. Hourly buckets are
+            # clipped to the requested range instead, and they are exactly
+            # additive: summing every hour of a day reproduces that day's total
+            # to the last decimal. tests/test-herdr-openrouter-spend.py pins it.
+            "granularity": "hour",
+            # Well above the 25 buckets a 24h window can span, so a smaller
+            # server-side default can never clip the sum.
+            "limit": 100,
             "time_range": {
                 "start": (now - timedelta(hours=WINDOW_HOURS))
                 .isoformat()
@@ -96,8 +111,9 @@ def fetch_spend_usd(key: str) -> float:
         # cost of noticing later is a wrong number on the rail.
         raise ValueError("analytics response truncated")
 
-    # Summed rather than indexed: an ungrouped query answers with a single row
-    # today, but a bucketed answer would still total correctly.
+    # One row per hour that saw traffic; quiet hours are omitted rather than
+    # returned as zero, so no-rows legitimately means nothing was spent.
+    # total_usage arrives as a string on some rows, hence float().
     return sum(float(row.get("total_usage") or 0) for row in data["data"])
 
 
