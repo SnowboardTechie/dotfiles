@@ -32,6 +32,8 @@ if command -v fzf >/dev/null 2>&1; then
   alias fman="compgen -c | fzf | xargs man"
 fi
 alias herdr-studio="herdr --remote bryan@bryans-mac-studio"
+alias herdr-mbp="herdr --remote bryan@bryans-mbp"
+alias herdr-gnarchy="herdr --remote bryan@gnarchy"
 
 # Studio-only Claude agent view for Hermes-managed background sessions.
 if command -v scutil >/dev/null 2>&1; then
