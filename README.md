@@ -206,11 +206,20 @@ dotfiles/
 - Persistent local and remote terminal workspaces
 - `herdr-studio` attaches to the Studio server
 - `theme.name = "terminal"` makes the UI follow the host terminal's ANSI palette, so it stays native under Nightfly on macOS and under whichever Omarchy theme is live on Arch
-- The tab bar's right edge is the **Glyph Rail**: one Nerd Font glyph per module, joined by a single Powerline soft divider (``) — Claude quota with its reset countdown, rolling 24-hour OpenRouter spend, host identity, and the clock
+- The tab bar's right edge is the **Glyph Rail**: one Nerd Font glyph per module, joined by a single Powerline soft divider (``) — Claude quota with its reset countdown, account-wide rolling 24-hour OpenRouter spend, host identity, and the clock
 
   ```
   󰭹 14% ↻3:08  󰓅 $3.95  󰒋 Studio  󰥔 09:11
   ```
+
+- The spend figure is **account-wide**, not per-machine: it comes from OpenRouter's analytics API over a trailing 24-hour window, so Studio and the MacBook show the same number. It needs a [management key](https://openrouter.ai/settings/management-keys) — an ordinary `sk-or-v1` inference key is refused with `403 Only management keys can access analytics`:
+
+  ```bash
+  mkdir -p ~/.secrets/openrouter
+  chmod 600 ~/.secrets/openrouter/management-key   # after writing the key into it
+  ```
+
+  Without that file the module prints nothing and the rail simply drops the entry.
 
 - Host identity glyphs come from hardware/OS, not a hostname list: 󰒋 server (Mac Studio), 󰌢 laptop (MacBook), 󰣇 Arch/Omarchy. See `dot-config/herdr/host-label.sh`
 - A Nerd Font is required for the rail to render (MesloLGS NF on macOS)
