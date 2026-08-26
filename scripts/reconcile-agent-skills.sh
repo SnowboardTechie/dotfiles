@@ -111,6 +111,7 @@ OPENCODE_SKILLS=("${COMMON_SKILLS[@]}"
 HERMES_SKILLS=(
     ship worktrunk update-pr-description pr-self-review code-review
     manual-merge issue-create issue-plan issue-work loop-issue
+    coding-agent-handoff-supervision
     vault-capture skill-retrospective adr-and-spec-coach voice-bryan
     dx-target dx-preview conforming-tech-specs
     catalog-review dependency-review dependency-triage sprint-deliverable-update
