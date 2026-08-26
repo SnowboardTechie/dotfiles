@@ -72,12 +72,17 @@ name = "terminal"
 # Glyph Rail: one Nerd Font glyph per status module, joined by a single
 # Powerline soft divider. Codepoints, because these are tofu without a Nerd
 # Font: 󰭹 U+F0B79 Claude, ↻ U+21BB reset, 󰓅 U+F04C5 spend, 󰥔 U+F0954 clock,
-#  U+E0B3 divider. Host class glyphs live in host-label.sh.
+# U+E0B3 divider. Host class glyphs live in host-label.sh.
+#
+# Every module carries a glyph, so no bare-text entry (`zoom`) belongs here;
+# the per-tab Z marker already shows zoom state independently.
 tab_bar_right = [
-  { type = "zoom" },
   { type = "command", command = "~/.config/herdr/claude-usage.sh", interval_seconds = 60, timeout_seconds = 5 },
   { type = "command", command = "~/.config/herdr/openrouter-spend.py", interval_seconds = 60, timeout_seconds = 2 },
   { type = "command", command = "~/.config/herdr/host-label.sh", interval_seconds = 3600, timeout_seconds = 2 },
   { type = "datetime", format = "󰥔 %H:%M" },
 ]
-tab_bar_right_separator = "  "
+# Spelled as a TOML \u escape on purpose: U+E0B3 sits in the BMP Private Use
+# Area, which text pipelines strip far more readily than the Plane-15 Nerd Font
+# glyphs above. It vanished once already. tests/test-herdr-glyph-rail.py guards it.
+tab_bar_right_separator = " \ue0b3 "

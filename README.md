@@ -206,10 +206,10 @@ dotfiles/
 - Persistent local and remote terminal workspaces
 - `herdr-studio` attaches to the Studio server
 - `theme.name = "terminal"` makes the UI follow the host terminal's ANSI palette, so it stays native under Nightfly on macOS and under whichever Omarchy theme is live on Arch
-- The tab bar's right edge is the **Glyph Rail**: one Nerd Font glyph per module, joined by a single Powerline soft divider (``) — Claude quota with its reset countdown, rolling 24-hour OpenRouter spend, host identity, and the clock
+- The tab bar's right edge is the **Glyph Rail**: one Nerd Font glyph per module, joined by a single Powerline soft divider (``) — Claude quota with its reset countdown, rolling 24-hour OpenRouter spend, host identity, and the clock
 
   ```
-  󰭹 14% ↻3:08  󰓅 $3.95  󰒋 Studio  󰥔 09:11
+  󰭹 14% ↻3:08  󰓅 $3.95  󰒋 Studio  󰥔 09:11
   ```
 
 - Host identity glyphs come from hardware/OS, not a hostname list: 󰒋 server (Mac Studio), 󰌢 laptop (MacBook), 󰣇 Arch/Omarchy. See `dot-config/herdr/host-label.sh`

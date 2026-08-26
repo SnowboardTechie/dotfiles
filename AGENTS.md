@@ -42,7 +42,7 @@ dotfiles/
 | Add zsh plugin | `dot-config/zsh/plugins.zsh` | Must add 3-path fallback (Homebrew/NixOS/Linux) |
 | Add neovim plugin | `dot-config/nvim/lua/bryan/plugins/` | See `nvim/AGENTS.md` |
 | Change color theme | See "Nightfly Theme" section below | 2 files must stay in sync |
-| Herdr status rail (Glyph Rail) | `dot-config/herdr/config.toml` `[ui] tab_bar_right` + the module scripts beside it (`claude-usage.sh`, `openrouter-spend.py`, `host-label.sh`) | One Nerd Font glyph per module, joined by `tab_bar_right_separator = "  "`. `theme.name = "terminal"` keeps Herdr on the host terminal's ANSI palette, so colors are NOT defined here — do not add a Nightfly hex table. Only `zoom`, `hostname`, `datetime`, `text`, `command` entry types exist; a glyph-prefixed module must be `command`, since `hostname` takes no prefix. Validate with `HERDR_CONFIG_PATH=$PWD/dot-config/herdr/config.toml herdr config check` (it rejects unknown themes and unsupported `strftime` directives) |
+| Herdr status rail (Glyph Rail) | `dot-config/herdr/config.toml` `[ui] tab_bar_right` + the module scripts beside it (`claude-usage.sh`, `openrouter-spend.py`, `host-label.sh`) | One Nerd Font glyph per module, joined by `tab_bar_right_separator = " \ue0b3 "`. Keep that TOML escape spelling: U+E0B3 is BMP Private Use Area and text pipelines strip it far more readily than the Plane-15 Nerd Font glyphs, which is how it silently became two spaces once already. `tests/test-herdr-glyph-rail.py` is the regression guard. `theme.name = "terminal"` keeps Herdr on the host terminal's ANSI palette, so colors are NOT defined here — do not add a Nightfly hex table. Only `zoom`, `hostname`, `datetime`, `text`, `command` entry types exist; a glyph-prefixed module must be `command`, since `hostname` takes no prefix. Validate with `HERDR_CONFIG_PATH=$PWD/dot-config/herdr/config.toml herdr config check` (it rejects unknown themes and unsupported `strftime` directives) |
 | Add git identity | `dot-gitconfig` | Add `includeIf` + new identity file |
 | Change platform behavior | `setup-platform-configs.sh` | Handles stow edge cases |
 | Add a shared agent skill | `dot-agents/skills/` | Pool shared by Claude/Pi/OpenCode/Hermes; curate which tool gets it in the `*_SKILLS` arrays in `scripts/reconcile-agent-skills.sh`. See `dot-agents/README.md` |
@@ -145,6 +145,7 @@ bash tests/test-reconcile-agent-skills.sh
 
 # Validate a Herdr config without touching the live one, then test its modules
 HERDR_CONFIG_PATH="$PWD/dot-config/herdr/config.toml" herdr config check
+python3 tests/test-herdr-glyph-rail.py   # guards the U+E0B3 divider + glyph-led rail
 bash tests/test-herdr-claude-usage.sh
 bash tests/test-herdr-host-label.sh
 
