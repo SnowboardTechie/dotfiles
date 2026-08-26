@@ -72,4 +72,5 @@ REMAINING=$(( RESET_EPOCH - $(date +%s) ))
 HOURS=$(( REMAINING / 3600 ))
 MINS=$(printf "%02d" $(( (REMAINING % 3600) / 60 )))
 
-printf 'Claude %s%% reset %s:%s\n' "$PCT" "$HOURS" "$MINS"
+# Glyph Rail module: 󰭹 U+F0B79 Claude, ↻ U+21BB quota reset.
+printf '󰭹 %s%% ↻%s:%s\n' "$PCT" "$HOURS" "$MINS"

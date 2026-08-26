@@ -42,7 +42,9 @@ def main() -> int:
         return 0
 
     if total_cost > 0:
-        sys.stdout.write(f"OpenRouter ${total_cost:.2f}/{WINDOW_HOURS}h\n")
+        # Glyph Rail module: the 󰓅 (U+F04C5) gauge carries the WINDOW_HOURS
+        # framing, so the rail only prints the amount.
+        sys.stdout.write(f"󰓅 ${total_cost:.2f}\n")
     return 0
 
 

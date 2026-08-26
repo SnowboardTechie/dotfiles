@@ -46,7 +46,7 @@ out="$(
     "$TRACKER"
 )"
 
-if [[ "$out" != "Claude 42% reset "* ]]; then
+if [[ "$out" != "󰭹 42% ↻"* ]]; then
     echo "FAIL: expected the tracker to use file credentials when Keychain access fails" >&2
     echo "  got: ${out:-<no output>}" >&2
     exit 1

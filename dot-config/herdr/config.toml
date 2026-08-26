@@ -63,15 +63,21 @@ previous_workspace = ["prefix+shift+p", "alt+up"]
 next_workspace = ["prefix+shift+n", "alt+down"]
 
 [theme]
-name = "tokyo-night"
-auto_switch = false
+# "terminal" follows the host terminal's ANSI palette instead of pinning a
+# built-in theme, so the UI reads as native against Nightfly on macOS and
+# against whichever Omarchy theme is live on Arch.
+name = "terminal"
 
 [ui]
+# Glyph Rail: one Nerd Font glyph per status module, joined by a single
+# Powerline soft divider. Codepoints, because these are tofu without a Nerd
+# Font: 󰭹 U+F0B79 Claude, ↻ U+21BB reset, 󰓅 U+F04C5 spend, 󰥔 U+F0954 clock,
+#  U+E0B3 divider. Host class glyphs live in host-label.sh.
 tab_bar_right = [
   { type = "zoom" },
   { type = "command", command = "~/.config/herdr/claude-usage.sh", interval_seconds = 60, timeout_seconds = 5 },
   { type = "command", command = "~/.config/herdr/openrouter-spend.py", interval_seconds = 60, timeout_seconds = 2 },
-  { type = "hostname" },
-  { type = "datetime", format = "%H:%M" },
+  { type = "command", command = "~/.config/herdr/host-label.sh", interval_seconds = 3600, timeout_seconds = 2 },
+  { type = "datetime", format = "󰥔 %H:%M" },
 ]
-tab_bar_right_separator = " | "
+tab_bar_right_separator = "  "
