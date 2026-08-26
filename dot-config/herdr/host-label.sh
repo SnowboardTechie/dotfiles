@@ -10,10 +10,13 @@
 # 󰣇 U+F08C7 Arch/Omarchy.
 
 if [[ "$OSTYPE" == darwin* ]]; then
-    case "$(sysctl -n hw.model 2>/dev/null)" in
-        MacBook*) GLYPH='󰌢' ;;
-        *) GLYPH='󰒋' ;;
-    esac
+    # Apple Silicon model identifiers use generic names such as Mac15,9, so
+    # classify portable Macs by their internal battery instead.
+    if [[ "$(pmset -g batt 2>/dev/null)" == *InternalBattery* ]]; then
+        GLYPH='󰌢'
+    else
+        GLYPH='󰒋'
+    fi
 elif [[ -f /etc/arch-release ]]; then
     GLYPH='󰣇'
 else

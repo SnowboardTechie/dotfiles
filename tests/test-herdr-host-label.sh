@@ -11,9 +11,10 @@ trap 'rm -rf "$TMP_ROOT"' EXIT
 
 mkdir -p "$TMP_ROOT/bin"
 
-cat > "$TMP_ROOT/bin/sysctl" <<'EOF'
+cat > "$TMP_ROOT/bin/pmset" <<'EOF'
 #!/usr/bin/env bash
-printf '%s\n' "${STUB_HW_MODEL:-}"
+[[ "${1:-}" == "-g" && "${2:-}" == "batt" ]] || exit 64
+printf '%s\n' "${STUB_BATTERY_STATUS:-}"
 EOF
 
 cat > "$TMP_ROOT/bin/uname" <<'EOF'
@@ -22,15 +23,15 @@ cat > "$TMP_ROOT/bin/uname" <<'EOF'
 printf '%s\n' "${STUB_HOSTNAME:-}"
 EOF
 
-chmod +x "$TMP_ROOT/bin/sysctl" "$TMP_ROOT/bin/uname"
+chmod +x "$TMP_ROOT/bin/pmset" "$TMP_ROOT/bin/uname"
 
 failures=0
 
 expect() {
-    local description="$1" ostype="$2" model="$3" hostname="$4" want="$5" got
+    local description="$1" ostype="$2" battery_status="$3" hostname="$4" want="$5" got
     got="$(
         OSTYPE="$ostype" \
-        STUB_HW_MODEL="$model" \
+        STUB_BATTERY_STATUS="$battery_status" \
         STUB_HOSTNAME="$hostname" \
         PATH="$TMP_ROOT/bin:$PATH" \
         "$LABELER"
@@ -48,9 +49,10 @@ expect() {
 # A Mac Studio is a server; a MacBook is a laptop. Both drop the Apple-assigned
 # hostname for a short label.
 expect "Mac Studio reports the server glyph" \
-    darwin24 "Mac14,14" "Bryans-Mac-Studio.local" "󰒋 Studio"
+    darwin24 "Now drawing from 'AC Power'" "Bryans-Mac-Studio.local" "󰒋 Studio"
 expect "MacBook reports the laptop glyph" \
-    darwin24 "MacBookPro18,3" "Bryans-MacBook-Pro.local" "󰌢 MBP"
+    darwin24 $'Now drawing from \'AC Power\'\n -InternalBattery-0 (id=1234567)' \
+    "Bryans-MacBook-Pro.local" "󰌢 MBP"
 # Non-Arch, non-macOS: a box reached over remote attach keeps its own hostname.
 expect "unknown host falls back to the server glyph and its hostname" \
     linux-gnu "" "gnarbox" "󰒋 gnarbox"
