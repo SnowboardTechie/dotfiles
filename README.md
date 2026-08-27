@@ -129,7 +129,10 @@ What it changes: per-tool symlinks for curated personal agent skills in
 `~/.claude/skills`, `~/.config/opencode/skills`, `~/.pi/agent/skills`, and
 `~/.hermes/skills/personal`, plus one marked `source` line appended to an
 existing `~/.bashrc` (Omarchy's designated personal-additions section) that
-loads the portable aliases from `dot-config/shell/aliases.sh` — nothing else.
+loads the portable aliases from `dot-config/shell/aliases.sh`, a separate
+guarded Ble.sh source hook that becomes active when the `blesh` package is
+installed, and the pinned Hindsight client integration. It does not install
+packages or replace Omarchy-owned application configuration.
 
 What it intentionally leaves untouched: login shell selection, terminal, Neovim,
 Git, GPG, Zed/OpenCode/Claude settings, installed packages, and everything under

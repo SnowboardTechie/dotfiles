@@ -3,8 +3,9 @@
 #
 # Omarchy owns its own environment (shell, terminal, editor, Git, GPG,
 # Zed, and tool settings). This entry point deploys only additive personal
-# assets — currently the curated agent-skill links — and never runs Stow,
-# installs packages, or uses elevated privileges.
+# assets — curated skills, portable aliases, guarded Bash enhancements, and
+# Hindsight client wiring — and never runs Stow, installs packages, or uses
+# elevated privileges.
 #
 # Future additive reconcilers get appended to the RECONCILERS list below;
 # application-specific mutation logic never lives in this script itself.
@@ -18,7 +19,7 @@ usage() {
 Usage: setup-omarchy.sh (--check | --apply) [--force]
 
   --check   Report what --apply would change. Never mutates the filesystem.
-  --apply   Perform the additive setup (per-tool agent-skill links only).
+  --apply   Perform the additive setup through the registered reconcilers.
   --force   Proceed even if this host does not identify as Omarchy.
 
 Never run 'stow .' or 'stow --adopt' against your home on an Omarchy host;
@@ -71,6 +72,7 @@ echo "Omarchy additive setup ($MODE)"
 RECONCILERS=(
     "$SCRIPT_DIR/reconcile-agent-skills.sh"
     "$SCRIPT_DIR/reconcile-shell-additions.sh"
+    "$SCRIPT_DIR/reconcile-bash-enhancements.sh"
     "$SCRIPT_DIR/reconcile-hindsight.sh"
 )
 
@@ -85,8 +87,9 @@ Ownership summary:
   ~/.claude/skills, ~/.config/opencode/skills, ~/.pi/agent/skills, and
   ~/.hermes/skills/personal, and appends one marked source line to an
   existing ~/.bashrc (Omarchy's designated personal-additions section)
-  loading portable aliases from dot-config/shell/aliases.sh, and wires the
-  Hindsight memory client (staged runtime in ~/.hindsight, merged Claude
+  loading portable aliases from dot-config/shell/aliases.sh plus an optional,
+  guarded Ble.sh integration for inline suggestions/highlighting, and wires
+  the Hindsight memory client (staged runtime in ~/.hindsight, merged Claude
   hooks / OpenCode plugin entry, token from ~/.secrets/hindsight) — nothing
   else.
 

@@ -22,7 +22,7 @@ that are no longer curated, and **never touches** anything that isn't a symlink
 into this pool — so Claude's plugin skills (`gsd-*`, `superpowers`, etc.) and
 Omarchy's packaged skill links (`omarchy`, `diagnose-crash`) are left alone.
 The legacy `setup-platform-configs.sh` delegates its agent-skill step to this
-reconciler, and `scripts/setup-omarchy.sh` invokes it as the only payload of the
+reconciler, and `scripts/setup-omarchy.sh` invokes it as one payload in the
 additive Omarchy setup.
 
 Why a flat pool instead of per-tool subfolders: most skills are wanted by 2+ tools.
