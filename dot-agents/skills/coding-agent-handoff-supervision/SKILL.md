@@ -1,7 +1,7 @@
 ---
 name: coding-agent-handoff-supervision
-description: Use for supervised Claude handoffs, including Herdr panes.
-version: 1.1.4
+description: Use whenever handing work to Claude; Herdr is Bryan's default.
+version: 1.1.5
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
@@ -22,11 +22,16 @@ workspace, tab, or pane, and keep a completion watcher attached to the parent.
 
 ## When to Use
 
-Use when a parent agent delegates implementation or review to a coding worker
-but still owns acceptance and delivery.
+Use whenever work is handed to Claude, including implementation, review,
+research tied to a working tree, or an iterative coding-agent session. For
+Bryan, Herdr is the default handoff surface whenever it is available; do not
+silently substitute print mode, a standalone tmux session, or a background
+Claude process merely because it is simpler for the parent.
 
-Do not use for a self-contained reasoning subtask whose result needs no visible
-terminal, branch inspection, or independent verification.
+Use another path only when Bryan explicitly requests background-only work or
+Herdr is genuinely unavailable after checking the injected Herdr environment.
+Do not use this workflow for a self-contained reasoning subtask whose result
+needs no visible terminal, branch inspection, or independent verification.
 
 ## Procedure
 
@@ -50,11 +55,13 @@ and publication boundary without being handed an imagined implementation.
 
 ### 2. Choose the visibility path
 
-For a Claude handoff, use the Herdr-native path when `HERDR_ENV=1` unless Bryan
-explicitly asks to keep the worker in the background. Split the exact caller
-pane to the right with `--no-focus`, then start and prompt Claude without
-changing the active window, workspace, tab, or pane. Start a tracked watcher;
-focus the worker only when Bryan explicitly asks to see it.
+For every Claude work handoff, check for the injected Herdr environment first.
+When `HERDR_ENV=1`, the Herdr-native path is mandatory unless Bryan explicitly
+asks to keep the worker in the background. Split the exact caller pane to the
+right with `--no-focus`, then start and prompt Claude without changing the
+active window, workspace, tab, or pane. Start a tracked watcher; focus the
+worker only when Bryan explicitly asks to see it. Do not choose Claude print
+mode or standalone tmux before performing this Herdr check.
 
 Read `references/herdr-claude-handoff.md` for the exact discovery, non-focusing
 dispatch, monitoring, continuation, failure, and cleanup sequence.
