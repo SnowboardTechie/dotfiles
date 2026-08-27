@@ -68,6 +68,7 @@ dot-config/zed/prompts/
 # Herdr - track config and status commands, ignore runtime state
 dot-config/herdr/*
 !dot-config/herdr/config.toml
+!dot-config/herdr/config-omarchy.toml
 !dot-config/herdr/claude-usage.sh
 !dot-config/herdr/openrouter-spend.py
 !dot-config/herdr/host-label.sh

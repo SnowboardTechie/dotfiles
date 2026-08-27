@@ -23,6 +23,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIG = REPO_ROOT / "dot-config/herdr/config.toml"
+OMARCHY_CONFIG = REPO_ROOT / "dot-config/herdr/config-omarchy.toml"
 README = REPO_ROOT / "README.md"
 
 DIVIDER = chr(0xE0B3)  # Powerline soft divider
@@ -58,6 +59,7 @@ def decode_toml_escapes(value: str) -> str:
 
 
 config_text = CONFIG.read_text(encoding="utf-8")
+omarchy_config_text = OMARCHY_CONFIG.read_text(encoding="utf-8")
 readme_text = README.read_text(encoding="utf-8")
 
 # 1. The separator is exactly one divider, padded by one space on each side.
@@ -97,7 +99,30 @@ for entry_type in BARE_TEXT_TYPES:
         else "",
     )
 
-# 4. README documents the rail with real dividers, not collapsed spaces.
+# 4. The Omarchy-specific template carries the same Glyph Rail contract.
+omarchy_separator_match = re.search(
+    r'^tab_bar_right_separator = "(.*)"$', omarchy_config_text, re.MULTILINE
+)
+check(
+    "config-omarchy.toml keeps the U+E0B3 divider",
+    omarchy_separator_match is not None
+    and decode_toml_escapes(omarchy_separator_match.group(1)) == " %s " % DIVIDER,
+)
+omarchy_datetime_match = re.search(
+    r'\{ type = "datetime", format = "(.*?)"', omarchy_config_text
+)
+check(
+    "config-omarchy.toml keeps the clock glyph",
+    omarchy_datetime_match is not None
+    and decode_toml_escapes(omarchy_datetime_match.group(1)).startswith(CLOCK),
+)
+for entry_type in BARE_TEXT_TYPES:
+    check(
+        'config-omarchy.toml has no bare-text "%s" rail entry' % entry_type,
+        ('type = "%s"' % entry_type) not in omarchy_config_text,
+    )
+
+# 5. README documents the rail with real dividers, not collapsed spaces.
 check(
     "README.md shows the U+E0B3 divider",
     DIVIDER in readme_text,

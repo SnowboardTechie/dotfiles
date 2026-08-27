@@ -7,7 +7,9 @@
 # The glyph comes from hardware/OS rather than a hostname allowlist, so a new
 # box is recognizable without editing this file. Codepoints, because these are
 # tofu without a Nerd Font: 󰒋 U+F048B server, 󰌢 U+F0322 laptop,
-# 󰣇 U+F08C7 Arch/Omarchy.
+# 󰍹 U+F0379 desktop/monitor.
+
+ARCH_RELEASE_PATH="${HERDR_ARCH_RELEASE_PATH:-/etc/arch-release}"
 
 if [[ "$OSTYPE" == darwin* ]]; then
     # Apple Silicon model identifiers use generic names such as Mac15,9, so
@@ -17,8 +19,8 @@ if [[ "$OSTYPE" == darwin* ]]; then
     else
         GLYPH='󰒋'
     fi
-elif [[ -f /etc/arch-release ]]; then
-    GLYPH='󰣇'
+elif [[ -f "$ARCH_RELEASE_PATH" ]]; then
+    GLYPH='󰍹'
 else
     # Anything else reached from here is a box we attached to remotely.
     GLYPH='󰒋'

@@ -73,6 +73,7 @@ RECONCILERS=(
     "$SCRIPT_DIR/reconcile-agent-skills.sh"
     "$SCRIPT_DIR/reconcile-shell-additions.sh"
     "$SCRIPT_DIR/reconcile-bash-enhancements.sh"
+    "$SCRIPT_DIR/reconcile-herdr-omarchy.sh"
     "$SCRIPT_DIR/reconcile-hindsight.sh"
 )
 
@@ -88,10 +89,10 @@ Ownership summary:
   ~/.hermes/skills/personal, and appends one marked source line to an
   existing ~/.bashrc (Omarchy's designated personal-additions section)
   loading portable aliases from dot-config/shell/aliases.sh plus an optional,
-  guarded Ble.sh integration for inline suggestions/highlighting, and wires
+  guarded Ble.sh integration for inline suggestions/highlighting, manages the
+  Omarchy-specific Herdr configuration and Glyph Rail module links, and wires
   the Hindsight memory client (staged runtime in ~/.hindsight, merged Claude
-  hooks / OpenCode plugin entry, token from ~/.secrets/hindsight) — nothing
-  else.
+  hooks / OpenCode plugin entry, token from ~/.secrets/hindsight) — nothing else.
 
   Intentionally left untouched (Omarchy owns these):
     - login shell selection and Omarchy's bash defaults

@@ -28,11 +28,12 @@ chmod +x "$TMP_ROOT/bin/pmset" "$TMP_ROOT/bin/uname"
 failures=0
 
 expect() {
-    local description="$1" ostype="$2" battery_status="$3" hostname="$4" want="$5" got
+    local description="$1" ostype="$2" battery_status="$3" hostname="$4" arch_release="$5" want="$6" got
     got="$(
         OSTYPE="$ostype" \
         STUB_BATTERY_STATUS="$battery_status" \
         STUB_HOSTNAME="$hostname" \
+        HERDR_ARCH_RELEASE_PATH="$arch_release" \
         PATH="$TMP_ROOT/bin:$PATH" \
         "$LABELER"
     )"
@@ -49,20 +50,17 @@ expect() {
 # A Mac Studio is a server; a MacBook is a laptop. Both drop the Apple-assigned
 # hostname for a short label.
 expect "Mac Studio reports the server glyph" \
-    darwin24 "Now drawing from 'AC Power'" "Bryans-Mac-Studio.local" "󰒋 Studio"
+    darwin24 "Now drawing from 'AC Power'" "Bryans-Mac-Studio.local" \
+    "$TMP_ROOT/no-arch-release" "󰒋 Studio"
 expect "MacBook reports the laptop glyph" \
     darwin24 $'Now drawing from \'AC Power\'\n -InternalBattery-0 (id=1234567)' \
-    "Bryans-MacBook-Pro.local" "󰌢 MBP"
+    "Bryans-MacBook-Pro.local" "$TMP_ROOT/no-arch-release" "󰌢 MBP"
 # Non-Arch, non-macOS: a box reached over remote attach keeps its own hostname.
 expect "unknown host falls back to the server glyph and its hostname" \
-    linux-gnu "" "gnarbox" "󰒋 gnarbox"
+    linux-gnu "" "gnarbox" "$TMP_ROOT/no-arch-release" "󰒋 gnarbox"
 
-# The Arch branch keys off /etc/arch-release, which cannot be stubbed on PATH.
-if [[ -f /etc/arch-release ]]; then
-    expect "Arch host reports the Omarchy glyph" \
-        linux-gnu "" "gnarchy" "󰣇 gnarchy"
-else
-    echo "skip Arch glyph (no /etc/arch-release on this host)"
-fi
+touch "$TMP_ROOT/arch-release"
+expect "Arch/Omarchy host reports the desktop glyph" \
+    linux-gnu "" "imachy" "$TMP_ROOT/arch-release" "󰍹 imachy"
 
 [[ $failures -eq 0 ]] || exit 1
