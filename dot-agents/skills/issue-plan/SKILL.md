@@ -54,7 +54,7 @@ to a PR, route to the appropriate review workflow instead.
 
 ## Phase 1: Resolve and Ground
 
-### 1. Resolve the issue and repository
+### 1. Resolve the issue, ticket workspace, and implementation repository
 
 Use `issue-work`'s source detection, ticket-fetch, and repository-resolution
 references. Fetch the current issue body, `updatedAt`/`updated_at`, every comment
@@ -62,27 +62,41 @@ with its stable ID and update timestamp, labels, linked references one level
 deep, and acceptance criteria. Compute the canonical comment checkpoint defined
 in the ticket-fetch reference.
 
-Resolve the local trunk checkout and the forge's actual default branch. Fetch
-that branch, bind `origin/{default}` (or the forge-equivalent remote ref) as the
-planning base, and record its full commit SHA. Do not switch branches or create a
-worktree. Inspect repository content against that fetched base; a dirty or stale
-local checkout is not provenance.
+Resolve the ticket repository's local trunk first. It owns issue identity,
+workspace instructions, vault discovery, and planning state. Then determine the
+implementation repository: default it to the ticket repository, or use a
+different repository only when the user or existing project authority names it
+explicitly. Resolve that clone independently and verify its origin hostname plus
+owner/repository; never infer a cross-repository binding from directory layout,
+similar names, or equal content.
+
+Resolve the implementation forge's actual default branch. Fetch that branch,
+bind `origin/{default}` (or the forge-equivalent remote ref) as the planning base,
+and record its full commit SHA. Do not switch branches or create a worktree.
+Inspect implementation content against that fetched base; a dirty or stale local
+checkout is not provenance.
 
 If default-branch resolution or fetch fails, stop and surface the authentication
 or remote error. Never fall back to a stale local ref.
 
 **Complete when:** the canonical issue URL, issue update timestamp, comment
-checkpoint, repository identity, trunk path, default branch, and fetched base
-revision are known.
+checkpoint, ticket repository/trunk, implementation forge/repository/trunk,
+implementation default branch, and fetched base revision are known.
 
 ### 2. Resolve the project vault
 
 Load `vault-pkm`; it owns vault discovery, local instructions, topology,
 frontmatter, linking, and synchronization. Resolve in this order:
 
-1. A vault path explicitly named by project instructions.
-2. `{TRUNK_ROOT}/vault` when it is a directory or symlink.
-3. `~/code/notes/{repo}` when it exists and clearly belongs to the repository.
+1. A vault path explicitly named by ticket-workspace instructions.
+2. `{TICKET_TRUNK_ROOT}/vault` when it is a directory or symlink.
+3. For same-repository work only, a path named by implementation instructions,
+   `{IMPLEMENTATION_TRUNK_ROOT}/vault`, or
+   `~/code/notes/{implementation-repo}` when it clearly belongs to the project.
+
+Cross-repository canonical plans must be ticket-discoverable through step 1 or
+2. Do not place their sole canonical handoff in an implementation-only vault:
+`issue-work` cannot know the implementation identity until it finds that handoff.
 
 Do not silently fall back to `~/second-brain` for project implementation plans.
 If no project vault can be resolved, stop and ask where this project's durable
@@ -97,7 +111,7 @@ note location are known, with local rules loaded.
 
 ### 3. Inspect the implementation surface read-only
 
-Read repository instructions, manifests, relevant implementation files, nearby
+Read implementation-repository instructions, manifests, relevant files, nearby
 patterns, tests, and repository-owned specs/ADRs. Trace named symbols to their
 definitions and usages. Use one or two bounded exploration delegates when the
 issue spans distinct areas; delegates return findings only and must not write to
@@ -209,8 +223,9 @@ On approval:
 
 1. Set `Planning status: approved` in the handoff section.
 2. Re-read the note and linked decision/design artifacts.
-3. Verify the issue URL, issue timestamp, comment checkpoint, repository
-   identity, default branch, and fetched base revision.
+3. Verify the issue URL, issue timestamp, comment checkpoint, ticket repository,
+   implementation forge/repository, implementation default branch, and fetched
+   base revision.
 4. Ensure the relevant MOC or index has an inbound route to every new durable
    note.
 5. Follow `vault-pkm`'s vault-local commit and push discipline, staging only the
@@ -218,8 +233,8 @@ On approval:
 6. Fetch and verify the vault remote contains the committed plan when local rules
    require synchronization.
 
-Report the canonical plan path, supporting note paths, issue URL, repository
-revision, and whether synchronization succeeded. End by explaining that a future
+Report the canonical plan path, supporting note paths, issue URL, both repository
+roles, implementation revision, and whether synchronization succeeded. End by explaining that a future
 `issue-work {issue}` run will validate freshness before using the plan.
 
 **Complete when:** the approved note is readable, linked, synchronized as
@@ -255,13 +270,16 @@ strategy drift is material.
    belong in the project vault unless the user explicitly chooses otherwise.
 7. **Duplicating issue prose.** Link and synthesize; capture decisions and
    implementation detail the issue does not already preserve.
+8. **Inferring a cross-repository target.** A workspace path or related repo name
+   is not authority. Require the explicit handoff binding and verify both origins.
 
 ## Verification Checklist
 
 - [ ] Current issue body, update timestamp, and all comment IDs/update timestamps fetched
 - [ ] Canonical comment checkpoint computed
-- [ ] Default branch fetched and plan grounded against its remote revision
-- [ ] Repository and project vault resolved without guessing
+- [ ] Ticket repository/trunk and implementation forge/repository/trunk verified
+- [ ] Implementation default branch fetched and plan grounded against its remote revision
+- [ ] Project vault resolved without guessing
 - [ ] Vault-local instructions, index/MOC, and related notes read
 - [ ] Relevant code, tests, specs, and prior patterns inspected read-only
 - [ ] Applicable planning/design skills loaded in the right order

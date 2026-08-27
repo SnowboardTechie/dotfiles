@@ -28,6 +28,18 @@ class SelectIssueWorkerTests(unittest.TestCase):
             "codex-claude-implementation-loop",
         )
 
+    def test_cross_repo_sgg_routing_uses_implementation_identity(self) -> None:
+        result = select_issue_worker.select_worker(
+            ticket_repo="HHS/private-planning-workspace",
+            implementation_repo="HHS/simpler-grants-protocol",
+            implementation_host="github.com",
+            remote_url="git@github.com:HHS/simpler-grants-protocol.git",
+            override="auto",
+        )
+
+        self.assertTrue(result["sgg_allowlisted"])
+        self.assertEqual(result["selected_worker"], "claude")
+
     def test_sgg_suffix_on_untrusted_host_does_not_authorize_claude(self) -> None:
         result = select_issue_worker.select_worker(
             ticket_repo="HHS/simpler-grants-gov",
@@ -62,8 +74,8 @@ class SelectIssueWorkerTests(unittest.TestCase):
 
     def test_explicit_gpt_uses_host_native_path(self) -> None:
         result = select_issue_worker.select_worker(
-            ticket_repo="bryan/dotfiles",
-            remote_url="git@git.snowboardtechie.com:bryan/dotfiles.git",
+            ticket_repo="example/public-project",
+            remote_url="git@forge.example:example/public-project.git",
             override="gpt",
         )
 
@@ -90,7 +102,7 @@ class SelectIssueWorkerTests(unittest.TestCase):
                 override="claude",
             )
 
-    def test_ticket_and_remote_must_match(self) -> None:
+    def test_ticket_and_remote_must_match_without_explicit_implementation_repo(self) -> None:
         with self.assertRaisesRegex(
             select_issue_worker.RoutingError,
             "does not match",
@@ -98,6 +110,76 @@ class SelectIssueWorkerTests(unittest.TestCase):
             select_issue_worker.select_worker(
                 ticket_repo="HHS/simpler-grants-gov",
                 remote_url="git@github.com:someone/simpler-grants-gov.git",
+                override="auto",
+            )
+
+    def test_explicit_implementation_repo_allows_cross_repo_ticket(self) -> None:
+        result = select_issue_worker.select_worker(
+            ticket_repo="example/private-workspace",
+            implementation_repo="example/public-project",
+            implementation_host="forge.example",
+            remote_url="ssh://git@forge.example/example/public-project.git",
+            override="auto",
+        )
+
+        self.assertEqual(result["ticket_repo"], "example/private-workspace")
+        self.assertEqual(result["implementation_repo"], "example/public-project")
+        self.assertEqual(result["implementation_host"], "forge.example")
+        self.assertEqual(result["remote_repo"], "example/public-project")
+        self.assertEqual(result["selected_worker"], "qwen")
+
+    def test_explicit_implementation_repo_must_match_remote(self) -> None:
+        with self.assertRaisesRegex(
+            select_issue_worker.RoutingError,
+            "implementation repository .* does not match",
+        ):
+            select_issue_worker.select_worker(
+                ticket_repo="example/private-workspace",
+                implementation_repo="example/other-project",
+                implementation_host="forge.example",
+                remote_url="ssh://git@forge.example/example/public-project.git",
+                override="auto",
+            )
+
+    def test_cross_repo_requires_explicit_implementation_host(self) -> None:
+        with self.assertRaisesRegex(select_issue_worker.RoutingError, "requires --implementation-host"):
+            select_issue_worker.select_worker(
+                ticket_repo="example/private-workspace",
+                implementation_repo="example/public-project",
+                remote_url="ssh://git@forge.example/example/public-project.git",
+                override="auto",
+            )
+
+    def test_explicit_implementation_host_must_match_remote(self) -> None:
+        with self.assertRaisesRegex(select_issue_worker.RoutingError, "forge .* does not match"):
+            select_issue_worker.select_worker(
+                ticket_repo="example/private-workspace",
+                implementation_repo="example/public-project",
+                implementation_host="github.com",
+                remote_url="ssh://git@forge.example/example/public-project.git",
+                override="auto",
+            )
+
+    def test_same_repo_name_on_different_forge_is_cross_repository(self) -> None:
+        result = select_issue_worker.select_worker(
+            ticket_repo="example/project",
+            ticket_host="private.example",
+            implementation_repo="example/project",
+            implementation_host="public.example",
+            remote_url="git@public.example:example/project.git",
+            override="auto",
+        )
+
+        self.assertTrue(result["cross_repository"])
+        self.assertEqual(result["ticket_host"], "private.example")
+
+    def test_cross_forge_same_repo_requires_explicit_implementation_host(self) -> None:
+        with self.assertRaisesRegex(select_issue_worker.RoutingError, "requires --implementation-host"):
+            select_issue_worker.select_worker(
+                ticket_repo="example/project",
+                ticket_host="private.example",
+                implementation_repo="example/project",
+                remote_url="git@public.example:example/project.git",
                 override="auto",
             )
 

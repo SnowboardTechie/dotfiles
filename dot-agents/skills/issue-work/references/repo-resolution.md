@@ -6,7 +6,15 @@ Loaded on demand from SKILL.md. Used by the orchestrator (not by `ticket-intake`
 
 ## Why this exists
 
-When the user shares a ticket from `owner/repo`, the skill needs to know where that repo is cloned locally so it can create a worktree there. A remote URL is not enough — the worktree is a local git operation.
+When the user shares a ticket, resolve its ticket-workspace clone first. An
+approved handoff may then name a different implementation repository whose clone
+owns the worktree. A remote URL is not enough for either role: state, vault
+discovery, fetches, and worktrees are local operations.
+
+For ordinary issues the two roles are the same clone. For cross-repository work,
+run this resolution independently for each expected forge host and
+owner/repository. Never accept a clone merely because it sits under the ticket
+workspace, has a similar name, or contains equal files.
 
 ---
 
@@ -14,23 +22,34 @@ When the user shares a ticket from `owner/repo`, the skill needs to know where t
 
 Run in order, short-circuit on first match.
 
-### 1. Exact name under `~/code/`
+### 1. Explicit project path
+
+First honor a concrete clone path named by user input, ticket-workspace
+instructions, or a workspace repository manifest such as `repos.tsv`. Verify the
+candidate's origin; the declaration is discovery evidence, not identity proof.
+
+### 2. Ticket-workspace checkout
+
+For an implementation repository bound by a private workspace, check
+`{TICKET_TRUNK_ROOT}/repos/{repo}`. This is the intended
+`private-workspace/repos/public-project`-style topology. Verify both forge hostname and
+owner/repository before accepting it.
+
+### 3. Exact name under `~/code/`
 
 ```bash
 TARGET_REPO="{repo}"  # e.g. "apps"
 Glob(pattern="$HOME/code/*/.git")
 ```
 
-For each match, the parent dir basename is the clone name. If the basename == `{repo}`, verify the remote:
-
-```bash
-cd "$CANDIDATE" && \
-  git remote get-url origin | grep -iE "(github\.com[:/]|git@github\.com:){owner}/{repo}(\.git)?$"
-```
+For each match, the parent dir basename is the clone name. If the basename equals
+`{repo}`, parse `git remote get-url origin` with
+`scripts/select_issue_worker.py`'s identity rules and require the exact expected
+hostname and owner/repository. Do not use a substring match.
 
 If the remote matches, use `$CANDIDATE` as the trunk. Done.
 
-### 2. One directory deeper (org subdirs)
+### 4. One directory deeper (org subdirs)
 
 Some users organize as `~/code/{org}/{repo}/`. Check:
 
@@ -40,7 +59,7 @@ Glob(pattern="$HOME/code/*/*/.git")
 
 Same remote verification as above.
 
-### 3. Alternate parents
+### 5. Alternate parents
 
 If still missing, also check (Glob for each):
 
@@ -49,24 +68,15 @@ $HOME/projects/*/.git     # fallback
 $HOME/src/*/.git          # fallback
 ```
 
-### 4. Remote URL fallback (any remote, any name)
+### 6. Remote URL fallback (any remote, any name)
 
-If no basename match, grep all clones for the remote URL. This catches renamed local dirs:
+If no basename match, enumerate candidate clones and parse each origin with the
+same exact identity rules. This catches renamed local directories without
+accepting substring or suffix lookalikes.
 
-```bash
-# Iterate every .git parent under ~/code/ (1 and 2 levels deep)
-shopt -s nullglob  # so missing patterns expand to empty instead of literal
-for dir in "$HOME"/code/*/.git "$HOME"/code/*/*/.git; do
-  parent="$(dirname "$dir")"
-  remote=$(git -C "$parent" remote get-url origin 2>/dev/null) || continue
-  if [[ "$remote" == *"{owner}/{repo}"* ]]; then
-    echo "$parent"
-    break
-  fi
-done
-```
-
-Prefer the host's file-search tool over shell globbing when available (Hermes: `search_files(target="files")`; Claude/OpenCode/Pi: `Glob` or equivalent). Never embed an agent tool call inside a shell command.
+Enumerate `.git` candidates under `~/code/` at the supported depths with the
+host's file-search tool, read each origin, and compare exact parsed identity in
+the orchestrator. Never embed an agent tool call in a shell command.
 
 ---
 
@@ -78,6 +88,8 @@ Prompt:
 
 ```
 I don't see {owner}/{repo} cloned locally under:
+  - the explicit workspace path or manifest
+  - {TICKET_TRUNK_ROOT}/repos/{repo}
   - ~/code/
   - ~/code/*/
   - ~/projects/ / ~/src/
@@ -97,6 +109,16 @@ On no, stop and report: "Cannot proceed without a local clone."
 
 ---
 
+## Cross-repository binding
+
+The explicit approved handoff supplies the implementation forge and
+owner/repository. Verify both against the candidate clone's `origin` before
+binding `{IMPLEMENTATION_TRUNK_ROOT}`. The ticket clone remains
+`{TICKET_TRUNK_ROOT}` and owns `.hermes/issue-work/`; the implementation clone
+owns the feature worktree. A missing implementation clone follows the same
+clone-if-missing approval rule. Legacy `Repository` handoffs may resolve only a
+same-repository target.
+
 ## Trunk vs worktree
 
 The resolution above gives you the **trunk** (the main checkout). The `issue-work` skill will then create a **worktree** for the ticket.
@@ -109,22 +131,31 @@ Rules:
   # The git-common-dir is {trunk}/.git — strip /.git for the trunk path
   ```
 
-- All `git fetch`, dirty-tree checks, and default-branch lookups should happen against the trunk.
-- Prefer `wt` for creation/switching. Hermes then targets the returned path through each tool's `workdir`; hosts that provide `EnterWorktree` may enter the already-created path. The controlled fallback is `git -C "{TRUNK_ROOT}" worktree add -b {branch} {path} origin/{DEFAULT_BRANCH}`. See `issue-work` Phase 1.7.
+- Ticket state and vault discovery use `{TICKET_TRUNK_ROOT}`.
+- Git fetch, dirty-tree checks, default-branch lookup, and worktree creation use
+  `{IMPLEMENTATION_TRUNK_ROOT}`.
+- Prefer `wt` for creation/switching. The controlled fallback is `git -C
+  "{IMPLEMENTATION_TRUNK_ROOT}" worktree add -b {branch} {path}
+  origin/{DEFAULT_BRANCH}`. See `issue-work` Phase 1.7.
 
 ---
 
 ## Multi-remote repos
 
-Some repos have both `origin` (forge hosting) and e.g. `upstream` (fork). The ticket's forge should match `origin`. If a repo has the right `upstream` but wrong `origin`, still use it — but fetch from `upstream` instead for the default branch.
-
-Rare edge case. Don't optimize unless it comes up.
+Do not rescue an identity mismatch by switching from `origin` to another remote.
+The ticket clone's `origin` must match the ticket repository, and the
+implementation clone's `origin` must match the approved implementation forge and
+repository because worktree routing and `/ship` publish through that identity. A
+fork/upstream workflow requires an explicit future contract for separate source,
+base, and publication remotes; until then, stop rather than guessing.
 
 ---
 
 ## Cache (optional future work)
 
-If resolution becomes slow in practice (many cloned repos), consider a tiny cache at `{TRUNK_ROOT}/.hermes/issue-work/.repo-cache.json`:
+If resolution becomes slow, consider a cache at
+`{TICKET_TRUNK_ROOT}/.hermes/issue-work/.repo-cache.json` keyed by forge host and
+owner/repository:
 
 ```json
 {

@@ -63,7 +63,7 @@ def normalize_repo(repo: str) -> str:
     value = repo.strip().strip("/")
     parts = value.split("/")
     if len(parts) != 2 or not all(parts):
-        raise RoutingError(f"ticket repository must be owner/repository: {repo}")
+        raise RoutingError(f"repository must be owner/repository: {repo}")
     return value.lower()
 
 
@@ -72,16 +72,30 @@ def select_worker(
     ticket_repo: str,
     remote_url: str,
     override: str,
+    ticket_host: str | None = None,
+    implementation_repo: str | None = None,
+    implementation_host: str | None = None,
 ) -> dict[str, Any]:
     ticket_key = normalize_repo(ticket_repo)
+    implementation_repo = implementation_repo or ticket_repo
+    implementation_key = normalize_repo(implementation_repo)
     remote_host, remote_repo = identity_from_remote(remote_url)
     remote_key = normalize_repo(remote_repo)
-    if ticket_key != remote_key:
+    ticket_host = ticket_host.strip().lower() if ticket_host else remote_host
+    cross_repository = implementation_key != ticket_key or ticket_host != remote_host
+    if cross_repository and not implementation_host:
+        raise RoutingError("cross-repository routing requires --implementation-host")
+    if implementation_host and implementation_host.strip().lower() != remote_host:
         raise RoutingError(
-            f"ticket repository {ticket_repo} does not match origin repository {remote_repo}"
+            f"implementation forge {implementation_host} does not match origin forge {remote_host}"
+        )
+    if implementation_key != remote_key:
+        identity_label = "implementation repository" if cross_repository else "ticket repository"
+        raise RoutingError(
+            f"{identity_label} {implementation_repo} does not match origin repository {remote_repo}"
         )
 
-    is_sgg = remote_host == SGG_FORGE_HOST and ticket_key in SGG_REPOSITORIES
+    is_sgg = remote_host == SGG_FORGE_HOST and implementation_key in SGG_REPOSITORIES
     if override == "auto":
         selected = "claude" if is_sgg else "qwen"
         reason = "verified SGG allowlist" if is_sgg else "default non-SGG issue-work route"
@@ -109,9 +123,13 @@ def select_worker(
     return {
         "ok": True,
         "ticket_repo": ticket_repo,
+        "ticket_host": ticket_host,
+        "implementation_repo": remote_repo,
+        "implementation_host": remote_host,
         "remote_host": remote_host,
         "remote_repo": remote_repo,
         "sgg_allowlisted": is_sgg,
+        "cross_repository": cross_repository,
         "selected_worker": selected,
         "implementation_loop": loops[selected],
         "reason": reason,
@@ -154,6 +172,9 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=Path, default=Path.cwd())
     parser.add_argument("--ticket-repo", required=True)
+    parser.add_argument("--ticket-host")
+    parser.add_argument("--implementation-repo")
+    parser.add_argument("--implementation-host")
     parser.add_argument(
         "--override",
         choices=("auto", "gpt", "qwen", "claude"),
@@ -169,6 +190,9 @@ def main() -> int:
         common_dir, remote = repository_identity(workdir)
         result = select_worker(
             ticket_repo=args.ticket_repo,
+            ticket_host=args.ticket_host,
+            implementation_repo=args.implementation_repo,
+            implementation_host=args.implementation_host,
             remote_url=remote,
             override=args.override,
         )

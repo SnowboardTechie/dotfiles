@@ -422,6 +422,44 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.body = read(POOL / "issue-work" / "SKILL.md")
+        cls.handoff = read(POOL / "issue-plan" / "references" / "handoff-contract.md")
+        cls.repo_resolution = read(POOL / "issue-work" / "references" / "repo-resolution.md")
+
+    def test_supports_explicit_cross_repository_handoffs(self) -> None:
+        for field in (
+            "Ticket repository",
+            "Implementation forge",
+            "Implementation repository",
+            "Implementation base",
+            "Implementation revision",
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, self.handoff)
+        self.assertIn("--implementation-repo", self.body)
+        self.assertIn("--ticket-host", self.body)
+        self.assertIn("issue-xrepo-{ticket_digest}", self.body)
+        self.assertIn('"Same repository" means both canonical', self.body)
+        self.assertIn("do not expose the private ticket", self.body)
+        self.assertIn("publication-summary.md", self.body)
+        self.assert_matches(
+            self.body,
+            r"(?is)source_issue.*context-validation\.json.*source_issue_mode: github_shorthand.*Omit it.*Forgejo.*shorthand resolver is GitHub-only.*wrong forge",
+            "private ticket identity must not flow to public review/ship artifacts",
+        )
+        self.assertIn("each distinct forge role independently", self.body)
+        self.assertIn("{TICKET_TRUNK_ROOT}/repos/{repo}", self.repo_resolution)
+        self.assertIn("Do not rescue an identity mismatch", self.repo_resolution)
+        self.assertIn("Cross-repository canonical plans must be ticket-discoverable", self.handoff)
+        self.assert_matches(
+            self.body,
+            r"(?is)Reuse only.*progress\.md.*canonical ticket.*implementation",
+            "cross-repository worktree reuse must verify ticket and implementation identity",
+        )
+        self.assert_matches(
+            self.body,
+            r"(?is)ticket repository.*implementation repository.*may differ",
+            "issue-work must explicitly allow an approved cross-repository binding",
+        )
 
     def test_names_the_adapted_delivery_cores(self) -> None:
         for name in ("tdd", "diagnosing-bugs", "pr-self-review"):
@@ -535,6 +573,30 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
                 self.assertIn(f'mktemp "$D/{artifact}.XXXXXX"', self.body)
         self.assertIn('$base_sha...$head_sha', self.body)
         self.assertNotIn('{base}...HEAD -- > "$name_status_file"', self.body)
+
+    def test_cross_repository_pre_pr_state_is_ticket_root_confined(self) -> None:
+        validator = POOL / "issue-work" / "scripts" / "validate_cross_repo_context.py"
+        validator_tests = POOL / "issue-work" / "tests" / "test_validate_cross_repo_context.py"
+        self.assertTrue(validator.is_file())
+        self.assertTrue(validator_tests.is_file())
+        for identity_arg in (
+            "ticket_url",
+            "ticket_host",
+            "ticket_repo",
+            "implementation_host",
+            "implementation_repo",
+        ):
+            with self.subTest(identity_arg=identity_arg):
+                self.assertIn(identity_arg, self.issue_work)
+                self.assertIn(identity_arg, self.body)
+        self.assertIn("Never derive these identities from `progress.md`", self.body)
+        self.assertIn("ticket_trunk_root", self.issue_work)
+        self.assertIn("ticket_trunk_root", self.body)
+        self.assert_matches(
+            self.preflight,
+            r"(?is)pre-pr.*ticket_trunk_root.*\.hermes/issue-work.*implementation worktree",
+            "pre-pr review must separate private state authority from implementation Git authority",
+        )
 
     def test_issue_work_requires_and_presents_the_ponytail_artifact(self) -> None:
         self.assertIn("review-ponytail.md", self.issue_work)

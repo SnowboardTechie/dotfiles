@@ -7,7 +7,12 @@ description: End-to-end GitHub/Forgejo ticket workflow. Intake, plan approval, i
 
 End-to-end workflow for taking a GitHub or Forgejo ticket from URL to review-ready implementation. Four phases: **Intake → Plan → Implement → Self-Review**. Intake includes a mandatory plan-source gate before any worktree or implementation work begins.
 
-Execution state lives under `{TRUNK_ROOT}/.hermes/issue-work/`. When the project has a vault, an approved `issue-plan` note is the preferred durable planning authority; the state-root `plan.md` is a derived execution snapshot. The workflow still works without a vault when the issue itself passes the plan-readiness rubric.
+Execution state lives under the ticket workspace's trunk. Code operations live
+under the independently verified implementation trunk. These are the same path
+for ordinary issues, but an approved `issue-plan` may explicitly bind a private
+ticket/vault workspace to a different public implementation repository. When the
+project has a vault, its approved note is the preferred durable planning
+authority; the state-root `plan.md` is a derived execution snapshot.
 
 **Ticket ownership rule:** when the request names one or more tracked issues and also names a narrower implementation workflow, keep `issue-work` as the umbrella unless the user explicitly limits the task to an implementation/review-only handoff. Load the narrower workflow in Phase 3 rather than replacing ticket intake, durable state, self-review, and the ship gate. A publication prohibition remains in force until Phase 4 obtains item-level approval; it is not a reason to skip the umbrella.
 
@@ -26,10 +31,13 @@ Execution state lives under `{TRUNK_ROOT}/.hermes/issue-work/`. When the project
 All per-ticket state lives at:
 
 ```
-{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/
+{TICKET_TRUNK_ROOT}/.hermes/issue-work/{ticket-owner}-{ticket-repo}-{N}/
 ```
 
-This survives worktree teardown. Resume is supported by reading `progress.md` frontmatter `status:` field.
+This survives implementation-worktree teardown and keeps private execution
+artifacts in the private workspace. Resume reads `progress.md` frontmatter.
+`{IMPLEMENTATION_TRUNK_ROOT}` separately owns the fetched base, worktree, tests,
+commits, and PR.
 
 ---
 
@@ -57,10 +65,12 @@ If delegation is unavailable, perform the same bounded analysis serially. Missin
 
 ### 0.2 Resume check
 
-After resolving `{TRUNK_ROOT}` in Phase 1.2, compute the state-dir path. If `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/progress.md` exists:
+After resolving `{TICKET_TRUNK_ROOT}` in Phase 1.2, compute the state-dir path. If
+its `progress.md` exists:
 
-1. Read `status:`, `plan_source:`, issue/comment checkpoints, planning-base
-   metadata, and, for `plan_source: vault`, source-plan path/status metadata.
+1. Read `status:`, `plan_source:`, issue/comment checkpoints, planning-base and
+   repository-role metadata, and, for `plan_source: vault`, source-plan
+   path/status metadata.
 2. If the metadata required for that source is missing, classify the state as
    **legacy**. Do not reuse or enter its worktree. Offer to refresh intake
    through Phase 1; never infer a plan source for legacy state.
@@ -104,102 +114,135 @@ Match the input against these patterns **in order** (stop at the first match):
 
 If none match and the input is ticket-like prose, treat as pasted text and **ask which repo** before proceeding.
 
-### 1.2 Resolve local clone
+### 1.2 Resolve the ticket workspace clone
 
-See [references/repo-resolution.md](references/repo-resolution.md) for details. Short version:
+See [references/repo-resolution.md](references/repo-resolution.md). Resolve the
+clone matching the issue URL's forge host and owner/repository. Bind its canonical
+trunk as `{TICKET_TRUNK_ROOT}` using `worktrunk`'s `resolve_trunk_root` pattern.
+This clone owns workspace instructions, vault discovery, ticket state, and the
+state directory; it is not automatically the code target.
 
-```bash
-# Look for a clone matching owner/repo under ~/code/ (1 and 2 levels deep)
-Glob(pattern="$HOME/code/*/.git")
-Glob(pattern="$HOME/code/*/*/.git")
-# For each match, check remote URL matches owner/repo
-```
-
-If no local clone: ask before running `gh repo clone {owner}/{repo} ~/code/{repo}`.
-
-Bind the resolved clone path as `{TRUNK_ROOT}` — later phases reference it. If the resolved path is itself a worktree, resolve to the trunk via `git -C {path} rev-parse --path-format=absolute --git-common-dir` and strip the trailing `/.git` (the canonical `resolve_trunk_root` pattern; see [`worktrunk/SKILL.md`](../worktrunk/SKILL.md) → *Canonical trunk resolution*).
+If the ticket clone is missing, ask before cloning. Never substitute a similarly
+named implementation checkout.
 
 ### 1.3 Create state directory
 
-Create `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/` with the host file tools or `mkdir -p`.
+Create
+`{TICKET_TRUNK_ROOT}/.hermes/issue-work/{ticket-owner}-{ticket-repo}-{N}/`.
 
-### 1.4 Fetch ticket context
+### 1.4 Fetch ticket context and bind the implementation repository
 
 Use [references/fetch-ticket.md](references/fetch-ticket.md) to fetch the ticket
 body, update timestamp, comments with IDs/update timestamps, linked refs, and
 inferred open questions. Compute the canonical comment checkpoint. Prefer an
-isolated intake child (`delegate_task` on Hermes; `Task`/`Agent` elsewhere), but
-run the same recipe inline when delegation is unavailable. Write `context.md` in
-the state directory and read it after completion.
+isolated intake child, but run the same recipe inline when delegation is
+unavailable. Write `context.md` in the ticket-root state directory.
 
-Resolve the forge's current default branch, fetch it against the trunk, and bind
-the fetched remote ref and full SHA as `{PLANNING_BASE_REF}` and
-`{PLANNING_BASE_SHA}`:
+Load `vault-pkm` and inspect project-vault candidates just far enough to locate a
+single matching handoff section. This preliminary read does not approve the plan:
+Phase 1.5 still validates status, content, freshness, and linked decisions.
 
-```bash
-DEFAULT_BRANCH=$(gh repo view {owner}/{repo} --json defaultBranchRef --jq .defaultBranchRef.name)
-# Forgejo: read .default_branch from the repository API.
-git -C "{TRUNK_ROOT}" fetch origin "$DEFAULT_BRANCH"
-PLANNING_BASE_REF="origin/$DEFAULT_BRANCH"
-PLANNING_BASE_SHA=$(git -C "{TRUNK_ROOT}" rev-parse "$PLANNING_BASE_REF")
-```
+- If a matching candidate says `Planning status: approved` and uses the explicit
+  contract, bind its `Implementation forge` and `Implementation repository` for
+  the read-only implementation inspection. Phase 1.5 still verifies that approval
+  is consumable and current.
+- If no candidate exists, default implementation identity to the ticket forge and
+  repository for the clear-issue fallback.
+- A matching draft cross-repository candidate stops and routes back to
+  `issue-plan`; it cannot redirect inspection or be bypassed by issue fallback.
+- A legacy `Repository` field may bind implementation only when it exactly equals
+  the ticket repository and the implementation origin uses the ticket forge; it
+  cannot authorize a cross-repository or cross-forge target.
+- Missing, ambiguous, or conflicting cross-repository identity stops intake.
 
-If default-branch resolution or fetch fails, stop and surface the authentication
-or remote error. Never validate authority against a stale local ref.
+Resolve the matching implementation clone independently and bind its canonical
+trunk as `{IMPLEMENTATION_TRUNK_ROOT}`. Verify its origin hostname and
+owner/repository exactly. The ticket repository and implementation repository may
+differ only through the explicit approved-plan binding; directory proximity,
+similar names, or equal bytes are not identity evidence.
 
-Before judging the issue fallback, perform a **bounded read-only inspection** of
-that fetched base: active repository instructions, issue-named files/symbols,
-neighboring implementation patterns, test locations, and relevant repo-owned
-specs/ADRs. Use `git diff`, `git show`, and `git ls-tree` against the fetched ref
-when the local checkout differs; never treat stale working-tree content as the
-base. A single read-only delegate is allowed when the surface spans distinct
-areas, but it must not create a worktree or edit code. Write the concise map to
-`intake-inspection.md` in the state directory.
+Resolve the implementation forge's current default branch, fetch it against
+`{IMPLEMENTATION_TRUNK_ROOT}`, and bind its remote ref and full SHA as
+`{PLANNING_BASE_REF}` and `{PLANNING_BASE_SHA}`. If resolution or fetch fails,
+stop; never validate against a stale local ref.
 
-This intake refresh and inspection are prerequisites for deciding whether work
-may start. They are not worktree creation or implementation.
+Perform the bounded read-only inspection against that fetched implementation
+base: active instructions, issue-named files/symbols, neighboring patterns, test
+locations, and relevant repo-owned specs/ADRs. Use `git diff`, `git show`, and
+`git ls-tree` when the local checkout differs. Write `intake-inspection.md` in the
+ticket-root state directory. This inspection is not worktree creation.
 
 ### 1.5 Plan-source readiness gate
 
-This gate runs **after** the current ticket/base inspection but **before**
-dirty-tree checks, worktree reuse/creation, branch creation, or implementation
-delegation. Read [`issue-plan`'s handoff contract](../issue-plan/references/handoff-contract.md), then evaluate these sources in order:
+This gate runs after ticket refresh, explicit repository binding, and current
+implementation-base inspection, but before dirty-tree checks or worktree reuse.
+Read [`issue-plan`'s handoff contract](../issue-plan/references/handoff-contract.md),
+then evaluate:
 
-1. **Approved project-vault plan.** Load `vault-pkm`. Resolve only project-vault candidates: a path named by project instructions, `{TRUNK_ROOT}/vault`, then `~/code/notes/{repo}` when it clearly belongs to the repository. Search for the exact canonical issue URL and validate the handoff section, required plan content, linked decisions, issue timestamp, comment checkpoint, current default branch, and fetched-base drift. If one approved plan is current, record `plan_source: vault` and its absolute path. If it has material drift or multiple approved candidates disagree, stop and ask the user to reopen `issue-plan`; never silently choose or rewrite one.
-2. **Issue-as-plan fallback.** When no consumable vault plan exists, evaluate the current issue body, all comments, linked context, and `intake-inspection.md` against every clear-issue criterion in the handoff contract: outcome, boundary, acceptance, direction, and no unresolved load-bearing decisions. All five must pass. Record `plan_source: issue`, the issue/comment checkpoints, planning-base SHA, and a concise criterion-by-criterion verdict in `context.md`.
-3. **Blocked.** If neither source passes, list the specific missing planning inputs, recommend `issue-plan {canonical-url}`, and stop. Do not continue to dirty-tree checks, create/reuse a worktree, edit code, or delegate implementation. Labels, assignment, milestone membership, or issue length never substitute for the rubric.
+1. **Approved project-vault plan.** Resolve candidates in the contract's order.
+   Search for the exact canonical issue URL and validate the complete handoff,
+   required content, linked decisions, issue timestamp, comment checkpoint,
+   implementation identity, default branch, and fetched-base drift. Record
+   `plan_source: vault` only when one approved plan is current. Material drift or
+   disagreement stops and routes back to `issue-plan`.
+2. **Issue-as-plan fallback.** When no consumable vault plan exists, implementation
+   defaults to the ticket repository. Evaluate all five clear-issue criteria and
+   record the verdict plus checkpoints and implementation-base SHA in `context.md`.
+   Issue prose alone can never redirect execution to another repository.
+3. **Blocked.** If neither source passes, list the missing planning inputs,
+   recommend `issue-plan {canonical-url}`, and stop before worktree creation,
+   code edits, or implementation delegation.
 
-This is a readiness gate, not permission to publish. A clear issue authorizes detailed execution-plan synthesis but still follows Phase 2's approval checkpoint. A current vault plan whose handoff says `Planning status: approved` carries its prior plan approval forward unless Phase 2 materially changes its goal, scope, decisions, or acceptance contract.
+This is a readiness gate, not permission to publish. A current approved vault
+plan carries prior approval forward only when Phase 2 does not change its goal,
+scope, decisions, or acceptance contract.
 
 ### 1.6 Pre-flight checks
 
-Run the remaining checks against the trunk (not a worktree). The default branch
-was already resolved and fetched in Phase 1.4 so authority validation and the
-eventual worktree use the same base.
+Run code checks against `{IMPLEMENTATION_TRUNK_ROOT}`. Ticket-forge authentication
+still governs issue reads; implementation-forge authentication governs fetch and
+later publication. The default branch was already fetched in Phase 1.4.
+
+Verify each distinct forge role independently (deduplicate when both roles use the
+same host):
+
+- GitHub: `gh auth status`, then resolve repository/default branch with `gh`.
+- Forgejo/Gitea/Codeberg: select the `tea login` whose URL hostname exactly
+  matches that role and perform a bounded authenticated repository read. Never
+  accept a configured login for another host or inspect/copy its token.
+
+Then check the implementation working tree:
 
 ```bash
-# GitHub auth — stop if not logged in
-gh auth status || { echo "Run: gh auth login"; exit 1; }
-
-# Forgejo auth (only if forgejo ticket) — stop if no token in env
-if [[ "$forge" == "forgejo" && -z "${FORGEJO_TOKEN:-${GITEA_TOKEN:-}}" ]]; then
-  echo "Set FORGEJO_TOKEN (or GITEA_TOKEN) in your shell env" >&2
-  exit 1
-fi
-
 # Working tree clean? (modified or staged — ignore untracked)
-git -C "{TRUNK_ROOT}" status --porcelain | grep -E '^[ MADRC]'
+git -C "{IMPLEMENTATION_TRUNK_ROOT}" status --porcelain | grep -E '^[ MADRC]'
 ```
 
-If either auth check fails, stop and surface the error to the user — do not proceed to worktree creation. If the trunk is dirty (modified/staged, not just untracked), stop and offer: stash / commit / abort. Do not silently stash.
+If either required forge role cannot authenticate, stop. If the implementation
+trunk is dirty (modified/staged, not just untracked), stop and offer stash /
+commit / abort. Do not silently stash. Ticket-workspace or vault dirt that
+overlaps the approved plan is a freshness/synchronization blocker handled by the plan gate;
+unrelated ticket-workspace files do not contaminate the code worktree.
 
 ### 1.7 Create worktree
 
 Use the [`worktrunk`](../worktrunk/SKILL.md) skill as the preferred controlled-worktree path.
 
-1. **Compute slug, branch, and base.** `kebab-slug` = ticket title, lowercased, non-alphanumerics → `-`, collapsed, trimmed. Branch = `issue-{N}-{kebab-slug}` — or match the repo's convention if recent local branches show a different prefix. Base ref = `origin/$DEFAULT_BRANCH`.
-2. **Check for an existing worktree.** Run `wt list` (or `git worktree list --porcelain` when `wt` is unavailable) and reuse the matching branch; never nest worktrees.
-3. **Create from the fetched base.** From `{TRUNK_ROOT}`, run `wt switch --create {branch} --base origin/$DEFAULT_BRANCH`. If `wt` is unavailable, use the controlled fallback `git -C "{TRUNK_ROOT}" worktree add -b {branch} "{TRUNK_ROOT}.{N}-{kebab-slug}" origin/$DEFAULT_BRANCH`.
+1. **Compute slug, branch, and base.** "Same repository" means both canonical
+   forge hostname and normalized owner/repository match. Only then use the
+   established repo convention or `issue-{N}-{kebab-slug}`. Whenever either
+   identity component differs, do not expose the private ticket host, repository,
+   number, or title in a public branch. Compute `ticket_digest` as the first 16
+   lowercase hex characters
+   of SHA-256 over the exact canonical ticket URL and use
+   `issue-xrepo-{ticket_digest}`. Retain the full URL-to-branch mapping only in
+   private ticket-root state. Base ref = `origin/$DEFAULT_BRANCH`.
+2. **Check for an existing worktree.** Run `wt list` (or Git's porcelain list).
+   Reuse only the exact computed branch when the ticket-root `progress.md` records
+   the same canonical ticket URL, implementation forge/repository, and branch.
+   Any branch/worktree without matching state is a collision: stop rather than
+   adopting it.
+3. **Create from the fetched base.** From `{IMPLEMENTATION_TRUNK_ROOT}`, run `wt switch --create {branch} --base origin/$DEFAULT_BRANCH`. If `wt` is unavailable, use the controlled fallback against that same trunk.
 4. **Operate in isolation.** Hermes runs subsequent file and terminal operations with the resulting absolute path as `workdir`; hosts with `EnterWorktree` may enter that path. Record it as `{WORKTREE_PATH}`.
 
 Never switch the trunk checkout in place.
@@ -214,6 +257,10 @@ worktree: {abs-path}
 branch: {branch-name}
 base: {default-branch}
 planning_base: {default-branch}
+ticket_repository: {ticket-owner}/{ticket-repo}
+implementation_forge: {implementation-host}
+implementation_repository: {implementation-owner}/{implementation-repo}
+implementation_trunk: {absolute-implementation-trunk}
 plan_source: {vault|issue}
 source_plan: {absolute-vault-note-path-or-empty}
 issue_checked_through: {forge-updated-timestamp}
@@ -224,10 +271,10 @@ started: {iso8601}
 
 ## Intake complete
 
-- Context file: {TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/context.md
+- Context file: {TICKET_STATE_DIR}/context.md
 - Worktree: {abs-path}
-- Base branch: {default-branch}
-- Base revision: {full-sha}
+- Implementation repository: {implementation-host}/{implementation-owner}/{implementation-repo}
+- Base branch/revision: {default-branch} at {full-sha}
 - Plan source: {approved vault note | clear issue}
 ```
 
@@ -253,7 +300,7 @@ Prompt template for each Explore agent:
 > - Test locations and conventions in this area
 > - Any gotchas or non-obvious coupling
 >
-> Write your findings to `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/explore-{area-slug}.md` where `{area-slug}` is a short kebab-case tag for your assigned scope (e.g., `frontend`, `api`, `migration`). One file per agent — never share a file between Explore agents, since parallel appends can interleave and corrupt the output.
+> Write your findings to `{TICKET_STATE_DIR}/explore-{area-slug}.md` where `{area-slug}` is a short kebab-case tag. One file per agent — never share a file between Explore agents.
 
 ### 2.2 External research (conditional, inline)
 
@@ -279,7 +326,7 @@ Use the host's read-only web search/fetch tools (Hermes browser/web tooling; Cla
 After exploration returns, load Hermes's installed `plan` skill or the host's equivalent plan-authoring workflow. Do not clone that skill's instructions here. Give it:
 
 - **Inputs:** `context.md`, the `explore-*.md` outputs from 2.1, any inline research from 2.2, and the validated vault note when `plan_source: vault`.
-- **Plan-path override:** `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`. Hermes `plan` normally writes under workspace `.hermes/plans/`; use this ticket-specific path so resume state stays together and never appears in the feature worktree's `git status`.
+- **Plan-path override:** `{TICKET_STATE_DIR}/plan.md`. This keeps private planning state in the ticket workspace and out of the implementation worktree.
 
 For a vault source, first compare exploration findings with its goal, scope,
 accepted decisions, and acceptance contract. Any material mismatch is an
@@ -309,7 +356,7 @@ When `plan_source: issue`, present the full approval checkpoint:
 
 Present the full `plan.md` contents inline to the user with a clear prompt:
 
-> **Plan ready for review** — `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`
+> **Plan ready for review** — `{TICKET_STATE_DIR}/plan.md`
 >
 > {paste plan.md contents}
 >
@@ -346,7 +393,7 @@ After user approval:
 Select the implementation engine after plan approval, in this order:
 
 1. **Explicit same-run override.** Bryan may say GPT should implement this issue, or may explicitly select Qwen. Use that path. Claude remains limited to the verified SGG allowlist.
-2. **SGG Claude allowlist.** Use `codex-claude-implementation-loop` only when the resolved origin host is `github.com` and the ticket owner/repository is exactly one of:
+2. **SGG Claude allowlist.** Use `codex-claude-implementation-loop` only when the verified implementation origin host is `github.com` and the implementation owner/repository is exactly one of:
    - `HHS/simpler-grants-gov`
    - `HHS/simpler-grants-protocol`
    - `common-grants/py-cg-grants-gov`
@@ -358,13 +405,20 @@ Resolve this decision with the skill's deterministic router, using `--override a
 ```bash
 python3 <issue-work-skill-dir>/scripts/select_issue_worker.py \
   --workdir "{WORKTREE_PATH}" \
-  --ticket-repo "{owner}/{repo}" \
+  --ticket-host "{ticket-host}" \
+  --ticket-repo "{ticket-owner}/{ticket-repo}" \
+  --implementation-host "{implementation-host}" \
+  --implementation-repo "{implementation-owner}/{implementation-repo}" \
   --override auto
 ```
 
 Load the exact skill named by `implementation_loop`; a `null` loop means the explicit host-native GPT path. Preserve the router JSON in the state directory as `implementation-routing.json`.
 
-The intake owner/repository and the resolved clone's origin host plus owner/repository must agree before routing. A path under `~/code/sgg`, a similarly named checkout, a lookalike repository on another forge, or an unrelated repository under the SGG umbrella is not sufficient to authorize Claude. Missing worker prerequisites stop the run; never silently fall back to GPT, Claude, or a cloud model merely because the selected worker is unavailable.
+The ticket repository and implementation repository may differ only through the
+validated handoff. The approved implementation hostname and owner/repository must
+match the worktree origin before routing. A path under `~/code/sgg`, a similarly
+named checkout, a lookalike forge, or an unrelated repository under the SGG
+umbrella cannot authorize Claude. Missing prerequisites stop the run.
 
 For either delegated engine:
 
@@ -383,7 +437,7 @@ When Bryan explicitly selects GPT implementation, execute task-by-task with the 
 
 Execute task-by-task with the host-native workflow. Load `tdd` for behavior changes; the approved `plan.md` is where the test seam was pre-agreed, which is what lets this run unattended. Escalate repeated failures per 3.5. Pass through:
 
-- **plan_path:** `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`
+- **plan_path:** `{TICKET_STATE_DIR}/plan.md`
 - **worktree path:** the absolute path from `progress.md`
 - **commit rules:** atomic (one logical unit per commit); message style matches `git log --oneline -20` in **this repo** (not global defaults); **never** add `Co-authored-by: Claude` or any AI signature; **never** use `--no-verify`.
 - **failure policy:** hand off the 3.5 escalation rule below — on a task whose tests fail, attempt a direct fix first; on a **second** consecutive failure of the same task, escalate per 3.5; hard cap at 3 attempts, then stop and report. Delegated Claude and Qwen paths instead use their two-revision bound above.
@@ -467,13 +521,47 @@ If verification fails, do **not** advance to Phase 4. Return to Phase 3's failur
 
 Phase 4 hands off to the [`pr-self-review`](../pr-self-review/SKILL.md) skill in its `pre-pr` mode. It selects the primary review lanes deterministically — Standards and Spec always, Risk when the changed paths trigger it or the repository is CairnOS — runs them as parallel children, then runs mandatory Ponytail as the final over-engineering quality pass against the same exact candidate. It fetches pre-review context and owns finding disposition. It automatically fixes validated in-scope findings, rejects false positives, and defers demonstrably separate non-blocking work, asking only when a valid blocking finding has no fix that preserves the approved PR intent. Corrections are capped at one normal pass plus one conditional final pass; every correction rereview and the terminal review-only pass includes Ponytail last. Hermes runs at most three children at a time, so Ponytail runs after the primary batch. The worktree, branch, and state dir already exist; pass them in:
 
+Before delegation, run
+`scripts/validate_cross_repo_context.py` with the recorded ticket trunk/state,
+canonical ticket URL/identity, implementation worktree, and implementation
+identity. Save its successful JSON as `{TICKET_STATE_DIR}/context-validation.json`.
+Failure blocks review; prose comparison is not a substitute for this executable
+identity/state gate.
+
+```bash
+python3 <issue-work-skill-dir>/scripts/validate_cross_repo_context.py \
+  --ticket-trunk "{TICKET_TRUNK_ROOT}" \
+  --state-dir "{TICKET_STATE_DIR}" \
+  --worktree "{WORKTREE_PATH}" \
+  --ticket-url "{canonical-ticket-url}" \
+  --ticket-host "{ticket-host}" \
+  --ticket-repo "{ticket-owner}/{ticket-repo}" \
+  --implementation-host "{implementation-host}" \
+  --implementation-repo "{implementation-owner}/{implementation-repo}" \
+  > "{TICKET_STATE_DIR}/context-validation.json"
+```
+
 - `mode`: `pre-pr`
-- `state_dir`: `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/`
+- `state_dir`: `{TICKET_STATE_DIR}`
+- `ticket_trunk_root`: `{TICKET_TRUNK_ROOT}` — authorizes confinement of the
+  private caller state independently from the implementation worktree's Git root
+- `context_validation_path`: `{TICKET_STATE_DIR}/context-validation.json`
+- `ticket_url`: `{canonical-ticket-url}`
+- `ticket_host`: `{ticket-host}`
+- `ticket_repo`: `{ticket-owner}/{ticket-repo}`
+- `implementation_host`: `{implementation-host}`
+- `implementation_repo`: `{implementation-owner}/{implementation-repo}`
 - `worktree_path`: the absolute path from `progress.md`
 - `head_branch`: the value from `progress.md` `branch:`; pr-self-review uses it for branch-drift checks because no PR-derived `headRefName` exists yet
 - `base_branch`: the value from `progress.md` `base:`
-- `plan_path`: `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/plan.md`
-- `source_issue`: `{owner}/{repo}#{N}` — the ticket this work is for; lets pr-self-review treat findings tagged with this issue as PR-intent findings rather than separately tracked work, without waiting for a PR body to exist yet.
+- `plan_path`: `{TICKET_STATE_DIR}/plan.md`
+- `source_issue`: pass `{ticket-owner}/{ticket-repo}#{N}` only when the verified
+  `context-validation.json` says `source_issue_mode: github_shorthand`. Omit it
+  for Forgejo/Codeberg/Gitea and every cross-repository or cross-forge handoff;
+  the current `pr-self-review` shorthand resolver is GitHub-only, so `plan_path`
+  remains intent authority on those routes. Never let a hostless identifier
+  resolve against the wrong forge. Private ticket identity must not flow into
+  public artifacts.
 - `worker_session_id`: the value recorded in `progress.md` when Phase 3 used a delegated implementation loop; otherwise omit it.
 - `implementation_loop`: the exact selected value, `codex-claude-implementation-loop` or `codex-qwen-implementation-loop`, when `worker_session_id` is present; otherwise omit it.
 
@@ -497,7 +585,14 @@ Present the review outcome inline in this order:
 
    On `ship it` (or equivalent approval like "yes", "go", "push"): **load the [`ship` skill](../ship/SKILL.md)** — do not run `git push` / `gh pr create` directly. `ship` preserves draft-PR defaults, forge-specific creation, PR-template fidelity, and labels.
 
-   When invoking `/ship`, tell it the authoritative source for what the PR is about lives at `{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/summary.md` — `/ship` reads that file when filling the PR template's Summary and Test-plan sections so the PR body reflects the review findings, not a generic diff-walk.
+   For same-repository work, `/ship` may use `{TICKET_STATE_DIR}/summary.md`.
+   For private cross-repository work, first derive
+   `{TICKET_STATE_DIR}/publication-summary.md` containing only public-safe
+   implementation outcome, changed surfaces, and verified checks. Programmatically
+   verify it contains none of the private ticket URL, host, owner/repository,
+   title, vault paths, or ticket-state paths; then tell `/ship` to use that file.
+   The branch, commit messages, PR title/body, and labels must not disclose the
+   private ticket identity without explicit publication approval.
 
    On anything ambiguous: ask again, do not ship. Do not treat silence as approval.
 
@@ -509,7 +604,7 @@ Present the review outcome inline in this order:
 
 | Case | Behavior |
 |---|---|
-| Worktree already exists for this ticket | Reuse it after `wt list` / `git worktree list`; resume from `progress.md` status |
+| Worktree already exists for this ticket | Reuse only the exact namespaced branch when `progress.md` matches the canonical ticket and implementation identity; otherwise stop on collision |
 | Trunk dirty (modified/staged) | Stop. List files. Offer stash / commit / abort |
 | Ticket is a PR (review work, not new work) | Fetch the PR head, create/reuse a controlled `wt` worktree without switching trunk, swap Phase 3 for "review against plan"; Phase 4 reviewers still run |
 | Tests fail (2nd time on a task) | Load `diagnosing-bugs`; hard cap 3 attempts, then stop and surface output |
@@ -535,7 +630,7 @@ Present the review outcome inline in this order:
 - Add AI signatures to commits or PRs
 - Skip hooks (`--no-verify`) or bypass signing
 - Create or silently amend external vault notes. It may read an approved
-  `issue-plan` note and derive state under `{TRUNK_ROOT}/.hermes/issue-work/`.
+  `issue-plan` note and derive state under the ticket workspace's `.hermes/issue-work/`.
   Repository-owned planning artifacts required by project instructions are
   implementation files and follow the Phase 3.7 closeout gate.
 

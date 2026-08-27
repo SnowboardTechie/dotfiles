@@ -24,10 +24,12 @@ Three entry points:
 **Invoked from `issue-work` Phase 4** (`pre-pr` mode): reuse the caller's state dir —
 
 ```
-{TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/
+{CALLER_TICKET_TRUNK_ROOT}/.hermes/issue-work/{owner}-{repo}-{N}/
 ```
 
-so `review-{lane}.md` / `summary.md` land at the path `issue-work` Phase 4.3 already reads. Do not create a second parallel dir for pre-pr runs.
+so `review-{lane}.md` / `summary.md` land at the path `issue-work` Phase 4.3
+already reads. The implementation worktree may belong to a different repository;
+do not create a second parallel state directory there.
 
 Session state (automatic dispositions, intent escalations, acks, and suppressed-finding keys) is **in-memory only** — never persisted across skill runs. Cache files (related-issues, related-notes) and `intent-checklist.json` overwrite on each run; the checklist is a *report* of this run's sweep, not an input to the next one.
 
@@ -39,7 +41,17 @@ Detect the mode from arguments and context:
 
 ### 0.1 `pre-pr` (invoked from issue-work)
 
-Selected when the invoker passes an explicit `mode: pre-pr` argument alongside `state_dir`, `worktree_path`, `head_branch`, `base_branch`, `plan_path`, and optionally `source_issue` in `{owner}/{repo}#{N}` form. A Codex-backed `issue-work` caller may also pass `implementation_loop` as exactly `codex-claude-implementation-loop` or `codex-qwen-implementation-loop`, plus `worker_session_id`; treat those as an opaque routing marker and worker resume ID, never as forge credentials. Reject any other loop value and reject a loop without a session ID. Mode is always explicit — never inferred from the state-dir path prefix, which would break under unusual `$HOME` or relocated state directories. In `pre-pr` mode:
+Selected when the invoker passes an explicit `mode: pre-pr` argument alongside
+`state_dir`, `worktree_path`, `head_branch`, `base_branch`, `plan_path`, and
+`ticket_trunk_root`, `context_validation_path`, `ticket_url`, `ticket_host`,
+`ticket_repo`, `implementation_host`, and `implementation_repo`, plus optional
+`source_issue` in `{owner}/{repo}#{N}` form.
+A Codex-backed `issue-work` caller may also pass `implementation_loop` as exactly
+`codex-claude-implementation-loop` or `codex-qwen-implementation-loop`, plus
+`worker_session_id`; treat those as an opaque routing marker and worker resume
+ID, never as forge credentials. Reject any other loop value and reject a loop
+without a session ID. Mode is always explicit — never inferred from the
+state-dir path prefix. In `pre-pr` mode:
 
 - Worktree path and branch are already set up.
 - The caller's `plan.md` exists in the state dir — use it as ground truth for reviewers.
@@ -110,13 +122,32 @@ Common to all three modes:
   `origin/{baseRefName}` first; in `pre-pr` mode resolve the caller's already
   fetched `base_branch`. A moving branch name is context, not candidate identity.
 - **Initialize and confine the state directory.** In standalone modes, create the
-  computed directory under `{TRUNK_ROOT}/.hermes/pr-self-review/` before Phase 1
-  writes caches. In `pre-pr` mode, require the caller-provided directory to
-  already exist under `{TRUNK_ROOT}/.hermes/issue-work/`; never create a missing
-  caller directory. Resolve the selected directory with `pwd -P` and require its
-  canonical path to stay inside the mode's authorized `.hermes/` state root.
-  Refuse symlink escapes, a nonexistent `pre-pr` directory, or any other path.
-  Record this canonical absolute path as `state_dir` and reuse it for every pass.
+  computed directory under the implementation `{TRUNK_ROOT}/.hermes/pr-self-review/`
+  before Phase 1 writes caches. In `pre-pr` mode, resolve `worktree_path` to the
+  implementation Git root for candidate/base operations, then independently
+  resolve caller-provided `ticket_trunk_root` as a Git trunk. Require the existing
+  caller `state_dir` to stay under canonical
+  `{ticket_trunk_root}/.hermes/issue-work/`; never create a missing caller
+  directory. This explicitly lets private pre-pr state live outside the
+  implementation worktree while preserving separate confinement for both roles.
+  The selected root is the mode's authorized `.hermes/` state root. Resolve every
+  path canonically, refuse symlink escapes or a nonexistent root, and record the
+  canonical state path for every pass.
+- **Run the executable caller-context gate in `pre-pr`.** Locate
+  `issue-work/scripts/validate_cross_repo_context.py` through the loaded skill,
+  rerun it from the implementation worktree using the caller's ticket URL,
+  ticket/implementation identities, `ticket_trunk_root`, `state_dir`, and
+  `worktree_path`, and compare its parsed JSON keys and values with
+  `context_validation_path`. Require `ok: true`, complete ticket URL/host/repository
+  and implementation host/repository identity, matching canonical
+  state/worktree/trunk paths, branch, and cross-repository classification. Require
+  `source_issue` to be absent when `source_issue_mode` is `plan_only`, and permit
+  the hostless shorthand only when the validator returns `github_shorthand`.
+  Never derive these identities from `progress.md`. The explicit caller arguments
+  are the comparison authority. The validator reads progress only to prove it
+  matches the independently supplied ticket URL/host/repository and
+  implementation host/repository.
+  Any mismatch or stale artifact blocks review before cache writes.
 
 ---
 
