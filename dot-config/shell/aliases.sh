@@ -34,7 +34,7 @@ fi
 alias herdr-studio="herdr --remote bryan@bryans-mac-studio"
 alias herdr-mbp="herdr --remote bryan@bryans-mbp"
 alias herdr-gnarchy="herdr --remote bryan@gnarchy"
-alias herder-imachy="herdr --remote bryan@imachy"
+alias herdr-imachy="herdr --remote bryan@imachy"
 
 # Studio-only Claude agent view for Hermes-managed background sessions.
 if command -v scutil >/dev/null 2>&1; then

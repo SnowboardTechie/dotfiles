@@ -80,10 +80,10 @@ check "foreign reference: warned"              bash -c 'grep -q "unexpected line
 check "foreign reference: bashrc untouched"    test "$before" = "$(cat "$H3/.bashrc")"
 
 # --- The shared aliases file actually sources cleanly in bash ------------------
-out="$(bash --noprofile --norc -c "set -e; shopt -s expand_aliases; source '$ALIASES_SRC'; alias gs; alias herder-imachy; type grb >/dev/null" 2>&1)"; rc=$?
+out="$(bash --noprofile --norc -c "set -e; shopt -s expand_aliases; source '$ALIASES_SRC'; alias gs; alias herdr-imachy; type grb >/dev/null" 2>&1)"; rc=$?
 check "aliases.sh sources cleanly in bash"     test "$rc" -eq 0
 check "aliases.sh defines gs and grb"          bash -c 'grep -q "git status" <<<"$1"' _ "$out"
-check "aliases.sh defines herder-imachy"       bash -c 'grep -q "herdr --remote bryan@imachy" <<<"$1"' _ "$out"
+check "aliases.sh defines herdr-imachy"        bash -c 'grep -q "herdr --remote bryan@imachy" <<<"$1"' _ "$out"
 
 # --- Argument handling ----------------------------------------------------------
 H4="$(new_home)"
