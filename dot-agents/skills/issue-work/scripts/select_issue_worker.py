@@ -12,14 +12,6 @@ import sys
 from typing import Any
 from urllib.parse import urlparse
 
-SGG_REPOSITORIES = {
-    "hhs/simpler-grants-gov",
-    "hhs/simpler-grants-protocol",
-    "common-grants/py-cg-grants-gov",
-    "common-grants/ts-cg-grants-gov",
-}
-SGG_FORGE_HOST = "github.com"
-
 
 class RoutingError(RuntimeError):
     """Repository identity or routing policy could not be verified."""
@@ -95,17 +87,15 @@ def select_worker(
             f"{identity_label} {implementation_repo} does not match origin repository {remote_repo}"
         )
 
-    is_sgg = remote_host == SGG_FORGE_HOST and implementation_key in SGG_REPOSITORIES
     if override == "auto":
-        selected = "claude" if is_sgg else "qwen"
-        reason = "verified SGG allowlist" if is_sgg else "default non-SGG issue-work route"
-    elif override == "claude":
-        if not is_sgg:
-            raise RoutingError(
-                "Claude is restricted to the verified SGG repository allowlist"
-            )
         selected = "claude"
-        reason = "explicit Claude selection within SGG allowlist"
+        reason = "default visible Herdr handoff"
+    elif override == "claude":
+        selected = "claude"
+        reason = "explicit visible Claude selection"
+    elif override == "hermes":
+        selected = "hermes"
+        reason = "explicit visible Hermes selection"
     elif override == "qwen":
         selected = "qwen"
         reason = "explicit local Qwen selection"
@@ -116,7 +106,8 @@ def select_worker(
         raise RoutingError(f"unsupported worker override: {override}")
 
     loops = {
-        "claude": "codex-claude-implementation-loop",
+        "claude": "coding-agent-handoff-supervision",
+        "hermes": "coding-agent-handoff-supervision",
         "qwen": "codex-qwen-implementation-loop",
         "gpt": None,
     }
@@ -128,7 +119,6 @@ def select_worker(
         "implementation_host": remote_host,
         "remote_host": remote_host,
         "remote_repo": remote_repo,
-        "sgg_allowlisted": is_sgg,
         "cross_repository": cross_repository,
         "selected_worker": selected,
         "implementation_loop": loops[selected],
@@ -177,7 +167,7 @@ def main() -> int:
     parser.add_argument("--implementation-host")
     parser.add_argument(
         "--override",
-        choices=("auto", "gpt", "qwen", "claude"),
+        choices=("auto", "gpt", "qwen", "claude", "hermes"),
         default="auto",
     )
     args = parser.parse_args()

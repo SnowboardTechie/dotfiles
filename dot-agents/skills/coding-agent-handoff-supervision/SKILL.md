@@ -1,80 +1,147 @@
 ---
 name: coding-agent-handoff-supervision
-description: Use whenever handing work to Claude; Herdr is Bryan's default.
-version: 1.1.5
+description: Use for visible, ticket-backed Claude or Hermes handoffs.
+version: 1.2.0
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
   hermes:
-    tags: [coding-agents, handoff, supervision, claude, herdr, design-preview]
-    related_skills: [cross-machine-coding-agent-handoffs, subscription-coding-worker-governance, claude-code]
+    tags: [coding-agents, handoff, supervision, claude, hermes, herdr, design-preview]
+    related_skills: [issue-create, cross-machine-coding-agent-handoffs, subscription-coding-worker-governance, claude-code]
 ---
 
 # Coding Agent Handoff Supervision
 
 ## Overview
 
-Hand approved implementation to Claude Code, Codex, OpenCode, or another coding
+Hand approved implementation to a visible Claude or explicitly selected Hermes
 worker while the parent remains responsible for supervision, review, and
-delivery. For Bryan, a Claude handoff made from inside Herdr is visible by
-default: launch it in a sibling pane without changing the active window,
+delivery. Every implementation handoff is backed by one governing ticket. In
+Herdr, launch the worker in a sibling pane without changing the active window,
 workspace, tab, or pane, and keep a completion watcher attached to the parent.
 
 ## When to Use
 
-Use whenever work is handed to Claude, including implementation, review,
-research tied to a working tree, or an iterative coding-agent session. For
-Bryan, Herdr is the default handoff surface whenever it is available; do not
-silently substitute print mode, a standalone tmux session, or a background
-Claude process merely because it is simpler for the parent.
+Use whenever implementation is handed to Claude or another Hermes instance, and
+for Claude review, research tied to a working tree, or an iterative coding-agent
+session. Claude is the default implementation worker. Hermes is selected only
+by an explicit same-run request. Herdr is the default handoff surface whenever
+it is available; do not silently substitute print mode, a standalone tmux
+session, or a background process merely because it is simpler for the parent.
 
-Use another path only when Bryan explicitly requests background-only work or
-Herdr is genuinely unavailable after checking the injected Herdr environment.
-Do not use this workflow for a self-contained reasoning subtask whose result
-needs no visible terminal, branch inspection, or independent verification.
+The visible route requires Herdr for both Claude and Hermes. If Herdr is
+unavailable, stop; never convert a requested visible handoff into a background
+worker. Claude Agent View and the subscription wrapper remain available only
+after an explicit same-run background-only request. Do not use this workflow for
+a self-contained reasoning subtask whose result needs no visible terminal,
+branch inspection, or independent verification.
 
 ## Procedure
 
-### 1. Brief the outcome, not an imagined implementation
+### 1. Bind one governing ticket
 
-Make implementation handoffs concept-led. State:
+Before composing a worker prompt, read the active repository instructions and
+resolve the project workspace they define. That workspace may be a private
+planning repository distinct from the implementation repository.
 
-- the approved behavior, idea, or layout;
-- the exact repository and base;
-- authoritative product or visual references;
-- only compatibility, safety, and publication outcomes that are load-bearing;
-- the worker's publication authority.
+- If the caller already supplies an existing governing issue, fetch and read it
+  back from its forge. Reuse it when its goal and acceptance boundary govern the
+  requested implementation. Do not create a duplicate implementation ticket.
+- Otherwise search open issues in the project workspace with the forge-native
+  authenticated client. Use a few specific title/problem/outcome terms, inspect
+  each plausible result, and reuse a suitable governing issue. A loose keyword
+  match or incidental mention is not authority.
+- If no suitable issue exists, load `issue-create` and target the project
+  workspace. Its normal flow must draft a concise implementation ticket, show
+  it for approval, run the duplicate check, post it, and read back the exact
+  created URL. Do not launch a worker until the posted ticket and metadata have
+  been verified.
 
-Let the worker inspect repository guidance, trace consumers, research current
-tool behavior, choose files, and determine implementation and verification.
-Do not invent hard constraints, file lists, commands, architecture, or
-exclusions merely to make the brief look complete.
+If the workspace cannot be resolved, candidate issues cannot be read, posting
+is not approved, or issue readback fails, stop. Never fall back to an oversized
+prompt as a substitute for durable ticket authority.
+
+**Complete when:** one verified ticket URL governs the handoff and duplicate
+prevention has completed.
+
+### 2. Brief the outcome, not an imagined implementation
+
+Keep the implementation handoff short. State:
+
+- the ticket URL as intent authority;
+- the exact implementation repository, base, and worktree;
+- the authority boundaries, including what the worker may edit or execute;
+- the delivery permissions as explicit independent decisions: whether local
+  commit creation is allowed, whether push is allowed, and whether PR or issue
+  mutation is allowed. Never infer one permission from another.
+
+Destructive and history-rewriting Git operations are absolute and not
+approval-eligible in every worker-facing brief: the worker must never run
+`git reset`, `git clean`, a checkout-discard operation, `rebase`,
+`commit --amend`, any other history rewrite, or `force-push`; delete or overwrite
+any local ref or branch, including branch deletion and `git update-ref -d`
+update-ref deletion, is likewise forbidden. Keep this separate from the explicit
+approval decisions for staging, ordinary local commits, ordinary pushes,
+PR/issue mutation, and publication.
+
+Tell the worker to read the ticket and repository guidance, trace consumers,
+research current tool behavior, choose files, and determine implementation and
+verification. Do not duplicate the implementation plan or complete context in
+the prompt, and do not invent hard constraints, file lists, commands,
+architecture, or exclusions merely to make the brief look complete.
+
+The worker is approval-gated, not sandbox-confined. Do not claim filesystem,
+network, credential, or Git sandbox confinement. If the requested task requires
+hard confinement and the selected runtime cannot prove it, stop. Likewise stop
+when Claude edit approvals or Hermes smart approvals are disabled; do not relax
+the approval mode to make the handoff start.
 
 **Complete when:** the worker can identify the approved result, source context,
 and publication boundary without being handed an imagined implementation.
 
-### 2. Choose the visibility path
+### 3. Choose the visibility path
 
-For every Claude work handoff, check for the injected Herdr environment first.
-When `HERDR_ENV=1`, the Herdr-native path is mandatory unless Bryan explicitly
-asks to keep the worker in the background. Split the exact caller pane to the
-right with `--no-focus`, then start and prompt Claude without changing the
-active window, workspace, tab, or pane. Start a tracked watcher; focus the
-worker only when Bryan explicitly asks to see it. Do not choose Claude print
-mode or standalone tmux before performing this Herdr check.
+For every visible Claude or Hermes work handoff, require the injected Herdr
+environment. Split the exact caller pane to the right with `--no-focus`, then
+start and prompt the selected worker without changing the active window,
+workspace, tab, or pane. Start a tracked watcher; focus the worker only when
+Bryan explicitly asks to see it. If Herdr, the exact caller pane, or a compatible
+injected client is unavailable, stop rather than silently changing worker kind,
+surface, or visibility.
 
 Read `references/herdr-claude-handoff.md` for the exact discovery, non-focusing
 dispatch, monitoring, continuation, failure, and cleanup sequence.
 
-When the parent is outside Herdr, Herdr control is unavailable, or Bryan asks
-for background-only work, use a named Claude Agent View session instead. Read
-`references/claude-agent-view.md` for that fallback.
+Only after an explicit background-only request may Claude use a named Agent View
+session instead. Read `references/claude-agent-view.md` for that separate
+surface. It is not a fallback for visible work and its identity cannot satisfy
+the Herdr correction-resume contract below.
 
-**Complete when:** the worker's session identity, repository, name, pane or
-background row, and working state are verified, and a promised completion
-notification has a real watcher.
+### 4. Persist the complete visible-worker identity
 
-### 3. For design-driven handoffs, promote one direction
+After `herdr agent start` and before the first prompt, write every field below to
+`progress.md` and pass the same values to any review/correction workflow:
+
+- `worker_surface: herdr`;
+- `worker_agent_name`: the stable Herdr control target;
+- `worker_pane_id`: the exact pane returned by the split;
+- `worker_kind`: `claude` or `hermes`;
+- `worker_runtime_session_id`: `.result.agent.agent_session.value` from
+  `herdr agent get`;
+- `worker_worktree_identity`: a compact JSON object containing the canonical Git
+  worktree root, canonical Git common directory, and current branch.
+
+All six fields are independent identity evidence. Do not overload an agent name
+as a runtime session ID, omit the pane, or reduce worktree identity to cwd text.
+Fetch `herdr agent get {worker_agent_name}` and recompute the Git identity; only
+persist after every value matches the intended launch. A legacy or incomplete
+record cannot be upgraded from whatever happens to be visible now: stop, mark
+the handoff blocked, and never launch a duplicate worker.
+
+**Complete when:** the complete persisted identity resolves to one working Herdr
+agent and a promised completion notification has a real finite watcher.
+
+### 5. For design-driven handoffs, promote one direction
 
 Exploration pages may contain intentionally competing variants. Once Bryan
 selects one, create a dedicated preview containing only that direction. Retain
@@ -88,7 +155,7 @@ reachability checklist.
 **Complete when:** the worker receives one reachable approved direction rather
 than a gallery it must interpret.
 
-### 4. Treat worker completion as a claim
+### 6. Treat worker completion as a claim
 
 After the worker finishes:
 
@@ -105,17 +172,22 @@ the implementation is acceptable.
 **Complete when:** every acceptance criterion is independently verified against
 the candidate and, where applicable, the live target.
 
-### 5. Continue the same worker
+### 7. Continue the same worker
 
-Send follow-ups through the existing Herdr agent name or original Claude
-session. Do not launch another row or pane when continuity is intended. Text
+Before and after every follow-up prompt, fetch the existing Herdr agent and
+compare `worker_surface`, `worker_agent_name`, `worker_pane_id`, `worker_kind`,
+`worker_runtime_session_id`, and `worker_worktree_identity` with the persisted
+record. Any missing field, lookup failure, changed value, or worktree mismatch
+stops the handoff. Send the follow-up only through the matching
+`worker_agent_name`; do not launch another row or pane and do not switch between
+Claude and Hermes. Text
 already visible in a worker's prompt box may be an automatic suggestion; never
 submit it without the user's direction.
 
 **Complete when:** the original session identity returns to `working` after the
 follow-up, with no duplicate worker created.
 
-### 6. Clean up after acceptance
+### 8. Clean up after acceptance
 
 After merge, publication readback, and live verification:
 
@@ -139,22 +211,32 @@ Do not close a foreground Herdr pane while Bryan may still be using it.
 4. **Resolving Herdr through shell `PATH`.** Foreground and background shells
    may select an older client. Require the pane-injected `HERDR_BIN_PATH`, gate
    on `compatible: yes`, and use that inherited absolute path for every command.
-5. **Over-constraining the worker.** Describe the approved result, not a guessed
-   implementation plan.
-6. **Starting a duplicate for corrections.** Continue the original Herdr agent
-   or Claude session.
-7. **Treating suggested prompt text as authorization.** Submit only user- or
+5. **Launching without a ticket.** Reuse the existing governing issue or finish
+   `issue-create` through approval, post, and read back before dispatch.
+6. **Over-constraining the worker.** Point to the ticket and authority boundary,
+   not a duplicated implementation plan.
+7. **Starting a duplicate for corrections.** Compare all six persisted identity
+   fields and continue only the original Herdr agent.
+8. **Treating suggested prompt text as authorization.** Submit only user- or
    parent-authored instructions.
-8. **Trusting worker-reported tests or pushes.** Independently inspect and verify.
-9. **Cleaning before checking for unrelated edits.** Preserve user work and close
+9. **Trusting worker-reported tests or pushes.** Independently inspect and verify.
+10. **Cleaning before checking for unrelated edits.** Preserve user work and close
    only resources created by the handoff.
 
 ## Verification Checklist
 
-- [ ] Brief states outcome, repository/base, references, and authority
-- [ ] Herdr path used when available unless background-only was requested
+- [ ] Existing governing issue reused, or `issue-create` approved, posted, and read back
+- [ ] Ticket targets the project workspace and duplicate prevention completed
+- [ ] Brief states ticket URL, implementation repository/worktree, authority boundaries, and delivery permissions
+- [ ] Prompt does not duplicate the implementation plan or complete context
+- [ ] Worker kind is Claude by default or Hermes by explicit same-run request
+- [ ] Visible work uses Herdr; unavailable Herdr stops rather than falling back
 - [ ] Exact caller pane targeted and new pane ID parsed from Herdr JSON
-- [ ] Worker identity, cwd, session ID, and `working` state verified
+- [ ] All six visible-worker identity fields persisted and passed distinctly
+- [ ] Legacy/incomplete identity state fails closed without duplicate launch
+- [ ] Claude uses `acceptEdits`; Hermes uses smart approvals without yolo
+- [ ] Local commit, push, and PR/issue permissions are each explicit
+- [ ] Destructive/history-rewriting Git operations remain absolutely prohibited
 - [ ] Active window, workspace, tab, and pane preserved unless focus was requested
 - [ ] Tracked watcher uses the verified Herdr client and a finite timeout
 - [ ] Follow-ups preserve the original session

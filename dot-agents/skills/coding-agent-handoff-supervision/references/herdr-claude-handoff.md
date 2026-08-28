@@ -1,4 +1,4 @@
-# Herdr-Native Claude Handoffs
+# Herdr-Native Claude and Hermes Handoffs
 
 ## Preconditions and caller identity
 
@@ -24,7 +24,8 @@ directly in every command so separate tool calls and background processes do
 not depend on parent-shell state. Verify `status` reports a running server and
 `compatible: yes` before mutating layout. Do not reduce this to an exit-code
 check: an incompatible client can print status and exit successfully. If the
-injected path is absent, non-executable, or incompatible, use Agent View.
+injected path is absent, non-executable, or incompatible, stop. Visible work has
+no Agent View fallback.
 
 This is especially important for the watcher: a tracked background terminal
 may start a login shell that exposes an older Herdr client. Invoke the inherited
@@ -38,8 +39,8 @@ Stop rather than substituting the focused pane if the caller cannot be resolved.
 ## Create the visible worker
 
 A horizontal handoff means a side-by-side split created to the caller's right.
-Keep focus on the caller while preparing Claude, and preserve the exact working
-directory:
+Keep focus on the caller while preparing the selected worker, and preserve the
+exact working directory:
 
 ```sh
 "$HERDR_BIN_PATH" pane split --pane "$HERDR_PANE_ID" \
@@ -52,33 +53,63 @@ handoff-owned resource.
 
 Choose a useful unique Herdr agent name matching
 `[a-z][a-z0-9_-]{0,31}`. Check `"$HERDR_BIN_PATH" agent list` before naming it. The Herdr
-agent name is the stable control target; Claude's `--name` is the human display
-name.
+agent name is the stable control target.
 
-Start Claude without an initial prompt so Herdr can verify interactive readiness:
+Start the selected worker without an initial prompt so Herdr can verify
+interactive readiness. Claude is the default:
 
 ```sh
 "$HERDR_BIN_PATH" agent start <agent-name> --kind claude --pane <new-pane-id> -- \
-  --permission-mode auto --model opus --effort high \
+  --permission-mode acceptEdits --model opus --effort high \
   --name "<short task name>"
 ```
 
-Preserve an explicitly requested model, effort, or safer permission mode instead
-of overwriting it with the example defaults. If startup returns
-`agent_not_ready`, inspect `agent get` and `agent read` through the recorded
-binary. A trust, approval, or question UI is `blocked`; do not answer it for the
-user.
+Use Hermes only after an explicit same-run selection:
 
-Submit the concept brief without waiting for completion:
+```sh
+"$HERDR_BIN_PATH" agent start <agent-name> --kind hermes --pane <new-pane-id>
+```
+
+Preserve explicitly requested agent arguments instead of overwriting them with
+the Claude example defaults. Do not pass Claude-only arguments to Hermes. Before
+starting Hermes, require `approvals.mode: smart` in the selected profile, require
+`HERMES_YOLO_MODE` to be unset, and pass no `--yolo` flag. If approval mode is
+`off`, cannot be verified, or startup arguments bypass approval, stop. If startup
+returns `agent_not_ready`, inspect `agent get` and `agent read` through the
+recorded binary. A trust, approval, or question UI is `blocked`; do not answer it
+for the user.
+
+Claude's `acceptEdits` and Hermes's smart mode are approval gates, not hard
+confinement. Do not claim the visible worker has sandbox confinement. If the
+handoff requires hard filesystem, network, credential, or Git confinement, stop
+unless a separately verified runtime provides it.
+
+Submit the short ticket-backed handoff without waiting for completion:
 
 ```sh
 "$HERDR_BIN_PATH" agent prompt <agent-name> "<concept brief>"
 "$HERDR_BIN_PATH" agent get <agent-name>
 ```
 
-Verify the returned agent resolves to the new pane, intended cwd, a real Claude
-session identity, and `working`. If the prompt stalls or the agent is blocked,
-inspect the UI and report the blocker rather than creating another worker.
+Before the first prompt, build and persist this exact identity record from
+`herdr agent get`, `git rev-parse --show-toplevel`, `git rev-parse
+--path-format=absolute --git-common-dir`, and `git branch --show-current`:
+
+```yaml
+worker_surface: herdr
+worker_agent_name: <agent-name>
+worker_pane_id: <new-pane-id>
+worker_kind: <claude|hermes>
+worker_runtime_session_id: <.result.agent.agent_session.value>
+worker_worktree_identity: {"root":"<canonical-root>","git_common_dir":"<canonical-common-dir>","branch":"<branch>"}
+```
+
+Verify the returned agent resolves to every persisted value and `working`. The
+agent name, pane ID, kind, underlying runtime session ID, surface, and worktree
+identity are distinct. Read the agent name from `.result.agent.name`, pane from
+`.result.agent.pane_id`, kind from `.result.agent.agent`, and runtime session ID
+from `.result.agent.agent_session.value`; require `.result.agent.cwd` to resolve
+to the worktree root. Missing or ambiguous fields stop before prompting.
 
 ## Watch without changing focus
 
@@ -126,15 +157,20 @@ the path. Do not request file output preemptively.
 
 ## Continue the same session
 
-Send a follow-up to the existing name:
+Before and after every correction prompt, run `agent get` and recompute the Git
+worktree identity. Compare all six fields exactly: `worker_surface`,
+`worker_agent_name`, `worker_pane_id`, `worker_kind`,
+`worker_runtime_session_id`, and `worker_worktree_identity`. A missing legacy
+field, lookup failure, mismatch, or absent agent stops; never launch a duplicate.
+Only then send a follow-up to the existing name:
 
 ```sh
 "$HERDR_BIN_PATH" agent prompt <agent-name> "<follow-up>"
 "$HERDR_BIN_PATH" agent get <agent-name>
 ```
 
-Verify the same pane and Claude session identity return to `working`, then start
-a new tracked wait for that turn if completion reporting is still promised.
+Verify all six fields still match and the original agent returns to `working`,
+then start a new tracked wait for that turn if completion reporting is still promised.
 Do not focus updates by default. Use `agent focus` through the recorded binary
 only when Bryan explicitly asks to see the follow-up.
 
@@ -142,14 +178,12 @@ If the agent is `blocked`, read its terminal and ask Bryan before answering a
 question or approval. Never submit an automatic prompt suggestion already
 visible in Claude's input box.
 
-## Fallback and failure handling
+## Failure handling
 
-Use the Agent View fallback when:
-
-- `HERDR_ENV` is not `1`;
-- caller-pane identity is absent or cannot be resolved;
-- Bryan explicitly requests background-only dispatch; or
-- Herdr cannot create or start the pane without disturbing unrelated work.
+If Herdr is unavailable, caller-pane identity cannot be resolved, or Herdr cannot
+create or start the pane without disturbing unrelated work, stop. Agent View and
+background wrappers are separate explicit-only surfaces and cannot resume this
+visible-worker contract.
 
 If a split succeeds but startup or prompting fails, close only that empty or
 failed handoff-owned pane after verifying its ID. Do not silently start both a
@@ -166,5 +200,5 @@ longer needs the terminal:
 ```
 
 Verify the pane is absent afterward. Close only the recorded handoff-owned pane;
-never close the caller pane or an existing Claude pane. Stop the tracked watcher
-if cleanup happens before it naturally returns.
+never close the caller pane or an existing Claude or Hermes pane. Stop the
+tracked watcher if cleanup happens before it naturally returns.

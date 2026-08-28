@@ -1,6 +1,6 @@
 ---
 name: codex-claude-implementation-loop
-description: "Use when a Codex-backed Hermes parent should plan and gate code changes while Claude Code implements, runs the first tests, and revises from Codex feedback using a subscription-backed CLI session."
+description: "Use only after an explicit same-run request for the background Codex-Claude wrapper."
 version: 1.2.0
 author: Hermes Agent
 license: MIT
@@ -14,7 +14,10 @@ metadata:
 
 ## Overview
 
-Keep authority with the Codex-backed Hermes parent while using Claude Code as a subscription-backed implementation worker.
+Keep authority with the Codex-backed Hermes parent while using Claude Code as a
+subscription-backed background implementation worker. This wrapper is
+explicit-request-only; normal visible coding handoffs use
+`coding-agent-handoff-supervision` through Herdr.
 
 **Ownership:** Codex plans, reviews, independently tests, and decides whether work is complete. Claude implements, runs the first test pass, and revises its work when Codex returns concrete findings.
 
@@ -30,6 +33,7 @@ The loop is sequential: never let Codex and Claude edit the same working tree co
 
 Use this skill when:
 
+- The user explicitly requests this background wrapper for the current run.
 - The active Hermes parent uses an OpenAI Codex subscription model.
 - A non-trivial coding task is ready for implementation.
 - The user asks for Codex planning with Claude implementation.
@@ -37,6 +41,7 @@ Use this skill when:
 
 Do not use for:
 
+- Automatic routing or as a fallback when a visible Herdr handoff is unavailable.
 - Planning-only requests.
 - Read-only research or explanation.
 - Tiny edits where process overhead exceeds risk, unless the user explicitly requests the loop.

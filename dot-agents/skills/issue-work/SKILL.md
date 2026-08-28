@@ -55,7 +55,7 @@ Use the host's native operations; do not require one agent framework or plugin:
 | Create/enter worktree | `wt switch --create` then run tools with that worktree as `workdir` | `EnterWorktree` or controlled `git worktree` fallback |
 | Resolve an approved project-vault plan | load Hermes `vault-pkm`; follow `issue-plan`'s handoff contract | host-native `vault-pkm` plus the same contract |
 | Write the approved plan | load Hermes `plan` | `superpowers:writing-plans` or equivalent |
-| Execute an approved plan | on a Codex-backed Hermes parent, route SGG to `codex-claude-implementation-loop`, route other repos to `codex-qwen-implementation-loop`, or use host-native GPT when explicitly requested | host-native implementation workflow |
+| Execute an approved plan | reuse the existing governing issue and route to a visible Claude worker through `coding-agent-handoff-supervision`; honor explicit same-run Hermes, Qwen, or host-native GPT requests | host-native implementation workflow |
 | Implement test-first | load `tdd` | load `tdd` |
 | Debug repeated failures | load `diagnosing-bugs` | load `diagnosing-bugs` |
 | Independent final review | a verification context independent of the implementation context | equivalent verification/reviewer workflow |
@@ -84,6 +84,12 @@ its `progress.md` exists:
      the recorded approved snapshot. Immaterial drift is logged and resume may
      continue. Material goal/scope/decision/acceptance drift stops for the user;
      do not silently widen implementation or ship stale work.
+   - When `implementation_loop: coding-agent-handoff-supervision`, require the
+     complete visible-worker record: `worker_surface`, `worker_agent_name`,
+     `worker_pane_id`, `worker_kind`, `worker_runtime_session_id`, and
+     `worker_worktree_identity`. Legacy or incomplete visible-worker state must
+     stop as blocked; never launch a replacement worker or infer missing fields
+     from a currently visible pane.
 5. On **refresh**, continue with the full flow and replace prior intake/plan
    state only after the new source passes.
 
@@ -390,17 +396,23 @@ After user approval:
 
 #### Hermes with a Codex-backed parent
 
+The canonical ticket passed to `issue-work` is the existing governing issue for
+the implementation handoff. Reuse it; never create a second implementation
+ticket. If a caller reaches handoff preparation without a governing issue, stop
+and follow `coding-agent-handoff-supervision`'s `issue-create` gate before any
+worker is launched.
+
 Select the implementation engine after plan approval, in this order:
 
-1. **Explicit same-run override.** Bryan may say GPT should implement this issue, or may explicitly select Qwen. Use that path. Claude remains limited to the verified SGG allowlist.
-2. **SGG Claude allowlist.** Use `codex-claude-implementation-loop` only when the verified implementation origin host is `github.com` and the implementation owner/repository is exactly one of:
-   - `HHS/simpler-grants-gov`
-   - `HHS/simpler-grants-protocol`
-   - `common-grants/py-cg-grants-gov`
-   - `common-grants/ts-cg-grants-gov`
-3. **Default planned-issue worker.** For every other repository, use `codex-qwen-implementation-loop`.
+1. **Explicit same-run override.** Honor an explicit Hermes, Qwen, Claude, or
+   host-native GPT request. Qwen is available only through an explicit same-run
+   request; plan approval alone never selects it.
+2. **Default visible worker.** Otherwise select Claude through
+   `coding-agent-handoff-supervision`, independent of forge or repository.
 
-Resolve this decision with the skill's deterministic router, using `--override auto` unless Bryan explicitly selected GPT, Qwen, or an allowlisted Claude route:
+Resolve this decision with the skill's deterministic router, using `--override
+auto` unless Bryan explicitly selected `--override hermes`, `qwen`, `claude`, or
+`gpt`:
 
 ```bash
 python3 <issue-work-skill-dir>/scripts/select_issue_worker.py \
@@ -412,24 +424,82 @@ python3 <issue-work-skill-dir>/scripts/select_issue_worker.py \
   --override auto
 ```
 
-Load the exact skill named by `implementation_loop`; a `null` loop means the explicit host-native GPT path. Preserve the router JSON in the state directory as `implementation-routing.json`.
+Load the exact skill named by `implementation_loop`; a `null` loop means the
+explicit host-native GPT path. Preserve the router JSON in the state directory
+as `implementation-routing.json`.
 
 The ticket repository and implementation repository may differ only through the
 validated handoff. The approved implementation hostname and owner/repository must
-match the worktree origin before routing. A path under `~/code/sgg`, a similarly
-named checkout, a lookalike forge, or an unrelated repository under the SGG
-umbrella cannot authorize Claude. Missing prerequisites stop the run.
+match the worktree origin before routing. A similarly named checkout, lookalike
+forge, or unrelated repository cannot satisfy this identity gate. Missing
+prerequisites stop the run.
 
-For either delegated engine:
+For the visible Claude or Hermes path:
 
-1. Record the worktree's baseline status and run the selected readiness command: Claude `claude_worker.py check`; Qwen `qwen_worker.py check`.
-2. Invoke its `implement` command with `plan.md` and `{WORKTREE_PATH}`. The Claude path must select `--model opus`, run the wrapper's usage preflight, and may not downgrade. Surface any usage window over 75% as a warning. Above 85%, or when usage cannot be verified, stop and ask Bryan for an explicit same-run override before adding `--allow-high-usage`; plan approval is not that override. The Qwen path pins the wrapper's exact local provider and model and may not use a cloud fallback.
-3. Save the normalized envelope as `{state-dir}/{worker}-implementation.json`. Record `implementation_loop:` and its `session_id` as `worker_session_id:` in `progress.md` frontmatter so Phase 4 can resume the same worker context.
-4. Codex reviews the actual repository diff and independently reruns every targeted and broader check required by the plan. Worker JSON is evidence, not the verdict.
-5. For blocking findings, write `{state-dir}/codex-review-{pass}.md` and resume the same worker session with its `revise` command. Repeat the complete Codex gate after each revision; cap the correction loop at two revision passes.
-6. Mark plan/task checkboxes complete only after Codex accepts the final repository state. Preserve every implementation and revision envelope in the state directory.
+1. Require Herdr for visible Claude or Hermes. Verify `HERDR_ENV=1`, the exact
+   caller pane, and a compatible injected `HERDR_BIN_PATH`; stop if any are
+   unavailable. Agent View and background wrappers cannot represent the
+   persisted correction identity and are not fallbacks for this route.
+2. Record the worktree's baseline status, then follow
+   `coding-agent-handoff-supervision`. Use Herdr kind `claude` for automatic or
+   explicit Claude routing and kind `hermes` only for an explicit Hermes
+   selection. Preserve the caller's focus and attach a finite watcher.
+3. Send a short handoff containing only the ticket URL, verified implementation
+   repository and worktree, authority boundaries, and delivery permissions. The
+   worker must inspect the ticket and repository instructions itself. Do not
+   duplicate `plan.md`, the complete ticket body, or the parent's exploration in
+   the prompt.
+4. Use one authority rule: the default visible handoff forbids staging, local
+   commit creation, push, PR or issue mutation, and every other publication
+   action; the worker may edit and test only in the named worktree. Each broader
+   action requires its own explicit same-run user approval. Publication approval
+   still passes through Phase 4's ship/public-action gate; worker permission
+   never bypasses that gate or follows from implementation approval.
+   Destructive and history-rewriting Git operations are absolute and not
+   approval-eligible: the worker must never run `git reset`, `git clean`, a
+   checkout-discard operation, `rebase`, `commit --amend`, any other history
+   rewrite, or `force-push`; delete or overwrite any local ref or branch,
+   including branch deletion and `git update-ref -d` update-ref deletion, is
+   likewise forbidden.
+5. Start Claude with `acceptEdits`; start Hermes only with normal smart approvals
+   and no yolo. Stop if approval state is disabled or unverifiable. This route is
+   approval-gated, not sandbox-confined; if hard confinement is required but
+   unavailable, stop.
+6. Record `implementation_loop: coding-agent-handoff-supervision` and persist all
+   six distinct fields in `progress.md`: `worker_surface: herdr`,
+   `worker_agent_name`, `worker_pane_id`, `worker_kind`,
+   `worker_runtime_session_id`, and `worker_worktree_identity` (canonical
+   worktree root, Git common directory, and branch). Preserve the worker's final
+   report in `{state-dir}/visible-worker-implementation.md`.
 
-The delegated worker must not stage, commit, push, reset, clean, publish, or alter history. After the complete Codex gate passes, the parent may create local commits at the approved plan's logical boundaries, staging only reviewed paths and preserving the repository's message and hook rules. Plan approval authorizes those local implementation commits; it does not authorize a push, PR, comment, or other publication.
+For the explicit Qwen path, run `qwen_worker.py check`, then its `implement`
+command with `plan.md` and `{WORKTREE_PATH}`. Pin the exact local provider and
+model, permit no cloud fallback, save the normalized envelope as
+`{state-dir}/qwen-implementation.json`, and record
+`implementation_loop: codex-qwen-implementation-loop` plus its session ID.
+
+For every delegated path:
+
+1. Codex reviews the actual repository diff and independently reruns every
+   targeted and broader check required by the plan. Worker reports and JSON are
+   evidence, not the verdict.
+2. For blocking findings, write `{state-dir}/codex-review-{pass}.md` and continue
+   the same worker. For Claude or Hermes, before and after every correction
+   prompt compare all six persisted identity fields with `herdr agent get` and
+   freshly recomputed Git worktree identity. Any incomplete legacy state,
+   missing agent, or mismatch stops; never launch a duplicate. For Qwen, use its
+   original session ID with `revise`. Repeat the complete Codex gate after each
+   revision; cap the correction loop at two revision passes.
+3. Mark plan/task checkboxes complete only after Codex accepts the final
+   repository state. Preserve every implementation and revision artifact in the
+   state directory.
+
+After the complete Codex gate passes, the parent may create local commits at the
+approved plan's logical boundaries, staging only reviewed paths and preserving
+the repository's message and hook rules. Those parent-owned commits do not alter
+the worker authority recorded above. Plan approval authorizes the parent's local
+implementation commits; push, PR, comment, or other publication still requires
+the ship/public-action gate.
 
 When Bryan explicitly selects GPT implementation, execute task-by-task with the host-native workflow below while retaining the same plan, test, failure, and independent-review gates.
 
@@ -440,7 +510,7 @@ Execute task-by-task with the host-native workflow. Load `tdd` for behavior chan
 - **plan_path:** `{TICKET_STATE_DIR}/plan.md`
 - **worktree path:** the absolute path from `progress.md`
 - **commit rules:** atomic (one logical unit per commit); message style matches `git log --oneline -20` in **this repo** (not global defaults); **never** add `Co-authored-by: Claude` or any AI signature; **never** use `--no-verify`.
-- **failure policy:** hand off the 3.5 escalation rule below — on a task whose tests fail, attempt a direct fix first; on a **second** consecutive failure of the same task, escalate per 3.5; hard cap at 3 attempts, then stop and report. Delegated Claude and Qwen paths instead use their two-revision bound above.
+- **failure policy:** hand off the 3.5 escalation rule below — on a task whose tests fail, attempt a direct fix first; on a **second** consecutive failure of the same task, escalate per 3.5; hard cap at 3 attempts, then stop and report. Delegated Claude, Hermes, and Qwen paths instead use their two-revision bound above.
 
 Keep `plan.md` checkboxes and the host task list synchronized, so a resumed run (`status: implementing`) picks up at the first unchecked task automatically.
 
@@ -519,7 +589,45 @@ If verification fails, do **not** advance to Phase 4. Return to Phase 3's failur
 
 ### 4.1 Delegate to `/pr-self-review`
 
-Phase 4 hands off to the [`pr-self-review`](../pr-self-review/SKILL.md) skill in its `pre-pr` mode. It selects the primary review lanes deterministically — Standards and Spec always, Risk when the changed paths trigger it or the repository is CairnOS — runs them as parallel children, then runs mandatory Ponytail as the final over-engineering quality pass against the same exact candidate. It fetches pre-review context and owns finding disposition. It automatically fixes validated in-scope findings, rejects false positives, and defers demonstrably separate non-blocking work, asking only when a valid blocking finding has no fix that preserves the approved PR intent. Corrections are capped at one normal pass plus one conditional final pass; every correction rereview and the terminal review-only pass includes Ponytail last. Hermes runs at most three children at a time, so Ponytail runs after the primary batch. The worktree, branch, and state dir already exist; pass them in:
+Before issue-work may invoke ship, it must launch a fresh visible Claude reviewer
+through Herdr in a new Herdr agent, pane, and runtime session. This reviewer is
+separate from every implementation worker and is the only context allowed to
+run Phase 4's final review. Herdr or fresh Claude unavailability stops the run;
+there is no Agent View, wrapper, native-parent, serial, or ad-hoc fallback.
+Earlier parent reviews and ad-hoc reviews cannot satisfy this gate.
+
+First freeze the exact final candidate after all implementation commits and with
+an empty worktree. Record `base_sha`, `head_sha`, `merge_base_sha`, and
+`diff_sha256` using the same canonical binary-diff fingerprint required by
+`pr-self-review`, plus `expected_head_branch`. Any later candidate change makes
+all review artifacts stale. Require the implementation worker to be settled and
+prevent concurrent edits while the reviewer examines this candidate.
+
+Then use `coding-agent-handoff-supervision` to start a new `--kind claude`
+reviewer in the implementation worktree. Persist and pass:
+
+- `reviewer_surface: herdr`;
+- `reviewer_agent_name`;
+- `reviewer_pane_id`;
+- `reviewer_kind: claude`;
+- `reviewer_runtime_session_id`;
+- `reviewer_worktree_identity`.
+
+The reviewer must be distinct from the implementation worker: require a new
+agent name, pane ID, and runtime session ID, and compare them against
+`worker_agent_name`, `worker_pane_id`, and `worker_runtime_session_id` when that
+visible implementation identity exists. Equal, missing, reused, legacy, or
+unverifiable identity blocks review. The shared worktree identity must match the
+frozen candidate exactly.
+
+Prompt the fresh reviewer with the ticket URL, implementation repository and
+worktree, plan path, state directory, frozen candidate identity, review-only
+authority, and the original implementation-worker identity used only for
+correction routing. The fresh visible Claude reviewer must load
+[`pr-self-review`](../pr-self-review/SKILL.md) in `pre-pr` mode and run Standards,
+Spec, conditional Risk, mandatory Ponytail, the acceptance-criteria sweep, and
+the Ship Readiness verdict. Start a finite watcher and fail closed on blocked,
+missing, replaced, or settled-without-artifacts review state.
 
 Before delegation, run
 `scripts/validate_cross_repo_context.py` with the recorded ticket trunk/state,
@@ -555,6 +663,13 @@ python3 <issue-work-skill-dir>/scripts/validate_cross_repo_context.py \
 - `head_branch`: the value from `progress.md` `branch:`; pr-self-review uses it for branch-drift checks because no PR-derived `headRefName` exists yet
 - `base_branch`: the value from `progress.md` `base:`
 - `plan_path`: `{TICKET_STATE_DIR}/plan.md`
+- `reviewer_surface`, `reviewer_agent_name`, `reviewer_pane_id`,
+  `reviewer_kind`, `reviewer_runtime_session_id`, and
+  `reviewer_worktree_identity`: the fresh Claude reviewer's persisted Herdr
+  identity.
+- `exact_candidate`: full `base_sha`, `head_sha`, `merge_base_sha`,
+  `diff_sha256`, and `expected_head_branch` frozen immediately before reviewer
+  launch.
 - `source_issue`: pass `{ticket-owner}/{ticket-repo}#{N}` only when the verified
   `context-validation.json` says `source_issue_mode: github_shorthand`. Omit it
   for Forgejo/Codeberg/Gitea and every cross-repository or cross-forge handoff;
@@ -562,12 +677,36 @@ python3 <issue-work-skill-dir>/scripts/validate_cross_repo_context.py \
   remains intent authority on those routes. Never let a hostless identifier
   resolve against the wrong forge. Private ticket identity must not flow into
   public artifacts.
-- `worker_session_id`: the value recorded in `progress.md` when Phase 3 used a delegated implementation loop; otherwise omit it.
-- `implementation_loop`: the exact selected value, `codex-claude-implementation-loop` or `codex-qwen-implementation-loop`, when `worker_session_id` is present; otherwise omit it.
+- `implementation_loop`: the exact selected value,
+  `coding-agent-handoff-supervision` or `codex-qwen-implementation-loop`.
+- For `coding-agent-handoff-supervision`, pass every persisted value distinctly:
+  `worker_surface`, `worker_agent_name`, `worker_pane_id`, `worker_kind`,
+  `worker_runtime_session_id`, and `worker_worktree_identity`. Omit
+  `worker_session_id`; it is reserved for wrapper sessions.
+- For `codex-qwen-implementation-loop`, pass `worker_session_id` and omit all
+  visible-worker identity fields. Native paths omit both contracts.
 
-Load the skill through the host's skill mechanism. It writes `review-standards.md`, `review-spec.md`, `review-risk.md` when that lane was selected, mandatory `review-ponytail.md`, and a final `summary.md` into the state dir, matching the shape Phase 4.3 reads below. A missing `review-risk.md` means the classifier did not select Risk; `summary.md`'s Lane Selection section records why. A missing or stale `review-ponytail.md` means the self-review is incomplete, not clean.
+The fresh reviewer writes `review-standards.md`, `review-spec.md`,
+`review-risk.md` when selected, mandatory `review-ponytail.md`,
+`intent-checklist.json`, and `summary.md` into the state dir. Every artifact must
+record the exact final candidate's `base_sha`, `head_sha`, `merge_base_sha`, and
+`diff_sha256`; the summary must record current lane selection, acceptance-
+criteria results, and Ship Readiness.
 
-After the skill returns, require `review-ponytail.md`, then inspect `summary.md`'s Ponytail selection/status and Ship Readiness. If the Ponytail artifact is missing or stale, or the summary does not record it as selected for the exact candidate, set `progress.md` `status: blocked` and stop; a missing Ponytail pass can never satisfy the handoff. If Ship Readiness says `Correction bound reached — do not merge` or any other do-not-merge verdict, set `progress.md` `status: blocked`, present the blocker, and stop without entering Phase 4.3 or asking for ship approval. Only then set `progress.md` `status: reviewed` and continue.
+Accepted corrections preserve the implementation identity contract. A
+candidate-changing fix goes to the original implementation worker, never the
+fresh reviewer. After the parent accepts and commits the fix, the same fresh
+reviewer must re-run the complete exact-candidate gate—Standards, Spec,
+conditional Risk, mandatory Ponytail, acceptance-criteria sweep, and Ship
+Readiness—before ship. Any candidate-changing fix invalidates every prior review
+artifact; partial, affected-lane-only, or earlier-review reuse is forbidden.
+
+After the fresh reviewer returns, revalidate both its complete Herdr identity and
+the current candidate fingerprint. Require all selected primary artifacts,
+mandatory `review-ponytail.md`, `intent-checklist.json`, and `summary.md` to match
+that fingerprint. A missing or stale artifact, incomplete sweep, reviewer drift,
+candidate drift, open blocking verdict, or any Ship Readiness value other than
+ready blocks the run. Only then set `progress.md` `status: reviewed` and continue.
 
 ### 4.3 Present to user and ask for ship approval
 
@@ -583,7 +722,12 @@ Present the review outcome inline in this order:
 
    > Ready to push the branch and open the draft PR? Reply `ship it` to proceed, or flag anything you want changed first.
 
-   On `ship it` (or equivalent approval like "yes", "go", "push"): **load the [`ship` skill](../ship/SKILL.md)** — do not run `git push` / `gh pr create` directly. `ship` preserves draft-PR defaults, forge-specific creation, PR-template fidelity, and labels.
+   On `ship it` (or equivalent approval like "yes", "go", "push"), first
+   recompute the candidate fingerprint and re-read the fresh reviewer's current
+   `summary.md` Ship Readiness verdict. Any mismatch stops. Only then **load the
+   [`ship` skill](../ship/SKILL.md)** — do not run `git push` / `gh pr create`
+   directly. `ship` preserves draft-PR defaults, forge-specific creation,
+   PR-template fidelity, and labels.
 
    For same-repository work, `/ship` may use `{TICKET_STATE_DIR}/summary.md`.
    For private cross-repository work, first derive
@@ -660,8 +804,9 @@ Detailed recipes that load on demand:
 - `vault-pkm` — resolves and reads project-vault plans without bypassing local vault rules.
 - `worktrunk` — Phase 1.7 controlled worktree setup.
 - `plan` — Phase 2.3 Hermes plan authoring (path-overridden to the state root).
-- `codex-claude-implementation-loop` — SGG-only Phase 3 implementation/revision engine on a Codex-backed Hermes parent.
-- `codex-qwen-implementation-loop` — default non-SGG Phase 3 implementation/revision engine for planned issue work on a Codex-backed Hermes parent.
+- `coding-agent-handoff-supervision` — default ticket-backed visible Claude
+  handoff and the explicit visible Hermes route.
+- `codex-qwen-implementation-loop` — explicit same-run local Qwen route.
 
 ### Optional Delegation
 

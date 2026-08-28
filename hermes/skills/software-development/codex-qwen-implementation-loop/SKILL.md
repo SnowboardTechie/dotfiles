@@ -1,6 +1,6 @@
 ---
 name: codex-qwen-implementation-loop
-description: Use when Codex delegates planned work to local Qwen.
+description: Use only after an explicit same-run request for local Qwen.
 version: 1.0.0
 author: Hermes Agent
 license: MIT
@@ -23,22 +23,21 @@ Codex plans → local Qwen implements/tests → Codex reviews/retests
                     └──── actionable fixes ────────┘
 ```
 
-This is an implementation engine for planned issue work. It is not a global rule that prevents GPT from implementing directly outside `issue-work` or after an explicit worker override.
+This is an opt-in implementation engine for planned issue work. It is selected
+only when Bryan explicitly requests Qwen for the current run.
 
 ## When to Use
 
 Use this skill when:
 
 - `issue-work` has an approved, self-contained `plan.md`;
-- the repository is outside the Simpler Grants Gov allowlist, or Bryan explicitly selected Qwen for this run;
-- no explicit worker override selected GPT or Claude;
+- Bryan explicitly selected Qwen for this run;
 - the GPT Hermes parent will independently inspect and test the result.
 
 Do not use it for:
 
-- ad hoc implementation outside `issue-work`, unless Bryan explicitly requests Qwen;
+- any implementation run without an explicit same-run Qwen request;
 - planning-only, research, or review-only work;
-- Simpler Grants Gov issue-work, which uses `codex-claude-implementation-loop`;
 - concurrent editing of the same worktree;
 - a plan that requires secrets or external side effects the worker must not access.
 
@@ -177,8 +176,11 @@ Revision results replace `plan_deviations` with `findings_addressed` and `unreso
 
 ## Common Pitfalls
 
-1. **Making Qwen the global implementation default.** Route to it only from approved `issue-work` or an explicit user request. GPT remains free to implement ad hoc work.
-2. **Routing SGG to Qwen accidentally.** Simpler Grants Gov issue-work defaults to the Claude exception; use Qwen there only after Bryan explicitly selects it for the current run.
+1. **Treating approved `issue-work` as Qwen authorization.** It is not. Route to
+   Qwen only after Bryan explicitly selects it for the current run; automatic
+   issue-work routing uses the visible Claude handoff.
+2. **Switching to Qwen after another worker fails.** Unavailability or a failed
+   correction stops the run; it does not create an implicit Qwen request.
 3. **Trusting the report.** Read the diff and rerun tests; structured output is not proof.
 4. **Starting a fresh revision.** Preserve and resume `worker_session_id`.
 5. **Passing chat history.** Pass a self-contained plan and review contracts instead.
@@ -191,8 +193,8 @@ Revision results replace `plan_deviations` with `findings_addressed` and `unreso
 
 ## Verification Checklist
 
-- [ ] Invocation came from approved `issue-work` or an explicit Qwen request
-- [ ] Repository was outside the SGG Claude allowlist, or Bryan explicitly selected Qwen for this run
+- [ ] Bryan explicitly selected Qwen for this run
+- [ ] Invocation came from approved `issue-work` or another explicitly bounded Qwen request
 - [ ] `qwen_worker.py check` passed
 - [ ] Approved plan was self-contained and contained relevant parent context
 - [ ] Initial repository status was recorded

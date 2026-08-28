@@ -1,17 +1,18 @@
-# Claude Agent View Fallback
+# Explicit Claude Agent View Background Surface
 
 ## When to use it
 
-Use this path when the parent is outside Herdr, Herdr cannot safely resolve or
-split the caller pane, or Bryan explicitly requests background-only work. Do not
-start this fallback after a Herdr worker was successfully created.
+Use this path only when Bryan explicitly requests background-only Claude work
+for the current run. It is not a fallback for unavailable Herdr and cannot
+satisfy a persisted visible-worker correction contract. Do not start it after a
+Herdr worker was successfully created.
 
 ## Dispatch a background worker
 
 Use a positional prompt so Claude creates an attachable background session:
 
 ```sh
-claude --bg --permission-mode auto --model opus --effort high \
+claude --bg --permission-mode acceptEdits --model opus --effort high \
   --name "Short task name" "<concept brief>"
 ```
 

@@ -253,14 +253,16 @@ Use these defaults:
 
 The recommendation is not authorization to edit or publish. Present the diagnosis, proposed scope, acceptance criteria, and required lane-specific checks, then ask whether to implement the fix.
 
-If the user approves and the current host is a Codex-backed Hermes parent with `codex-claude-implementation-loop` installed:
+If the user approves and the current host is a Codex-backed Hermes parent:
 
 1. Create or reuse an isolated worktree for the dependency PR; do not switch the trunk checkout in place.
-2. Codex writes a self-contained implementation plan grounded in the failing logs, dependency changelog, affected call sites, and this skill's Step 5 verification commands.
-3. Run the loop with Claude Opus as implementer and initial tester. Never silently downgrade models; an unavailable Opus run stops with a blocker.
+2. Load `coding-agent-handoff-supervision`, reuse or create the governing project-workspace ticket, and launch the normal visible Claude handoff through Herdr. Herdr unavailability stops the handoff; do not silently choose a background worker.
+3. Give the worker the ticket/PR URLs, exact implementation repository and worktree, explicit authority boundaries, and this skill's Step 5 verification outcome. Do not duplicate a self-contained implementation plan into the prompt.
 4. Codex inspects the actual diff and independently reruns the affected lane's verification. Return to Step 6 and recompute the recommendation from the final evidence.
 
-Claude does not commit or push. Local commit creation and any update to the dependency PR remain parent-owned actions, and pushing, commenting, approving, closing, or merging still requires the explicit public-action approval in Hard Rules. On other hosts, use the approved host-native implementation workflow while preserving the same diagnosis and verification contract.
+Claude's local commit, push, and PR/issue permissions must each be stated explicitly; the normal route forbids all three and leaves local commit creation and every dependency-PR update parent-owned. Pushing, commenting, approving, closing, or merging still requires the explicit public-action approval in Hard Rules. On other hosts, use the approved host-native implementation workflow while preserving the same diagnosis and verification contract.
+
+**Explicit background-only alternative.** Use `codex-claude-implementation-loop` only when Bryan explicitly requests a background wrapper for that same run. It is never an automatic substitute for the visible Herdr handoff, and wrapper unavailability stops rather than changing workers.
 
 ---
 
@@ -305,4 +307,5 @@ Use this format:
 
 - `dependency-triage` — queue-level classification and review routing.
 - `catalog-review` — stricter lane for catalog-managed updates.
-- `codex-claude-implementation-loop` — approved narrow fixes on a Codex-backed Hermes parent.
+- `coding-agent-handoff-supervision` — normal visible, ticket-backed fix handoff.
+- `codex-claude-implementation-loop` — explicit background-only alternative.

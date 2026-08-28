@@ -120,14 +120,16 @@ Use this decision model:
 
 “Fix in the PR” is a recommendation, not authorization to edit or publish. Present the attributable breakage, proposed scope, affected downstream packages, and full catalog validation plan, then ask whether to implement it.
 
-If the user approves and the current host is a Codex-backed Hermes parent with `codex-claude-implementation-loop` installed:
+If the user approves and the current host is a Codex-backed Hermes parent:
 
 1. Create or reuse an isolated worktree for the catalog PR; never switch the trunk checkout in place.
-2. Codex writes a self-contained plan from the catalog diff, release notes, failing logs, and downstream impact mapped in Steps 2–3.
-3. Run the loop with Claude Opus as implementer and initial tester. Never silently downgrade models; Opus unavailability is a blocker.
+2. Load `coding-agent-handoff-supervision`, reuse or create the governing project-workspace ticket, and launch the normal visible Claude handoff through Herdr. Herdr unavailability stops the handoff; do not silently choose a background worker.
+3. Give the worker the ticket/PR URLs, exact implementation repository and worktree, explicit authority boundaries, and the downstream impact and validation outcome from Steps 2–3. Do not duplicate a self-contained implementation plan into the prompt.
 4. Codex reviews the actual diff and independently reruns the full relevant validation path, including audit and every affected downstream package. Then return to Step 4 and recompute the merge/hold/reject decision.
 
-Claude does not commit or push. Local commit creation and every PR mutation remain parent-owned actions; the explicit public-action approval in Hard Rules still applies. On other hosts, use the approved host-native implementation workflow with the same downstream-validation contract.
+Claude's local commit, push, and PR/issue permissions must each be stated explicitly; the normal route forbids all three and leaves local commit creation and every PR mutation parent-owned. The explicit public-action approval in Hard Rules still applies. On other hosts, use the approved host-native implementation workflow with the same downstream-validation contract.
+
+**Explicit background-only alternative.** Use `codex-claude-implementation-loop` only when Bryan explicitly requests a background wrapper for that same run. It is never an automatic substitute for the visible Herdr handoff, and wrapper unavailability stops rather than changing workers.
 
 ---
 
@@ -220,4 +222,5 @@ Use this format:
 
 - `dependency-triage` — queue-level routing into the catalog lane.
 - `dependency-review` — non-catalog dependency PRs.
-- `codex-claude-implementation-loop` — approved attributable fixes on a Codex-backed Hermes parent.
+- `coding-agent-handoff-supervision` — normal visible, ticket-backed fix handoff.
+- `codex-claude-implementation-loop` — explicit background-only alternative.

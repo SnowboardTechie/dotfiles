@@ -15,6 +15,10 @@ SPEC.loader.exec_module(select_issue_worker)
 
 
 class SelectIssueWorkerTests(unittest.TestCase):
+    def test_top_level_routing_error_has_two_blank_lines(self) -> None:
+        source = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn("from urllib.parse import urlparse\n\n\nclass RoutingError", source)
+
     def test_auto_routes_sgg_to_claude(self) -> None:
         result = select_issue_worker.select_worker(
             ticket_repo="HHS/simpler-grants-protocol",
@@ -25,10 +29,10 @@ class SelectIssueWorkerTests(unittest.TestCase):
         self.assertEqual(result["selected_worker"], "claude")
         self.assertEqual(
             result["implementation_loop"],
-            "codex-claude-implementation-loop",
+            "coding-agent-handoff-supervision",
         )
 
-    def test_cross_repo_sgg_routing_uses_implementation_identity(self) -> None:
+    def test_cross_repo_routing_uses_implementation_identity(self) -> None:
         result = select_issue_worker.select_worker(
             ticket_repo="HHS/private-planning-workspace",
             implementation_repo="HHS/simpler-grants-protocol",
@@ -37,31 +41,31 @@ class SelectIssueWorkerTests(unittest.TestCase):
             override="auto",
         )
 
-        self.assertTrue(result["sgg_allowlisted"])
         self.assertEqual(result["selected_worker"], "claude")
+        self.assertNotIn("sgg_allowlisted", result)
 
-    def test_sgg_suffix_on_untrusted_host_does_not_authorize_claude(self) -> None:
+    def test_auto_route_has_no_obsolete_sgg_policy_fields(self) -> None:
         result = select_issue_worker.select_worker(
             ticket_repo="HHS/simpler-grants-gov",
             remote_url="git@evil.example:HHS/simpler-grants-gov.git",
             override="auto",
         )
 
-        self.assertEqual(result["selected_worker"], "qwen")
-        self.assertFalse(result["sgg_allowlisted"])
+        self.assertEqual(result["selected_worker"], "claude")
+        self.assertNotIn("sgg_allowlisted", result)
         self.assertEqual(result["remote_host"], "evil.example")
 
-    def test_auto_routes_non_sgg_to_local_qwen(self) -> None:
+    def test_auto_routes_forgejo_repository_to_visible_claude_handoff(self) -> None:
         result = select_issue_worker.select_worker(
             ticket_repo="bryan/cairn-os",
             remote_url="ssh://forgejo@git.snowboardtechie.com/bryan/cairn-os.git",
             override="auto",
         )
 
-        self.assertEqual(result["selected_worker"], "qwen")
+        self.assertEqual(result["selected_worker"], "claude")
         self.assertEqual(
             result["implementation_loop"],
-            "codex-qwen-implementation-loop",
+            "coding-agent-handoff-supervision",
         )
 
     def test_nested_github_path_cannot_spoof_allowlisted_repository(self):
@@ -82,7 +86,7 @@ class SelectIssueWorkerTests(unittest.TestCase):
         self.assertEqual(result["selected_worker"], "gpt")
         self.assertIsNone(result["implementation_loop"])
 
-    def test_explicit_qwen_can_override_sgg_default(self) -> None:
+    def test_explicit_qwen_overrides_visible_claude_default(self) -> None:
         result = select_issue_worker.select_worker(
             ticket_repo="HHS/simpler-grants-gov",
             remote_url="https://github.com/HHS/simpler-grants-gov.git",
@@ -91,16 +95,31 @@ class SelectIssueWorkerTests(unittest.TestCase):
 
         self.assertEqual(result["selected_worker"], "qwen")
 
-    def test_claude_override_is_rejected_outside_sgg(self) -> None:
-        with self.assertRaisesRegex(
-            select_issue_worker.RoutingError,
-            "Claude is restricted",
-        ):
-            select_issue_worker.select_worker(
-                ticket_repo="bryan/cairn-os",
-                remote_url="git@git.snowboardtechie.com:bryan/cairn-os.git",
-                override="claude",
-            )
+    def test_explicit_claude_uses_visible_handoff(self) -> None:
+        result = select_issue_worker.select_worker(
+            ticket_repo="bryan/cairn-os",
+            remote_url="git@git.snowboardtechie.com:bryan/cairn-os.git",
+            override="claude",
+        )
+
+        self.assertEqual(result["selected_worker"], "claude")
+        self.assertEqual(
+            result["implementation_loop"],
+            "coding-agent-handoff-supervision",
+        )
+
+    def test_explicit_hermes_uses_visible_handoff(self) -> None:
+        result = select_issue_worker.select_worker(
+            ticket_repo="bryan/cairn-os",
+            remote_url="git@git.snowboardtechie.com:bryan/cairn-os.git",
+            override="hermes",
+        )
+
+        self.assertEqual(result["selected_worker"], "hermes")
+        self.assertEqual(
+            result["implementation_loop"],
+            "coding-agent-handoff-supervision",
+        )
 
     def test_ticket_and_remote_must_match_without_explicit_implementation_repo(self) -> None:
         with self.assertRaisesRegex(
@@ -126,7 +145,7 @@ class SelectIssueWorkerTests(unittest.TestCase):
         self.assertEqual(result["implementation_repo"], "example/public-project")
         self.assertEqual(result["implementation_host"], "forge.example")
         self.assertEqual(result["remote_repo"], "example/public-project")
-        self.assertEqual(result["selected_worker"], "qwen")
+        self.assertEqual(result["selected_worker"], "claude")
 
     def test_explicit_implementation_repo_must_match_remote(self) -> None:
         with self.assertRaisesRegex(

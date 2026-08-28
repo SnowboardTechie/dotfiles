@@ -45,19 +45,36 @@ Selected when the invoker passes an explicit `mode: pre-pr` argument alongside
 `state_dir`, `worktree_path`, `head_branch`, `base_branch`, `plan_path`, and
 `ticket_trunk_root`, `context_validation_path`, `ticket_url`, `ticket_host`,
 `ticket_repo`, `implementation_host`, and `implementation_repo`, plus optional
-`source_issue` in `{owner}/{repo}#{N}` form.
+`source_issue` in `{owner}/{repo}#{N}` form. An `issue-work` caller must also
+pass the fresh reviewer's `reviewer_surface`, `reviewer_agent_name`,
+`reviewer_pane_id`, `reviewer_kind`, `reviewer_runtime_session_id`, and
+`reviewer_worktree_identity`, plus `exact_candidate` containing `base_sha`,
+`head_sha`, `merge_base_sha`, `diff_sha256`, and `expected_head_branch`.
 A Codex-backed `issue-work` caller may also pass `implementation_loop` as exactly
-`codex-claude-implementation-loop` or `codex-qwen-implementation-loop`, plus
-`worker_session_id`; treat those as an opaque routing marker and worker resume
-ID, never as forge credentials. Reject any other loop value and reject a loop
-without a session ID. Mode is always explicit — never inferred from the
-state-dir path prefix. In `pre-pr` mode:
+`coding-agent-handoff-supervision` or `codex-qwen-implementation-loop`.
+The handoff-supervision route requires six distinct arguments:
+`worker_surface`, `worker_agent_name`, `worker_pane_id`, `worker_kind`,
+`worker_runtime_session_id`, and `worker_worktree_identity`. Require
+`worker_surface: herdr`, `worker_kind` as exactly `claude` or `hermes`, and a
+structured worktree identity containing canonical root, Git common directory,
+and branch. Reject `worker_session_id` on this route. The Qwen route instead
+requires only its opaque `worker_session_id` and rejects every visible-worker
+field. Reject unknown, mixed, legacy, or incomplete contracts before review.
+Mode is always explicit — never inferred from the state-dir path prefix. In
+`pre-pr` mode:
 
 - Worktree path and branch are already set up.
+- The skill is running inside the fresh visible Claude reviewer named by the
+  reviewer identity contract. A parent, implementation worker, background
+  wrapper, Agent View row, or ad-hoc review cannot impersonate this entry mode.
 - The caller's `plan.md` exists in the state dir — use it as ground truth for reviewers.
 - There is no PR yet. Skip the PR-lookup step; the linked-to-PR issue fetch (Phase 1.1 dimension A) degrades to path-touching + label-matched only — **except** for the `source_issue` arg, which is fetched directly and seeded into the cache so the source-issue rule can apply even though no PR body exists yet (see Phase 1.1 dimension A for the synthesis step).
 - Record `head_branch` as the expected branch identity for every later safety check.
-- Commit automatic fixes locally, but **never push in `pre-pr` mode**, even when the branch already has an upstream. Only `issue-work` Phase 4.3 and `/ship` may publish it after explicit approval.
+- In ordinary `pre-pr` mode, commit automatic fixes locally but never push. In
+  issue-work's fresh-reviewer mode, the reviewer is review-only: return every
+  candidate-changing correction contract to the issue-work parent and do not
+  edit, stage, commit, or publish. Only `issue-work` Phase 4.3 and `/ship` may
+  publish after explicit approval.
 
 ### 0.2 `pr-url`
 
@@ -86,7 +103,14 @@ Otherwise treat as `pr-url` mode from here on — same author check, same worktr
 Common to all three modes:
 
 - **Capability mapping.** Delegate isolated work with Hermes `delegate_task`, Claude/OpenCode/Pi `Task`/`Agent`, or the host equivalent. Use interactive clarification (Hermes: `clarify`) only for Phase 2.3's material intent-conflict escalation, and a verification context independent of the one that wrote the code for Phase 3.0. If delegation is unavailable, run the same lanes serially; do not require Superpowers.
-- **Correction routing.** Only a `pre-pr` caller's validated `implementation_loop` selects a delegated correction worker. Resume its `worker_session_id`, route findings back through that same Claude or Qwen worker, and return to Codex for independent review. Without that explicit marker, including standalone review on a Codex-backed parent, retain the native GPT/host edit path. Never infer Claude from the parent model.
+- **Correction routing.** Only a `pre-pr` caller's validated
+  `implementation_loop` selects a delegated correction worker. Resume its
+  complete identity contract, route findings back through that same Claude or
+  Hermes Herdr agent, or the explicitly selected Qwen session, and return to
+  Codex for independent review. A missing or mismatched identity stops; never
+  launch a replacement. Without that explicit marker, including standalone
+  review on a Codex-backed parent, retain the native GPT/host edit path. Never
+  infer a worker kind from the parent model.
 - `gh auth status` must pass for GitHub PRs; Forgejo needs `FORGEJO_TOKEN` (or `GITEA_TOKEN`) in env, same as `issue-work` Phase 1.5.
 - **Working tree must be clean, including untracked files.** Modified or staged
   files → refuse: "Working tree has uncommitted changes. Commit, stash, or
@@ -148,6 +172,26 @@ Common to all three modes:
   matches the independently supplied ticket URL/host/repository and
   implementation host/repository.
   Any mismatch or stale artifact blocks review before cache writes.
+- **Validate the visible worker in `pre-pr`.** When the implementation loop is
+  `coding-agent-handoff-supervision`, require the complete six-field record and
+  live Herdr availability. Fetch `herdr agent get {worker_agent_name}` and compare
+  surface, name, pane, kind, and `.result.agent.agent_session.value`; recompute
+  canonical worktree root, Git common directory, and branch and compare the
+  complete `worker_worktree_identity`. Refuse legacy/incomplete state, absent
+  agents, Agent View/background surfaces, and every mismatch. Do not repair the
+  record from live state and never launch a duplicate.
+- **Validate the fresh reviewer in `pre-pr`.** Require `reviewer_surface: herdr`
+  and `reviewer_kind: claude`. Fetch the current Herdr agent and compare
+  `reviewer_agent_name`, `reviewer_pane_id`, and
+  `reviewer_runtime_session_id`; recompute and compare
+  `reviewer_worktree_identity`. Require a new agent, pane, and runtime session
+  distinct from `worker_agent_name`, `worker_pane_id`, and
+  `worker_runtime_session_id` whenever the implementation worker is visible.
+  Bind `exact_candidate` by recomputing `base_sha`, `head_sha`,
+  `merge_base_sha`, and `diff_sha256`. Missing Herdr, non-Claude kind, reused
+  identity, incomplete state, or candidate mismatch blocks before cache writes.
+  There is no fallback, and earlier parent or ad-hoc review artifacts never
+  satisfy this check.
 
 ---
 
@@ -307,6 +351,13 @@ Ponytail runs on every review candidate, including every correction rereview
 and the terminal `final_review_only` pass.
 Do not invoke `/ponytail-review` or depend on a Claude plugin or user-scope
 installation at runtime.
+
+In `issue-work` `pre-pr` mode, the fresh visible Claude reviewer owns this full
+workflow against the exact candidate: Standards and Spec, conditional Risk,
+mandatory Ponytail, the acceptance-criteria sweep, and the final Ship Readiness
+verdict. Running any subset, reusing an earlier parent/ad-hoc review, or
+producing artifacts for a different `base_sha`, `head_sha`, `merge_base_sha`, or
+`diff_sha256` is a blocking incomplete review.
 
 ### 2.1 Select the lanes
 
@@ -539,7 +590,7 @@ The active agent owns disposition. Reviewer output is advice, not a ballot for t
 
 Do not ask the user to disposition routine findings. For each finding, choose one of these actions and record the evidence:
 
-- **fix** — the finding is valid and a reasonable correction preserves the documented intent. Apply it automatically, including Critical security/correctness fixes, tests, edge-case handling, and simplifications needed to deliver the promised behavior. On the native path, edit in the worktree and record the files touched in `fixes_per_pass[pass_count]`. On a delegated issue-work path, queue it in `pending_worker_fixes`; Phase 2.4 applies the batch with the caller-selected worker and Codex reconciles the resulting diff. If the finding is valid but requires no code change, record an empty `files_touched` set so Phase 2.4 classifies it as an acknowledgment.
+- **fix** — the finding is valid and a reasonable correction preserves the documented intent. Apply it automatically, including Critical security/correctness fixes, tests, edge-case handling, and simplifications needed to deliver the promised behavior. On the native path, edit in the worktree and record the files touched in `fixes_per_pass[pass_count]`. In issue-work's fresh-reviewer mode, the reviewer is review-only: queue every candidate-changing fix for the original implementation worker and return the correction contract to the issue-work parent; never edit implementation files or launch a substitute worker. On other delegated issue-work paths, queue it in `pending_worker_fixes`; Phase 2.4 applies the batch with the caller-selected worker and Codex reconciles the resulting diff. If the finding is valid but requires no code change, record an empty `files_touched` set so Phase 2.4 classifies it as an acknowledgment.
 - **reject** — the finding is false, already handled, speculative, unsupported by evidence, or would make the code worse. Record a concrete rationale and the evidence checked, then add its key to the suppression set.
 - **defer** — the finding is valid but non-blocking and demonstrably owned by a separately tracked issue or settled decision outside this PR. Record the issue/note and why the current PR remains correct without the change, then suppress it. A related-context tag alone is not enough evidence to defer.
 - **escalate** — the finding is valid and blocking, but every reasonable correction would materially contradict the documented PR intent. This is the only finding disposition that asks the user.
@@ -594,6 +645,19 @@ both state, keeping the more specific wording and recording both sources.
 ```json
 {
   "generated_for": "{owner}/{repo}#{N} @ {head_sha}",
+  "candidate_identity": {
+    "base_sha": "{base_sha}",
+    "head_sha": "{head_sha}",
+    "merge_base_sha": "{merge_base_sha}",
+    "diff_sha256": "{diff_sha256}"
+  },
+  "reviewer_identity": {
+    "surface": "{reviewer_surface-or-null}",
+    "agent_name": "{reviewer_agent_name-or-null}",
+    "pane_id": "{reviewer_pane_id-or-null}",
+    "kind": "{reviewer_kind-or-null}",
+    "runtime_session_id": "{reviewer_runtime_session_id-or-null}"
+  },
   "sources": [
     {"kind": "plan", "ref": "{state-dir}/plan.md", "available": true, "criteria": 6},
     {"kind": "issue", "ref": "{owner}/{repo}#{N}", "available": true, "criteria": 3},
@@ -625,6 +689,11 @@ what the lanes returned:
 
 Write the verdicts and evidence back into the same artifact, so the file is the
 record of what was swept rather than a plan for sweeping it.
+
+In issue-work fresh-reviewer mode, both identity objects are mandatory and must
+match the invocation; standalone modes use `null` reviewer values. A checklist
+from another reviewer or candidate is stale even when its criteria text is
+unchanged.
 
 Documentation, changelog, doc-comment, and "note the remaining limitation" ACs are the ones this sweep exists to catch, because no code-shaped lane will ever raise them. Do not mark an AC met because a related mechanism landed: an AC asking for a caveat *in the docs* is unmet until the caveat is in the docs, however correct the implementation is. Do not mark one met on the strength of the PR body saying so, and do not silently narrow an AC to the part the diff happens to satisfy.
 
@@ -684,12 +753,45 @@ At the end of disposition, the pass has accumulated a set of automatic fixes.
 
 **Apply queued fixes first.** If `pending_worker_fixes` is non-empty on a delegated issue-work path:
 
+In fresh-reviewer mode, a candidate-changing fix must return to the original
+implementation worker under its existing identity contract. The issue-work
+parent reviews and commits the accepted change. The same fresh visible Claude
+reviewer—not a new reviewer and not the implementation worker—must then run the
+complete exact-candidate gate again: Standards, Spec, conditional Risk,
+mandatory Ponytail, acceptance-criteria sweep, and Ship Readiness. Every prior
+artifact is stale after `head_sha` or `diff_sha256` changes. No partial rereview
+can restore ship readiness.
+
+The fresh reviewer writes the correction contract, returns control, and stops
+before the numbered mutation procedure below. It does not prompt the
+implementation worker, edit, or commit inline. The issue-work parent performs
+the existing identity-checked correction handoff, then prompts the same reviewer
+to begin a new complete pass against the newly frozen candidate. The numbered
+procedure below applies to delegated paths that are not using the fresh-reviewer
+ship gate.
+
 1. Write `{state-dir}/codex-review-pass-{pass_count}.md` with each validated finding's stable key, severity, location, observed behavior, expected behavior, and evidence. Treat this as a self-contained correction contract; do not pass chat history.
-2. Resume `worker_session_id` with the wrapper selected by `implementation_loop`:
-   - `codex-claude-implementation-loop` → `claude_worker.py revise --model opus`
-   - `codex-qwen-implementation-loop` → `qwen_worker.py revise`
-3. Preserve worker purity. Claude may retry only Opus and never downgrade; Qwen must keep its exact loopback provider/model and never use a cloud fallback. Unavailability stops the review rather than switching workers.
-4. Save the worker envelope as `{state-dir}/{worker}-review-fixes-{pass_count}.json`. Codex then inspects the real diff, reconciles every automatic fix against the changed behavior, and independently reruns the targeted and broader checks. Worker-reported `findings_addressed` and tests are claims to verify, not proof.
+2. Resume the selected route:
+   - `coding-agent-handoff-supervision` → load that skill and address the existing
+     `worker_agent_name`. Before and after every correction prompt, compare
+     `worker_surface`, `worker_agent_name`, `worker_pane_id`, `worker_kind`,
+     `worker_runtime_session_id`, and `worker_worktree_identity` against both
+     `herdr agent get` and freshly recomputed Git identity. Prompt only after the
+     pre-check passes; accept the correction only after the post-check passes.
+     Any incomplete legacy state, lookup failure, changed field, or non-Herdr
+     surface stops without launching a replacement Claude or Hermes worker.
+   - `codex-qwen-implementation-loop` → `qwen_worker.py revise` with the original
+     Qwen session ID.
+3. Preserve worker purity. The visible path must remain the same Claude or Hermes
+   session and kind; Qwen must keep its exact loopback provider/model and never
+   use a cloud fallback. Unavailability stops the review rather than switching
+   workers.
+4. Preserve the visible worker's report as
+   `{state-dir}/visible-worker-review-fixes-{pass_count}.md`, or the Qwen envelope
+   as `{state-dir}/qwen-review-fixes-{pass_count}.json`. Codex then inspects the
+   real diff, reconciles every automatic fix against the changed behavior, and
+   independently reruns the targeted and broader checks. Worker-reported fixes
+   and tests are claims to verify, not proof.
 5. Populate each automatic fix's `files_touched` from Codex's diff reconciliation. Use an empty set when the finding required acknowledgment only or produced no relevant diff. Then clear `pending_worker_fixes`.
 
 **Do not increment `correction_passes` here.** A pass is counted once per *committed correction boundary* — in §2.4's commit step — not once per worker batch. A delegated path that dispatched a worker, reconciled its diff, and committed the result has spent exactly one pass, the same as the native path doing the same work inline. Counting the dispatch separately would spend the conditional final pass before the first correction had even been reviewed, which is the opposite of the bound's purpose.
@@ -829,7 +931,15 @@ prompt.
 
 ### 3.0 Verify the reviewed state
 
-The review loop may have committed automatic fixes across passes — so the current branch state is unverified even if a caller verified before this skill ran. On either delegated issue-work path, Codex's fresh post-revision gate is the independent verification context: cite its actual command output and rerun only checks invalidated after that gate; do not delegate the final verdict back to the worker or start a duplicate generic fixer. On other paths, use a verification context independent of the one that applied the fixes. Confirm the post-review test / lint / typecheck state is green.
+The review loop may have committed automatic fixes across passes — so the
+current branch state is unverified even if a caller verified before this skill
+ran. In issue-work fresh-reviewer mode, the same fresh visible Claude reviewer
+must rerun the required test, lint, and typecheck checks and the complete
+exact-candidate review after every correction. Parent Codex checks and earlier
+implementation/ad-hoc reviews are supporting evidence only and never substitute
+for that final reviewer verdict. On other paths, use a verification context
+independent of the one that applied the fixes. Confirm the post-review test /
+lint / typecheck state is green.
 
 Feed the result into `summary.md`'s **Ship Readiness** section (3.1). `bound_findings` is a hard blocker even when verification is green: use `Correction bound reached — do not merge.` A missing or stale `review-ponytail.md` is also a hard blocker: use `Ponytail review missing — do not merge.` Otherwise green verification permits the normal readiness verdict, while red verification requires `Do not merge — verification failed: {key output}` regardless of disposition. A clean review over a red suite is not shippable.
 
@@ -844,6 +954,12 @@ ticket: {pr-url-or-issue-url-or-branch}
 reviewed: {iso8601}
 passes: {N}
 candidate: {head_sha}
+reviewer_surface: herdr
+reviewer_agent_name: {reviewer_agent_name}
+reviewer_pane_id: {reviewer_pane_id}
+reviewer_kind: claude
+reviewer_runtime_session_id: {reviewer_runtime_session_id}
+reviewer_worktree_identity: {reviewer_worktree_identity}
 head_branch: {expected_head_branch}
 base_sha: {base_sha}
 merge_base_sha: {merge_base_sha}
@@ -946,6 +1062,11 @@ Sources: plan {n} · issue {n} · spec {unavailable: reason} · PR body {n}
 {Clear recommendation, incorporating the 3.0 verification result: "Ready to merge" | "Outstanding blocking intent conflict — do not merge" | "Correction bound reached — do not merge" | "Ponytail review missing — do not merge" | "Verification failed — do not merge: {key output}" | "Review stopped with open findings"}
 
 An unmet AC is a blocker unless the §2.3 sweep dispositioned it out-of-scope with the owning work named. Do not report "Ready to merge" over an open AC, and do not report it over an **unswept** one either — an authority that could not be read is an unknown, not a pass. Ship Readiness also checks `review-ponytail.md`: when it is missing, absent from the exact candidate, or stale, write `Ponytail review missing — do not merge` rather than treating the primary lanes as complete.
+
+For issue-work, Ship Readiness additionally requires the current fresh-reviewer
+identity and all exact-candidate fields to match the invocation. A summary from
+another reviewer, an earlier candidate, a parent/ad-hoc review, or a pass before
+a candidate-changing fix is stale and must say do not merge.
 ```
 
 Two-part shape: the `## Critical Issues` / `## Major Issues` / `## Minor / Nit` sections preserve the `issue-work` Phase 4.3 contract (Phase 4.3 reads these to present outstanding findings before the ship gate). The `## Fixed automatically` / `## Rejected after validation` / `## Deferred / Already Tracked` / `## Escalated for Intent Decision` / `## Correction-Bound Findings` / `## Acknowledged` sections preserve the disposition audit trail unique to this skill. Both belong; don't drop either half.
@@ -971,7 +1092,7 @@ Frontmatter `ticket:` field is retained (not renamed) so tools that key on it ke
 | `gh` not authenticated | Stop. Surface the auth error. |
 | Context discovery returns nothing for every topic | `related-notes.json = []`; proceed. |
 | A pass's fix introduces a regression | Next pass flags it as a normal finding. Suppression filters **rejections**, **deferrals**, and **acks** (fix dispositions that produced no diff); fixes that did change code are **not** suppressed, so a regression introduced by a fix re-surfaces normally. |
-| User says "done" mid-review | Finish any already-applied edits from this pass and commit them. Push only in standalone modes; `pre-pr` always returns with local commits only. Write summary and exit. |
+| User says "done" mid-review | In fresh-reviewer mode, apply and commit nothing; return open findings and do-not-merge Ship Readiness. On other paths, finish already-applied edits from this pass and commit them. Push only in standalone modes. Write summary and exit. |
 | Correction bound reached | Stop deterministically, preserve validated remaining findings under `## Correction-Bound Findings`, set Ship Readiness to do-not-merge, and report the bound. Never ask the user to disposition routine findings or continue inline. |
 | Worktree already exists for this PR | Reuse it; don't nest. |
 | Forgejo PR | `gh` replaced with Forgejo API (pattern from `skills/ship/SKILL.md` and `skills/issue-create/SKILL.md` Stage 4.2). Everything else is identical. |
@@ -1009,5 +1130,7 @@ Frontmatter `ticket:` field is retained (not renamed) so tools that key on it ke
 - `code-review` — owns the Standards, Spec, Risk, and mandatory Ponytail definitions this skill dispatches.
 - `select_review_lanes.py` — the deterministic classifier in this skill's `scripts/`.
 - `worktrunk` — canonical trunk resolution for the trunk-scoped state directory and project vault.
-- `codex-claude-implementation-loop` — applies SGG issue-work fixes with Opus while Codex retains the review and test gate.
-- `codex-qwen-implementation-loop` — applies non-SGG issue-work fixes with local Qwen while Codex retains the review and test gate.
+- `coding-agent-handoff-supervision` — resumes the original visible Claude or
+  explicitly selected Hermes worker for accepted corrections.
+- `codex-qwen-implementation-loop` — applies fixes only when Qwen was explicitly
+  selected for the originating issue-work run.
