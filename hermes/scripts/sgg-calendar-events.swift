@@ -9,6 +9,8 @@ struct ParticipantSummary: Codable {
 }
 
 struct CalendarEvent: Codable {
+    let eventIdentifier: String
+    let occurrenceDate: Date?
     let source: String
     let calendar: String
     let title: String
@@ -119,6 +121,8 @@ let records = store.events(matching: predicate)
     .sorted { $0.startDate < $1.startDate }
     .map {
         CalendarEvent(
+            eventIdentifier: $0.eventIdentifier,
+            occurrenceDate: $0.occurrenceDate,
             source: "apple_calendar",
             calendar: $0.calendar.title,
             title: $0.title ?? "(untitled)",

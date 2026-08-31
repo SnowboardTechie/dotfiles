@@ -1,13 +1,13 @@
-Prepare Bryan's concise weekday SGG work brief and deliver it in the SGG Matrix room. This is a read-only planning aid.
+Prepare Bryan's concise weekday SGG work brief and deliver it in the SGG Matrix room. This is a read-mostly planning aid: its only permitted mutation is the collector's idempotent scheduling of one-shot post-meeting Granola import jobs for today's work meetings.
 
-The injected collector output contains bounded, read-only data from the `Bryan @ Agile6` Apple Calendar, the work Gmail account synchronized into Apple Mail, SGG GitHub repositories, Hindsight, and the SGG Markdown vault. The official Granola MCP is also available for bounded review of recent meeting notes. Use `generatedAt` as the authoritative Pacific date and time.
+The injected collector output contains bounded, read-only data from the `Bryan @ Agile6` Google Calendar (with EventKit fallback), the work Gmail account synchronized into Apple Mail, SGG GitHub repositories, Hindsight, and the SGG Markdown vault. The official Granola MCP is also available for bounded review of recent meeting notes. Use `generatedAt` as the authoritative Pacific date and time.
 
 Scope boundary:
 1. This is a work-only SGG briefing. Personal projects, personal reminders, and personal calendar events belong in the Second Brain morning brief. Never read `/Users/bryan/second-brain`, other project vaults, Apple Reminders, personal calendars, or personal mail from this job.
 2. Read `/Users/bryan/code/sgg/vault/AGENTS.md`, `/Users/bryan/code/sgg/vault/INDEX.md`, and `/Users/bryan/code/sgg/vault/status.md` first. INDEX.md, status.md, and the relevant technical MOC are canonical. Dated plans, drafts, sessions, and workday notes are historical or noncanonical unless promoted by a canonical surface.
 3. Treat `hindsight.results` as targeted durable context only. Live systems, Granola source notes, and canonical vault artifacts win when they disagree.
-4. Never edit, create, commit, or push any note or project file. The workday-note pilot is concluded: do not create, refresh, commit, or carry forward `workdays/YYYY-MM-DD.md`. Existing workday notes are historical evidence and must not be consulted as routine briefing continuity.
-5. Do not retain meeting content to Hindsight or any other memory store, and do not archive or mirror Granola notes. This job reviews recent notes in place; durable promotion requires a separate, provenance-bearing review outside this cron.
+4. Never edit, create, commit, or push any note or project file. The workday-note pilot is concluded: do not create, refresh, commit, or carry forward `workdays/YYYY-MM-DD.md`. Existing workday notes are historical evidence and must not be consulted as routine briefing continuity. Do not create any additional scheduled job yourself; the deterministic collector exclusively owns the approved post-meeting job creation.
+5. This morning run must not retain meeting content to Hindsight or archive or mirror Granola notes. Its one-shot post-meeting jobs may upsert a complete source snapshot from the matched meeting into `coding-agent::sgg` using the installed deterministic helper. Selective interpretation or promotion into canonical vault state remains a separate provenance-bearing review.
 
 Priority and assignment grounding:
 - A canonical file can contain several current threads, proposals, deadlines, and actions for different people. Canonical location establishes source authority, not that every item is Bryan's accepted priority.
@@ -16,6 +16,12 @@ Priority and assignment grounding:
 - Preserve assignees exactly. Never turn an action owned by Kari, another teammate, or the team collectively into an individual Bryan task. A Bryan-plus-teammate coordination action remains coordination; do not expand it into solo drafting or implementation.
 - Words such as `before Wednesday`, `first story`, `onboarding`, or `proposed` do not prove priority. Do not promote them merely because they sound urgent or specific.
 - If no source explicitly establishes Bryan's primary outcome, say so rather than inventing one. Put the unresolved choice under **Unverified / needs judgment** and make the first action a bounded orientation step, not execution of an unaccepted proposal.
+
+Post-meeting Granola import scheduling:
+- The collector schedules one idempotently named, one-shot import job for each eligible timed meeting on the `Bryan @ Agile6` calendar, exactly 15 minutes after its scheduled end.
+- Declined events, all-day events, non-meeting blocks, events without a stable EventKit identifier, and already-past import times are excluded deterministically.
+- `meetingNoteImports.scheduled`, `.updated`, `.existing`, and `.removed` are audit context only and do not belong in the delivered brief. Removed entries are obsolete pending jobs whose event was cancelled, declined, removed, or moved outside the eligible window.
+- Report every `meetingNoteImports.errors` entry under **Unverified / needs judgment**. A successful morning brief is not proof that its post-meeting imports were scheduled.
 
 Granola review:
 6. Review completed Granola meetings from `previousWorkdayStart` through `generatedAt` on every run.
@@ -30,7 +36,7 @@ Granola review:
 
 Live work sources:
 8. Use collector GitHub data as live SGG state. If a relevant change is unclear, use read-only `gh` commands. Every GitHub artifact mentioned anywhere must have a verified direct clickable URL. Never comment, label, dispatch, merge, close, or mutate GitHub.
-9. Calendar events are already restricted to `Bryan @ Agile6`. Convert times to America/Los_Angeles and identify conflicts and useful focus windows. Use organizer and current-user attendee metadata when deciding preparation ownership. Never infer that Bryan owns presentation or preparation from an event title. Ownership is verified only when organizer.isCurrentUser is true or another authoritative source explicitly assigns Bryan the work. Attendance does not establish ownership.
+9. Calendar events are already restricted to `Bryan @ Agile6`, using the direct Google Calendar API first and EventKit only as fallback. Convert times to America/Los_Angeles and identify conflicts and useful focus windows. Use organizer and current-user attendee metadata when deciding preparation ownership. Never infer that Bryan owns presentation or preparation from an event title. Ownership is verified only when organizer.isCurrentUser is true or another authoritative source explicitly assigns Bryan the work. Attendance does not establish ownership.
 10. Use Apple Mail only for the work account. Prioritize direct requests, active-thread replies, meeting changes, and actionable automated notices. Ignore newsletters and routine notifications. Never mark messages read, move them, label them, draft, reply, or send. Never reproduce a full body.
 11. Report every nonempty `sourceErrors` entry under **Unverified / needs judgment**; never interpret an error or empty source as proof that nothing exists.
 

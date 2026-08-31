@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Prepare Bryan for SGG work by reconstructing the previous business day's resting point, showing work constraints, and recommending one concrete work outcome. Personal projects, personal reminders, and personal calendar events are handled by the separate Second Brain morning brief. The SGG brief is read-only across work mail, the work calendar, GitHub, the `coding-agent::sgg` Hindsight bank, canonical SGG notes, and project repositories.
+Prepare Bryan for SGG work by reconstructing the previous business day's resting point, showing work constraints, and recommending one concrete work outcome. Personal projects, personal reminders, and personal calendar events are handled by the separate Second Brain morning brief. The SGG brief reads work mail, the work calendar, GitHub, the `coding-agent::sgg` Hindsight bank, canonical SGG notes, and project repositories without mutating those sources. Its one approved mutation is deterministic creation of today's one-shot post-meeting Granola import jobs.
 
 ## Operational contract
 
@@ -13,7 +13,7 @@ Prepare Bryan for SGG work by reconstructing the previous business day's resting
   session so replies retain the brief as context.
 - Retain local cron output for audit/troubleshooting.
 - Use an LLM-driven job with a deterministic bounded pre-run collector.
-- The job may read Hindsight, notes, Calendar, Mail, and GitHub. It never writes notes or mutates any source.
+- The job may read Hindsight, notes, Calendar, Mail, and GitHub. It never writes notes or mutates those sources. Its collector may create only the idempotently named post-meeting import jobs described below.
 
 ## Notes scope and authority
 
@@ -52,13 +52,24 @@ The vault remains Bryan's curated review interface and exact-artifact layer.
 It is not the sole agent-memory system and must not be bulk-ingested into
 Hindsight by this job.
 
-#### Granola meeting review
+#### Granola meeting review and post-meeting import
 
-The cron reviews completed SGG meeting notes from the previous-business-day
+The morning agent reviews completed SGG meeting notes from the previous-business-day
 boundary through briefing time. It first lists meeting metadata, excludes every
 meeting that is not demonstrably SGG/CommonGrants/P&D work, then fetches details
 for at most ten in one bounded call. It never fetches an ambiguous meeting to
 decide whether that meeting is relevant.
+
+Separately, the deterministic collector creates one one-shot job for each
+eligible timed event on `Bryan @ Agile6`, scheduled exactly 15 minutes after the
+event's end. EventKit's event identifier plus its original recurring-occurrence
+date gives the job an idempotent name, so even a cross-date reschedule updates
+timing metadata on the same pending job instead of duplicating it. Declined,
+all-day, non-meeting, identifier-less, and already-past events are excluded;
+pending imports absent from the eligible set are removed so cancellations and
+declines cannot leave an obsolete job armed.
+Scheduling success and failure are returned under `meetingNoteImports`; every
+failure is visible in the brief.
 
 The cron-facing `granola` MCP alias exposes only `list_meetings` and
 `get_meetings`; MCP resources and prompts are disabled. The separate
@@ -69,8 +80,22 @@ their OAuth endpoint, and their exact tool filters match the manifest.
 Meeting-derived claims preserve title, date, meeting ID, explicit owner, action
 verb/object, and epistemic status. A source URL is included only when Granola
 returns one. Meeting notes cannot silently override canonical vault or live
-GitHub state. The cron never retrieves transcripts, archives notes, or retains
-meeting content into Hindsight; every Granola source failure remains visible.
+GitHub state. The morning agent never retrieves transcripts or retains meeting
+content itself; every Granola source failure remains visible.
+
+Each one-shot job omits all calendar prose and matches exactly one completed
+Granola meeting from the validated time window and Granola participant metadata.
+It polls at most three times, 180 seconds apart, before reporting a missing-note
+failure. After retrieving private notes and the AI-generated summary without a
+transcript, the agent writes a complete source snapshot into a randomized mode-
+0600 file under a verified mode-0700 private staging directory. The installed
+`sgg-granola-import.py` helper upserts and reads back
+`granola-meeting::<meeting-uuid>` in `coding-agent::sgg` with a source-artifact
+epistemic label. This makes the recorded context available to future SGG chats
+without promoting it to canonical project state. The helper verifies its exact
+submitted snapshot and Hindsight response; it does not claim a cryptographic
+binding to the prior MCP tool result. Success is silent; missing or ambiguous
+meetings and failed Hindsight verification notify Bryan in the SGG room.
 
 #### Concluded workday-note pilot
 
@@ -85,9 +110,9 @@ delivery and must not appear as work left off.
 
 ## Calendar
 
-Apple Calendar on Studio is canonical for synchronized work events. The SGG collector includes only `Bryan @ Agile6`; personal and shared calendars belong to the Second Brain morning brief.
+The direct Google Calendar API through the authenticated `gws` CLI is canonical for the work calendar. EventKit remains a read-only fallback. The SGG collector includes only `Bryan @ Agile6`; personal and shared calendars belong to the Second Brain morning brief.
 
-- Collect read-only through EventKit; use AppleScript only as a fallback.
+- Collect event metadata read-only through `gws calendar`; use EventKit only when the direct source fails. Preserve Google's event ID and `originalStartTime` (or EventKit's event identifier and occurrence date) solely for idempotent post-meeting job identity.
 - Separate timed and all-day events; infer focus windows. Collect bounded organizer, current-user attendee, and attendee-count metadata. Assign preparation only when Bryan is the organizer or another authoritative source explicitly assigns it; never infer ownership from an event title or attendee status alone.
 - Mention private events only as scheduling constraints when relevant.
 - Do not collect calendar notes or meeting descriptions into the briefing payload because they can contain join credentials and passcodes.

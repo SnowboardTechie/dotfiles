@@ -110,6 +110,8 @@ class MorningBriefSplitContractTest(unittest.TestCase):
         self.assertNotIn("SECOND_BRAIN", collector)
         self.assertNotIn("collect_reminders", collector)
         self.assertIn('WORK_CALENDARS = {"Bryan @ Agile6"}', collector)
+        self.assertIn("collect_google_calendar", collector)
+        self.assertIn('"gws",', collector)
 
     def test_work_brief_uses_project_owned_sgg_vault_read_only(self) -> None:
         prompt = WORK_PROMPT.read_text(encoding="utf-8")
@@ -125,7 +127,7 @@ class MorningBriefSplitContractTest(unittest.TestCase):
         self.assertIn('        "vault",', collector)
         self.assertNotIn("NOTES_ROOT", collector)
 
-    def test_work_brief_reviews_only_granola_mcp_and_does_not_retain(self) -> None:
+    def test_work_brief_reviews_granola_and_delegates_exact_source_imports(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         job = next(job for job in manifest["cronJobs"] if job["name"] == "Workday Morning Brief")
         prompt = WORK_PROMPT.read_text(encoding="utf-8")
@@ -160,7 +162,9 @@ class MorningBriefSplitContractTest(unittest.TestCase):
         self.assertIn("meeting title, date, and meeting ID", prompt)
         self.assertIn("Do not invent a link", prompt)
         self.assertIn("Do not retrieve transcripts", prompt)
-        self.assertIn("Do not retain meeting content to Hindsight", prompt)
+        self.assertIn("This morning run must not retain meeting content to Hindsight", prompt)
+        self.assertIn("one-shot post-meeting jobs may upsert a complete source snapshot", prompt)
+        self.assertIn("sgg-granola-import.py", manifest["scripts"])
         self.assertIn("A successful empty result", prompt)
         self.assertIn("Report every nonempty `sourceErrors` entry", prompt)
 

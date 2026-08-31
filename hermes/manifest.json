@@ -28,6 +28,7 @@
   },
   "scripts": [
     "sgg-morning-brief.py",
+    "sgg-granola-import.py",
     "sgg-calendar-events.swift",
     "sgg-mail-messages.js",
     "sgg-pr-review-event.py",
@@ -44,6 +45,7 @@
   ],
   "copiedScripts": [
     "sgg-morning-brief.py",
+    "sgg-granola-import.py",
     "sgg-pr-review-event.py",
     "personal-morning-brief.py",
     "personal-weekly-orientation.py",
