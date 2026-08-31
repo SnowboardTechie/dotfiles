@@ -125,6 +125,13 @@ Colors are centralized but defined in two places that MUST stay in sync:
 - To scope a different identity to a directory, add an `includeIf "gitdir:..."` block pointing at a new identity file
 - Global pre-commit hook in `dot-git-hooks/pre-commit` blocks commits without `user.email`
 
+## REPOSITORY DELIVERY
+
+- **This repo is an explicit exception to the default wait-for-authorization rule.** Once requested work is complete and verified, commit the task-owned changes directly to `main` and push `origin main` without waiting for a separate commit or push request.
+- A local commit is not completion. Verify that `origin/main` contains the pushed commit before reporting the work done.
+- Preserve unrelated work: stage only the exact task-owned paths. Never absorb, discard, stash, reset, or rewrite unrelated changes to make the commit or push succeed.
+- If `origin/main` has diverged or the push is rejected, stop and report the blocker rather than rebasing or rewriting user work automatically.
+
 ## COMMANDS
 
 ```bash
