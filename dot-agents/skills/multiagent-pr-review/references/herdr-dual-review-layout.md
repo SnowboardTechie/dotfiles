@@ -89,11 +89,30 @@ intentional exception to the handoff reference's file-only-if-needed fallback.
 
 ## Supervise without focus
 
-Arm one bounded watcher per agent—two distinct watchers and process handles—by
-calling the injected binary's `agent wait`. Permit only read-only root
-investigation while either runs. Never focus either pane automatically. If an
-agent is blocked, inspect and ask Bryan rather than answering an approval or
-question automatically.
+Arm one bounded completion supervisor per agent—two distinct supervisors and
+root-owned process handles. Each supervisor calls the injected binary's `agent
+wait`, but reviewer-orchestrators can legitimately become `idle` while their
+asynchronous lane leaves are still running. Treat an `idle`/`done` result without
+that family's final `report.sidecar.json` as an intermediate stage: reverify the
+same recorded identity, wait for it to resume, and re-arm inside the same
+supervisor. Completion requires both the final sidecar and a settled matching
+agent. A blocked agent stops the supervisor so the root can inspect and ask
+Bryan rather than answering an approval or question automatically.
+
+These supervisors are internal synchronization, not user notifications. When
+the root intends to finish the review in the same turn, start them silently
+(`notify=false` / omit terminal completion notification) and await their process
+handles explicitly. Do not create a new notification-enabled background process
+for each intermediate `agent wait`: those completions can arrive after the final
+review and hide the verdict with stale status messages. The same rule applies to
+builds, tests, and probes: run them in the foreground when practical, otherwise
+use one silent owned process and explicitly wait for it.
+
+Before presentation, prove both supervisor handles and every task-owned
+verification process have exited or been closed. If any notification-enabled
+process was accidentally created, do not present yet; drain it before the final
+review. Permit only read-only root investigation while either reviewer runs.
+Never focus either pane automatically.
 
 Keep reviewer outputs isolated: neither reviewer receives the other's state
 root, report, transcript, or eventual root disposition. Do not substitute a

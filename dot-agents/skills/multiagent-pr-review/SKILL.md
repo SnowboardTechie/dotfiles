@@ -3,7 +3,7 @@ name: multiagent-pr-review
 description: Use for dual-model reviews of teammates' GitHub PRs.
 argument-hint: <github-pr-url>
 disable-model-invocation: true
-version: 1.0.0
+version: 1.0.1
 author: Bryan Thompson + Hermes Agent
 license: MIT
 ---
@@ -150,10 +150,16 @@ that inherit or exactly match that GPT route. There is no fallback or background
 substitution.
 
 Prompt only after both agents are ready and both identity records verify. Arm
-one bounded watcher for each. While they run, the root may investigate only
-read-only, unbound material; it must not edit candidate bytes, evidence, the
-manifest, or either review bundle. If either agent blocks on an approval or
-question, inspect and ask Bryan rather than answering automatically.
+one bounded, silent completion supervisor for each. A reviewer-orchestrator can
+become Herdr-`idle` between asynchronous leaves, so the first settled `agent
+wait` is not completion: require that model family's final report sidecar plus a
+settled matching agent before releasing its supervisor. Use one root-owned
+process handle per family, never one notification process per lane/stage, and do
+not set terminal `notify=true` when the root will await completion in this same
+turn. While they run, the root may investigate only read-only, unbound material;
+it must not edit candidate bytes, evidence, the manifest, or either review
+bundle. If either agent blocks on an approval or question, inspect and ask Bryan
+rather than answering automatically.
 
 Neither reviewer may see the other's report, transcript, state root, or root
 adjudication. Do not issue a verdict until both settle.
@@ -240,6 +246,12 @@ Present the verdict first. Then present confirmed findings one at a time in
 Critical → Major → Minor → Nit order. Link the canonical note and both advisory
 notes. State unresolved coverage separately; rejected leads stay in the full
 vault ledger unless needed to explain the verdict.
+
+Before presenting, resolve every root-owned reviewer-supervisor and verification
+process handle. In-turn builds/tests run in the foreground when bounded by the
+terminal timeout, or as silent background processes explicitly awaited by the
+root. Never finish with a notification-enabled process that can post a stale
+completion message after the review and push the verdict out of view.
 
 Leave both visible panes open. Cleanup of owned panes, worktrees, and scratch
 state happens only after explicit cleanup authorization and ownership

@@ -166,9 +166,35 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
         self.assert_matches(self.layout, r"Claude.*upper|top.*Claude", "Claude must be upper-right")
         self.assert_matches(self.layout, r"GPT.*lower|bottom.*GPT", "GPT must be lower-right")
         self.assert_matches(self.layout, r"two.*identity records|identity record.*each", "two identities are required")
-        self.assert_matches(self.layout, r"one.*watcher.*each|two.*watchers", "two watchers are required")
+        self.assert_matches(
+            self.layout,
+            r"one.*supervisor.*each|two.*supervisors",
+            "two completion supervisors are required",
+        )
         self.assert_matches(self.layout, r"no.*background.*substitut|no.*fallback", "background fallback is forbidden")
         self.assert_matches(self.layout, r"leave.*panes.*open|cleanup.*explicit", "panes remain until explicit cleanup")
+
+    def test_watcher_completion_is_silent_report_gated_and_drained(self) -> None:
+        self.assert_matches(
+            self.layout,
+            r"idle.*without.*report\.sidecar\.json.*intermediate|report\.sidecar\.json.*settled",
+            "an orchestrator's intermediate idle state must not finish the watcher",
+        )
+        self.assert_matches(
+            self.layout,
+            r"notify=false|omit terminal completion notification",
+            "same-turn reviewer supervisors must not emit late user notifications",
+        )
+        self.assert_matches(
+            self.layout,
+            r"one silent owned process|one.*process.*each|two distinct supervisors",
+            "each reviewer must have one owned supervisor rather than one process per stage",
+        )
+        self.assert_matches(
+            self.skill + self.layout,
+            r"before present(?:ing|ation).*process.*(?:exited|closed|resolve)|resolve every.*process handle",
+            "all owned background processes must be drained before the final review",
+        )
 
     def test_candidate_drift_requires_user_choice(self) -> None:
         self.assert_matches(
