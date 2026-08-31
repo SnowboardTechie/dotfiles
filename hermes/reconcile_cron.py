@@ -88,6 +88,13 @@ def monitor_script_value(definition: dict) -> str | None:
     return monitor_script
 
 
+def values_match(key: str, expected: object, actual: object) -> bool:
+    """Compare scheduler values, resolving equivalent workdir symlinks."""
+    if key == "workdir" and isinstance(expected, str) and isinstance(actual, str):
+        return Path(expected).expanduser().resolve() == Path(actual).expanduser().resolve()
+    return actual == expected
+
+
 def verify_inference_route(definition: dict) -> None:
     """Keep unattended inference on Codex unless the manifest policy changes."""
     name = definition["name"]
@@ -268,7 +275,7 @@ def main() -> int:
         mismatches = {
             key: {"expected": value, "actual": job.get(key)}
             for key, value in expected.items()
-            if job.get(key) != value
+            if not values_match(key, value, job.get(key))
         }
         actual_attach = bool(job.get("attach_to_session", False))
         if actual_attach != definition["attachToSession"]:

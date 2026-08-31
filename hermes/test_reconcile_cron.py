@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -12,6 +13,20 @@ SPEC = importlib.util.spec_from_file_location("reconcile_cron", SCRIPT)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
+
+
+class ValueComparisonTest(unittest.TestCase):
+    def test_workdir_symlink_and_resolved_path_match(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            real = root / "real"
+            real.mkdir()
+            linked = root / "linked"
+            linked.symlink_to(real)
+            self.assertTrue(MODULE.values_match("workdir", str(linked), str(real)))
+
+    def test_other_values_remain_exact(self) -> None:
+        self.assertFalse(MODULE.values_match("deliver", "matrix", "matrix:!room"))
 
 
 class ContinuationOriginTest(unittest.TestCase):
