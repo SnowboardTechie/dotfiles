@@ -24,9 +24,11 @@ dotfiles/
 ├── dot-gitconfig        # Identity + GPG signing; includes snowboardtechie + local
 ├── dot-zshrc            # Shell loader: P10k + modular config sourcing
 ├── dot-p10k.zsh         # Powerlevel10k prompt theme
+├── omarchy/             # Personal Omarchy shell plugins (stow-ignored; deployed additively)
+│   └── plugins/snowboardtechie.auto-suspend/  # 45-minute inhibited-idle suspend service
 ├── scripts/             # Repo-internal deployment scripts (stow-ignored, never stowed to ~)
 │   ├── reconcile-agent-skills.sh  # OWNS skill distribution: canonical *_SKILLS arrays + linking
-│   └── setup-omarchy.sh           # Additive Omarchy entry point (agent skills only)
+│   └── setup-omarchy.sh           # Additive Omarchy entry point
 ├── tests/               # Integration tests for deployment scripts (stow-ignored)
 ├── setup-platform-configs.sh  # Post-stow compat entry point: alacritty, retired-link cleanup, secrets, AGENTS.md; delegates skills to scripts/reconcile-agent-skills.sh
 └── zsa-keyboard-layouts/  # Binary firmware, stored but never stowed
@@ -43,6 +45,7 @@ dotfiles/
 | Add neovim plugin | `dot-config/nvim/lua/bryan/plugins/` | See `nvim/AGENTS.md` |
 | Change color theme | See "Nightfly Theme" section below | 2 files must stay in sync |
 | Herdr status rail (Glyph Rail) | `dot-config/herdr/config.toml` `[ui] tab_bar_right` + the module scripts beside it (`claude-usage.sh`, `openrouter-spend.py`, `host-label.sh`) | One Nerd Font glyph per module, joined by `tab_bar_right_separator = " \ue0b3 "`. Keep that TOML escape spelling: U+E0B3 is BMP Private Use Area and text pipelines strip it far more readily than the Plane-15 Nerd Font glyphs, which is how it silently became two spaces once already. `tests/test-herdr-glyph-rail.py` is the regression guard. `theme.name = "terminal"` keeps Herdr on the host terminal's ANSI palette, so colors are NOT defined here — do not add a Nightfly hex table. Only `zoom`, `hostname`, `datetime`, `text`, `command` entry types exist; a glyph-prefixed module must be `command`, since `hostname` takes no prefix. Validate with `HERDR_CONFIG_PATH=$PWD/dot-config/herdr/config.toml herdr config check` (it rejects unknown themes and unsupported `strftime` directives). `openrouter-spend.py` reports **account-wide** spend via `POST /api/v1/analytics/query` — it needs an OpenRouter **management key** at `~/.secrets/openrouter/management-key` (mode 0600, never in Git); an `sk-or-v1` inference key gets `403 Only management keys can access analytics`. **Never drop `granularity: "hour"` from that query.** Without it the API snaps `time_range` out to whole UTC days — a one-minute window returns the entire day — so a trailing-24h request silently becomes "yesterday in full plus today so far", measured live at 42.4 hours and 2.04x the true figure. Hourly buckets are clipped to the requested range and are exactly additive (summing a day's hours reproduces the day total to the last decimal); quiet hours are omitted, so no rows means $0, not an error. `tests/test-herdr-openrouter-spend.py` pins the granularity. Do not "fix" it back to a local or simpler source: `/credits` is lifetime-only and `/auth/key`'s `usage_daily` is per-key and midnight-UTC-resetting, so neither is an account-wide rolling 24h. |
+| Omarchy auto suspend | `omarchy/plugins/snowboardtechie.auto-suspend/` + `scripts/reconcile-omarchy-auto-suspend.sh` | Service-only Quickshell plugin with a version-controlled 45-minute timeout. It watches Omarchy's `~/.local/state/omarchy/indicators/stay-awake` state (so the stock indicator and `omarchy toggle idle` apply), uses `IdleMonitor.respectInhibitors = true`, and delegates pre-sleep locking to `omarchy-sleep-lock.service`. Keep it additive: link the plugin and add only its service ID to the existing `shell.json`; never replace Omarchy's idle service or edit `/usr/share/omarchy/`. |
 | Add git identity | `dot-gitconfig` | Add `includeIf` + new identity file |
 | Change platform behavior | `setup-platform-configs.sh` | Handles stow edge cases |
 | Add a shared agent skill | `dot-agents/skills/` | Pool shared by Claude/Pi/OpenCode/Hermes; curate which tool gets it in the `*_SKILLS` arrays in `scripts/reconcile-agent-skills.sh`. See `dot-agents/README.md` |
@@ -55,7 +58,7 @@ dotfiles/
 ## DEPLOYMENT PROFILES
 
 - **macOS / NixOS (full ownership)**: `stow . --dotfiles --target $HOME` then `./setup-platform-configs.sh`. The setup script remains the compatibility entry point; its agent-skill step delegates to `scripts/reconcile-agent-skills.sh --apply`.
-- **Omarchy (additive only)**: `./scripts/setup-omarchy.sh --check` then `--apply`. Omarchy owns shell, terminal, Neovim, Git, GPG, and tool settings; full-replacement application configs are NOT deployed there by default. Never run `stow .` or `stow --adopt` on an Omarchy host. Additive payload: per-tool agent-skill links (`scripts/reconcile-agent-skills.sh`) + one marked `source` line in `~/.bashrc` loading `dot-config/shell/aliases.sh` (`scripts/reconcile-shell-additions.sh`). Omarchy's own aliases (eza ls-family, zoxide cd, etc.) keep priority; the shared file deliberately omits colliding names.
+- **Omarchy (additive only)**: `./scripts/setup-omarchy.sh --check` then `--apply`. Omarchy owns shell, terminal, Neovim, Git, GPG, and tool settings; full-replacement application configs are NOT deployed there by default. Never run `stow .` or `stow --adopt` on an Omarchy host. Additive payload includes per-tool agent-skill links (`scripts/reconcile-agent-skills.sh`), one marked `source` line in `~/.bashrc` loading `dot-config/shell/aliases.sh` (`scripts/reconcile-shell-additions.sh`), and repository-owned personal integrations such as the auto-suspend shell service. Omarchy's own aliases (eza ls-family, zoxide cd, etc.) keep priority; the shared file deliberately omits colliding names.
 - **Skill distribution is owned by `scripts/reconcile-agent-skills.sh`**: its `*_SKILLS` arrays are the single curation authority (`dot-agents/README.md` documents rationale only, no mirrored lists). It prunes only symlinks resolving into `dot-agents/skills/` and preserves real dirs, files, foreign/broken symlinks (e.g. Omarchy's `omarchy`/`diagnose-crash` links).
 - **Future reconcilers and profile logic belong under `scripts/`**, invoked from `setup-omarchy.sh`'s reconciler list — never as inline mutation logic in an entry point. New root-level project dirs must get root-anchored `.stow-local-ignore` entries (`^/name$`) so legacy root stow can't deploy them.
 
@@ -156,6 +159,8 @@ python3 tests/test-herdr-glyph-rail.py   # guards the U+E0B3 divider + glyph-led
 python3 tests/test-herdr-openrouter-spend.py   # stubs the analytics API; no key or network needed
 bash tests/test-herdr-claude-usage.sh
 bash tests/test-herdr-host-label.sh
+bash tests/test-reconcile-omarchy-auto-suspend.sh
+omarchy plugin validate omarchy/plugins/snowboardtechie.auto-suspend
 
 # Shell reload
 source ~/.zshrc

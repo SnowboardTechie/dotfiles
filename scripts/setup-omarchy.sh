@@ -3,9 +3,9 @@
 #
 # Omarchy owns its own environment (shell, terminal, editor, Git, GPG,
 # Zed, and tool settings). This entry point deploys only additive personal
-# assets — curated skills, portable aliases, guarded Bash enhancements, and
-# Hindsight client wiring — and never runs Stow, installs packages, or uses
-# elevated privileges.
+# assets — curated skills, portable aliases, guarded Bash enhancements,
+# personal shell plugins, and Hindsight client wiring — and never runs Stow,
+# installs packages, or uses elevated privileges.
 #
 # Future additive reconcilers get appended to the RECONCILERS list below;
 # application-specific mutation logic never lives in this script itself.
@@ -74,6 +74,7 @@ RECONCILERS=(
     "$SCRIPT_DIR/reconcile-shell-additions.sh"
     "$SCRIPT_DIR/reconcile-bash-enhancements.sh"
     "$SCRIPT_DIR/reconcile-herdr-omarchy.sh"
+    "$SCRIPT_DIR/reconcile-omarchy-auto-suspend.sh"
     "$SCRIPT_DIR/reconcile-hindsight.sh"
 )
 
@@ -90,8 +91,9 @@ Ownership summary:
   existing ~/.bashrc (Omarchy's designated personal-additions section)
   loading portable aliases from dot-config/shell/aliases.sh plus an optional,
   guarded Ble.sh integration for inline suggestions/highlighting, manages the
-  Omarchy-specific Herdr configuration and Glyph Rail module links, and wires
-  the Hindsight memory client (staged runtime in ~/.hindsight, merged Claude
+  Omarchy-specific Herdr configuration and Glyph Rail module links, enables a
+  repository-owned 45-minute auto-suspend shell service, and wires the
+  Hindsight memory client (staged runtime in ~/.hindsight, merged Claude
   hooks / OpenCode plugin entry, token from ~/.secrets/hindsight) — nothing else.
 
   Intentionally left untouched (Omarchy owns these):

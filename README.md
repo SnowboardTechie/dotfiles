@@ -7,7 +7,7 @@ Two deployment models are supported:
 - **Full workstation ownership** (macOS, NixOS): GNU Stow symlinks the whole
   environment: shell, terminal, editor, Git, GPG, and agent tooling.
 - **Additive assets** (Omarchy): the OS already owns the desktop and development
-  environment; only curated personal agent skills are linked in. See
+  environment; only curated personal integrations are linked in. See
   [Omarchy Installation](#omarchy-installation-additive-only).
 
 ## Overview
@@ -132,8 +132,10 @@ existing `~/.bashrc` (Omarchy's designated personal-additions section) that
 loads the portable aliases from `dot-config/shell/aliases.sh`, a separate
 guarded Ble.sh source hook that becomes active when the `blesh` package is
 installed, the Omarchy-specific Herdr configuration and Glyph Rail module
-links, and the pinned Hindsight client integration. It does not install
-packages or replace unrelated Omarchy-owned application configuration.
+links, a repository-owned shell service that suspends after 45 minutes while
+honoring Stay Awake and idle inhibitors, and the pinned Hindsight client
+integration. It does not install packages or replace unrelated Omarchy-owned
+application configuration.
 
 What it intentionally leaves untouched: login shell selection, terminal, Neovim,
 Git, GPG, Zed/OpenCode/Claude settings, installed packages, and everything under
@@ -174,7 +176,8 @@ dotfiles/
 ├── dot-gnupg/           # GPG configuration (~/.gnupg/)
 │   └── gpg-agent.conf   # GPG agent settings
 ├── hermes/              # Curated Hermes skills, scripts, and cron definitions
-├── scripts/             # Repo-internal deployment scripts (never stowed)
+├── omarchy/              # Additive personal Omarchy shell plugins (never stowed)
+├── scripts/              # Repo-internal deployment scripts (never stowed)
 │   ├── reconcile-agent-skills.sh  # Canonical skill curation + per-tool linking
 │   └── setup-omarchy.sh           # Additive Omarchy entry point
 ├── tests/               # Integration tests for the deployment scripts

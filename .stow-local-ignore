@@ -14,3 +14,4 @@ dot-agents
 ^/scripts$
 ^/tests$
 ^/hindsight$
+^/omarchy$

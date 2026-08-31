@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "snowboardtechie.auto-suspend",
+  "name": "Auto Suspend",
+  "version": "1.0.0",
+  "author": "Bryan Thompson",
+  "description": "Suspend after 45 minutes of uninhibited idle time while honoring Omarchy Stay Awake.",
+  "kinds": [
+    "service"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml"
+  }
+}
