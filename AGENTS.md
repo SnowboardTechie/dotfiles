@@ -37,7 +37,7 @@ dotfiles/
 | Task | Location | Notes |
 |------|----------|-------|
 | Add shell alias | `dot-config/shell/aliases.sh` if portable (bash+zsh, `command -v`-guarded); `dot-config/zsh/aliases.zsh` for zsh/mac/nix-only (eza ls-family, Nix, ssh) | Shared file is sourced by zsh config and by Omarchy's ~/.bashrc |
-| Add shell function | `dot-config/zsh/functions.zsh` | Git and Obsidian helpers |
+| Add shell function | `dot-config/zsh/functions.zsh` | Git, Obsidian, and host-guarded Nix helpers |
 | Add env variable | `dot-config/zsh/env.zsh` | Use `${VAR:-default}` pattern |
 | Add zsh plugin | `dot-config/zsh/plugins.zsh` | Must add 3-path fallback (Homebrew/NixOS/Linux) |
 | Add neovim plugin | `dot-config/nvim/lua/bryan/plugins/` | See `nvim/AGENTS.md` |
@@ -156,7 +156,7 @@ source ~/.zshrc
 # Remote Studio workspace
 herdr-studio
 
-# Nix rebuild (per-machine aliases)
+# Nix rebuild (host-guarded per-machine functions)
 update-mbp / update-a6mbp / update-studio / update-gnarbox
 upgrade-mbp  # flake update + rebuild
 

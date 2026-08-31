@@ -193,11 +193,15 @@ dotfiles/
 - Plugins: zsh-autosuggestions, zsh-syntax-highlighting
 - Direnv integration for per-project environments
 - **Modular configuration** in `~/.config/zsh/`:
-  - `aliases.zsh` - Git, tools (bat/eza/nvim), Nix rebuild, navigation
-  - `functions.zsh` - git and Obsidian helpers
+  - `aliases.zsh` - Git, tools (bat/eza/nvim), navigation
+  - `functions.zsh` - Git, Obsidian, and host-guarded Nix update/upgrade helpers
   - `env.zsh` - EDITOR, GPG_TTY, paths, NODE_OPTIONS
   - `options.zsh` - setopt, vi-mode, completion styles
   - `plugins.zsh` - Cross-platform plugin loading, direnv
+- `update-<host>` and `upgrade-<host>` identify the current machine, refuse a
+  mismatched target, and require confirmation before rebuilding. On a matching
+  host, Enter accepts the default; `n` cancels. Upgrade commands update
+  `flake.lock` only after the host check and confirmation.
 
 ### Terminal (Alacritty)
 
