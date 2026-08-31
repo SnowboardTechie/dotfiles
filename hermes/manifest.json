@@ -36,7 +36,8 @@
     "personal-alignment-brief.py",
     "personal-mail-messages.js",
     "check-mattpocock-skill-updates.py",
-    "check-herdr-homebrew-atuin-fix.py"
+    "check-herdr-homebrew-atuin-fix.py",
+    "check-studio-services.py"
   ],
   "removedScripts": [
     "sgg-sync-workday-note.py"
@@ -48,7 +49,8 @@
     "personal-weekly-orientation.py",
     "personal-alignment-brief.py",
     "check-mattpocock-skill-updates.py",
-    "check-herdr-homebrew-atuin-fix.py"
+    "check-herdr-homebrew-atuin-fix.py",
+    "check-studio-services.py"
   ],
   "skills": [
     "apple/apple-mail",
@@ -201,6 +203,20 @@
       "noAgent": false,
       "enabledToolsets": ["terminal", "delegation", "skills"],
       "workdir": "/Users/bryan/code/sgg",
+      "attachToSession": false
+    },
+    {
+      "name": "Monitor Studio services",
+      "schedule": "every 5m",
+      "model": null,
+      "provider": null,
+      "promptFile": "automations/studio-service-monitor/prompt.md",
+      "deliver": "matrix",
+      "skills": [],
+      "script": "check-studio-services.py",
+      "noAgent": true,
+      "enabledToolsets": [],
+      "workdir": "/Users/bryan/code/dotfiles",
       "attachToSession": false
     },
     {

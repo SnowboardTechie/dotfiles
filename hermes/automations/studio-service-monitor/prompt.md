@@ -1,0 +1,1 @@
+This is a deterministic, model-free Studio service watchdog. Deliver non-empty script output verbatim to Bryan's primary Matrix channel. Empty output means all monitored services are healthy or a failure has not yet crossed the consecutive-failure threshold.
