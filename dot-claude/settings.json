@@ -5,9 +5,7 @@
   "permissions": {
     "allow": [
       "Read(/Users/bryan/notes/**)",
-      "Write(/Users/bryan/notes/**)",
       "Edit(/Users/bryan/notes/**)",
-      "Glob(/Users/bryan/notes/**)",
       "Grep(/Users/bryan/notes/**)",
       "Bash(git rev-parse:*)",
       "Bash(mkdir:*)",
@@ -55,9 +53,7 @@
       "Bash(grep *)",
       "Bash(ln -s *)",
       "Read(.notes/**)",
-      "Write(.notes/**)",
       "Edit(.notes/**)",
-      "Glob(.notes/**)",
       "Grep(.notes/**)"
     ],
     "deny": [
