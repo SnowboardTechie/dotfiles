@@ -51,6 +51,7 @@ PROBES = (
     Probe("Syncthing", "http://127.0.0.1:8384/rest/noauth/health", "syncthing"),
     Probe("Plex", "http://100.121.238.48:32400/web/index.html", "plex"),
     Probe("Jellyfin", "http://100.121.238.48:8096/health", "jellyfin"),
+    Probe("Dashy", "http://100.121.238.48:8088/", "dashy"),
 )
 
 
@@ -91,6 +92,8 @@ def response_is_valid(check: str, body: bytes) -> bool:
         return b"Plex" in body or b"plex" in body
     if check == "jellyfin":
         return body.strip() == b"Healthy"
+    if check == "dashy":
+        return b"<title>Dashy</title>" in body
     raise ValueError(f"unknown probe check: {check}")
 
 

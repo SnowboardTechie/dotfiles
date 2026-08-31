@@ -28,6 +28,7 @@ EXPECTED_SERVICES = {
     "Syncthing",
     "Plex",
     "Jellyfin",
+    "Dashy",
 }
 
 
