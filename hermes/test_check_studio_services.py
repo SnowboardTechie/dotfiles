@@ -108,6 +108,7 @@ class ManifestContractTest(unittest.TestCase):
     def test_manifest_installs_and_schedules_model_free_watchdog(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         script_name = SCRIPT.name
+        self.assertNotEqual(SCRIPT.stat().st_mode & 0o111, 0)
         self.assertIn(script_name, manifest["scripts"])
         self.assertIn(script_name, manifest["copiedScripts"])
 
