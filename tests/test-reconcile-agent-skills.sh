@@ -17,7 +17,8 @@ TMP_HOMES=()
 
 cleanup() {
     local h
-    for h in "${TMP_HOMES[@]}"; do
+    for h in "${TMP_HOMES[@]-}"; do
+        [[ -n "$h" ]] || continue
         rm -rf "$h"
     done
 }
@@ -26,7 +27,6 @@ trap cleanup EXIT
 new_home() {
     local h
     h="$(mktemp -d "${TMPDIR:-/tmp}/skills-test-home-XXXXXX")"
-    TMP_HOMES+=("$h")
     echo "$h"
 }
 
@@ -75,12 +75,13 @@ link_resolves_to() { # <link> <expected-target>
 
 # --- Test 1: expected curated links are created for all four tools -----------
 H="$(new_home)"
+TMP_HOMES+=("$H")
 out="$(HOME="$H" "$RECONCILER" --apply 2>&1)"; rc=$?
 check "t1: apply exits 0 on a fresh home" test "$rc" -eq 0
 check "t1: Claude receives 29 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 29
 check "t1: OpenCode receives 23 pool links" test "$(links_into_pool "$H/.config/opencode/skills")" -eq 23
 check "t1: Pi receives 9 pool links"        test "$(links_into_pool "$H/.pi/agent/skills")" -eq 9
-check "t1: Hermes receives 28 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 28
+check "t1: Hermes receives 29 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 29
 check "t1: Claude-only skill is linked"     link_resolves_to "$H/.claude/skills/find-skills" "$POOL/find-skills"
 check "t1: Claude gets Ponytail workflow"     link_resolves_to "$H/.claude/skills/pr-self-review" "$POOL/pr-self-review"
 check "t1: Claude gets shared review contract" link_resolves_to "$H/.claude/skills/code-review" "$POOL/code-review"
@@ -89,6 +90,10 @@ check "t1: OpenCode gets shared review contract" link_resolves_to "$H/.config/op
 check "t1: Pi gets shared review contract"   link_resolves_to "$H/.pi/agent/skills/code-review" "$POOL/code-review"
 check "t1: Hermes gets Ponytail workflow"     link_resolves_to "$H/.hermes/skills/personal/pr-self-review" "$POOL/pr-self-review"
 check "t1: Hermes gets shared review contract" link_resolves_to "$H/.hermes/skills/personal/code-review" "$POOL/code-review"
+check "t1: Hermes gets multiagent PR review" link_resolves_to "$H/.hermes/skills/personal/multiagent-pr-review" "$POOL/multiagent-pr-review"
+check "t1: Claude excludes multiagent PR review" test ! -e "$H/.claude/skills/multiagent-pr-review"
+check "t1: OpenCode excludes multiagent PR review" test ! -e "$H/.config/opencode/skills/multiagent-pr-review"
+check "t1: Pi excludes multiagent PR review" test ! -e "$H/.pi/agent/skills/multiagent-pr-review"
 check "t1: Hermes gets handoff supervision" link_resolves_to "$H/.hermes/skills/personal/coding-agent-handoff-supervision" "$POOL/coding-agent-handoff-supervision"
 check "t1: OpenCode gets gamedev"           link_resolves_to "$H/.config/opencode/skills/gamedev" "$POOL/gamedev"
 check "t1: Pi does not get manual-merge"    test ! -e "$H/.pi/agent/skills/manual-merge"
@@ -106,6 +111,7 @@ check "t8: second apply plans no prunes"         bash -c '! grep -q "prune stale
 
 # --- Tests 2/3/4: foreign and real entries are preserved ----------------------
 H2="$(new_home)"
+TMP_HOMES+=("$H2")
 FOREIGN_DIR="$H2/fake-package/omarchy-skill"
 mkdir -p "$FOREIGN_DIR" "$H2/.claude/skills" "$H2/.pi/agent/skills"
 # t2: Omarchy-like foreign symlink (non-curated name) in a skill directory
@@ -147,6 +153,7 @@ check "t7: broken foreign symlink survives apply" test -L "$H2/.claude/skills/di
 
 # --- Test 9: invocation outside the repository root ---------------------------
 H3="$(new_home)"
+TMP_HOMES+=("$H3")
 out="$(cd / && HOME="$H3" "$RECONCILER" --check 2>&1)"; rc=$?
 check "t9: check from outside the repo exits 0"  test "$rc" -eq 0
 check "t9: source pool resolves independent of cwd" bash -c 'grep -q "would create link: ship" <<<"$1"' _ "$out"
@@ -156,6 +163,7 @@ check "t9: check on a fresh home creates nothing"   test -z "$(find "$H3" -minde
 # `Cwd::abs_path` returns empty for a dangling link whose parent is missing, so a
 # resolution-based classifier would call these "foreign" and keep them forever.
 H11="$(new_home)"
+TMP_HOMES+=("$H11")
 mkdir -p "$H11/.claude/skills" "$H11/other-pack"
 GONE_POOL="$H11/never-existed/dot-agents/skills"
 ln -s "$GONE_POOL/agent-workspace" "$H11/.claude/skills/agent-workspace"
@@ -196,6 +204,7 @@ check "t11: second apply plans no legacy prune"        bash -c '! grep -qE "prun
 
 # --- Test 10: missing or malformed arguments fail without mutation ------------
 H4="$(new_home)"
+TMP_HOMES+=("$H4")
 out="$(HOME="$H4" "$RECONCILER" 2>&1)"; rc=$?
 check "t10: no arguments fails"                  test "$rc" -ne 0
 check "t10: no arguments prints usage"           bash -c 'grep -q "Usage:" <<<"$1"' _ "$out"

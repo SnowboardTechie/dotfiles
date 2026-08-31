@@ -17,6 +17,12 @@ separate mandatory final quality gate**, not a fourth classifier-selected lane;
 it runs after the primary batch against the same exact candidate. Standalone
 review of someone else's branch starts here.
 
+**Correctness / Integration / Tests** is an optional, caller-selected review
+dimension available to callers that need a dedicated behavior trace. It is not added
+to `pr-self-review`'s deterministic primary-lane selector by this change;
+that workflow still selects only Standards, Spec, and conditional Risk before
+its mandatory Ponytail gate.
+
 Provenance: adapted from Matt Pocock's `code-review`. Upstream pin, accepted and
 rejected upstream rules, and the watched source list live in
 [`dot-agents/upstreams/mattpocock-skills.json`](../../upstreams/mattpocock-skills.json).
@@ -97,6 +103,11 @@ conventions visible in neighboring code.
 the user passed, the approved plan in the effort's state directory, a spec under
 `docs/` or `specs/` matching the branch. If none exists, say so — the Spec lane
 reports "no spec available" rather than inventing an intent to measure against.
+
+**Correctness / Integration / Tests sources**: the complete diff, callers and
+consumers of changed behavior, serialization or storage seams, error paths, and
+tests that claim to distinguish the changed behavior from retained base
+behavior.
 
 **Risk sources**: the changed paths themselves, plus whatever the repository
 documents about its security model, data handling, or deployment.
@@ -182,6 +193,19 @@ implemented leaves **no diff line to object to**, which is why the caller runs
 an independent acceptance-criteria sweep on top of this lane rather than
 treating an empty Spec report as proof.
 
+### Correctness / Integration / Tests lane (optional)
+
+> Trace changed behavior through its callers, consumers, serialization or
+> storage, and error paths. Report incorrect edge handling, integration drift,
+> missing wiring, concurrency or state bugs, and tests that do not discriminate
+> the behavior they claim to prove. Distinguish retained base behavior from a
+> failure introduced by the PR. Cite a changed `file:line`, or the nearest real
+> integration seam when an omission has no changed line. For each finding, name
+> the concrete failure mode and the smallest reasonable correction. Do not
+> duplicate documented-standard breaches, pure spec omissions, security or
+> operational Risk findings, or over-engineering findings owned by the other
+> lanes. Under 400 words.
+
 ### Risk lane (conditional)
 
 > Report concrete, exploitable or operationally dangerous behavior introduced or
@@ -222,9 +246,10 @@ upgrades an over-engineering observation into a correctness or security claim.
 
 ## 5. Report
 
-Present the primary reports under `## Standards`, `## Spec`, and `## Risk`
-headings, then `## Ponytail` last, verbatim or lightly cleaned. **Do not merge or
-rerank across dimensions** — that is the exact collapse the separation prevents.
+Present the selected primary reports under `## Standards`, `## Spec`, optional
+`## Correctness / Integration / Tests`, and `## Risk` headings, then
+`## Ponytail` last, verbatim or lightly cleaned. **Do not merge or rerank across
+dimensions** — that is the exact collapse the separation prevents.
 
 End with one line per primary lane and one for Ponytail: how many findings, and
 the worst one *within that dimension*. Do not pick a single winner across them.

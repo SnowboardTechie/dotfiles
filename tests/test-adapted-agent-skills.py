@@ -746,6 +746,21 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
         self.assertTrue((POOL / "pr-self-review" / "scripts" / "select_review_lanes.py").is_file())
         self.assertTrue((POOL / "pr-self-review" / "tests" / "test_select_review_lanes.py").is_file())
 
+    def test_correctness_lane_is_optional_and_does_not_expand_pr_self_review(self) -> None:
+        self.assertIn("Correctness / Integration / Tests", self.code_review)
+        self.assert_matches(
+            self.code_review,
+            r"(?is)correctness.*(caller.selected|available to callers|optional)",
+            "the shared correctness lane must remain caller-selected",
+        )
+        self.assertIn("Standards, Spec, and conditional Risk", self.review_overview)
+        self.assertNotIn("review-correctness.md", self.body)
+        self.assert_matches(
+            self.code_review,
+            r"(?is)not added.*pr-self-review.*(selector|primary.lane)",
+            "adding the shared lane must not change pr-self-review selection",
+        )
+
     def test_skill_names_the_three_lanes_and_their_artifacts(self) -> None:
         for token in ("review-standards.md", "review-spec.md", "review-risk.md", "summary.md"):
             with self.subTest(artifact=token):

@@ -109,7 +109,7 @@ OPENCODE_SKILLS=("${COMMON_SKILLS[@]}"
 # skills live in a dedicated category so the shared pool remains canonical while
 # Hermes's curator and bundled-skill lifecycle stay separate.
 HERMES_SKILLS=(
-    ship worktrunk update-pr-description pr-self-review code-review
+    ship worktrunk update-pr-description pr-self-review code-review multiagent-pr-review
     manual-merge issue-create issue-plan issue-work loop-issue
     coding-agent-handoff-supervision
     vault-capture skill-retrospective adr-and-spec-coach voice-bryan

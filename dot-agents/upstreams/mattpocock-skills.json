@@ -206,7 +206,8 @@
         "dot-agents/skills/code-review/SKILL.md",
         "dot-agents/skills/pr-self-review/scripts/select_review_lanes.py",
         "dot-agents/skills/pr-self-review/tests/test_select_review_lanes.py",
-        "dot-claude/agents/lane-reviewer.md"
+        "dot-claude/agents/lane-reviewer.md",
+        "dot-claude/agents/multiagent-pr-lane-reviewer.md"
       ],
       "localChanges": [
         "Adds a third conditional Risk lane and delegates lane selection to `select_review_lanes.py` so the choice is deterministic rather than a judgment call.",
@@ -215,6 +216,7 @@
         "States that an empty Spec report is not proof the acceptance criteria are met, and defers the independent sweep to the caller.",
         "States that lane convergence raises the cost of an error, not confidence in it.",
         "Defines the lanes as a primitive consumed by `pr-self-review`, which owns disposition and the correction bound.",
+        "Adds an optional Correctness / Integration / Tests lane for caller-selected behavior tracing; `multiagent-pr-review`, not `pr-self-review`, selects it.",
         "Review lane selection preserves one load-bearing inventory shape: `git diff --name-status -z -M -C --find-copies-harder … --`. The classifier help keeps the generic `{base}...HEAD` template, while `code-review` and `pr-self-review` substitute their immutable base/head SHA pair. `--find-copies-harder` is load-bearing: plain `-C` only inspects modified files, so copying a risky *untouched* source emits a bare `A` and the risky source is never classified. Parsing is strict — a suffixed status, an impossible similarity score, a misaligned empty field, truncation, an empty path, a control character, or undecodable bytes all refuse, because a guess here is a silently narrowed review.",
         "The deterministic selector and its tests live under pr-self-review (scripts/select_review_lanes.py, tests/test_select_review_lanes.py) and are consumed by both code-review and pr-self-review; the Git name-status parser validates exact status bytes before any normalization and rejects every control character in a path, tab included.",
         "Keeps Standards, Spec, and conditional Risk as the primary lane architecture, then runs a mandatory host-independent Ponytail over-engineering quality gate last against every exact candidate. The shared contract is deliberately narrow (delete/YAGNI/stdlib/native/shrink only), requires `review-ponytail.md`, and does not depend on a Claude plugin or slash command.",
