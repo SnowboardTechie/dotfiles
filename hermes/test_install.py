@@ -95,6 +95,23 @@ class ManagedDestinationTest(unittest.TestCase):
         self.assertTrue(destination.is_symlink())
         self.assertEqual(destination.resolve(), self.source.resolve())
 
+    def test_identical_copy_reconciles_executable_mode(self) -> None:
+        destination = self.home / "scripts" / "collector.py"
+        destination.parent.mkdir(parents=True)
+        self.source.chmod(0o755)
+        destination.write_bytes(self.source.read_bytes())
+        destination.chmod(0o644)
+
+        outcome = MODULE.install_copy(
+            self.source,
+            destination,
+            hermes_home=self.home,
+            backup_root=self.backup,
+        )
+
+        self.assertEqual(outcome, "updated mode")
+        self.assertEqual(destination.stat().st_mode & 0o777, 0o755)
+
     def test_retired_script_rejects_symlinked_parent_escape(self) -> None:
         outside = self.root / "outside"
         outside.mkdir()

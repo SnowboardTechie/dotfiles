@@ -9,6 +9,7 @@ import json
 import os
 import shutil
 import socket
+import stat
 import subprocess
 import sys
 import tempfile
@@ -144,6 +145,11 @@ def install_copy(
         if not destination.is_file():
             raise InstallError(f"copy destination is not a regular file: {destination}")
         if identical(source, destination):
+            source_mode = stat.S_IMODE(source.stat().st_mode)
+            destination_mode = stat.S_IMODE(destination.stat().st_mode)
+            if destination_mode != source_mode:
+                destination.chmod(source_mode)
+                return "updated mode"
             return "current"
         backup = backup_root / destination.name
         backup.parent.mkdir(parents=True, exist_ok=True)
