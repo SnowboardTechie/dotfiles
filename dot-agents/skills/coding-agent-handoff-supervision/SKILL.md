@@ -1,7 +1,7 @@
 ---
 name: coding-agent-handoff-supervision
 description: Use for visible, ticket-backed Claude or Hermes handoffs.
-version: 1.2.0
+version: 1.3.0
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
@@ -74,6 +74,19 @@ Keep the implementation handoff short. State:
 - the delivery permissions as explicit independent decisions: whether local
   commit creation is allowed, whether push is allowed, and whether PR or issue
   mutation is allowed. Never infer one permission from another.
+
+When the worker can read an authoritative plan or ticket, make the handoff
+artifact, not the prompt, self-contained. The prompt needs only the plan or
+ticket path/URL, implementation repository/worktree, execution scope or
+authority boundaries, delivery permissions, and any current blocker that is not
+already recorded there. Do not restate requirements, steps, files, tests, or
+safeguards from a reachable artifact. A fresh agent lacks chat context; the
+artifact is how it receives that context without a second, drifting plan in the
+prompt.
+
+If the worker cannot read the artifact, make it reachable first. For a genuinely
+cross-machine handoff, follow `cross-machine-coding-agent-handoffs`; inline only
+the minimum context that still cannot be retrieved after that synchronization.
 
 Destructive and history-rewriting Git operations are absolute and not
 approval-eligible in every worker-facing brief: the worker must never run
@@ -215,12 +228,15 @@ Do not close a foreground Herdr pane while Bryan may still be using it.
    `issue-create` through approval, post, and read back before dispatch.
 6. **Over-constraining the worker.** Point to the ticket and authority boundary,
    not a duplicated implementation plan.
-7. **Starting a duplicate for corrections.** Compare all six persisted identity
+7. **Making the prompt a second plan.** A reachable plan or ticket owns the
+   requirements, steps, files, tests, and safeguards. The prompt points to it
+   and adds only execution scope, delivery permissions, and current blockers.
+8. **Starting a duplicate for corrections.** Compare all six persisted identity
    fields and continue only the original Herdr agent.
-8. **Treating suggested prompt text as authorization.** Submit only user- or
+9. **Treating suggested prompt text as authorization.** Submit only user- or
    parent-authored instructions.
-9. **Trusting worker-reported tests or pushes.** Independently inspect and verify.
-10. **Cleaning before checking for unrelated edits.** Preserve user work and close
+10. **Trusting worker-reported tests or pushes.** Independently inspect and verify.
+11. **Cleaning before checking for unrelated edits.** Preserve user work and close
    only resources created by the handoff.
 
 ## Verification Checklist
@@ -228,6 +244,7 @@ Do not close a foreground Herdr pane while Bryan may still be using it.
 - [ ] Existing governing issue reused, or `issue-create` approved, posted, and read back
 - [ ] Ticket targets the project workspace and duplicate prevention completed
 - [ ] Brief states ticket URL, implementation repository/worktree, authority boundaries, and delivery permissions
+- [ ] Reachable plan/ticket is the self-contained artifact; prompt does not restate its steps, files, tests, requirements, or safeguards
 - [ ] Prompt does not duplicate the implementation plan or complete context
 - [ ] Worker kind is Claude by default or Hermes by explicit same-run request
 - [ ] Visible work uses Herdr; unavailable Herdr stops rather than falling back

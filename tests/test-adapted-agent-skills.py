@@ -622,6 +622,14 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
             / "references"
             / "herdr-claude-handoff.md"
         )
+        cls.cross_machine = read(
+            REPO_ROOT
+            / "hermes"
+            / "skills"
+            / "autonomous-ai-agents"
+            / "cross-machine-coding-agent-handoffs"
+            / "SKILL.md"
+        )
 
     def test_preparation_reuses_or_creates_one_workspace_ticket(self) -> None:
         for token in (
@@ -648,6 +656,29 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
             self.body,
             r"(?is)(do not|never).*duplicat.*(plan|complete context)",
             "the ticket, not an oversized prompt, must carry implementation context",
+        )
+
+    def test_accessible_artifact_is_self_contained_not_the_prompt(self) -> None:
+        for name, body in (
+            ("visible handoff", self.body),
+            ("cross-machine handoff", self.cross_machine),
+        ):
+            with self.subTest(skill=name):
+                self.assertIn("artifact, not the prompt", body.lower())
+                self.assert_matches(
+                    body,
+                    r"(?is)(plan|ticket).*(path|URL).*(execution scope|authority boundaries).*delivery permissions",
+                    f"{name} must keep an artifact-backed prompt to locator and authority",
+                )
+                self.assert_matches(
+                    body,
+                    r"(?is)(do not|never).*restat.*(steps|files|tests|requirements)",
+                    f"{name} must prohibit restating reachable plan details",
+                )
+        self.assert_matches(
+            self.cross_machine,
+            r"(?is)(cannot|can't|unable).*(read|access).*(inline|include).*(missing|minimum)",
+            "cross-machine handoffs may inline only what the worker cannot retrieve",
         )
 
     def test_herdr_supports_claude_and_explicit_hermes_without_focus(self) -> None:

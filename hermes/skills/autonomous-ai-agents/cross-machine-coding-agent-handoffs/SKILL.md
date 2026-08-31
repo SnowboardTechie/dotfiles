@@ -1,7 +1,7 @@
 ---
 name: cross-machine-coding-agent-handoffs
 description: Prepare, deliver, and independently review coding-agent work when the authoring agent and reviewer may run on different machines.
-version: 1.1.0
+version: 1.2.0
 metadata:
   hermes:
     tags: [coding-agents, handoff, cross-machine, review, git, knowledge-sync]
@@ -24,17 +24,29 @@ When the project has a canonical notes vault, status page, implementation plan, 
 
 The coding agent should start from synchronized context it can actually read.
 
-## 2. Make the task self-contained
+## 2. Make the authority reachable, not the prompt repetitive
 
-A good implementation prompt names:
+When the receiving agent can read an authoritative plan or ticket, make the
+handoff artifact, not the prompt, self-contained. The prompt names only the plan
+or ticket path/URL, repository and exact base, execution scope or authority
+boundaries, delivery permissions, and any current blocker that the artifact does
+not already contain. Do not restate requirements, steps, files, tests, or
+safeguards from a reachable artifact. Repetition creates a second plan that can
+drift from the authority it claims to summarize.
 
-- repository and exact base branch or SHA;
+If the worker cannot read or access the plan or ticket, first synchronize or
+publish that artifact somewhere the worker can retrieve. When no durable
+artifact can be made reachable, inline only the minimum missing context:
+
 - the user-visible bug or desired behavior;
 - scope boundaries and explicitly excluded adjacent work;
 - authoritative examples or prior commits that are references rather than wholesale cherry-pick targets;
 - required tests, static checks, downstream consumer checks, and expected failure modes;
-- whether the agent may edit, commit, push, or open a PR;
 - what to do when credentials, live API keys, or other external prerequisites are unavailable.
+
+Filesystem separation does not by itself justify duplication. A repository
+path, pushed plan, ticket URL, or committed decision record is sufficient when
+the receiving agent can actually resolve it.
 
 For narrow release fixes, require the agent to trace semantic consumers of changed metadata before declaring the change local. A small file diff can still change generic reflection, serialization, schema, or transform behavior elsewhere.
 
@@ -100,6 +112,7 @@ Then list checks independently rerun and distinguish them from checks reported o
 ## Pitfalls
 
 - Drafting the coding prompt before synchronizing notes, leaving the agent with stale release state.
+- Repeating a reachable plan in the prompt instead of giving the agent its locator and execution boundary.
 - Saying “do not push” when a different machine must review the work.
 - Treating branch push and PR creation as the same permission boundary.
 - Trusting “all usages traced” without searching generic helpers and reflection-based consumers.
@@ -112,6 +125,8 @@ Then list checks independently rerun and distinguish them from checks reported o
 ## Completion checklist
 
 - [ ] Canonical context reviewed, reconciled, committed, and pushed before prompt drafting
+- [ ] Reachable plan/ticket is the self-contained artifact; prompt contains only its locator, execution scope, delivery permissions, and current blockers
+- [ ] If the worker cannot access the artifact, only the minimum still-missing context is inlined
 - [ ] Base branch/SHA and scope boundaries named
 - [ ] Required verification and external blockers named
 - [ ] Agent instructed to commit and push the branch
