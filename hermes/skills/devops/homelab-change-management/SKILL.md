@@ -234,6 +234,7 @@ The runbook must remain usable after Hermes/chat/browser access disappears; neve
 
 ## Common mistakes
 
+- Running privileged `install -o`, `chown`, or `chmod` on a path beneath a user-writable home after checking only the final component. Intermediate symlinks can still redirect the root operation. Prefer routine creation and mode changes as the service user. For a one-time ownership migration, either use descriptor-based no-follow traversal (`openat`/`fchown`) or pin a physical parent directory, require its canonical path to equal the declared parent, and operate on the basename with no-follow semantics; add an adversarial parent-symlink regression.
 - Asking Bryan for architecture already present in `nix-configs`.
 - Looking only at a host leaf and missing imported module defaults.
 - Recommending `brew install` before checking Nix-managed Homebrew cleanup.
