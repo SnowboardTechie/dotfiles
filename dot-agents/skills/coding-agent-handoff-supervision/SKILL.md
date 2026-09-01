@@ -106,8 +106,8 @@ architecture, or exclusions merely to make the brief look complete.
 The worker is approval-gated, not sandbox-confined. Do not claim filesystem,
 network, credential, or Git sandbox confinement. If the requested task requires
 hard confinement and the selected runtime cannot prove it, stop. Likewise stop
-when Claude edit approvals or Hermes smart approvals are disabled; do not relax
-the approval mode to make the handoff start.
+when Claude auto mode is unavailable or Hermes smart approvals are disabled; do
+not relax the approval mode to make the handoff start.
 
 **Complete when:** the worker can identify the approved result, source context,
 and publication boundary without being handed an imagined implementation.
@@ -251,7 +251,7 @@ Do not close a foreground Herdr pane while Bryan may still be using it.
 - [ ] Exact caller pane targeted and new pane ID parsed from Herdr JSON
 - [ ] All six visible-worker identity fields persisted and passed distinctly
 - [ ] Legacy/incomplete identity state fails closed without duplicate launch
-- [ ] Claude uses `acceptEdits`; Hermes uses smart approvals without yolo
+- [ ] Claude uses `auto` permission mode; Hermes uses smart approvals without yolo
 - [ ] Local commit, push, and PR/issue permissions are each explicit
 - [ ] Destructive/history-rewriting Git operations remain absolutely prohibited
 - [ ] Active window, workspace, tab, and pane preserved unless focus was requested

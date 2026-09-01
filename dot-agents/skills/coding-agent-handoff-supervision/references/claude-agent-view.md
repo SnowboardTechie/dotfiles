@@ -12,7 +12,7 @@ Herdr worker was successfully created.
 Use a positional prompt so Claude creates an attachable background session:
 
 ```sh
-claude --bg --permission-mode acceptEdits --model opus --effort high \
+claude --bg --permission-mode auto --model opus --effort high \
   --name "Short task name" "<concept brief>"
 ```
 

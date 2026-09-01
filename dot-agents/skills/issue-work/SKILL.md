@@ -461,7 +461,7 @@ For the visible Claude or Hermes path:
    rewrite, or `force-push`; delete or overwrite any local ref or branch,
    including branch deletion and `git update-ref -d` update-ref deletion, is
    likewise forbidden.
-5. Start Claude with `acceptEdits`; start Hermes only with normal smart approvals
+5. Start Claude with `auto` permission mode; start Hermes only with normal smart approvals
    and no yolo. Stop if approval state is disabled or unverifiable. This route is
    approval-gated, not sandbox-confined; if hard confinement is required but
    unavailable, stop.

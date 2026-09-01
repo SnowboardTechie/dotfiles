@@ -606,8 +606,16 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
 
         Lane selection is now computed, so no prose count may reappear.
         """
-        self.assert_not_matches(self.body, r"(?i)\b(four|six)[- ]lens", f"forbidden wording present: {r"(?i)\b(four|six)[- ]lens"!r}")
-        self.assert_not_matches(self.body, r"(?i)\ball (four|six) lenses\b", f"forbidden wording present: {r"(?i)\ball (four|six) lenses\b"!r}")
+        self.assert_not_matches(
+            self.body,
+            r"(?i)\b(four|six)[- ]lens",
+            "forbidden wording present: fixed lens count",
+        )
+        self.assert_not_matches(
+            self.body,
+            r"(?i)\ball (four|six) lenses\b",
+            "forbidden wording present: all-lenses count",
+        )
 
 
 class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
@@ -707,8 +715,8 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
                 self.assertIn(field, self.herdr)
 
     def test_visible_worker_uses_approval_gated_authority(self) -> None:
-        self.assertIn("--permission-mode acceptEdits", self.herdr)
-        self.assertNotIn("--permission-mode auto", self.herdr)
+        self.assertIn("--permission-mode auto", self.herdr)
+        self.assertNotIn("--permission-mode acceptEdits", self.herdr)
         self.assertIn("approvals.mode: smart", self.herdr)
         self.assertIn("HERMES_YOLO_MODE", self.herdr)
         self.assert_matches(
@@ -1023,10 +1031,14 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
         self.assertIn("git branch --show-current", self.lane_reviewer)
 
     def test_skill_documents_the_cairnos_always_risk_rule(self) -> None:
-        self.assert_matches(self.body, r"(?i)cairn", f"missing required wording: {r"(?i)cairn"!r}")
+        self.assert_matches(self.body, r"(?i)cairn", "missing required wording: cairn")
 
     def test_skill_documents_the_no_third_pass_invariant(self) -> None:
-        self.assert_matches(self.body, r"(?i)no third correction pass|never a third correction pass", f"missing required wording: {r"(?i)no third correction pass|never a third correction pass"!r}")
+        self.assert_matches(
+            self.body,
+            r"(?i)no third correction pass|never a third correction pass",
+            "missing required wording: no third correction pass",
+        )
 
     def test_skill_keeps_the_independent_acceptance_criteria_sweep(self) -> None:
         self.assert_matches(
@@ -1192,11 +1204,17 @@ class GuidedLearningTest(_MatchMixin, unittest.TestCase):
         cls.body = read(POOL / "guided-learning" / "SKILL.md")
 
     def test_requires_an_absolute_workspace_path(self) -> None:
-        self.assert_matches(self.body, r"(?i)absolute .*path", f"missing required wording: {r"(?i)absolute .*path"!r}")
+        self.assert_matches(
+            self.body, r"(?i)absolute .*path", "missing required wording: absolute path"
+        )
 
     def test_refuses_to_write_into_its_installed_skill_directory(self) -> None:
-        self.assert_matches(self.body, r"(?i)refuse", f"missing required wording: {r"(?i)refuse"!r}")
-        self.assert_matches(self.body, r"(?i)installed skill directory", f"missing required wording: {r"(?i)installed skill directory"!r}")
+        self.assert_matches(self.body, r"(?i)refuse", "missing required wording: refuse")
+        self.assert_matches(
+            self.body,
+            r"(?i)installed skill directory",
+            "missing required wording: installed skill directory",
+        )
 
     def test_does_not_precreate_learning_machinery(self) -> None:
         for forbidden in ("lessons/", "assets/", "quiz"):
@@ -1208,8 +1226,8 @@ class GuidedLearningTest(_MatchMixin, unittest.TestCase):
                 )
 
     def test_never_treats_memory_as_proof_of_learning(self) -> None:
-        self.assert_matches(self.body, r"(?i)hindsight", f"missing required wording: {r"(?i)hindsight"!r}")
-        self.assert_matches(self.body, r"(?i)evidence", f"missing required wording: {r"(?i)evidence"!r}")
+        self.assert_matches(self.body, r"(?i)hindsight", "missing required wording: hindsight")
+        self.assert_matches(self.body, r"(?i)evidence", "missing required wording: evidence")
 
 
 class WayfinderContractTest(_MatchMixin, unittest.TestCase):
@@ -1231,11 +1249,19 @@ class WayfinderContractTest(_MatchMixin, unittest.TestCase):
                 self.assertTrue((base / relative).is_file())
 
     def test_skill_requires_a_private_tracker(self) -> None:
-        self.assert_matches(self.body, r"(?i)private", f"missing required wording: {r"(?i)private"!r}")
-        self.assert_matches(self.body, r"(?i)public .*(tracker|repositor)", f"missing required wording: {r"(?i)public .*(tracker|repositor)"!r}")
+        self.assert_matches(self.body, r"(?i)private", "missing required wording: private")
+        self.assert_matches(
+            self.body,
+            r"(?i)public .*(tracker|repositor)",
+            "missing required wording: public tracker or repository",
+        )
 
     def test_skill_requires_preview_before_mutation(self) -> None:
-        self.assert_matches(self.body, r"(?i)dry[- ]run|preview", f"missing required wording: {r"(?i)dry[- ]run|preview"!r}")
+        self.assert_matches(
+            self.body,
+            r"(?i)dry[- ]run|preview",
+            "missing required wording: dry run or preview",
+        )
         self.assertIn("forgejo_wayfinder.py", self.body)
 
     # Named prototype workflows and where each one actually lives. `spike` and
@@ -1295,13 +1321,17 @@ class WritingGovernanceTest(_MatchMixin, unittest.TestCase):
 
     def test_readme_prefers_sharpening_the_pointer_over_inlining(self) -> None:
         body = read(REPO_ROOT / "dot-agents" / "README.md")
-        self.assert_matches(body, r"(?i)trigger wording", f"missing required wording: {r"(?i)trigger wording"!r}")
-        self.assert_matches(body, r"(?i)inlin", f"missing required wording: {r"(?i)inlin"!r}")
+        self.assert_matches(
+            body, r"(?i)trigger wording", "missing required wording: trigger wording"
+        )
+        self.assert_matches(body, r"(?i)inlin", "missing required wording: inline")
 
     def test_retrospective_treats_repeated_lookups_as_a_stale_cache(self) -> None:
         body = read(POOL / "skill-retrospective" / "SKILL.md")
-        self.assert_matches(body, r"(?i)stale cache", f"missing required wording: {r"(?i)stale cache"!r}")
-        self.assert_matches(body, r"(?i)--help|manifest", f"missing required wording: {r"(?i)--help|manifest"!r}")
+        self.assert_matches(body, r"(?i)stale cache", "missing required wording: stale cache")
+        self.assert_matches(
+            body, r"(?i)--help|manifest", "missing required wording: help or manifest"
+        )
 
 
 class MonitorOutputTest(_MatchMixin, unittest.TestCase):
@@ -1317,12 +1347,16 @@ class MonitorOutputTest(_MatchMixin, unittest.TestCase):
 
     def test_monitor_emits_no_timestamp_or_local_path(self) -> None:
         body = read(self.script)
-        self.assert_not_matches(body, r"datetime\.now|time\.time\(\)|utcnow", f"forbidden wording present: {r"datetime\.now|time\.time\(\)|utcnow"!r}")
+        self.assert_not_matches(
+            body,
+            r"datetime\.now|time\.time\(\)|utcnow",
+            "forbidden wording present: nondeterministic timestamp",
+        )
         self.assertIn("sort_keys=True", body)
 
     def test_monitor_supports_offline_fixtures(self) -> None:
         body = read(self.script)
-        self.assert_matches(body, r"(?i)fixture", f"missing required wording: {r"(?i)fixture"!r}")
+        self.assert_matches(body, r"(?i)fixture", "missing required wording: fixture")
 
     def test_prompt_is_mention_led_and_read_only(self) -> None:
         prompt = REPO_ROOT / "hermes" / "automations" / "mattpocock-skill-update-watch" / "prompt.md"
@@ -1330,7 +1364,11 @@ class MonitorOutputTest(_MatchMixin, unittest.TestCase):
         body = read(prompt)
         self.assertIn("@bryan:snowboardtechie.com", body)
         self.assertIn("[SILENT]", body)
-        self.assert_matches(body, r"(?i)never .*(edit|advance|install|activate)", f"missing required wording: {r"(?i)never .*(edit|advance|install|activate)"!r}")
+        self.assert_matches(
+            body,
+            r"(?i)never .*(edit|advance|install|activate)",
+            "missing required wording: never mutate upstream state",
+        )
 
 
 class ManifestTest(unittest.TestCase):

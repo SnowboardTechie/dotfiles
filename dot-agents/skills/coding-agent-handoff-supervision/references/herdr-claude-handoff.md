@@ -60,7 +60,7 @@ interactive readiness. Claude is the default:
 
 ```sh
 "$HERDR_BIN_PATH" agent start <agent-name> --kind claude --pane <new-pane-id> -- \
-  --permission-mode acceptEdits --model opus --effort high \
+  --permission-mode auto --model opus --effort high \
   --name "<short task name>"
 ```
 
@@ -79,8 +79,8 @@ returns `agent_not_ready`, inspect `agent get` and `agent read` through the
 recorded binary. A trust, approval, or question UI is `blocked`; do not answer it
 for the user.
 
-Claude's `acceptEdits` and Hermes's smart mode are approval gates, not hard
-confinement. Do not claim the visible worker has sandbox confinement. If the
+Claude's `auto` permission mode and Hermes's smart mode are approval gates, not
+hard confinement. Do not claim the visible worker has sandbox confinement. If the
 handoff requires hard filesystem, network, credential, or Git confinement, stop
 unless a separately verified runtime provides it.
 
