@@ -1431,6 +1431,31 @@ class WritingGovernanceTest(_MatchMixin, unittest.TestCase):
         )
 
 
+class PRDescriptionAuthorizationTest(_MatchMixin, unittest.TestCase):
+    """Approved PR work includes an accurate synchronized description."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.body = read(REPO_ROOT / "dot-agents" / "skills" / "update-pr-description" / "SKILL.md")
+
+    def test_standing_authorization_avoids_a_duplicate_approval_gate(self) -> None:
+        self.assert_matches(
+            self.body,
+            r"(?i)approval of work for an existing PR satisfies this gate",
+            "approved PR work must authorize description synchronization",
+        )
+        self.assert_matches(
+            self.body,
+            r"(?i)do not ask again",
+            "the workflow must not request duplicate approval",
+        )
+
+    def test_standing_authorization_remains_narrow(self) -> None:
+        for excluded_action in ("comments", "issue edits", "review requests", "merges"):
+            with self.subTest(excluded_action=excluded_action):
+                self.assertIn(excluded_action, self.body)
+
+
 class MonitorOutputTest(_MatchMixin, unittest.TestCase):
     """A monitor that varies run-to-run alerts on nothing but itself."""
 

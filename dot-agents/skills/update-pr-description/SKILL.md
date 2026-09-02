@@ -116,7 +116,21 @@ Do not add AI attribution, generated-by notices, or `Co-authored-by` text. Prese
 
 ### Step 4.5: Approval gate
 
-Updating a PR body is public communication. Present the complete generated description inline and ask for explicit approval using interactive clarification (Hermes: `clarify`) or the host's conversational equivalent. Iterate on requested edits and re-present. **Do not call `gh pr edit`, `tea api`, or the Forgejo REST API until the user approves the exact body.** Silence and ambiguity are not approval. In unattended runs, write/report the proposed body and stop without mutating the PR.
+Updating a PR body is public communication and requires authorization. A user's
+explicit approval of work for an existing PR satisfies this gate when the user
+has established that approval includes keeping that PR description synchronized,
+and the update only makes the body accurately reflect the approved work. In that
+case, do not ask again: update the body and read it back. This scoped authorization
+does not cover comments, issue edits, review requests, merges, or new claims
+outside the approved work.
+
+Otherwise, present the complete generated description inline and ask for explicit
+approval using interactive clarification (Hermes: `clarify`) or the host's
+conversational equivalent. Iterate on requested edits and re-present. **Do not call
+`gh pr edit`, `tea api`, or the Forgejo REST API until the user approves the exact
+body.** Silence and ambiguity are not approval. In unattended runs without the
+standing authorization above, write/report the proposed body and stop without
+mutating the PR.
 
 ---
 
