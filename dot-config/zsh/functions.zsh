@@ -20,28 +20,33 @@ function _nix_config_host {
   esac
 }
 
-function _nix_apply_host {
+function _nix_apply_system {
   local action="$1"
-  local target="$2"
-  local current="$(_nix_config_host)"
-  local current_label="$current"
+  local target="$(_nix_config_host)"
+  local target_label="$target"
+  local action_label="rebuild using the current flake inputs"
 
-  case "$current" in
-    studio) current_label="Mac Studio (studio)" ;;
-    mbp) current_label="MacBook Pro (mbp)" ;;
-    a6mbp) current_label="A6 MacBook Pro (a6mbp)" ;;
-    gnarbox) current_label="Gnarbox (gnarbox)" ;;
-    inix) current_label="Intel Mac (inix)" ;;
+  case "$target" in
+    studio) target_label="Mac Studio (studio)" ;;
+    mbp) target_label="MacBook Pro (mbp)" ;;
+    a6mbp) target_label="A6 MacBook Pro (a6mbp)" ;;
+    gnarbox) target_label="Gnarbox (gnarbox)" ;;
+    inix) target_label="Intel Mac (inix)" ;;
   esac
 
-  if [[ "$current" != "$target" ]]; then
-    print -u2 -r -- "Refusing $action-$target: this machine is $current_label, not $target."
+  if [[ "$target" == "unknown" ]]; then
+    print -u2 -r -- "Refusing $action-system: this machine is not a recognized nix-configs host."
     return 1
   fi
 
   local reply=""
-  print -r -- "Current machine: $current_label"
-  printf 'Continue with %s-%s? [Y/n] ' "$action" "$target"
+  if [[ "$action" == "upgrade" ]]; then
+    action_label="update flake inputs, then rebuild"
+  fi
+  print -r -- "System: $target_label"
+  print -r -- "Flake:  $HOME/code/nix-configs#$target"
+  print -r -- "Action: $action_label"
+  printf 'Continue with %s-system? [Y/n] ' "$action"
   if ! read -r reply; then
     print -r -- "Cancelled."
     return 1
@@ -62,17 +67,8 @@ function _nix_apply_host {
   fi
 }
 
-function update-mbp { _nix_apply_host update mbp }
-function update-a6mbp { _nix_apply_host update a6mbp }
-function update-studio { _nix_apply_host update studio }
-function update-gnarbox { _nix_apply_host update gnarbox }
-function update-inix { _nix_apply_host update inix }
-
-function upgrade-mbp { _nix_apply_host upgrade mbp }
-function upgrade-a6mbp { _nix_apply_host upgrade a6mbp }
-function upgrade-studio { _nix_apply_host upgrade studio }
-function upgrade-gnarbox { _nix_apply_host upgrade gnarbox }
-function upgrade-inix { _nix_apply_host upgrade inix }
+function update-system { _nix_apply_system update }
+function upgrade-system { _nix_apply_system upgrade }
 
 # Git rebase function
 # Defaults to 3 commits back, otherwise use argument passed as:

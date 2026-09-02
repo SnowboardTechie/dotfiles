@@ -33,86 +33,36 @@ COMMAND_LOG="$TMP_ROOT/commands.log"
 : > "$COMMAND_LOG"
 
 output="$(
-    printf 'y\n' | \
+    printf '\n' | \
         HOME="$TMP_ROOT/home" \
-        PATH="$TMP_ROOT/bin:/usr/bin:/bin" \
-        COMMAND_LOG="$COMMAND_LOG" \
-        STUB_LOCAL_HOSTNAME="Bryans-MacBook-Pro" \
-        FUNCTIONS="$FUNCTIONS" \
-        ALIASES="$ALIASES" \
-        /bin/zsh -f -c 'source "$FUNCTIONS"; source "$ALIASES"; eval update-studio' 2>&1
-)"
-status=$?
-
-if [[ $status -eq 0 ]]; then
-    echo "FAIL: update-studio succeeded on the MacBook Pro" >&2
-    exit 1
-fi
-if [[ -s "$COMMAND_LOG" ]]; then
-    echo "FAIL: update-studio invoked a command on the MacBook Pro" >&2
-    cat "$COMMAND_LOG" >&2
-    exit 1
-fi
-if [[ "$output" != *"MacBook Pro"* || "$output" != *"studio"* ]]; then
-    echo "FAIL: mismatch message did not identify the current machine and target" >&2
-    printf '%s\n' "$output" >&2
-    exit 1
-fi
-
-echo "ok   update-studio refuses to run on the MacBook Pro"
-
-: > "$COMMAND_LOG"
-output="$(
-    HOME="$TMP_ROOT/home" \
         PATH="$TMP_ROOT/bin:/usr/bin:/bin" \
         COMMAND_LOG="$COMMAND_LOG" \
         STUB_LOCAL_HOSTNAME="Bryans-Mac-Studio" \
         FUNCTIONS="$FUNCTIONS" \
         ALIASES="$ALIASES" \
-        /bin/zsh -f -c 'source "$FUNCTIONS"; source "$ALIASES"; update-studio' \
-        </dev/null 2>&1
+        /bin/zsh -f -c 'source "$FUNCTIONS"; source "$ALIASES"; update-system' 2>&1
 )"
-status=$?
-
-if [[ $status -eq 0 ]]; then
-    echo "FAIL: update-studio proceeded without confirmation" >&2
-    exit 1
-fi
-if [[ -s "$COMMAND_LOG" ]]; then
-    echo "FAIL: update-studio invoked a command after confirmation was declined" >&2
-    cat "$COMMAND_LOG" >&2
-    exit 1
-fi
-if [[ "$output" != *"Studio"* || "$output" != *"Continue"* || "$output" != *"[Y/n]"* ]]; then
-    echo "FAIL: confirmation prompt did not identify Studio and ask to continue" >&2
-    printf '%s\n' "$output" >&2
-    exit 1
-fi
-
-echo "ok   update-studio cancels when no interactive answer is available"
-
-: > "$COMMAND_LOG"
-printf '\n' | \
-    HOME="$TMP_ROOT/home" \
-    PATH="$TMP_ROOT/bin:/usr/bin:/bin" \
-    COMMAND_LOG="$COMMAND_LOG" \
-    STUB_LOCAL_HOSTNAME="Bryans-Mac-Studio" \
-    FUNCTIONS="$FUNCTIONS" \
-    ALIASES="$ALIASES" \
-    /bin/zsh -f -c 'source "$FUNCTIONS"; source "$ALIASES"; update-studio' \
-    >/dev/null 2>&1
 status=$?
 
 expected="sudo darwin-rebuild switch --flake $TMP_ROOT/home/code/nix-configs/#studio"
 actual="$(<"$COMMAND_LOG")"
 if [[ $status -ne 0 || "$actual" != "$expected" ]]; then
-    echo "FAIL: update-studio did not default to yes on an empty answer" >&2
+    echo "FAIL: update-system did not rebuild the detected Studio target" >&2
     echo "  want: $expected" >&2
     echo "  got:  ${actual:-<no command>}" >&2
+    printf '%s\n' "$output" >&2
+    exit 1
+fi
+if [[ "$output" != *"System: Mac Studio (studio)"* || \
+      "$output" != *"Flake:  $TMP_ROOT/home/code/nix-configs#studio"* || \
+      "$output" != *"Action: rebuild using the current flake inputs"* || \
+      "$output" != *"Continue with update-system? [Y/n]"* ]]; then
+    echo "FAIL: update-system did not preview the detected system, flake, and action" >&2
+    printf '%s\n' "$output" >&2
     exit 1
 fi
 
-echo "ok   update-studio defaults to yes on Studio"
+echo "ok   update-system previews and rebuilds the detected Studio target"
 
 : > "$COMMAND_LOG"
 output="$(
@@ -120,40 +70,41 @@ output="$(
         HOME="$TMP_ROOT/home" \
         PATH="$TMP_ROOT/bin:/usr/bin:/bin" \
         COMMAND_LOG="$COMMAND_LOG" \
-        STUB_LOCAL_HOSTNAME="Bryans-MacBook-Pro" \
+        STUB_LOCAL_HOSTNAME="mystery-host" \
         FUNCTIONS="$FUNCTIONS" \
         ALIASES="$ALIASES" \
-        /bin/zsh -f -c 'source "$FUNCTIONS"; source "$ALIASES"; eval upgrade-studio' 2>&1
+        /bin/zsh -f -c 'source "$FUNCTIONS"; source "$ALIASES"; update-system' 2>&1
 )"
 status=$?
 
 if [[ $status -eq 0 ]]; then
-    echo "FAIL: upgrade-studio succeeded on the MacBook Pro" >&2
+    echo "FAIL: update-system accepted an unknown hostname" >&2
     exit 1
 fi
 if [[ -s "$COMMAND_LOG" ]]; then
-    echo "FAIL: upgrade-studio changed the flake before checking the host" >&2
+    echo "FAIL: update-system invoked a command for an unknown hostname" >&2
     cat "$COMMAND_LOG" >&2
     exit 1
 fi
-if [[ "$output" != *"MacBook Pro"* || "$output" != *"studio"* ]]; then
-    echo "FAIL: upgrade mismatch did not identify the current machine and target" >&2
+if [[ "$output" != *"Refusing update-system"* || "$output" != *"not a recognized nix-configs host"* ]]; then
+    echo "FAIL: update-system did not explain the unknown-host refusal" >&2
     printf '%s\n' "$output" >&2
     exit 1
 fi
 
-echo "ok   upgrade-studio checks the host before changing the flake"
+echo "ok   update-system refuses an unknown hostname"
 
 : > "$COMMAND_LOG"
-printf 'yes\n' | \
-    HOME="$TMP_ROOT/home" \
-    PATH="$TMP_ROOT/bin:/usr/bin:/bin" \
-    COMMAND_LOG="$COMMAND_LOG" \
-    STUB_LOCAL_HOSTNAME="Bryans-MacBook-Pro" \
-    FUNCTIONS="$FUNCTIONS" \
-    ALIASES="$ALIASES" \
-    /bin/zsh -f -c 'source "$FUNCTIONS"; source "$ALIASES"; upgrade-mbp' \
-    >/dev/null 2>&1
+output="$(
+    printf 'yes\n' | \
+        HOME="$TMP_ROOT/home" \
+        PATH="$TMP_ROOT/bin:/usr/bin:/bin" \
+        COMMAND_LOG="$COMMAND_LOG" \
+        STUB_LOCAL_HOSTNAME="Bryans-MacBook-Pro" \
+        FUNCTIONS="$FUNCTIONS" \
+        ALIASES="$ALIASES" \
+        /bin/zsh -f -c 'source "$FUNCTIONS"; source "$ALIASES"; upgrade-system' 2>&1
+)"
 status=$?
 
 expected=$(printf '%s\n%s' \
@@ -161,15 +112,75 @@ expected=$(printf '%s\n%s' \
     "sudo darwin-rebuild switch --flake $TMP_ROOT/home/code/nix-configs/#mbp")
 actual="$(<"$COMMAND_LOG")"
 if [[ $status -ne 0 || "$actual" != "$expected" ]]; then
-    echo "FAIL: confirmed upgrade-mbp did not update the flake before rebuilding" >&2
+    echo "FAIL: upgrade-system did not update the flake before rebuilding the detected target" >&2
     echo "  want:" >&2
     printf '%s\n' "$expected" >&2
     echo "  got:" >&2
     printf '%s\n' "${actual:-<no command>}" >&2
+    printf '%s\n' "$output" >&2
+    exit 1
+fi
+if [[ "$output" != *"System: MacBook Pro (mbp)"* || \
+      "$output" != *"Flake:  $TMP_ROOT/home/code/nix-configs#mbp"* || \
+      "$output" != *"Action: update flake inputs, then rebuild"* || \
+      "$output" != *"Continue with upgrade-system? [Y/n]"* ]]; then
+    echo "FAIL: upgrade-system did not preview the detected system, flake, and action" >&2
+    printf '%s\n' "$output" >&2
     exit 1
 fi
 
-echo "ok   confirmed upgrade-mbp updates the flake before rebuilding"
+echo "ok   upgrade-system previews, upgrades, and rebuilds the detected target"
+
+output="$(
+    FUNCTIONS="$FUNCTIONS" /bin/zsh -f -c '
+        source "$FUNCTIONS"
+        for command_name in \
+            update-mbp update-a6mbp update-studio update-gnarbox update-inix \
+            upgrade-mbp upgrade-a6mbp upgrade-studio upgrade-gnarbox upgrade-inix; do
+          if (( $+functions[$command_name] )); then
+            print -r -- "$command_name"
+          fi
+        done
+    '
+)"
+
+if [[ -n "$output" ]]; then
+    echo "FAIL: legacy per-host commands are still defined:" >&2
+    printf '%s\n' "$output" >&2
+    exit 1
+fi
+
+echo "ok   legacy per-host commands are removed"
+
+: > "$COMMAND_LOG"
+output="$(
+    HOME="$TMP_ROOT/home" \
+        PATH="$TMP_ROOT/bin:/usr/bin:/bin" \
+        COMMAND_LOG="$COMMAND_LOG" \
+        STUB_LOCAL_HOSTNAME="Bryans-MacBook-Pro" \
+        FUNCTIONS="$FUNCTIONS" \
+        ALIASES="$ALIASES" \
+        /bin/zsh -f -c 'source "$FUNCTIONS"; source "$ALIASES"; upgrade-system' \
+        </dev/null 2>&1
+)"
+status=$?
+
+if [[ $status -eq 0 ]]; then
+    echo "FAIL: upgrade-system proceeded without confirmation" >&2
+    exit 1
+fi
+if [[ -s "$COMMAND_LOG" ]]; then
+    echo "FAIL: upgrade-system changed the flake without confirmation" >&2
+    cat "$COMMAND_LOG" >&2
+    exit 1
+fi
+if [[ "$output" != *"Continue with upgrade-system? [Y/n]"* || "$output" != *"Cancelled."* ]]; then
+    echo "FAIL: upgrade-system did not show the preview before cancelling" >&2
+    printf '%s\n' "$output" >&2
+    exit 1
+fi
+
+echo "ok   upgrade-system cancels before mutation when no answer is available"
 
 while IFS='|' read -r target local_hostname rebuild; do
     : > "$COMMAND_LOG"
@@ -180,15 +191,14 @@ while IFS='|' read -r target local_hostname rebuild; do
         STUB_LOCAL_HOSTNAME="$local_hostname" \
         FUNCTIONS="$FUNCTIONS" \
         ALIASES="$ALIASES" \
-        TARGET="$target" \
-        /bin/zsh -f -c 'source "$FUNCTIONS"; source "$ALIASES"; "update-$TARGET"' \
+        /bin/zsh -f -c 'source "$FUNCTIONS"; source "$ALIASES"; update-system' \
         >/dev/null 2>&1
     status=$?
 
     expected="sudo $rebuild switch --flake $TMP_ROOT/home/code/nix-configs/#$target"
     actual="$(<"$COMMAND_LOG")"
     if [[ $status -ne 0 || "$actual" != "$expected" ]]; then
-        echo "FAIL: update-$target did not recognize $local_hostname" >&2
+        echo "FAIL: update-system did not map $local_hostname to $target" >&2
         echo "  want: $expected" >&2
         echo "  got:  ${actual:-<no command>}" >&2
         exit 1
@@ -201,4 +211,4 @@ gnarbox|gnarbox|nixos-rebuild
 inix|inix|darwin-rebuild
 EOF
 
-echo "ok   every host command recognizes its own machine"
+echo "ok   update-system maps every recognized machine to its own flake target"

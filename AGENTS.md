@@ -168,9 +168,9 @@ source ~/.zshrc
 # Remote Studio workspace
 herdr-studio
 
-# Nix rebuild (host-guarded per-machine functions)
-update-mbp / update-a6mbp / update-studio / update-gnarbox
-upgrade-mbp  # flake update + rebuild
+# Nix rebuild (auto-detects this machine's flake output and confirms it)
+update-system   # rebuild with current flake inputs
+upgrade-system  # flake update + rebuild
 
 # Validation
 git diff --check                 # Trailing whitespace check

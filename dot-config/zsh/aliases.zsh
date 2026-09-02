@@ -22,7 +22,7 @@ alias lt="eza --tree --icons"
 # Nix flake update alias
 alias nix-flake-update="nix flake update --flake $HOME/code/nix-configs"
 
-# Host-guarded Nix update/upgrade commands are functions in functions.zsh.
+# Host-detected Nix update/upgrade commands are functions in functions.zsh.
 
 # Use macOS system SSH for UseKeyChain support (macOS only)
 if [[ "$OSTYPE" == "darwin"* ]]; then
