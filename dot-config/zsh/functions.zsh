@@ -1,6 +1,6 @@
 # Custom shell functions
 
-# Identify the nix-configs host represented by this machine's local hostname.
+# Identify the nix-darwin host represented by this machine's local hostname.
 function _nix_config_host {
   local local_hostname=""
   if (( $+commands[scutil] )); then
@@ -14,8 +14,6 @@ function _nix_config_host {
     *a6*mbp*|*a6*macbook*) print -r -- "a6mbp" ;;
     *studio*) print -r -- "studio" ;;
     *macbook*|mbp) print -r -- "mbp" ;;
-    gnarbox) print -r -- "gnarbox" ;;
-    *inix*) print -r -- "inix" ;;
     *) print -r -- "unknown" ;;
   esac
 }
@@ -30,8 +28,6 @@ function _nix_apply_system {
     studio) target_label="Mac Studio (studio)" ;;
     mbp) target_label="MacBook Pro (mbp)" ;;
     a6mbp) target_label="A6 MacBook Pro (a6mbp)" ;;
-    gnarbox) target_label="Gnarbox (gnarbox)" ;;
-    inix) target_label="Intel Mac (inix)" ;;
   esac
 
   if [[ "$target" == "unknown" ]]; then
@@ -71,11 +67,7 @@ function _nix_apply_system {
     fi
   fi
 
-  if [[ "$target" == "gnarbox" ]]; then
-    sudo nixos-rebuild switch --flake "$HOME/code/nix-configs/#$target"
-  else
-    sudo darwin-rebuild switch --flake "$HOME/code/nix-configs/#$target"
-  fi
+  sudo darwin-rebuild switch --flake "$HOME/code/nix-configs/#$target"
 }
 
 function update-system { _nix_apply_system update }

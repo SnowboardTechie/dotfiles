@@ -199,8 +199,8 @@ output="$(
     FUNCTIONS="$FUNCTIONS" /bin/zsh -f -c '
         source "$FUNCTIONS"
         for command_name in \
-            update-mbp update-a6mbp update-studio update-gnarbox update-inix \
-            upgrade-mbp upgrade-a6mbp upgrade-studio upgrade-gnarbox upgrade-inix; do
+            update-mbp update-a6mbp update-studio \
+            upgrade-mbp upgrade-a6mbp upgrade-studio; do
           if (( $+functions[$command_name] )); then
             print -r -- "$command_name"
           fi
@@ -271,8 +271,6 @@ done <<'EOF'
 mbp|Bryans-MacBook-Pro|darwin-rebuild
 a6mbp|A6-MacBook-Pro|darwin-rebuild
 studio|Bryans-Mac-Studio|darwin-rebuild
-gnarbox|gnarbox|nixos-rebuild
-inix|inix|darwin-rebuild
 EOF
 
 echo "ok   update-system maps every recognized machine to its own flake target"

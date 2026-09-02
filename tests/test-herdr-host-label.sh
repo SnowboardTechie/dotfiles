@@ -57,7 +57,7 @@ expect "MacBook reports the laptop glyph" \
     "Bryans-MacBook-Pro.local" "$TMP_ROOT/no-arch-release" "󰌢 MBP"
 # Non-Arch, non-macOS: a box reached over remote attach keeps its own hostname.
 expect "unknown host falls back to the server glyph and its hostname" \
-    linux-gnu "" "gnarbox" "$TMP_ROOT/no-arch-release" "󰒋 gnarbox"
+    linux-gnu "" "linux-server" "$TMP_ROOT/no-arch-release" "󰒋 linux-server"
 
 touch "$TMP_ROOT/arch-release"
 expect "Arch/Omarchy host reports the desktop glyph" \
