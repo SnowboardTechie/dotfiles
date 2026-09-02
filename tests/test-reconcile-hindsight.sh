@@ -15,7 +15,8 @@ TMP_HOMES=()
 
 cleanup() {
     local h
-    for h in "${TMP_HOMES[@]}"; do
+    for h in "${TMP_HOMES[@]-}"; do
+        [[ -n "$h" ]] || continue
         rm -rf "$h"
     done
 }
@@ -25,7 +26,7 @@ new_home() {
     local h
     h="$(mktemp -d "${TMPDIR:-/tmp}/hindsight-test-home-XXXXXX")"
     TMP_HOMES+=("$h")
-    echo "$h"
+    NEW_HOME="$h"
 }
 
 check() { # <description> <expected-substring> <output>
@@ -42,13 +43,15 @@ check() { # <description> <expected-substring> <output>
 }
 
 # 1. Missing bearer fails loudly and mutates nothing.
-H="$(new_home)"
+new_home
+H="$NEW_HOME"
 out="$(HOME="$H" "$RECONCILER" --check 2>&1 || true)"
 check "missing bearer is an error" "bearer missing" "$out"
 [[ -e "$H/.hindsight" ]] && { echo "FAIL: check created ~/.hindsight"; FAILURES=$((FAILURES + 1)); }
 
 # 2. Wrong bearer mode fails.
-H="$(new_home)"
+new_home
+H="$NEW_HOME"
 mkdir -p "$H/.secrets/hindsight"
 echo fake-token > "$H/.secrets/hindsight/api-bearer"
 chmod 644 "$H/.secrets/hindsight/api-bearer"
@@ -56,7 +59,8 @@ out="$(HOME="$H" "$RECONCILER" --check 2>&1 || true)"
 check "world-readable bearer is an error" "must be mode 0600" "$out"
 
 # 3. --check reports pending render without writing.
-H="$(new_home)"
+new_home
+H="$NEW_HOME"
 mkdir -p "$H/.secrets/hindsight"
 echo fake-token > "$H/.secrets/hindsight/api-bearer"
 chmod 600 "$H/.secrets/hindsight/api-bearer"
@@ -75,10 +79,46 @@ assert cfg["apiToken"] == "fake-token"
 assert "/Users/testuser/second-brain" in cfg["mapPathToBank"]
 assert cfg["mapPathToBank"]["/Users/testuser/second-brain"] == "bryan-general"
 assert cfg["pageTriggerType"] == "cron"
+assert cfg["autoUpdate"] is True
+assert cfg["banks"]["bryan-general"]["manageBankConfig"] is False
+assert "observationScopes" not in cfg["banks"]["bryan-general"]
 print("render-ok")
 PYEOF
 )"
-check "template renders token, HOME and bryan-general routing" "render-ok" "$rendered"
+check "template enables upstream auto-update and protects only bryan-general bank config" "render-ok" "$rendered"
+
+# 5. --apply restores the caller's umask after writing the mode-0600 config.
+#    Otherwise a fresh ~/.cache is created without execute permission and the
+#    installer's own temporary npm cache cannot be created inside it.
+new_home
+H="$NEW_HOME"
+mkdir -p "$H/.secrets/hindsight" "$H/bin"
+printf 'fake-token\n' > "$H/.secrets/hindsight/api-bearer"
+chmod 600 "$H/.secrets/hindsight/api-bearer"
+printf '#!/bin/sh\nexit 0\n' > "$H/bin/npx"
+printf '#!/bin/sh\nprintf 200\n' > "$H/bin/curl"
+chmod +x "$H/bin/npx" "$H/bin/curl"
+out="$(HOME="$H" PATH="$H/bin:$PATH" "$RECONCILER" --apply 2>&1)"
+status=$?
+check "apply reaches the installer on a fresh home" "rendered:" "$out"
+if [[ $status -ne 0 || ! -x "$H/.cache" ]]; then
+    echo "FAIL: apply left a fresh ~/.cache without directory execute permission"
+    FAILURES=$((FAILURES + 1))
+else
+    echo "ok: apply preserves usable directory permissions after secret rendering"
+fi
+
+# 6. Reconciliation installs current Coding Agents instead of restoring a stale
+#    compatibility pin. The staged runtime owns subsequent supported updates.
+reconciler_source="$(<"$RECONCILER")"
+check "apply bootstraps Coding Agents from the current release" \
+    '@vectorize-io/hindsight-coding-agents@latest' "$reconciler_source"
+if [[ "$reconciler_source" == *"HINDSIGHT_CODING_AGENTS_PIN"* ]]; then
+    echo "FAIL: reconciler still carries the retired compatibility pin"
+    FAILURES=$((FAILURES + 1))
+else
+    echo "ok: retired compatibility pin is absent"
+fi
 
 echo
 echo "$TESTS tests, $FAILURES failures"

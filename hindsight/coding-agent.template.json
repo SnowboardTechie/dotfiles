@@ -2,8 +2,14 @@
   "serverMode": "self-hosted",
   "apiUrl": "https://bryans-mac-studio.tail5ba690.ts.net:9443",
   "apiToken": "{{API_TOKEN}}",
+  "autoUpdate": true,
   "mapPathToBank": {
     "{{HOME}}/second-brain": "bryan-general"
+  },
+  "banks": {
+    "bryan-general": {
+      "manageBankConfig": false
+    }
   },
   "pageTriggerType": "cron",
   "pageTriggerCron": "30 10 * * *",

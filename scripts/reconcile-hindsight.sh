@@ -1,29 +1,27 @@
 #!/usr/bin/env bash
 # reconcile-hindsight.sh — wire this machine's Claude Code + OpenCode into the
-# self-hosted Hindsight memory server on Studio, additively and pinned.
+# self-hosted Hindsight memory server on Studio, additively and current.
 #
 # What it manages:
 #   1. ~/.hindsight/coding-agent.json — rendered from hindsight/
 #      coding-agent.template.json with the machine-local bearer from
 #      ~/.secrets/hindsight/api-bearer and $HOME substituted (mode 0600).
 #      The token never lives in this repository.
-#   2. The pinned @vectorize-io/hindsight-coding-agents installer (--apply
+#   2. The current @vectorize-io/hindsight-coding-agents installer (--apply
 #      only), which stages the runtime at ~/.hindsight/coding-agents, merges
 #      Claude hooks / the OpenCode plugin entry, and registers the MCP server.
+#      The staged runtime then follows the upstream-supported automatic updater.
 #      On stow-managed machines those hook/plugin entries are already
 #      committed in this repo; the installer is idempotent over them. On
 #      Omarchy it merges additively into Omarchy-owned configs and backs the
 #      originals up (*.hindsight-backup).
-#
-# Pin: bump HINDSIGHT_CODING_AGENTS_PIN together with a reviewed release
-# check (scripts/check-hindsight-releases.py in nix-configs watches drift).
+
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-HINDSIGHT_CODING_AGENTS_PIN="0.3.4"
 API_URL="https://bryans-mac-studio.tail5ba690.ts.net:9443"
 TEMPLATE="$REPO_ROOT/hindsight/coding-agent.template.json"
 TOKEN_FILE="$HOME/.secrets/hindsight/api-bearer"
@@ -36,7 +34,7 @@ Usage: reconcile-hindsight.sh (--check | --apply)
   --check   Report token presence, rendered-config drift, staged runtime and
             hook/plugin wiring. Never mutates the filesystem.
   --apply   Render ~/.hindsight/coding-agent.json (mode 0600) and run the
-            pinned coding-agents installer for claude-code + opencode.
+            current coding-agents installer for claude-code + opencode.
 EOF
 }
 
@@ -96,14 +94,13 @@ else
         issues=$((issues + 1))
     else
         mkdir -p "$(dirname "$CONFIG")"
-        umask 177
-        printf '%s' "$rendered" > "$CONFIG"
+        (umask 177; printf '%s' "$rendered" > "$CONFIG")
         chmod 600 "$CONFIG"
         echo "  rendered: $CONFIG (mode 0600)"
     fi
 fi
 
-# --- 3. Pinned installer (stages runtime, merges hooks/plugin, MCP) ---------
+# --- 3. Current installer (stages runtime, merges hooks/plugin, MCP) --------
 if [[ "$MODE" == "apply" ]]; then
     # Isolated npm cache: ~/.npm carries root-owned files on several of these
     # machines (old npm bug), which makes npx fail with EACCES. The package is
@@ -113,13 +110,13 @@ if [[ "$MODE" == "apply" ]]; then
     NPM_TMP_CACHE="$(mktemp -d "$HOME/.cache/hindsight-npx-cache-XXXXXX")"
     trap 'rm -rf "$NPM_TMP_CACHE"' EXIT
     npm_config_cache="$NPM_TMP_CACHE" \
-        npx -y "@vectorize-io/hindsight-coding-agents@$HINDSIGHT_CODING_AGENTS_PIN" \
+        npx -y "@vectorize-io/hindsight-coding-agents@latest" \
         install claude-code opencode --server self-hosted --api-url "$API_URL"
 else
     if [[ -d "$HOME/.hindsight/coding-agents/dist" ]]; then
         echo "  ok: runtime staged at ~/.hindsight/coding-agents"
     else
-        echo "  would install: pinned coding-agents runtime ($HINDSIGHT_CODING_AGENTS_PIN)"
+        echo "  would install: current coding-agents runtime"
         issues=$((issues + 1))
     fi
 fi
