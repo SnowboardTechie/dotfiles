@@ -9,7 +9,7 @@ ALIASES="$REPO_ROOT/dot-config/zsh/aliases.zsh"
 TMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/nix-host-guards-test-XXXXXX")"
 trap 'rm -rf "$TMP_ROOT"' EXIT
 
-mkdir -p "$TMP_ROOT/bin" "$TMP_ROOT/home/code/nix-configs"
+mkdir -p "$TMP_ROOT/bin" "$TMP_ROOT/home/code/nix-configs/scripts"
 
 cat > "$TMP_ROOT/bin/scutil" <<'EOF'
 #!/usr/bin/env bash
@@ -27,7 +27,14 @@ cat > "$TMP_ROOT/bin/nix" <<'EOF'
 printf 'nix %s\n' "$*" >> "$COMMAND_LOG"
 EOF
 
-chmod +x "$TMP_ROOT/bin/scutil" "$TMP_ROOT/bin/sudo" "$TMP_ROOT/bin/nix"
+cat > "$TMP_ROOT/home/code/nix-configs/scripts/update-hindsight-locks.py" <<'EOF'
+#!/usr/bin/env bash
+printf 'hindsight update\n' >> "$COMMAND_LOG"
+exit "${HINDSIGHT_UPDATE_STATUS:-0}"
+EOF
+
+chmod +x "$TMP_ROOT/bin/scutil" "$TMP_ROOT/bin/sudo" "$TMP_ROOT/bin/nix" \
+    "$TMP_ROOT/home/code/nix-configs/scripts/update-hindsight-locks.py"
 
 COMMAND_LOG="$TMP_ROOT/commands.log"
 : > "$COMMAND_LOG"
@@ -130,6 +137,63 @@ if [[ "$output" != *"System: MacBook Pro (mbp)"* || \
 fi
 
 echo "ok   upgrade-system previews, upgrades, and rebuilds the detected target"
+
+: > "$COMMAND_LOG"
+output="$(
+    printf 'yes\n' | \
+        HOME="$TMP_ROOT/home" \
+        PATH="$TMP_ROOT/bin:/usr/bin:/bin" \
+        COMMAND_LOG="$COMMAND_LOG" \
+        STUB_LOCAL_HOSTNAME="Bryans-Mac-Studio" \
+        FUNCTIONS="$FUNCTIONS" \
+        ALIASES="$ALIASES" \
+        /bin/zsh -f -c 'source "$FUNCTIONS"; source "$ALIASES"; upgrade-system' 2>&1
+)"
+status=$?
+
+expected=$(printf '%s\n%s\n%s' \
+    "nix flake update --flake $TMP_ROOT/home/code/nix-configs" \
+    "hindsight update" \
+    "sudo darwin-rebuild switch --flake $TMP_ROOT/home/code/nix-configs/#studio")
+actual="$(<"$COMMAND_LOG")"
+if [[ $status -ne 0 || "$actual" != "$expected" ]]; then
+    echo "FAIL: Studio upgrade-system did not update Hindsight between flake refresh and rebuild" >&2
+    echo "  want:" >&2
+    printf '%s\n' "$expected" >&2
+    echo "  got:" >&2
+    printf '%s\n' "${actual:-<no command>}" >&2
+    printf '%s\n' "$output" >&2
+    exit 1
+fi
+if [[ "$output" != *"Action: update flake inputs and Hindsight, then rebuild"* ]]; then
+    echo "FAIL: Studio upgrade-system preview did not include Hindsight" >&2
+    printf '%s\n' "$output" >&2
+    exit 1
+fi
+
+echo "ok   Studio upgrade-system refreshes coordinated Hindsight locks"
+
+: > "$COMMAND_LOG"
+printf 'yes\n' | \
+    HOME="$TMP_ROOT/home" \
+    PATH="$TMP_ROOT/bin:/usr/bin:/bin" \
+    COMMAND_LOG="$COMMAND_LOG" \
+    STUB_LOCAL_HOSTNAME="Bryans-Mac-Studio" \
+    HINDSIGHT_UPDATE_STATUS=9 \
+    FUNCTIONS="$FUNCTIONS" \
+    ALIASES="$ALIASES" \
+    /bin/zsh -f -c 'source "$FUNCTIONS"; source "$ALIASES"; upgrade-system' \
+    >/dev/null 2>&1
+status=$?
+
+actual="$(<"$COMMAND_LOG")"
+if [[ $status -eq 0 || "$actual" == *"sudo darwin-rebuild"* ]]; then
+    echo "FAIL: Studio upgrade-system rebuilt after the Hindsight lock refresh failed" >&2
+    printf '%s\n' "${actual:-<no command>}" >&2
+    exit 1
+fi
+
+echo "ok   Studio upgrade-system stops before rebuild when Hindsight refresh fails"
 
 output="$(
     FUNCTIONS="$FUNCTIONS" /bin/zsh -f -c '

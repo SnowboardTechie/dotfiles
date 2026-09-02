@@ -42,6 +42,9 @@ function _nix_apply_system {
   local reply=""
   if [[ "$action" == "upgrade" ]]; then
     action_label="update flake inputs, then rebuild"
+    if [[ "$target" == "studio" ]]; then
+      action_label="update flake inputs and Hindsight, then rebuild"
+    fi
   fi
   print -r -- "System: $target_label"
   print -r -- "Flake:  $HOME/code/nix-configs#$target"
@@ -58,6 +61,14 @@ function _nix_apply_system {
 
   if [[ "$action" == "upgrade" ]]; then
     nix flake update --flake "$HOME/code/nix-configs" || return 1
+    if [[ "$target" == "studio" ]]; then
+      local hindsight_updater="$HOME/code/nix-configs/scripts/update-hindsight-locks.py"
+      if [[ ! -x "$hindsight_updater" ]]; then
+        print -u2 -r -- "Hindsight updater is missing or not executable: $hindsight_updater"
+        return 1
+      fi
+      "$hindsight_updater" || return 1
+    fi
   fi
 
   if [[ "$target" == "gnarbox" ]]; then
