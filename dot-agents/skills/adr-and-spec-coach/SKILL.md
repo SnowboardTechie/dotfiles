@@ -110,6 +110,13 @@ Top of the agenda first. For **each** decision, in its own turn:
    focused question in plain prose. Keep discrete options selectable and leave
    an open-ended path when the listed options are incomplete.
 
+   **Visibility gate:** put the decision context, options, trade-offs, and
+   recommendation in the normal user-visible answer before opening a form. Do
+   not rely on commentary, progress text, tool output, or an earlier turn to make
+   the question intelligible. If the host can separate a form from surrounding
+   prose, make the question itself contain a compact statement of what is being
+   decided and why.
+
 Trivial decisions still get surfaced, but compressed: state the default, name
 the one trade-off worth knowing, let the author rubber-stamp in a beat.
 

@@ -740,7 +740,13 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.body = read(POOL / "pr-self-review" / "SKILL.md")
         cls.code_review = read(POOL / "code-review" / "SKILL.md")
+        cls.ship = read(POOL / "ship" / "SKILL.md")
         cls.issue_work = read(POOL / "issue-work" / "SKILL.md")
+        cls.handoff_supervision = read(
+            POOL / "coding-agent-handoff-supervision" / "SKILL.md"
+        )
+        cls.conforming_specs = read(POOL / "conforming-tech-specs" / "SKILL.md")
+        cls.adr_coach = read(POOL / "adr-and-spec-coach" / "SKILL.md")
         cls.lane_reviewer = read(REPO_ROOT / "dot-claude" / "agents" / "lane-reviewer.md")
         cls.review_overview = cls.body.split("## Phase 2 — Review pass", 1)[1].split("### 2.1", 1)[0]
         cls.dispatch = cls.body.split("### 2.2 Run the primary lanes, then Ponytail", 1)[1].split("### 2.2.1", 1)[0]
@@ -786,6 +792,80 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
         for field in ("base_sha", "head_sha", "merge_base_sha", "diff_sha256"):
             with self.subTest(ponytail_identity=field):
                 self.assertIn(field, self.ponytail_dispatch)
+
+    def test_ship_fails_closed_without_exact_ponytail_evidence(self) -> None:
+        for token in (
+            "base SHA",
+            "head SHA",
+            "merge-base SHA",
+            "diff hash",
+            "clean worktree",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.ship)
+        self.assert_matches(
+            self.ship,
+            r"(?is)Standards and\s+Spec, conditional Risk, then mandatory Ponytail",
+            "ship must require every review lane in order",
+        )
+        self.assert_matches(
+            self.ship,
+            r"(?is)worker's self-check.*parent ad-hoc review.*never satisfies.*missing or stale Ponytail evidence.*blocks publication",
+            "ship must reject informal or stale review evidence",
+        )
+
+    def test_visible_handoff_requires_independent_ponytail_review(self) -> None:
+        self.assert_matches(
+            self.handoff_supervision,
+            r"(?is)freeze the exact candidate.*Standards and Spec.*conditional Risk.*mandatory Ponytail",
+            "visible handoffs must run the complete authored-candidate gate",
+        )
+        self.assert_matches(
+            self.handoff_supervision,
+            r"(?is)independent of the worker.*parent ad-hoc pass.*same worker session does not count",
+            "the implementation worker or parent ad-hoc pass must not impersonate review",
+        )
+        self.assertIn("invalidate every review artifact", self.handoff_supervision)
+
+    def test_conforming_specs_gate_epistemic_claims_and_preview_visibility(self) -> None:
+        for token in (
+            "Epistemic claim audit",
+            "verified observation",
+            "accepted decision",
+            "inference",
+            "recommendation or opinion",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token.lower(), self.conforming_specs.lower())
+        self.assert_matches(
+            self.conforming_specs,
+            r"(?is)Astro omits\s+that page from deploy previews",
+            "the skill must explain why copied ADRs omit the draft flag",
+        )
+        self.assert_matches(
+            self.conforming_specs,
+            r"(?s)title: \"<Decision summary>\"\n\s+description: ADR documenting.*\n\s+---",
+            "copied ADR frontmatter must close without a draft flag",
+        )
+        self.assert_not_matches(
+            self.conforming_specs,
+            r"(?s)title: \"<Decision summary>\"\n\s+description: ADR documenting.*\n\s+draft: true\n\s+---",
+            "copied ADR frontmatter must remain visible in deploy previews",
+        )
+
+    def test_adr_coaching_context_is_visible_before_the_question(self) -> None:
+        for token in (
+            "Visibility gate",
+            "normal user-visible answer",
+            "make the question itself contain a compact statement",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token.lower(), self.adr_coach.lower())
+        self.assert_matches(
+            self.adr_coach,
+            r"(?is)do\s+not rely on commentary",
+            "decision context must not be hidden in commentary",
+        )
 
     def test_ponytail_contract_is_host_independent_and_narrow(self) -> None:
         for token in (

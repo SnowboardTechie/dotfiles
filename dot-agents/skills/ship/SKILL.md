@@ -45,16 +45,30 @@ Completion criteria:
 - authentication is available through `gh` or `tea` without printing a token;
 - no open PR already exists for the branch.
 
-### 2. Verify the branch
+### 2. Verify the branch and exact-candidate review
 
 Inspect `git status`, the branch diff, and the repository's own instructions.
-Run the relevant test, lint, typecheck, and formatting gates. In Hermes, use the
-installed verification/review skills where applicable; in another agent, use
-its equivalent verification workflow.
+Run the relevant test, lint, typecheck, and formatting gates.
 
-If a caller supplies an already-current verification artifact, inspect it and
-avoid rerunning unchanged expensive gates. Any failed or missing required gate
+For every candidate authored by the authenticated user, an exact-candidate
+review is mandatory before publication:
+
+- when `issue-work` supplies a current pre-PR `pr-self-review` summary, validate
+  that artifact against the candidate;
+- otherwise, because this workflow refuses a branch that already has an open
+  PR, run `code-review` directly against immutable base/head SHAs: Standards and
+  Spec, conditional Risk, then mandatory Ponytail;
+- require every artifact to identify the same base SHA, head SHA, merge-base SHA,
+  diff hash, expected branch, and clean worktree;
+- invalidate the review after any candidate change and rerun the complete gate.
+
+A worker's self-check, a parent ad-hoc review, build output, or an artifact that
+omits Ponytail never satisfies this gate. Missing or stale Ponytail evidence
 blocks publication.
+
+If a caller supplies already-current verification and review artifacts, inspect
+them and avoid rerunning unchanged expensive gates. Any failed or missing
+required gate blocks publication.
 
 ### 3. Draft the PR body
 
@@ -188,6 +202,8 @@ Report the PR as a Markdown link.
 
 - [ ] Current branch is not the default branch
 - [ ] Required repository gates passed
+- [ ] Exact-candidate Standards, Spec, conditional Risk, and Ponytail review passed
+- [ ] Review identity still matches the branch candidate and clean worktree
 - [ ] Existing PR check completed
 - [ ] Repository template fully populated
 - [ ] Exact public content approved

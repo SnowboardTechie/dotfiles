@@ -174,13 +174,21 @@ After the worker finishes:
 
 1. Inspect the actual branch, commits, diff, and working tree.
 2. Disposition its questions and recommendations against the approved concept.
-3. Independently run the relevant validation and focused runtime probes.
-4. Verify publication and remote readback separately.
-5. Activate or reload the live system only after accepting the candidate.
-6. Read back the live target before declaring completion.
+3. Freeze the exact candidate and run the authored-candidate review workflow:
+   Standards and Spec, conditional Risk, then mandatory Ponytail. Prefer
+   `pr-self-review`; use `code-review` directly only when no supported pre-PR
+   entry exists. The reviewer context must be independent of the worker, and a
+   parent ad-hoc pass or correction in the same worker session does not count.
+4. If any correction changes the candidate, invalidate every review artifact and
+   rerun the complete gate against the new identity.
+5. Independently run the relevant validation and focused runtime probes.
+6. Verify publication and remote readback separately.
+7. Activate or reload the live system only after accepting the candidate.
+8. Read back the live target before declaring completion.
 
 A `done` or `idle` status proves only that the worker settled. It does not prove
-the implementation is acceptable.
+the implementation is acceptable. Missing or stale Ponytail evidence means the
+handoff review is incomplete and the candidate must not be described as ready.
 
 **Complete when:** every acceptance criterion is independently verified against
 the candidate and, where applicable, the live target.
@@ -257,6 +265,8 @@ Do not close a foreground Herdr pane while Bryan may still be using it.
 - [ ] Active window, workspace, tab, and pane preserved unless focus was requested
 - [ ] Tracked watcher uses the verified Herdr client and a finite timeout
 - [ ] Follow-ups preserve the original session
-- [ ] Candidate independently reviewed and tested
+- [ ] Exact candidate independently reviewed through Standards, Spec, conditional Risk, and mandatory Ponytail
+- [ ] Every correction invalidated stale review artifacts and triggered a complete rereview
+- [ ] Candidate independently tested
 - [ ] Publication and live state read back separately
 - [ ] Only handoff-owned resources cleaned up after acceptance

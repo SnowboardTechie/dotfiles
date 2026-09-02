@@ -241,10 +241,26 @@ the draft's shape actually matches what the ADR says. Citing ADR-0011 and
 then specifying cursor pagination is the exact failure mode this gate
 catches. Flag any cited-but-not-satisfied ADR as a divergence.
 
+**Epistemic claim audit.** Before producing the annotated draft, classify every
+declarative sentence in the opening context and decision rationale as one of:
+
+- **verified observation** — supported by a cited repository, issue, primary
+  source, or reproducible result;
+- **accepted decision** — traceable to an explicit author choice;
+- **inference** — visibly labelled as an inference rather than stated as fact;
+- **recommendation or opinion** — belongs in criteria/options/trade-offs, not in
+  factual context prose.
+
+Record this as a temporary review ledger, not content to paste into the ADR.
+Any sentence without an admissible classification blocks finalization. Do not
+upgrade an inference because it sounds plausible, repeat a worker's explanation
+as fact, or let several agents agreeing substitute for primary evidence.
+
 **Output:** an annotated draft where every potential divergence from prior
 art is flagged inline (HTML comment, footnote, or margin marker — any form
 the user can scan). Each flag carries: the convention diverged from, the
-source link, and a one-line note on why the draft chose to diverge.
+source link, and a one-line note on why the draft chose to diverge. The
+annotated draft also has no unresolved epistemic-claim ledger entries.
 
 ---
 
@@ -313,18 +329,20 @@ implementation issue. The user decides where it goes.
 
 **If the spec is destined for the ADR directory**, include the
 frontmatter block at the top of your handoff response (not just in a
-file you write), matching the repo's `adr-template.md`:
+file you write), matching the copied result of the repo's `adr-template.md`:
 
     ---
     title: "<Decision summary>"
     description: ADR documenting the decision to use <outcome> for <topic>
-    draft: true
     ---
 
-The ADR's first heading should declare status — `## Status: Proposed`
-(or `Proposed (Supersedes ADR-NNNN)` if Phase 4 produced a superseding
-proposal). In the superseding case, the same handoff updates the prior
-ADR's status to `Superseded by ADR-<new-number>`.
+The template's `draft: true` is a template-hiding flag preceded by an instruction
+to remove it after copying. Never retain it on a review candidate: Astro omits
+that page from deploy previews. Keep the pull request in draft state while the
+ADR is under review. Do not invent a Proposed banner or status heading when the
+repository has no established ADR-status convention. In a superseding case,
+follow the repository's established status treatment and update the prior ADR as
+the accepted decision requires.
 
 **Do not commit. Do not post. Do not open a PR.** This skill produces
 the spec content and stops.
@@ -348,5 +366,8 @@ the spec content and stops.
   questions.
 - No opinion language in the spec body — structural facts and grounded
   rationale only.
+- Every opening/context claim passes the epistemic claim audit before handoff.
 - Every technical claim cites a source or is marked `[unverified]`.
+- Review candidates remain visible in deploy previews; PR draft state must not
+  be implemented with Astro content frontmatter.
 - Do not post or commit. The skill ends at handoff.
