@@ -61,7 +61,7 @@ Choose two unique agent names. Start both without an initial prompt:
 ```sh
 "$HERDR_BIN_PATH" agent start "$CLAUDE_AGENT_NAME" \
   --kind claude --pane "$claude_pane_id" -- \
-  --permission-mode acceptEdits --model opus --effort high \
+  --permission-mode auto --model opus --effort high \
   --name "PR review: Claude"
 
 "$HERDR_BIN_PATH" agent start "$GPT_AGENT_NAME" \

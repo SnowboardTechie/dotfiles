@@ -144,7 +144,7 @@ prompt.
 Pass both reviewers the same candidate and manifest identity plus the same
 [reviewer-orchestrator contract](references/reviewer-orchestrator-contract.md).
 Pass distinct worktrees, state roots, and output paths. Claude uses Opus/high
-effort and same-family Opus leaves. Hermes uses the instigating root's active GPT
+effort in auto permission mode and same-family Opus leaves. Hermes uses the instigating root's active GPT
 model/provider/base URL, high reasoning, smart approvals, no yolo, and leaves
 that inherit or exactly match that GPT route. There is no fallback or background
 substitution.

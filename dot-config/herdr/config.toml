@@ -88,4 +88,4 @@ tab_bar_right = [
 # Area, which text pipelines strip far more readily than the Plane-15 Nerd Font
 # glyphs above. It vanished once already. tests/test-herdr-glyph-rail.py guards it.
 tab_bar_right_separator = " \ue0b3 "
-agent_panel_sort = "priority"
+agent_panel_sort = "spaces"
