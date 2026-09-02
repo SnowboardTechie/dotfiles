@@ -1,7 +1,7 @@
 ---
 name: coding-agent-handoff-supervision
 description: Use for visible, ticket-backed Claude or Hermes handoffs.
-version: 1.3.0
+version: 1.4.0
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
@@ -35,6 +35,28 @@ worker. Claude Agent View and the subscription wrapper remain available only
 after an explicit same-run background-only request. Do not use this workflow for
 a self-contained reasoning subtask whose result needs no visible terminal,
 branch inspection, or independent verification.
+
+### Handoff boundary: Sol pairs, Claude executes, Sol accepts
+
+When the interactive parent is Sol, preserve the role split deliberately. Sol
+owns pairing, deliberation, planning, unresolved architecture or product
+choices, risk calibration, and final acceptance. Claude implements after the
+work is decision-complete; Sol then independently reviews and accepts the exact
+candidate. In short: Claude produces the candidate; Sol independently accepts
+it.
+
+Cross the boundary only when one governing ticket or approved plan exists, goal
+and scope are settled, no unresolved answer could materially change the
+architecture, acceptance is observable through tests or readback, and mutation
+permissions are explicit. Keep live incident diagnosis, voice-heavy ADR or
+communication work, and open-ended research with Sol until those decisions are
+settled. A genuinely tiny single-loop edit may also stay with the parent when
+handoff overhead exceeds the work.
+
+Once this boundary is satisfied, do not spend a second Sol-backed implementation
+session on the same middle phase by default and then ask Claude only to review.
+Use Claude as the implementation worker; the Sol parent remains the acceptance,
+publication, deployment, and live-verification authority.
 
 ## Procedure
 

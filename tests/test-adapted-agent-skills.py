@@ -666,6 +666,23 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
             "the ticket, not an oversized prompt, must carry implementation context",
         )
 
+    def test_sol_claude_boundary_preserves_pairing_and_acceptance_roles(self) -> None:
+        for token in (
+            "decision-complete",
+            "unresolved answer",
+            "live incident diagnosis",
+            "voice-heavy",
+            "Claude produces the candidate",
+            "Sol independently accepts",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.body)
+        self.assert_matches(
+            self.body,
+            r"(?is)Sol.*(pairing|deliberation|planning).*Claude.*implement.*Sol.*(review|accept)",
+            "Sol must retain deliberation and final acceptance while Claude implements",
+        )
+
     def test_accessible_artifact_is_self_contained_not_the_prompt(self) -> None:
         for name, body in (
             ("visible handoff", self.body),
