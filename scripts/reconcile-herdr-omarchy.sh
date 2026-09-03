@@ -10,7 +10,7 @@ TEMPLATE="$REPO_ROOT/dot-config/herdr/config-omarchy.toml"
 HERDR_DIR="$HOME/.config/herdr"
 CONFIG="$HERDR_DIR/config.toml"
 BACKUP="$HERDR_DIR/config.toml.omarchy-backup"
-MODULES=(claude-usage.sh openrouter-spend.py host-label.sh)
+MODULES=(claude-usage.sh codex-usage.py openrouter-spend.py host-label.sh)
 STOCK_RAIL='tab_bar_right = [{ type = "zoom" }, { type = "hostname" }]'
 
 usage() {

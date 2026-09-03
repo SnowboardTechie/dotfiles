@@ -7,7 +7,7 @@ set -u
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RECONCILER="$REPO_ROOT/scripts/reconcile-herdr-omarchy.sh"
 TEMPLATE="$REPO_ROOT/dot-config/herdr/config-omarchy.toml"
-MODULES=(claude-usage.sh openrouter-spend.py host-label.sh)
+MODULES=(claude-usage.sh codex-usage.py openrouter-spend.py host-label.sh)
 
 TESTS=0
 FAILURES=0

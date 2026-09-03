@@ -25,9 +25,11 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIG = REPO_ROOT / "dot-config/herdr/config.toml"
 OMARCHY_CONFIG = REPO_ROOT / "dot-config/herdr/config-omarchy.toml"
 README = REPO_ROOT / "README.md"
+CODEX_USAGE = REPO_ROOT / "dot-config/herdr/codex-usage.py"
 
 DIVIDER = chr(0xE0B3)  # Powerline soft divider
 CLOCK = chr(0xF0954)  # Nerd Font clock, the datetime module's glyph
+OPENAI = chr(0xEC81)  # Nerd Fonts cod-openai
 
 # Entry types that render bare text. The rail is glyph-led, so none belong in
 # it; `hostname` also cannot carry a prefix glyph, which is why host identity
@@ -61,6 +63,7 @@ def decode_toml_escapes(value: str) -> str:
 config_text = CONFIG.read_text(encoding="utf-8")
 omarchy_config_text = OMARCHY_CONFIG.read_text(encoding="utf-8")
 readme_text = README.read_text(encoding="utf-8")
+codex_usage_text = CODEX_USAGE.read_text(encoding="utf-8")
 
 # 1. The separator is exactly one divider, padded by one space on each side.
 match = re.search(
@@ -122,7 +125,19 @@ for entry_type in BARE_TEXT_TYPES:
         ('type = "%s"' % entry_type) not in omarchy_config_text,
     )
 
-# 5. README documents the rail with real dividers, not collapsed spaces.
+# 5. Codex usage is present in both profiles and keeps its OpenAI glyph.
+codex_command = 'command = "~/.config/herdr/codex-usage.py"'
+check("config.toml includes Codex usage", codex_command in config_text)
+check(
+    "config-omarchy.toml includes Codex usage",
+    codex_command in omarchy_config_text,
+)
+check(
+    "Codex usage leads with the U+EC81 OpenAI glyph",
+    OPENAI in codex_usage_text,
+)
+
+# 6. README documents the rail with real dividers, not collapsed spaces.
 check(
     "README.md shows the U+E0B3 divider",
     DIVIDER in readme_text,

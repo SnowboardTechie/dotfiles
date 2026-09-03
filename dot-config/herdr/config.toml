@@ -71,15 +71,16 @@ name = "terminal"
 [ui]
 # Glyph Rail: one Nerd Font glyph per status module, joined by a single
 # Powerline soft divider. Codepoints, because these are tofu without a Nerd
-# Font: 󰭹 U+F0B79 Claude, ↻ U+21BB reset, 󰓅 U+F04C5 spend, 󰥔 U+F0954 clock,
-# U+E0B3 divider. Host class glyphs live in host-label.sh.
+# Font: 󰭹 U+F0B79 Claude,  U+EC81 OpenAI, ↻ U+21BB reset,
+# 󰓅 U+F04C5 spend, 󰥔 U+F0954 clock, U+E0B3 divider. Host class glyphs
+# live in host-label.sh.
 #
 # Every module carries a glyph, so no bare-text entry (`zoom`) belongs here;
 # the per-tab Z marker already shows zoom state independently.
 tab_bar_right = [
   { type = "command", command = "~/.config/herdr/claude-usage.sh", interval_seconds = 60, timeout_seconds = 5 },
-  # timeout_seconds = 5 to match claude-usage.sh: this reads OpenRouter's
-  # analytics API over the network now, not a local database.
+  { type = "command", command = "~/.config/herdr/codex-usage.py", interval_seconds = 60, timeout_seconds = 5 },
+  # OpenRouter's analytics API is a network source, not a local database.
   { type = "command", command = "~/.config/herdr/openrouter-spend.py", interval_seconds = 60, timeout_seconds = 5 },
   { type = "command", command = "~/.config/herdr/host-label.sh", interval_seconds = 3600, timeout_seconds = 2 },
   { type = "datetime", format = "󰥔 %H:%M" },
