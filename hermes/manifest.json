@@ -28,6 +28,7 @@
   },
   "scripts": [
     "sgg-morning-brief.py",
+    "sgg-pr-review-reminder.py",
     "sgg-granola-import.py",
     "sgg-calendar-events.swift",
     "sgg-mail-messages.js",
@@ -45,6 +46,7 @@
   ],
   "copiedScripts": [
     "sgg-morning-brief.py",
+    "sgg-pr-review-reminder.py",
     "sgg-granola-import.py",
     "sgg-pr-review-event.py",
     "personal-morning-brief.py",
@@ -62,6 +64,7 @@
     "note-taking/vault-pkm",
     "productivity/gift-and-experience-capture",
     "productivity/personal-routine-automation",
+    "productivity/sgg-pr-review-reminder",
     "productivity/workday-briefing-automation",
     "security/self-hosted-agent-security",
     "software-development/codex-claude-implementation-loop",
@@ -95,6 +98,20 @@
         "chatName": "SGG",
         "userEnv": "MATRIX_ALLOWED_USERS"
       }
+    },
+    {
+      "name": "SGG PR Review Reminder",
+      "schedule": "45 5 * * 2,4",
+      "model": "gpt-5.6-terra",
+      "provider": "openai-codex",
+      "promptFile": "automations/sgg-pr-review-reminder/prompt.md",
+      "deliver": "matrix:!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU",
+      "skills": ["sgg-pr-review-reminder", "voice-bryan"],
+      "script": "sgg-pr-review-reminder.py",
+      "noAgent": false,
+      "enabledToolsets": ["safe"],
+      "workdir": "/Users/bryan/code/sgg",
+      "attachToSession": false
     },
     {
       "name": "Personal Morning Brief",
