@@ -1,12 +1,14 @@
 ---
 name: conforming-tech-specs
 description: >
-  Conformance-gated pass for tech specs, ADRs, or new-endpoint design docs
-  in repos with an established ADR / conventions index. Surfaces prior-art
-  shapes before drafting, drafts conforming shapes verbatim, and requires
-  every divergence to be justified in a final Conforms-to / Diverges-from
-  table before handoff. Use when asked to "draft a tech spec for #N", "write
-  the ADR for the new endpoint", "make this spec conform to our conventions",
+  Conformance-gated pass for protocol-shape tech specs, ADRs, or new-endpoint
+  design docs in repos with an established ADR / conventions index. Surfaces
+  prior-art shapes before drafting, drafts conforming shapes verbatim, and
+  requires every divergence to be justified in a final Conforms-to /
+  Diverges-from table before handoff. Skip repository, process, governance,
+  maintenance-policy, and developer-tooling decisions that change no protocol
+  wire or public SDK shape. Use when asked to "draft a tech spec for #N",
+  "write the ADR for the new endpoint", "make this spec conform to our conventions",
   or similar. Does not coach the underlying decision (options, drivers,
   alternatives) — pair with adr-and-spec-coach for that. Does not provide
   general spec-body structure (Goals / Non-Goals / Rollout / Testing) — pair
@@ -15,10 +17,10 @@ description: >
 
 # Conforming Tech Specs
 
-Draft a tech spec or ADR by gathering prior art first, conforming to it by
-default, and surfacing every divergence with an explicit ADR-exception
-justification. The failure mode this skill exists to prevent is **citing an
-ADR and writing around it** — disposition gap, not discovery gap.
+Draft a protocol-shape tech spec or ADR by gathering prior art first,
+conforming to it by default, and surfacing every divergence with an explicit
+ADR-exception justification. The failure mode this skill exists to prevent is
+**citing an ADR and writing around it** — disposition gap, not discovery gap.
 
 This skill owns the **conformance** half of spec work — making a draft obey
 established conventions and gating every divergence. It does **not** coach the
@@ -63,6 +65,9 @@ that have no protocol-shape decisions to make.
   say about cursor pagination?") — answer directly, no spec.
 - The work sits inside an already-specced feature with no new
   shape-category being introduced.
+- The ADR concerns repository ownership, delivery process, governance,
+  maintenance policy, or developer tooling but changes no protocol wire or
+  public SDK shape. Do not append an all-`N/A` conformance table.
 
 **Invoke the skill when:**
 
@@ -70,12 +75,14 @@ that have no protocol-shape decisions to make.
   response shape, or new error shape.
 - The request has protocol-shape ambiguity that more than one prior ADR
   could plausibly settle.
-- The change is consumer-facing (SDK surface, public schema, OpenAPI
-  output).
+- The document introduces or changes at least one protocol wire shape or
+  public SDK shape (SDK surface, public schema, or OpenAPI output).
 - An ADR exception is on the table.
 
-If the request fails the "invoke" criteria, write a one-line
-recommendation pointing to a regular implementation issue and stop.
+If the request fails the "invoke" criteria, stop this conformance workflow
+without producing a prior-art or Diverges table. Continue with the appropriate
+ADR, spec, or issue workflow; a conformance skip does not imply that the
+artifact itself is unnecessary.
 
 ---
 
@@ -266,6 +273,11 @@ annotated draft also has no unresolved epistemic-claim ledger entries.
 
 ## Phase 4 — Conforms-to / Diverges-from table
 
+This phase applies only after Phase 0 determined that the document changes a
+protocol wire or public SDK shape. If every required row would be `N/A`, the
+skill should have been skipped: return to Phase 0 and remove the table rather
+than publishing process scaffolding.
+
 **Input:** the annotated draft from Phase 3.
 
 **Action:** append the required table at the end of the spec body. Use the
@@ -357,8 +369,10 @@ the spec content and stops.
 
 ## Hard rules
 
-- Skip no phase. The prior-art table is the input to drafting, not an
-  afterthought. The Diverges table is a gate, not decoration.
+- After Phase 0 selects this workflow, skip no phase. The prior-art table is
+  the input to drafting, not an afterthought. A Phase 0 skip is itself a
+  completed outcome and must not create a Diverges table. When applicable, the
+  Diverges table is a gate, not decoration.
 - "Cited an ADR" does not equal "satisfied an ADR." Phase 3 verifies the
   draft's shape against every ADR it cites.
 - Adding a new experimental pattern alongside the existing one is a smell,
