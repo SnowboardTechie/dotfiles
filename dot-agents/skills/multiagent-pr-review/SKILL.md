@@ -3,7 +3,7 @@ name: multiagent-pr-review
 description: Use for dual-model reviews of teammates' GitHub PRs.
 argument-hint: <github-pr-url>
 disable-model-invocation: true
-version: 1.0.1
+version: 1.0.2
 author: Bryan Thompson + Hermes Agent
 license: MIT
 ---
@@ -186,8 +186,14 @@ Both admitted reports must identify the same `base_sha`, `head_sha`,
 `merge_base_sha`, `diff_sha256`, `expected_pr_head_ref`, and
 `evidence_manifest_sha256`.
 
-Completion: exactly one admitted Claude report and one admitted GPT report, or
-an explicit `INCOMPLETE` result with no verdict.
+For each reviewer independently, admission of its report—or terminal failure
+after its one allowed retry—ends that agent's permitted turns. Immediately stop
+that reviewer supervisor, close its recorded pane, and verify the pane ID is
+absent while the other reviewer may continue. Completion is exactly one admitted
+Claude report and one admitted GPT report, or an explicit `INCOMPLETE` result
+with no verdict; both panes must be absent before adjudication or incomplete
+reporting continues. Candidate drift discovered later starts a new user-approved
+run; it is not a reason to retain stale reviewer panes.
 
 ## Phase 4 — Root-owned adjudication
 
@@ -253,9 +259,10 @@ terminal timeout, or as silent background processes explicitly awaited by the
 root. Never finish with a notification-enabled process that can post a stale
 completion message after the review and push the verdict out of view.
 
-Leave both visible panes open. Cleanup of owned panes, worktrees, and scratch
-state happens only after explicit cleanup authorization and ownership
-verification.
+The two reviewer panes must already be closed under Phase 3's lifecycle gate.
+Do not ask Bryan to authorize pane cleanup or leave completed reviewers visible
+as status markers. Worktree and scratch-state cleanup remains a separate,
+ownership-verified action with its own authorization and retention rules.
 
 ## Terminal states
 
@@ -278,4 +285,5 @@ verification.
 - [ ] Root independently dispositioned every lead and swept criteria/paths
 - [ ] Final remote head still equals `head_sha`
 - [ ] Two immutable advisory notes and one canonical adjudication note
-- [ ] No cleanup without explicit authorization
+- [ ] Each reviewer pane closed and its absence verified as soon as that reviewer had no retry remaining
+- [ ] Worktree and scratch-state cleanup kept separate from prompt pane closure

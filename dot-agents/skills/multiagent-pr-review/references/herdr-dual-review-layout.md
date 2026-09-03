@@ -119,6 +119,12 @@ root, report, transcript, or eventual root disposition. Do not substitute a
 background worker or another model when one fails. Continue the same recorded
 agent for at most one bounded same-model retry.
 
-Leave both panes visible after presenting the review. Pane cleanup requires
-explicit user-approved cleanup after ownership is reverified; close only the two
-recorded reviewer panes and never the instigating pane.
+Handle each reviewer independently. As soon as its report is admitted—or that
+route becomes terminally incomplete after its one allowed retry—that reviewer
+has no permitted next turn. Stop its supervisor, reverify ownership, close its
+recorded pane, and verify that pane ID is absent while the other reviewer may
+continue. Require both panes absent before root adjudication or incomplete-result
+presentation continues. Do not wait for the peer reviewer, vault capture, final
+presentation, or a separate cleanup approval, and do not leave completed panes
+visible as status markers. Close only the recorded reviewer panes, never the
+instigating pane.

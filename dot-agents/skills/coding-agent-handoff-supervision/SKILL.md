@@ -1,7 +1,7 @@
 ---
 name: coding-agent-handoff-supervision
 description: Use for visible, ticket-backed Claude or Hermes handoffs.
-version: 1.4.0
+version: 1.5.0
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
@@ -18,7 +18,8 @@ Hand approved implementation to a visible Claude or explicitly selected Hermes
 worker while the parent remains responsible for supervision, review, and
 delivery. Every implementation handoff is backed by one governing ticket. In
 Herdr, launch the worker in a sibling pane without changing the active window,
-workspace, tab, or pane, and keep a completion watcher attached to the parent.
+workspace, tab, or pane, keep a completion watcher attached to the parent, and
+close the handoff-owned pane promptly once that agent has no concrete next turn.
 
 ## When to Use
 
@@ -204,9 +205,12 @@ After the worker finishes:
 4. If any correction changes the candidate, invalidate every review artifact and
    rerun the complete gate against the new identity.
 5. Independently run the relevant validation and focused runtime probes.
-6. Verify publication and remote readback separately.
-7. Activate or reload the live system only after accepting the candidate.
-8. Read back the live target before declaring completion.
+6. Once acceptance and correction routing settle, apply Step 8 to this worker
+   before continuing into publication-only or live-verification work when it has
+   no concrete next turn.
+7. Verify publication and remote readback separately.
+8. Activate or reload the live system only after accepting the candidate.
+9. Read back the live target before declaring completion.
 
 A `done` or `idle` status proves only that the worker settled. It does not prove
 the implementation is acceptable. Missing or stale Ponytail evidence means the
@@ -230,17 +234,37 @@ submit it without the user's direction.
 **Complete when:** the original session identity returns to `working` after the
 follow-up, with no duplicate worker created.
 
-### 8. Clean up after acceptance
+### 8. Release the worker pane when its work is over
 
-After merge, publication readback, and live verification:
+Treat every pane created by this handoff as a temporary parent-owned resource.
+At each settled result, correction decision, blocker, abandonment, and workflow
+handoff, decide whether this exact agent has a concrete next turn. Keep its pane
+only while the agent is actively working, is blocked on a specific answer or
+approval, or is expected to receive an identified same-session follow-up. A
+possible future need, pending merge, publication, live verification, or a desire
+to leave visible status is not enough.
 
-- stop or close only the worker session or pane created by this handoff;
-- remove its disposable worktree and merged feature branch when appropriate;
+As soon as no concrete next turn remains:
+
+- preserve any needed report or artifact and verify the recorded agent/pane
+  identity;
+- stop its tracked watcher if still armed;
+- close only the recorded handoff-owned pane and verify it is absent;
+- update persisted state so a closed session is not later treated as resumable.
+
+Do this without asking Bryan for cleanup approval and without waiting for merge,
+publication readback, or live verification. A pane Bryan viewed or focused remains
+handoff-owned; viewing alone does not make it user-owned. Do not race an agent
+while Bryan is actively interacting with it, and never close the caller pane or
+an unrelated pre-existing pane.
+
+Other durable cleanup retains its own timing. After acceptance, merge,
+publication readback, and live verification as applicable:
+
+- remove the disposable worktree and merged feature branch when appropriate;
 - stop disposable preview servers;
 - preserve unrelated local edits;
 - finish with the canonical branch clean and current.
-
-Do not close a foreground Herdr pane while Bryan may still be using it.
 
 ## Common Pitfalls
 
@@ -266,7 +290,10 @@ Do not close a foreground Herdr pane while Bryan may still be using it.
 9. **Treating suggested prompt text as authorization.** Submit only user- or
    parent-authored instructions.
 10. **Trusting worker-reported tests or pushes.** Independently inspect and verify.
-11. **Cleaning before checking for unrelated edits.** Preserve user work and close
+11. **Leaving a settled pane as a status marker.** Once its agent has no concrete
+   next turn, close the handoff-owned pane promptly; do not wait for publication
+   or make Bryan infer whether it is still needed.
+12. **Cleaning before checking for unrelated edits.** Preserve user work and close
    only resources created by the handoff.
 
 ## Verification Checklist
@@ -287,8 +314,11 @@ Do not close a foreground Herdr pane while Bryan may still be using it.
 - [ ] Active window, workspace, tab, and pane preserved unless focus was requested
 - [ ] Tracked watcher uses the verified Herdr client and a finite timeout
 - [ ] Follow-ups preserve the original session
+- [ ] Every settled, blocked, abandoned, or handed-off agent has a concrete keep/close decision
+- [ ] Handoff-owned pane closed and absence verified as soon as no concrete next turn remains
 - [ ] Exact candidate independently reviewed through Standards, Spec, conditional Risk, and mandatory Ponytail
 - [ ] Every correction invalidated stale review artifacts and triggered a complete rereview
 - [ ] Candidate independently tested
 - [ ] Publication and live state read back separately
-- [ ] Only handoff-owned resources cleaned up after acceptance
+- [ ] Pane lifecycle cleanup occurred independently of later worktree/publication cleanup
+- [ ] Only handoff-owned resources were closed or cleaned

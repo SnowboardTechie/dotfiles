@@ -742,6 +742,24 @@ Present the review outcome inline in this order:
 
 **Do not auto-ship before this exchange.** The review summary on its own isn't consent — the user needs one more explicit step after reading it.
 
+### 4.4 Release visible worker panes
+
+The parent owns every implementation and reviewer pane it launched. While the
+ship/change decision is genuinely pending, retain only the sessions that would
+receive a concrete requested correction or exact-candidate rereview, and say why
+they remain open. Once `/ship` returns verified publication, Bryan declines
+further changes, a correction/review bound makes another turn impermissible, or
+the workflow is abandoned or blocked in a way those agents cannot resolve,
+follow `coding-agent-handoff-supervision` immediately for each recorded pane:
+preserve needed artifacts, stop its watcher, verify identity, close the pane,
+verify absence, and mark the session non-resumable.
+
+Close each role independently when its last possible turn ends. Do not keep an
+implementation or reviewer pane open merely for pending merge, external review,
+live verification, or visual status, and do not ask Bryan for pane-cleanup
+approval. Worktree, branch, preview, and state-retention cleanup remains separate
+and follows its own acceptance/publication rules.
+
 ---
 
 ## Edge Cases

@@ -189,16 +189,31 @@ If a split succeeds but startup or prompting fails, close only that empty or
 failed handoff-owned pane after verifying its ID. Do not silently start both a
 Herdr worker and a background worker.
 
-## Cleanup
+## Release the pane promptly
 
-After parent acceptance, publication readback, and confirmation that Bryan no
-longer needs the terminal:
+The parent owns the lifecycle of every pane it created. Reassess the recorded
+agent after each settled result, correction decision, blocker, abandonment, and
+workflow handoff. Retain the pane only for active work, a specific blocked
+question or approval, or an identified same-session follow-up. Do not retain it
+merely because merge, publication, live verification, or unrelated parent work
+is still pending, and do not use an open pane as a status marker for Bryan.
+
+Once no concrete next turn remains, preserve any needed report, stop an armed
+watcher, verify the recorded agent and pane identity, and close the pane without
+a separate cleanup approval:
 
 ```sh
+"$HERDR_BIN_PATH" agent get <agent-name>
 "$HERDR_BIN_PATH" pane get <new-pane-id>
 "$HERDR_BIN_PATH" pane close <new-pane-id>
 ```
 
-Verify the pane is absent afterward. Close only the recorded handoff-owned pane;
-never close the caller pane or an existing Claude or Hermes pane. Stop the
-tracked watcher if cleanup happens before it naturally returns.
+Then require `pane get <new-pane-id>` to report that the pane is absent and mark
+the persisted session closed/non-resumable. If the workflow is being abandoned
+while the agent is still working, the verified `pane close` is also the explicit
+termination; record that outcome rather than leaving it running.
+
+Close only the recorded handoff-owned pane; never close the caller pane or an
+existing Claude or Hermes pane. A pane does not become user-owned merely because
+Bryan viewed or focused it, but do not race Bryan while he is actively
+interacting with it.
