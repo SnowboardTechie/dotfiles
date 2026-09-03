@@ -22,9 +22,10 @@ def pull_request(**overrides: object) -> dict:
         "number": 42,
         "title": "feat: useful change",
         "url": "https://github.com/HHS/simpler-grants-protocol/pull/42",
+        "body": "",
         "isDraft": False,
         "reviewDecision": "REVIEW_REQUIRED",
-        "reviewRequests": [{"__typename": "User", "login": "reviewer"}],
+        "reviewRequests": [{"__typename": "User", "login": "widal001"}],
         "statusCheckRollup": [
             {
                 "__typename": "CheckRun",
@@ -37,6 +38,10 @@ def pull_request(**overrides: object) -> dict:
         "createdAt": "2026-01-01T00:00:00Z",
         "updatedAt": "2026-01-02T00:00:00Z",
         "headRefOid": "abc123",
+        "baseRefName": "main",
+        "headRefName": "feature-42",
+        "labels": [],
+        "closingIssuesReferences": [],
     }
     value.update(overrides)
     return value
@@ -48,41 +53,22 @@ class EligibilityTest(unittest.TestCase):
             "HHS/simpler-grants-protocol", pull_request(**overrides)
         )
 
-    def test_green_non_draft_with_requested_reviewer_is_eligible(self) -> None:
+    def test_non_draft_unapproved_pr_is_eligible(self) -> None:
         result = self.normalize()
         self.assertTrue(result["eligible"])
         self.assertEqual(result["exclusionReasons"], [])
-        self.assertEqual(result["requestedReviewers"], [{"kind": "user", "login": "reviewer"}])
+        self.assertEqual(
+            result["reviewers"],
+            [{"kind": "user", "githubLogin": "widal001", "slackName": "Billy Daly"}],
+        )
 
     def test_re_review_request_can_be_eligible_after_changes_requested(self) -> None:
         self.assertTrue(self.normalize(reviewDecision="CHANGES_REQUESTED")["eligible"])
 
-    def test_each_not_ready_condition_is_excluded(self) -> None:
+    def test_only_draft_and_approved_are_excluded(self) -> None:
         cases = {
             "draft": {"isDraft": True},
             "approved": {"reviewDecision": "APPROVED"},
-            "no-reviewer-requested": {"reviewRequests": []},
-            "checks-failing": {
-                "statusCheckRollup": [
-                    {
-                        "__typename": "CheckRun",
-                        "name": "test",
-                        "status": "COMPLETED",
-                        "conclusion": "FAILURE",
-                    }
-                ]
-            },
-            "checks-pending": {
-                "statusCheckRollup": [
-                    {
-                        "__typename": "CheckRun",
-                        "name": "test",
-                        "status": "IN_PROGRESS",
-                        "conclusion": "",
-                    }
-                ]
-            },
-            "merge-conflict": {"mergeStateStatus": "DIRTY"},
         }
         for reason, overrides in cases.items():
             with self.subTest(reason=reason):
@@ -90,16 +76,103 @@ class EligibilityTest(unittest.TestCase):
                 self.assertFalse(result["eligible"])
                 self.assertIn(reason, result["exclusionReasons"])
 
-    def test_team_request_preserves_slug_and_name(self) -> None:
+    def test_missing_github_request_uses_slack_team_route(self) -> None:
+        result = self.normalize(reviewRequests=[])
+        self.assertTrue(result["eligible"])
+        self.assertEqual(result["reviewerSource"], "team-default")
+        self.assertEqual(
+            [reviewer["slackName"] for reviewer in result["reviewers"]],
+            ["Karina Gonzalez", "Billy Daly"],
+        )
+
+    def test_checks_and_merge_state_do_not_hide_a_ready_pr(self) -> None:
+        result = self.normalize(
+            reviewRequests=[],
+            mergeStateStatus="DIRTY",
+            statusCheckRollup=[
+                {
+                    "__typename": "CheckRun",
+                    "name": "audit",
+                    "status": "COMPLETED",
+                    "conclusion": "FAILURE",
+                }
+            ],
+        )
+        self.assertTrue(result["eligible"])
+        self.assertEqual(result["checks"]["state"], "FAILURE")
+
+    def test_slack_names_replace_github_logins_and_use_canonical_order(self) -> None:
         result = self.normalize(
             reviewRequests=[
-                {"__typename": "Team", "slug": "maintainers", "name": "Maintainers"}
+                {"__typename": "User", "login": "widal001"},
+                {"__typename": "User", "login": "karinamzalez"},
             ]
         )
         self.assertEqual(
-            result["requestedReviewers"],
-            [{"kind": "team", "slug": "maintainers", "name": "Maintainers"}],
+            [reviewer["slackName"] for reviewer in result["reviewers"]],
+            ["Karina Gonzalez", "Billy Daly"],
         )
+
+
+class PriorityOrderingTest(unittest.TestCase):
+    def normalize(self, number: int, **overrides: object) -> dict:
+        raw = pull_request(
+            number=number,
+            url=f"https://github.com/HHS/simpler-grants-protocol/pull/{number}",
+            headRefName=f"feature-{number}",
+            createdAt=f"2026-01-{number % 28 + 1:02d}T00:00:00Z",
+        )
+        raw.update(overrides)
+        return MODULE.normalize_pr(
+            "HHS/simpler-grants-protocol",
+            raw,
+        )
+
+    def test_security_fix_and_stacked_chain_precede_independent_prs(self) -> None:
+        independent_old = self.normalize(1010, createdAt="2025-12-01T00:00:00Z")
+        base = self.normalize(1115, headRefName="trusted-publishing")
+        dependent = self.normalize(
+            1117,
+            baseRefName="trusted-publishing",
+            body="Stacked on #1115. Either #1151 resolves first, or this gate stays red.",
+            reviewRequests=[],
+        )
+        independent_new = self.normalize(1143, createdAt="2026-02-01T00:00:00Z")
+        security = self.normalize(
+            1161,
+            labels=[{"name": "dependencies"}],
+            closingIssuesReferences=[
+                {
+                    "number": 1151,
+                    "title": "Clear audit advisories",
+                    "url": "https://github.com/HHS/simpler-grants-protocol/issues/1151",
+                }
+            ],
+        )
+
+        ordered = MODULE.order_candidates(
+            [independent_old, dependent, base, independent_new, security]
+        )
+
+        self.assertEqual([pr["number"] for pr in ordered], [1161, 1115, 1117, 1010, 1143])
+        self.assertEqual(
+            [dependency["number"] for dependency in dependent["dependsOn"]],
+            [1115, 1161],
+        )
+        self.assertEqual([pr["priorityRank"] for pr in ordered], [1, 2, 3, 4, 5])
+
+    def test_explicit_body_dependency_is_detected_without_a_stacked_base(self) -> None:
+        prerequisite = self.normalize(200, headRefName="prerequisite")
+        dependent = self.normalize(
+            201,
+            baseRefName="main",
+            body="This depends on #200 and should merge after it.",
+        )
+
+        ordered = MODULE.order_candidates([dependent, prerequisite])
+
+        self.assertEqual([pr["number"] for pr in ordered], [200, 201])
+        self.assertEqual(dependent["dependsOn"][0]["number"], 200)
 
 
 class ContractTest(unittest.TestCase):
@@ -148,6 +221,10 @@ class ContractTest(unittest.TestCase):
         self.assertIn("read-only", prompt)
         self.assertIn("Never modify repositories", skill)
         self.assertIn("candidateCount", skill)
+        self.assertIn("priorityRank", skill)
+        self.assertIn("@Karina Gonzalez", skill)
+        self.assertIn("@Billy Daly", skill)
+        self.assertNotIn("written as `@login`", skill)
         self.assertNotIn("—", skill)
 
 
