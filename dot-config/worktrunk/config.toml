@@ -22,3 +22,11 @@ copy-ignored = "wt step copy-ignored"
 
 [[pre-start]]
 direnv = "[ -f .envrc ] && direnv allow"
+
+# Link agent context instead of letting copy-ignored snapshot it.
+# copy-ignored duplicates the trunk's untracked AGENTS.md into each new
+# worktree, so every worktree froze a copy that silently went stale (and
+# absolute links broke outright when a repo moved). A symlink to the trunk
+# stays current for free. Runs after copy-ignored, replacing what it copied.
+[[pre-start]]
+link-agent-context = 't=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)"); if [ "$PWD" != "$t" ] && [ -f "$t/AGENTS.md" ]; then ln -sfn "$t/AGENTS.md" AGENTS.md; [ -e CLAUDE.md ] || ln -sfn AGENTS.md CLAUDE.md; fi; true'
