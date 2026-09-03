@@ -137,7 +137,11 @@ class PriorityOrderingTest(unittest.TestCase):
             body="Stacked on #1115. Either #1151 resolves first, or this gate stays red.",
             reviewRequests=[],
         )
-        independent_new = self.normalize(1143, createdAt="2026-02-01T00:00:00Z")
+        decision_gate = self.normalize(
+            1143,
+            createdAt="2026-02-01T00:00:00Z",
+            labels=[{"name": "adr"}],
+        )
         security = self.normalize(
             1161,
             labels=[{"name": "dependencies"}],
@@ -151,15 +155,23 @@ class PriorityOrderingTest(unittest.TestCase):
         )
 
         ordered = MODULE.order_candidates(
-            [independent_old, dependent, base, independent_new, security]
+            [independent_old, dependent, base, decision_gate, security]
         )
 
-        self.assertEqual([pr["number"] for pr in ordered], [1161, 1115, 1117, 1010, 1143])
+        self.assertEqual([pr["number"] for pr in ordered], [1161, 1115, 1117, 1143, 1010])
         self.assertEqual(
             [dependency["number"] for dependency in dependent["dependsOn"]],
             [1115, 1161],
         )
         self.assertEqual([pr["priorityRank"] for pr in ordered], [1, 2, 3, 4, 5])
+
+    def test_recent_activity_breaks_ties_between_ordinary_independent_prs(self) -> None:
+        older_activity = self.normalize(300, updatedAt="2026-01-01T00:00:00Z")
+        newer_activity = self.normalize(301, updatedAt="2026-02-01T00:00:00Z")
+
+        ordered = MODULE.order_candidates([older_activity, newer_activity])
+
+        self.assertEqual([pr["number"] for pr in ordered], [301, 300])
 
     def test_explicit_body_dependency_is_detected_without_a_stacked_base(self) -> None:
         prerequisite = self.normalize(200, headRefName="prerequisite")

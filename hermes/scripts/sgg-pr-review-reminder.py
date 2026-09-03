@@ -270,6 +270,8 @@ def add_dependencies(candidates: list[dict[str, Any]]) -> None:
         pr["prioritySignals"] = []
         if any(label.casefold() in {"dependencies", "security"} for label in pr["labels"]):
             pr["prioritySignals"].append("dependency-or-security-remediation")
+        if any(label.casefold() == "adr" for label in pr["labels"]):
+            pr["prioritySignals"].append("decision-gate")
 
     for pr in candidates:
         dependents = [
@@ -304,6 +306,14 @@ def _is_urgent(pr: dict[str, Any]) -> bool:
     return "dependency-or-security-remediation" in pr.get("prioritySignals", [])
 
 
+def _activity_timestamp(pr: dict[str, Any]) -> float:
+    value = str(pr.get("updatedAt") or pr.get("createdAt") or "")
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return 0.0
+
+
 def order_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
     add_dependencies(candidates)
     by_id = {_candidate_id(pr): pr for pr in candidates}
@@ -333,8 +343,12 @@ def order_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
         members = [by_id[candidate_id] for candidate_id in component]
         has_urgent = any(_is_urgent(pr) for pr in members)
         has_dependencies = any(neighbors[candidate_id] for candidate_id in component)
-        oldest = min(str(pr.get("createdAt") or "") for pr in members)
-        return (0 if has_urgent else 1 if has_dependencies else 2, oldest, min(component))
+        has_decision_gate = any(
+            "decision-gate" in pr.get("prioritySignals", []) for pr in members
+        )
+        most_recent_activity = max(_activity_timestamp(pr) for pr in members)
+        category = 0 if has_urgent else 1 if has_dependencies else 2 if has_decision_gate else 3
+        return (category, -most_recent_activity, min(component))
 
     ordered: list[dict[str, Any]] = []
     for component in sorted(components, key=component_key):
