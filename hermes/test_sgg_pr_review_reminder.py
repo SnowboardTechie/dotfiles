@@ -237,6 +237,10 @@ class ContractTest(unittest.TestCase):
         self.assertIn("@Karina Gonzalez", skill)
         self.assertIn("@Billy Daly", skill)
         self.assertNotIn("written as `@login`", skill)
+        self.assertIn("one blank line between entries", skill)
+        self.assertIn("begin the gloss with lowercase text", skill)
+        self.assertIn("preserve meaningful quantified scope", skill)
+        self.assertNotIn("add one short merge-order line", skill)
         self.assertNotIn("—", skill)
 
 

@@ -228,11 +228,13 @@ Three distinct shapes by message type:
   what to expect after merge" shape. Each paragraph led by a labeling phrase
   ("Quick context on why:", "The reason I think it's safe to land on its
   own:", "One thing I tacked on:"). See samples.md PR #842 review request.
-  For a consolidated review queue, group links by work class and priority
-  (for example, the primary release audit separately from dependency
-  maintenance). Tag the intended reviewers and state that the PRs are ready;
-  do not invent reviewer allocation, ask them to split the batch, or add a
-  coordination question the user did not request.
+  For a consolidated review queue, open `Sharing these in priority order:` and
+  let the sequence carry the priority. Use one unbulleted paragraph per PR,
+  with a blank line between entries. Fuse linked `#N`, a short lowercase gerund gloss,
+  `is ready for review,`, and the Slack display-name mentions into one line.
+  Do not add a separate merge-order explanation, terminal periods, reviewer
+  allocation, a request to split the batch, or a coordination question the
+  user did not request. See samples.md 2026-09-03.
 - **Casual DM:** multiple short sends rather than packed paragraphs. Question
   + follow-up question pattern ("No, how are you doing with that? Do you
   happen to be more excited than bummed?"). See samples.md [friend] DM.
