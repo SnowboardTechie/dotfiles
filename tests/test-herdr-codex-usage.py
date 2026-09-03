@@ -90,7 +90,7 @@ with tempfile.TemporaryDirectory(prefix="herdr-codex-usage-test-") as tmp:
         runpy.run_path(str(TRACKER), run_name="__main__")
 
     output = stdout.getvalue().strip()
-    expected = " 21%"
+    expected = " 21% ↻1:01"
     if output != expected:
         raise AssertionError(f"expected {expected!r}, got {output!r}")
     if len(requests) != 1:
@@ -135,4 +135,4 @@ with tempfile.TemporaryDirectory(prefix="herdr-codex-usage-test-") as tmp:
             )
         print(f"ok   {description}")
 
-print("ok   Hermes Codex OAuth renders the highest-used window compactly")
+print("ok   Hermes Codex OAuth renders compact usage with its reset countdown")

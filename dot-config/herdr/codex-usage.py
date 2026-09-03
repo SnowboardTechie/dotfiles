@@ -80,14 +80,25 @@ def usage_url(base_url: str) -> str:
     return normalized + suffix
 
 
-def render_usage(payload: Any) -> str:
+def reset_countdown(reset_at: Any, now: int) -> str:
+    if not isinstance(reset_at, (int, float)) or isinstance(reset_at, bool):
+        return ""
+    remaining = max(0, int(reset_at) - now)
+    if remaining >= 86_400:
+        days, remainder = divmod(remaining, 86_400)
+        return f"{days}d{remainder // 3_600}h"
+    hours, remainder = divmod(remaining, 3_600)
+    return f"{hours}:{remainder // 60:02d}"
+
+
+def render_usage(payload: Any, now: int) -> str:
     if not isinstance(payload, dict):
         return ""
     rate_limit = payload.get("rate_limit")
     if not isinstance(rate_limit, dict):
         return ""
 
-    percentages = []
+    windows = []
     for key in ("primary_window", "secondary_window"):
         window = rate_limit.get(key)
         if not isinstance(window, dict):
@@ -100,11 +111,14 @@ def render_usage(payload: Any) -> str:
         ):
             continue
         percent = max(0, min(100, math.floor(float(used) + 0.5)))
-        percentages.append(percent)
+        windows.append((percent, window.get("reset_at")))
 
-    if not percentages:
+    if not windows:
         return ""
-    return f"{OPENAI_GLYPH} {max(percentages)}%"
+    percent, reset_at = max(windows, key=lambda window: window[0])
+    output = f"{OPENAI_GLYPH} {percent}%"
+    countdown = reset_countdown(reset_at, now)
+    return output + (f" ↻{countdown}" if countdown else "")
 
 
 def read_cache(*, fresh_only: bool) -> str:
@@ -154,7 +168,7 @@ def main() -> None:
     credentials = load_credentials()
     if credentials:
         try:
-            output = render_usage(fetch_usage(*credentials))
+            output = render_usage(fetch_usage(*credentials), int(time.time()))
         except Exception:
             output = ""
         if output:

@@ -220,10 +220,10 @@ dotfiles/
 - The tab bar's right edge is the **Glyph Rail**: one Nerd Font glyph per module, joined by a single Powerline soft divider (``) — Claude quota, OpenAI Codex subscription quota, account-wide rolling 24-hour OpenRouter spend, host identity, and the clock
 
   ```
-   14% ↻3:08   21%  󰓅 $3.95  󰒋 Studio  󰥔 09:11
+   14% ↻3:08   21% ↻1:01  󰓅 $3.95  󰒋 Studio  󰥔 09:11
   ```
 
-- Codex usage reads the OpenAI OAuth credential from Hermes (`~/.hermes/auth.json`), falling back to the Codex CLI credential (`~/.codex/auth.json`). It never refreshes or rotates credentials itself. The compact percentage is the most-used base quota window, and the last successful value remains visible during transient failures. Without a credential or cached value, the module prints nothing and the rail drops the entry.
+- Codex usage reads the OpenAI OAuth credential from Hermes (`~/.hermes/auth.json`), falling back to the Codex CLI credential (`~/.codex/auth.json`). It never refreshes or rotates credentials itself. The compact percentage and reset countdown come from the most-used base quota window, and the last successful value remains visible during transient failures. Without a credential or cached value, the module prints nothing and the rail drops the entry.
 - The spend figure is **account-wide**, not per-machine: it comes from OpenRouter's analytics API over a trailing 24-hour window, so Studio and the MacBook show the same number. It needs a [management key](https://openrouter.ai/settings/management-keys) — an ordinary `sk-or-v1` inference key is refused with `403 Only management keys can access analytics`:
 
   ```bash
