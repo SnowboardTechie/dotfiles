@@ -80,37 +80,15 @@ def usage_url(base_url: str) -> str:
     return normalized + suffix
 
 
-def window_label(seconds: Any, fallback: str) -> str:
-    if not isinstance(seconds, (int, float)) or isinstance(seconds, bool) or seconds <= 0:
-        return fallback
-    value = int(seconds)
-    if value % 86_400 == 0:
-        return f"{value // 86_400}d"
-    if value % 3_600 == 0:
-        return f"{value // 3_600}h"
-    return f"{max(1, value // 60)}m"
-
-
-def reset_countdown(reset_at: Any, now: int) -> str:
-    if not isinstance(reset_at, (int, float)) or isinstance(reset_at, bool):
-        return ""
-    remaining = max(0, int(reset_at) - now)
-    if remaining >= 86_400:
-        days, remainder = divmod(remaining, 86_400)
-        return f"{days}d{remainder // 3_600}h"
-    hours, remainder = divmod(remaining, 3_600)
-    return f"{hours}:{remainder // 60:02d}"
-
-
-def render_usage(payload: Any, now: int) -> str:
+def render_usage(payload: Any) -> str:
     if not isinstance(payload, dict):
         return ""
     rate_limit = payload.get("rate_limit")
     if not isinstance(rate_limit, dict):
         return ""
 
-    parts = []
-    for key, fallback in (("primary_window", "5h"), ("secondary_window", "7d")):
+    percentages = []
+    for key in ("primary_window", "secondary_window"):
         window = rate_limit.get(key)
         if not isinstance(window, dict):
             continue
@@ -122,16 +100,11 @@ def render_usage(payload: Any, now: int) -> str:
         ):
             continue
         percent = max(0, min(100, math.floor(float(used) + 0.5)))
-        label = window_label(window.get("limit_window_seconds"), fallback)
-        part = f"{label} {percent}%"
-        countdown = reset_countdown(window.get("reset_at"), now)
-        if countdown:
-            part += f" ↻{countdown}"
-        parts.append(part)
+        percentages.append(percent)
 
-    if not parts:
+    if not percentages:
         return ""
-    return f"{OPENAI_GLYPH} " + " · ".join(parts)
+    return f"{OPENAI_GLYPH} {max(percentages)}%"
 
 
 def read_cache(*, fresh_only: bool) -> str:
@@ -181,7 +154,7 @@ def main() -> None:
     credentials = load_credentials()
     if credentials:
         try:
-            output = render_usage(fetch_usage(*credentials), int(time.time()))
+            output = render_usage(fetch_usage(*credentials))
         except Exception:
             output = ""
         if output:

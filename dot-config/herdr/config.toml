@@ -71,7 +71,7 @@ name = "terminal"
 [ui]
 # Glyph Rail: one Nerd Font glyph per status module, joined by a single
 # Powerline soft divider. Codepoints, because these are tofu without a Nerd
-# Font: 󰭹 U+F0B79 Claude,  U+EC81 OpenAI, ↻ U+21BB reset,
+# Font:  U+EC82 Claude,  U+EC81 OpenAI, ↻ U+21BB reset,
 # 󰓅 U+F04C5 spend, 󰥔 U+F0954 clock, U+E0B3 divider. Host class glyphs
 # live in host-label.sh.
 #
