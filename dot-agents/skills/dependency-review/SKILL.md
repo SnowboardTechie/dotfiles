@@ -260,7 +260,7 @@ If the user approves and the current host is a Codex-backed Hermes parent:
 3. Give the worker the ticket/PR URLs, exact implementation repository and worktree, explicit authority boundaries, and this skill's Step 5 verification outcome. Do not duplicate a self-contained implementation plan into the prompt.
 4. Codex inspects the actual diff and independently reruns the affected lane's verification. Return to Step 6 and recompute the recommendation from the final evidence.
 
-Claude's local commit, push, and PR/issue permissions must each be stated explicitly; the normal route forbids all three and leaves local commit creation and every dependency-PR update parent-owned. Pushing, commenting, approving, closing, or merging still requires the explicit public-action approval in Hard Rules. On other hosts, use the approved host-native implementation workflow while preserving the same diagnosis and verification contract.
+Claude's local commit, push, and PR/issue permissions must each be stated explicitly; the normal route forbids all three and leaves local commit creation and the reviewed dependency-PR branch push parent-owned. The user's approval to implement the fix authorizes the parent to edit, verify, commit, and push that reviewed unit without a second prompt. Commenting, approving, closing, and merging each still require their own direct request under Hard Rules. On other hosts, use the approved host-native implementation workflow while preserving the same diagnosis, verification, and authorization contract.
 
 **Explicit background-only alternative.** Use `codex-claude-implementation-loop` only when Bryan explicitly requests a background wrapper for that same run. It is never an automatic substitute for the visible Herdr handoff, and wrapper unavailability stops rather than changing workers.
 
@@ -301,7 +301,9 @@ Use this format:
 - Never tell the reader to add a changeset or run `pnpm changeset` — Changesets was removed in ADR-0027 and `.changeset/` does not exist
 - Do not recommend audit exceptions just because CI is noisy
 - Do not bury the decision; the report must contain one explicit recommendation
-- The review is advisory. Pushing, commenting on, approving, closing, or merging the PR is public-facing and requires the user's explicit approval immediately before the action.
+- The review itself is advisory: producing it authorizes no writes.
+- Once the user approves a fix, that approval covers the whole unit of work — edit, verify, commit, and push to the PR branch. Do not stop after the edit to ask about committing, and do not ask a second time before pushing.
+- Commenting on, approving, closing, or merging the PR speaks to other people and still requires a direct request each time.
 
 ## Related Skills
 
