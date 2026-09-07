@@ -97,6 +97,19 @@ Resume always refreshes authority evidence. It does not regenerate the plan when
 evidence is unchanged; material drift routes through the source-specific rules
 below.
 
+### 0.3 Matrix attention notifications
+
+Once Phase 2 or later starts delegated, background, or visible work that may
+continue while Bryan is away, arm the blocker/action-needed and
+terminal-completion notifications in
+[references/matrix-attention-notifications.md](references/matrix-attention-notifications.md).
+Resolve the destination conservatively from the ticket workspace's project
+identity and the current Matrix target list; fall back to the configured Hermes
+room when no project match is obvious. These notifications are already authorized
+for this workflow. Send no routine progress pings, deduplicate resumed alerts,
+record delivery evidence in `progress.md`, and keep every normal inline report or
+approval prompt.
+
 ---
 
 ## Phase 1 — Intake
@@ -291,6 +304,10 @@ started: {iso8601}
 ### 2.1 Spawn parallel exploration
 
 Decide how many exploration children to dispatch: **always** at least one; **add a second** if the ticket clearly spans two distinct areas. Use `delegate_task` on Hermes or `Task`/`Agent` elsewhere. Dispatch independent children together, with distinct output paths and no shared writes. If delegation is unavailable, perform the scopes serially.
+
+Immediately before the first delegated/background dispatch or watcher, arm Phase
+0.3's Matrix attention notifications. Serial inline exploration alone does not
+arm them.
 
 Prompt template for each Explore agent:
 
@@ -760,6 +777,15 @@ live verification, or visual status, and do not ask Bryan for pane-cleanup
 approval. Worktree, branch, preview, and state-retention cleanup remains separate
 and follows its own acceptance/publication rules.
 
+### 4.5 Terminal completion notification
+
+After verified `/ship` publication readback and required handoff-pane release,
+append the terminal result to `progress.md` and send Phase 0.3's one-time complete
+notification. If Bryan explicitly ended the authorized scope before publication,
+notify only after that narrower terminal result is verified. Never label the
+reviewed or ready-to-ship checkpoint complete: it is an action-needed alert until
+Bryan approves or declines shipping.
+
 ---
 
 ## Edge Cases
@@ -782,6 +808,8 @@ and follows its own acceptance/publication rules.
 | Forgejo ticket | Intake uses the REST API in `references/fetch-ticket.md`; everything else is identical |
 | Pasted raw text (no URL) | Skip fetch; ask user for repo; `context.md` has only Body |
 | User says "refresh" on a resumed ticket | Overwrite prior state files; restart from Phase 1 |
+| Notifications armed and workflow needs user action | Send one deduplicated Matrix action-needed alert to the resolved project room, or the Hermes fallback, while retaining the normal inline prompt |
+| Matrix notification delivery fails | Verify before retrying, try the resolved Hermes fallback once after a definite project-room failure, record the outcome, and continue issue work unless transport is itself the blocker |
 
 ---
 
@@ -804,6 +832,7 @@ Detailed recipes that load on demand:
 
 - [references/fetch-ticket.md](references/fetch-ticket.md) — exact gh/tea CLI commands, pagination, rate limits, Forgejo API auth
 - [references/repo-resolution.md](references/repo-resolution.md) — local clone discovery, remote URL matching, clone-if-missing prompt
+- [references/matrix-attention-notifications.md](references/matrix-attention-notifications.md) — conservative project-room routing, blocker/action-needed and terminal-completion alerts, deduplication, and delivery verification
 - [`issue-plan` handoff contract](../issue-plan/references/handoff-contract.md) — vault-plan discovery, freshness, import metadata, and clear-issue fallback rubric
 
 ## Related Delegation Roles
@@ -825,6 +854,8 @@ Detailed recipes that load on demand:
 - `coding-agent-handoff-supervision` — default ticket-backed visible Claude
   handoff and the explicit visible Hermes route.
 - `codex-qwen-implementation-loop` — explicit same-run local Qwen route.
+- `outbound-communication-safety` — governs authorized Matrix alert content,
+  mentions, duplicate protection, and post-send verification.
 
 ### Optional Delegation
 
