@@ -246,6 +246,39 @@ def reconcile_cron(hermes_home: Path) -> str:
     return result.stdout.strip()
 
 
+def enable_plugin(hermes_home: Path, name: str) -> str:
+    """Enable one managed plugin without granting tool-override privileges."""
+    candidates = [
+        os.environ.get("HERMES_PYTHON"),
+        str(hermes_home / "hermes-agent" / "venv" / "bin" / "python"),
+        sys.executable,
+    ]
+    interpreter = next((Path(item) for item in candidates if item and Path(item).is_file()), None)
+    if interpreter is None:
+        raise InstallError("could not find a Python interpreter for Hermes plugin reconciliation")
+    environment = os.environ.copy()
+    environment["HERMES_HOME"] = str(hermes_home)
+    result = subprocess.run(
+        [
+            str(interpreter),
+            "-m",
+            "hermes_cli.main",
+            "plugins",
+            "enable",
+            name,
+            "--no-allow-tool-override",
+        ],
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "plugin enable failed").strip()
+        raise InstallError(detail[:2000])
+    return result.stdout.strip()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--hermes-home", type=Path, default=Path.home() / ".hermes")
@@ -314,6 +347,21 @@ def main() -> int:
         backup_root=backup_root,
     )
     results.append(f"Hindsight config: {outcome}")
+
+    managed_plugins = manifest.get("plugins", [])
+    for name in managed_plugins:
+        relative = Path(name)
+        if relative.is_absolute() or ".." in relative.parts or len(relative.parts) != 1:
+            raise InstallError(f"unsafe plugin path in manifest: {name}")
+        outcome = install_link(
+            ASSET_ROOT / "plugins" / relative,
+            hermes_home / "plugins" / relative,
+            hermes_home=hermes_home,
+            adopt_identical=args.adopt_identical,
+            backup_root=backup_root,
+        )
+        results.append(f"plugin {name}: {outcome}")
+        results.append(f"plugin {name} activation: {enable_plugin(hermes_home, name)}")
 
     for relative_text in manifest["skills"]:
         relative = Path(relative_text)

@@ -1,0 +1,3 @@
+name: matrix-key-recovery
+version: "1.0.0"
+description: Repair and prevent missing Matrix room keys for Bryan's managed private rooms

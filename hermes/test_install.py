@@ -4,6 +4,7 @@ import importlib.util
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 SCRIPT = Path(__file__).with_name("install.py")
 SPEC = importlib.util.spec_from_file_location("hermes_install", SCRIPT)
@@ -142,6 +143,34 @@ class ManagedDestinationTest(unittest.TestCase):
 
         self.assertEqual(outcome, "removed")
         self.assertFalse(destination.exists() or destination.is_symlink())
+
+    def test_plugin_activation_is_noninteractive_and_cannot_override_tools(self) -> None:
+        interpreter = self.root / "python"
+        interpreter.touch()
+        completed = MODULE.subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="enabled\n", stderr=""
+        )
+
+        with patch.dict(MODULE.os.environ, {"HERMES_PYTHON": str(interpreter)}), patch.object(
+            MODULE.subprocess, "run", return_value=completed
+        ) as run:
+            outcome = MODULE.enable_plugin(self.home, "matrix-key-recovery")
+
+        self.assertEqual(outcome, "enabled")
+        command = run.call_args.args[0]
+        self.assertEqual(
+            command,
+            [
+                str(interpreter),
+                "-m",
+                "hermes_cli.main",
+                "plugins",
+                "enable",
+                "matrix-key-recovery",
+                "--no-allow-tool-override",
+            ],
+        )
+        self.assertEqual(run.call_args.kwargs["env"]["HERMES_HOME"], str(self.home))
 
 
 if __name__ == "__main__":

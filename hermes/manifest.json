@@ -56,6 +56,9 @@
     "check-herdr-homebrew-atuin-fix.py",
     "check-studio-services.py"
   ],
+  "plugins": [
+    "matrix-key-recovery"
+  ],
   "skills": [
     "apple/apple-mail",
     "autonomous-ai-agents/cross-machine-coding-agent-handoffs",
