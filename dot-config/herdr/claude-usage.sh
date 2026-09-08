@@ -6,24 +6,41 @@
 CACHE_FILE="${XDG_RUNTIME_DIR:-/tmp}/herdr-claude-usage-cache"
 CACHE_TTL=300
 
-command -v jq >/dev/null 2>&1 || exit 0
-command -v curl >/dev/null 2>&1 || exit 0
+MODE="${1:-render}"
+case "$MODE" in
+    render|--check-capacity) ;;
+    *)
+        printf 'usage: %s [--check-capacity]\n' "$0" >&2
+        exit 64
+        ;;
+esac
+
+usage_unavailable() {
+    if [[ "$MODE" == "--check-capacity" ]]; then
+        printf 'Claude capacity could not be verified\n' >&2
+        exit 69
+    fi
+    exit 0
+}
+
+command -v jq >/dev/null 2>&1 || usage_unavailable
+command -v curl >/dev/null 2>&1 || usage_unavailable
 
 CREDS_FILE="$HOME/.claude/.credentials.json"
 if [[ "$OSTYPE" == "darwin"* ]]; then
     CREDS_JSON=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null)
     if [[ -z "$CREDS_JSON" ]]; then
-        [[ -f "$CREDS_FILE" ]] || exit 0
+        [[ -f "$CREDS_FILE" ]] || usage_unavailable
         CREDS_JSON=$(<"$CREDS_FILE")
     fi
 else
-    [[ -f "$CREDS_FILE" ]] || exit 0
+    [[ -f "$CREDS_FILE" ]] || usage_unavailable
     CREDS_JSON=$(<"$CREDS_FILE")
 fi
-[[ -n "$CREDS_JSON" ]] || exit 0
+[[ -n "$CREDS_JSON" ]] || usage_unavailable
 
 TOKEN=$(printf '%s' "$CREDS_JSON" | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null)
-[[ -n "$TOKEN" ]] || exit 0
+[[ -n "$TOKEN" ]] || usage_unavailable
 
 cache_age() {
     local mtime
@@ -31,7 +48,7 @@ cache_age() {
     printf '%s\n' "$(( $(date +%s) - ${mtime:-0} ))"
 }
 
-if [[ -f "$CACHE_FILE" ]] && [[ $(cache_age) -lt $CACHE_TTL ]]; then
+if [[ "$MODE" == "render" && -f "$CACHE_FILE" ]] && [[ $(cache_age) -lt $CACHE_TTL ]]; then
     UTILIZATION=$(sed -n '1p' "$CACHE_FILE")
     RESET_EPOCH=$(sed -n '2p' "$CACHE_FILE")
 else
@@ -52,11 +69,11 @@ else
     RESET_EPOCH=$(printf '%s' "$HEADERS" | grep -i 'anthropic-ratelimit-unified-5h-reset' | sed 's/.*: *//' | grep -oE '[0-9]+' | head -1)
 
     if [[ -z "$UTILIZATION" || -z "$RESET_EPOCH" ]]; then
-        if [[ -f "$CACHE_FILE" ]]; then
+        if [[ "$MODE" == "render" && -f "$CACHE_FILE" ]]; then
             UTILIZATION=$(sed -n '1p' "$CACHE_FILE")
             RESET_EPOCH=$(sed -n '2p' "$CACHE_FILE")
         else
-            exit 0
+            usage_unavailable
         fi
     else
         printf '%s\n%s\n' "$UTILIZATION" "$RESET_EPOCH" > "${CACHE_FILE}.tmp" \
@@ -64,13 +81,25 @@ else
     fi
 fi
 
-[[ -n "$UTILIZATION" && -n "$RESET_EPOCH" ]] || exit 0
+[[ -n "$UTILIZATION" && -n "$RESET_EPOCH" ]] || usage_unavailable
 
 PCT=$(awk "BEGIN {printf \"%.0f\", $UTILIZATION * 100}" 2>/dev/null)
+[[ "$PCT" =~ ^[0-9]+$ ]] || usage_unavailable
 REMAINING=$(( RESET_EPOCH - $(date +%s) ))
 [[ $REMAINING -lt 0 ]] && REMAINING=0
 HOURS=$(( REMAINING / 3600 ))
 MINS=$(printf "%02d" $(( (REMAINING % 3600) / 60 )))
+
+if [[ "$MODE" == "--check-capacity" ]]; then
+    if [[ "$PCT" -ge 100 ]]; then
+        printf 'Claude 5-hour capacity exhausted (%s%%); reset in %s:%s\n' \
+            "$PCT" "$HOURS" "$MINS" >&2
+        exit 75
+    fi
+    printf 'Claude 5-hour capacity available: %s%%; reset in %s:%s\n' \
+        "$PCT" "$HOURS" "$MINS"
+    exit 0
+fi
 
 # Glyph Rail module:  U+EC82 Claude, ↻ U+21BB quota reset.
 printf ' %s%% ↻%s:%s\n' "$PCT" "$HOURS" "$MINS"

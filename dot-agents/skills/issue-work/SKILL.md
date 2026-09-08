@@ -453,20 +453,28 @@ prerequisites stop the run.
 
 For the visible Claude or Hermes path:
 
-1. Require Herdr for visible Claude or Hermes. Verify `HERDR_ENV=1`, the exact
+1. **Gate provider capacity before selecting another Claude turn.** Follow
+   `coding-agent-handoff-supervision`'s live capacity gate before creating or
+   starting a Claude pane, after startup before its first prompt, before every
+   correction prompt or blocked-UI answer, and before launching or rerunning the
+   fresh Claude reviewer. A 100%/exhausted signal or an unavailable mandatory
+   check stops the issue with partial state preserved. User authorization for a
+   number of correction rounds never overrides this gate, consumes no correction
+   pass, and never authorizes an automatic switch to another provider.
+2. Require Herdr for visible Claude or Hermes. Verify `HERDR_ENV=1`, the exact
    caller pane, and a compatible injected `HERDR_BIN_PATH`; stop if any are
    unavailable. Agent View and background wrappers cannot represent the
    persisted correction identity and are not fallbacks for this route.
-2. Record the worktree's baseline status, then follow
+3. Record the worktree's baseline status, then follow
    `coding-agent-handoff-supervision`. Use Herdr kind `claude` for automatic or
    explicit Claude routing and kind `hermes` only for an explicit Hermes
    selection. Preserve the caller's focus and attach a finite watcher.
-3. Send a short handoff containing only the ticket URL, verified implementation
+4. Send a short handoff containing only the ticket URL, verified implementation
    repository and worktree, authority boundaries, and delivery permissions. The
    worker must inspect the ticket and repository instructions itself. Do not
    duplicate `plan.md`, the complete ticket body, or the parent's exploration in
    the prompt.
-4. Use one authority rule: the default visible handoff forbids staging, local
+5. Use one authority rule: the default visible handoff forbids staging, local
    commit creation, push, PR or issue mutation, and every other publication
    action; the worker may edit and test only in the named worktree. Each broader
    action requires its own explicit same-run user approval. Publication approval
@@ -478,11 +486,11 @@ For the visible Claude or Hermes path:
    rewrite, or `force-push`; delete or overwrite any local ref or branch,
    including branch deletion and `git update-ref -d` update-ref deletion, is
    likewise forbidden.
-5. Start Claude with `auto` permission mode; start Hermes only with normal smart approvals
+6. Start Claude with `auto` permission mode; start Hermes only with normal smart approvals
    and no yolo. Stop if approval state is disabled or unverifiable. This route is
    approval-gated, not sandbox-confined; if hard confinement is required but
    unavailable, stop.
-6. Record `implementation_loop: coding-agent-handoff-supervision` and persist all
+7. Record `implementation_loop: coding-agent-handoff-supervision` and persist all
    six distinct fields in `progress.md`: `worker_surface: herdr`,
    `worker_agent_name`, `worker_pane_id`, `worker_kind`,
    `worker_runtime_session_id`, and `worker_worktree_identity` (canonical
@@ -508,6 +516,9 @@ For every delegated path:
    original session ID with `revise`. Repeat the complete Codex gate after each
    revision; cap the correction loop at three revision passes. Never permit a
    fourth correction.
+   For Claude, run the live provider-capacity gate before the prompt. Exhausted
+   provider capacity stops here without consuming a revision pass, even when the
+   user authorized more rounds.
 3. Mark plan/task checkboxes complete only after Codex accepts the final
    repository state. Preserve every implementation and revision artifact in the
    state directory.
@@ -551,6 +562,11 @@ Lint + typecheck when configured: TypeScript `tsc --noEmit`; Python `ruff check`
 On the host-native path, first failure of a task's tests: attempt a direct fix → commit → rerun. **Second consecutive failure of the same task:** load `diagnosing-bugs` rather than guessing again — it builds a tight failing loop and tests ranked hypotheses instead of applying another patch. **Hard cap at 3 attempts total.** On the 4th failure, stop and report the failing output to the user.
 
 On either delegated path, Codex first determines whether the failure is a plan defect, implementation defect, pre-existing failure, or external blocker. Send implementation defects back through the same retained worker session under the three-revision bound; never permit a fourth correction. A plan defect, ambiguity, destructive conflict, unavailable selected worker, or exhausted revision budget stops for the user instead of switching workers or guessing.
+
+Claude provider-capacity exhaustion is a separate external blocker, not an
+implementation failure and not a spent correction pass. Stop immediately,
+preserve any partial edits, close the owned Claude panes and watcher, and do not
+continue or switch providers unless Bryan later selects a new route explicitly.
 
 ### 3.6 Progress log
 
@@ -613,6 +629,12 @@ separate from every implementation worker and is the only context allowed to
 run Phase 4's final review. Herdr or fresh Claude unavailability stops the run;
 there is no Agent View, wrapper, native-parent, serial, or ad-hoc fallback.
 Earlier parent reviews and ad-hoc reviews cannot satisfy this gate.
+
+Run `coding-agent-handoff-supervision`'s live Claude capacity gate before
+creating the reviewer pane, after startup before its first prompt, and before
+every exact-candidate rereview. A 100%/exhausted or unverifiable mandatory check
+blocks review without consuming a correction pass; a remaining round count is
+not capacity.
 
 First freeze the exact final candidate after all implementation commits and with
 an empty worktree. Record `base_sha`, `head_sha`, `merge_base_sha`, and
@@ -811,6 +833,7 @@ Bryan approves or declines shipping.
 | User says "refresh" on a resumed ticket | Overwrite prior state files; restart from Phase 1 |
 | Notifications armed and workflow needs user action | Send one deduplicated Matrix action-needed alert to the resolved project room, or the Hermes fallback, while retaining the normal inline prompt |
 | Matrix notification delivery fails | Verify before retrying, try the resolved Hermes fallback once after a definite project-room failure, record the outcome, and continue issue work unless transport is itself the blocker |
+| Claude usage reaches 100% or live capacity cannot be verified | Stop before another start, prompt, blocked answer, or rereview; preserve partial edits, close owned panes/watchers, consume no correction pass, and never auto-switch providers |
 
 ---
 

@@ -36,6 +36,33 @@ the injected compatible path rather than starting another worker.
 Use the injected caller pane ID even when another Herdr tab is globally focused.
 Stop rather than substituting the focused pane if the caller cannot be resolved.
 
+## Gate live Claude capacity before every turn
+
+On Bryan's Herdr hosts, the status-rail module is also the machine-readable
+capacity authority. For a Claude handoff, run this **before pane creation or
+`agent start`**, again after startup before the first `agent prompt`, and before
+every later `agent prompt` or `agent send-keys`:
+
+```sh
+test -x "$HOME/.config/herdr/claude-usage.sh"
+"$HOME/.config/herdr/claude-usage.sh" --check-capacity
+```
+
+`--check-capacity` bypasses the display cache and performs a fresh read-only
+usage check. Exit 75 means the five-hour window is at 100%; exit 69 means current
+capacity could not be verified. **Any nonzero result blocks another Claude
+turn.** Also inspect the live Claude footer before a continuation: an explicit
+`100%`, `usage limit`, or `limit reached` signal overrides an earlier successful
+check.
+
+Provider capacity and correction authorization are separate gates. A user may
+authorize up to three review rounds while the provider can execute zero more
+turns. Never interpret the round count as permission to exceed quota, never
+answer a blocked Claude question after the capacity gate fails, and never switch
+to another provider automatically. Preserve partial edits, stop the watcher,
+close the handoff-owned pane, mark it non-resumable, and report the capacity
+checkpoint.
+
 ## Create the visible worker
 
 A horizontal handoff means a side-by-side split created to the caller's right.
@@ -87,6 +114,7 @@ unless a separately verified runtime provides it.
 Submit the short ticket-backed handoff without waiting for completion:
 
 ```sh
+"$HOME/.config/herdr/claude-usage.sh" --check-capacity  # Claude only
 "$HERDR_BIN_PATH" agent prompt <agent-name> "<concept brief>"
 "$HERDR_BIN_PATH" agent get <agent-name>
 ```
@@ -165,6 +193,7 @@ field, lookup failure, mismatch, or absent agent stops; never launch a duplicate
 Only then send a follow-up to the existing name:
 
 ```sh
+"$HOME/.config/herdr/claude-usage.sh" --check-capacity  # Claude only
 "$HERDR_BIN_PATH" agent prompt <agent-name> "<follow-up>"
 "$HERDR_BIN_PATH" agent get <agent-name>
 ```
@@ -175,8 +204,10 @@ Do not focus updates by default. Use `agent focus` through the recorded binary
 only when Bryan explicitly asks to see the follow-up.
 
 If the agent is `blocked`, read its terminal and ask Bryan before answering a
-question or approval. Never submit an automatic prompt suggestion already
-visible in Claude's input box.
+question or approval. For Claude, rerun the live capacity gate before any
+`agent send-keys`; an exhausted or unverifiable gate means stop without
+answering. Never submit an automatic prompt suggestion already visible in
+Claude's input box.
 
 ## Failure handling
 

@@ -508,6 +508,18 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
             "Qwen must never be an automatic issue-work route",
         )
 
+    def test_issue_work_treats_claude_capacity_as_a_separate_hard_gate(self) -> None:
+        for pattern in (
+            r"before\s+creating or\s+starting a Claude pane",
+            r"before every\s+correction prompt or blocked-UI answer",
+            r"before launching or rerunning the\s+fresh Claude reviewer",
+            r"never overrides this gate",
+            r"consumes no correction\s+pass",
+            r"never authorizes an automatic switch",
+        ):
+            with self.subTest(pattern=pattern):
+                self.assertRegex(self.body, pattern)
+
     def test_visible_worker_authority_has_one_approval_gated_rule(self) -> None:
         self.assert_matches(
             self.body,
@@ -519,7 +531,7 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
     def test_visible_worker_forbids_destructive_git_operations(self) -> None:
         marker = "Destructive and history-rewriting Git operations"
         contracts = (
-            ("issue-work", self.body, "\n5. Start Claude"),
+            ("issue-work", self.body, "\n6. Start Claude"),
             ("handoff", self.handoff_supervision, "\n\nTell the worker"),
         )
 
@@ -717,6 +729,20 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
             "corrections must return to the original visible worker",
         )
 
+    def test_live_claude_capacity_gates_every_provider_turn(self) -> None:
+        for pattern in (
+            r"--check-capacity",
+            r"before pane creation",
+            r"before the first `agent prompt`",
+            r"before\s+every later `agent prompt` or `agent send-keys`",
+            r"Any nonzero result blocks another Claude\s+turn",
+            r"round count as permission to exceed quota",
+            r"never switch\s+to another provider automatically",
+        ):
+            with self.subTest(pattern=pattern):
+                self.assertRegex(self.herdr, pattern)
+        self.assertIn("100% usage meter", self.body)
+
     def test_persists_complete_visible_worker_identity(self) -> None:
         fields = (
             "worker_surface",
@@ -911,6 +937,18 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
         self.assertIn("review-ponytail.md", self.correction)
         self.assertIn("validated fix", self.correction)
         self.assertIn("candidate must be reviewed again", self.correction)
+
+    def test_review_capacity_stop_is_independent_of_correction_rounds(self) -> None:
+        for pattern in (
+            r"before the primary-lane batch",
+            r"before mandatory Ponytail",
+            r"before every exact-candidate rerun or blocked-UI answer",
+            r"consumes no\s+correction pass",
+            r"Provider\s+capacity exhausted — review incomplete; do not\s+merge",
+            r"never permission to continue at 100% usage",
+        ):
+            with self.subTest(pattern=pattern):
+                self.assertRegex(self.body, pattern)
 
     def test_summary_and_readiness_make_missing_ponytail_visible(self) -> None:
         for token in ("candidate: {head_sha}", "quality_gates: [ponytail]", "## Ponytail Quality Gate", "review-ponytail.md"):
