@@ -172,6 +172,65 @@ class ManagedDestinationTest(unittest.TestCase):
         )
         self.assertEqual(run.call_args.kwargs["env"]["HERMES_HOME"], str(self.home))
 
+    def test_plugin_tree_copy_replaces_only_its_managed_source_symlink(self) -> None:
+        source = self.root / "plugin"
+        source.mkdir()
+        (source / "plugin.yaml").write_text("name: reviewed\n", encoding="utf-8")
+        destination = self.home / "plugins" / "reviewed"
+        destination.parent.mkdir()
+        destination.symlink_to(source, target_is_directory=True)
+
+        outcome = MODULE.install_tree_copy(
+            source,
+            destination,
+            hermes_home=self.home,
+            backup_root=self.backup,
+        )
+        (source / "plugin.yaml").write_text("name: changed\n", encoding="utf-8")
+
+        self.assertEqual(outcome, "copied (replaced managed source symlink)")
+        self.assertTrue(destination.is_dir())
+        self.assertFalse(destination.is_symlink())
+        self.assertEqual(
+            (destination / "plugin.yaml").read_text(encoding="utf-8"), "name: reviewed\n"
+        )
+
+    def test_plugin_tree_copy_rejects_a_foreign_symlink(self) -> None:
+        source = self.root / "plugin"
+        source.mkdir()
+        (source / "plugin.yaml").write_text("name: reviewed\n", encoding="utf-8")
+        foreign = self.root / "foreign"
+        foreign.mkdir()
+        destination = self.home / "plugins" / "reviewed"
+        destination.parent.mkdir()
+        destination.symlink_to(foreign, target_is_directory=True)
+
+        with self.assertRaises(MODULE.InstallError):
+            MODULE.install_tree_copy(
+                source,
+                destination,
+                hermes_home=self.home,
+                backup_root=self.backup,
+            )
+
+    def test_plugin_tree_copy_rejects_symlinks_inside_source(self) -> None:
+        source = self.root / "plugin"
+        source.mkdir()
+        outside = self.root / "outside.py"
+        outside.write_text("secret\n", encoding="utf-8")
+        (source / "payload.py").symlink_to(outside)
+        destination = self.home / "plugins" / "reviewed"
+
+        with self.assertRaises(MODULE.InstallError):
+            MODULE.install_tree_copy(
+                source,
+                destination,
+                hermes_home=self.home,
+                backup_root=self.backup,
+            )
+
+        self.assertFalse(destination.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

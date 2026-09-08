@@ -161,6 +161,65 @@ def install_copy(
     return "copied"
 
 
+def install_tree_copy(
+    source: Path,
+    destination: Path,
+    *,
+    hermes_home: Path,
+    backup_root: Path,
+) -> str:
+    """Install a frozen plugin tree so repository WIP cannot become live on restart."""
+    if not source.is_dir():
+        raise InstallError(f"managed tree source is not a directory: {source}")
+    source_symlinks = [path for path in source.rglob("*") if path.is_symlink()]
+    if source_symlinks:
+        raise InstallError(f"managed tree source contains a symlink: {source_symlinks[0]}")
+    require_managed_destination(destination, hermes_home)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+
+    managed_symlink = False
+    symlink_target: str | None = None
+    if destination.is_symlink():
+        symlink_target = os.readlink(destination)
+        try:
+            managed_symlink = resolved(destination) == resolved(source)
+        except FileNotFoundError:
+            managed_symlink = False
+        if not managed_symlink:
+            raise InstallError(f"refusing to replace foreign or broken symlink: {destination}")
+    elif destination.exists() and not destination.is_dir():
+        raise InstallError(f"tree destination is not a directory: {destination}")
+    elif destination.is_dir() and identical(source, destination):
+        return "current"
+
+    ignore = shutil.ignore_patterns(".DS_Store", "__pycache__", "*.pyc")
+    with tempfile.TemporaryDirectory(dir=destination.parent) as temp_dir:
+        candidate = Path(temp_dir) / destination.name
+        shutil.copytree(source, candidate, ignore=ignore)
+        if managed_symlink:
+            destination.unlink()
+            try:
+                candidate.rename(destination)
+            except Exception:
+                assert symlink_target is not None
+                destination.symlink_to(symlink_target, target_is_directory=True)
+                raise
+            return "copied (replaced managed source symlink)"
+        if destination.exists():
+            relative = destination.relative_to(hermes_home)
+            backup = backup_root / relative
+            backup.parent.mkdir(parents=True, exist_ok=True)
+            destination.rename(backup)
+            try:
+                candidate.rename(destination)
+            except Exception:
+                backup.rename(destination)
+                raise
+            return f"updated (backup: {backup})"
+        candidate.rename(destination)
+    return "copied"
+
+
 def remove_managed_script(
     name: str,
     *,
@@ -353,11 +412,10 @@ def main() -> int:
         relative = Path(name)
         if relative.is_absolute() or ".." in relative.parts or len(relative.parts) != 1:
             raise InstallError(f"unsafe plugin path in manifest: {name}")
-        outcome = install_link(
+        outcome = install_tree_copy(
             ASSET_ROOT / "plugins" / relative,
             hermes_home / "plugins" / relative,
             hermes_home=hermes_home,
-            adopt_identical=args.adopt_identical,
             backup_root=backup_root,
         )
         results.append(f"plugin {name}: {outcome}")

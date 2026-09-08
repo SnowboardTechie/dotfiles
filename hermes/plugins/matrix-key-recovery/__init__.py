@@ -8,6 +8,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 AUTHORIZED_USER = "@bryan:snowboardtechie.com"
+AUTHORIZED_DEVICE_TRUST = frozenset(
+    {"CROSS_SIGNED_TOFU", "CROSS_SIGNED_TRUSTED", "VERIFIED"}
+)
 AUTHORIZED_ROOMS = frozenset(
     {
         "!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU",
@@ -47,7 +50,7 @@ def _wire_matrix(client, _adapter) -> None:
             return await original_allow_key_share(device, request)
 
         trust = await crypto.resolve_trust(device)
-        if getattr(trust, "name", "").upper() == "BLACKLISTED":
+        if getattr(trust, "name", "").upper() not in AUTHORIZED_DEVICE_TRUST:
             return await original_allow_key_share(device, request)
         return True
 

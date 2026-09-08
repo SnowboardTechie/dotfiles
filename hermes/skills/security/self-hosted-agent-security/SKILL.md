@@ -18,6 +18,24 @@ Use this skill whenever an AI agent with shell, file, credential, browser, cron,
 
 A tunnel provides routing and transport encryption. It is not automatically an authorization boundary. Require an explicit identity policy and application-level authentication, then reduce what the agent process can reach.
 
+## Mandatory software-installation gate
+
+Before installing, enabling, or linking any software, package, plugin, MCP
+server, helper, binary, or service into Bryan's systems, require one of these
+before activation:
+
+1. a detailed security review of the exact artifact and version, covering its
+   provenance, permissions and capabilities, filesystem/secret/data access,
+   network egress, persistence, update behavior, and failure boundaries; or
+2. Bryan's direct approval to install that named software without completing
+   the review first.
+
+A request to fix a problem, general implementation authorization, urgency, or
+correction is not installation approval. Never install first and review
+afterward. If neither gate is satisfied, stop before activation, present the
+review status and tradeoff, and ask one short approval question. Preserve the
+review evidence or exact approval in the completion report.
+
 ## Assessment workflow
 
 1. **Inventory the control surface.** Identify the exact process and endpoints being published: chat backend, administrative dashboard, WebSockets, REST API, webhooks, messaging gateway, or model-compatible API. Determine whether authenticated users can run commands, edit config, read secrets, install plugins/MCP servers, schedule jobs, or change authentication.
