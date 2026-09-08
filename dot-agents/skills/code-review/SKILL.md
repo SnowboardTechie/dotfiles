@@ -1,267 +1,192 @@
 ---
 name: code-review
-description: Review a diff through Standards, Spec, conditional Risk, then a mandatory Ponytail over-engineering quality gate. Use for branch, PR, or self-review lane definitions.
+description: Use when reviewing an exact code candidate.
+version: 2.0.0
+author: Bryan Thompson + Hermes Agent
+license: MIT
+metadata:
+  hermes:
+    tags: [review, standards, spec, risk, simplicity]
+    related_skills: [pr-self-review, tdd, diagnosing-bugs]
 ---
 
 # Code Review
 
-Review the diff between `HEAD` and a fixed point along **separate lanes**, so
-one lane cannot mask another. Code can follow every convention and implement the
-wrong thing; it can implement exactly the right thing and break every
-convention. Merging the reports would hide both.
+## Overview
 
-This skill owns the **review-dimension definitions**. `pr-self-review` owns the
-loop that runs them, validates their findings, and applies corrections.
-Standards, Spec, and conditional Risk are the primary lanes. **Ponytail is a
-separate mandatory final quality gate**, not a fourth classifier-selected lane;
-it runs after the primary batch against the same exact candidate. Standalone
-review of someone else's branch starts here.
+Review one immutable candidate through distinct dimensions without paying for a
+separate model invocation per dimension. One review context reads the diff and
+authorities once, then evaluates Standards, Spec, conditional Risk, and Ponytail
+in order. It writes separate artifacts so each dimension remains visible.
 
-**Correctness / Integration / Tests** is an optional, caller-selected review
-dimension available to callers that need a dedicated behavior trace. It is not added
-to `pr-self-review`'s deterministic primary-lane selector by this change;
-that workflow still selects only Standards, Spec, and conditional Risk before
-its mandatory Ponytail gate.
+`pr-self-review` owns finding validation, correction routing, and the bounded
+loop. This skill owns review semantics.
 
 Provenance: adapted from Matt Pocock's `code-review`. Upstream pin, accepted and
-rejected upstream rules, and the watched source list live in
+rejected rules, and watched files live in
 [`dot-agents/upstreams/mattpocock-skills.json`](../../upstreams/mattpocock-skills.json).
 
-## 1. Pin the fixed point
+## When to Use
 
-Whatever the user named — a SHA, branch, tag, `main`, `HEAD~5`. If they named
-nothing, ask. Resolve both endpoints to immutable full SHAs before review; a
-symbolic branch is discovery input, not candidate identity.
+Use for branch, PR, or pre-publication review after the candidate is stable.
 
-```bash
-set -euo pipefail
-base_sha=$(git rev-parse "<fixed-point>^{commit}")
-head_sha=$(git rev-parse HEAD)
-expected_head_branch=$(git branch --show-current)
-merge_base_sha=$(git merge-base "$base_sha" "$head_sha")
-if command -v shasum >/dev/null 2>&1; then
-  diff_sha256=$(git diff --binary -M -C --find-copies-harder \
-    "$base_sha...$head_sha" -- | shasum -a 256 | cut -d' ' -f1)
-elif command -v sha256sum >/dev/null 2>&1; then
-  diff_sha256=$(git diff --binary -M -C --find-copies-harder \
-    "$base_sha...$head_sha" -- | sha256sum | cut -d' ' -f1)
-else
-  echo "No SHA-256 tool found (need shasum or sha256sum)" >&2
-  exit 1
-fi
-git diff "$base_sha...$head_sha"
-git log "$base_sha..$head_sha" --oneline
-```
+Do not use an implementation worker's self-review as independent acceptance. If
+the active parent wrote the candidate, run this contract in one independent
+review context. If Claude wrote it and Sol only supervised, the Sol parent is the
+independent acceptance context and should run it directly.
 
-Confirm the ref resolves and the diff is non-empty **before** dispatching any
-reviewer. A bad ref should fail here, not inside three parallel children.
-Record the full base SHA, head SHA, merge-base SHA, and SHA-256 of the canonical
-binary diff. Every primary and Ponytail artifact must carry the same four values.
+## 1. Freeze the candidate
 
-## 2. Select the lanes
+Resolve and record:
 
-Standards and Spec **always** run. Risk runs on trigger. The selection is
-deterministic, not a judgment call:
+- `base_sha`;
+- `head_sha`;
+- `merge_base_sha`;
+- `diff_sha256` from `git diff --binary -M -C --find-copies-harder`;
+- `expected_head_branch`; and
+- an empty `git status --porcelain --untracked-files=all` result.
 
-Use the classifier's load-bearing inventory flags exactly. Its `--help` shows
-the generic `{base}...HEAD` template; standalone review substitutes the
-immutable `{base_sha}...{head_sha}` pair rather than copying that symbolic range:
+Use three-dot diff semantics. A symbolic ref is discovery input, not identity.
+Reject an empty diff, detached branch, command failure, or dirty worktree before
+review. Recompute the same identity immediately before writing artifacts.
 
-```bash
+## 2. Select dimensions deterministically
+
+Standards and Spec always run. Use
+`pr-self-review/scripts/select_review_lanes.py` with both authoritative inputs:
+
+```sh
 git diff --name-status -z -M -C --find-copies-harder \
-  {base_sha}...{head_sha} -- > name-status
+  "$base_sha...$head_sha" -- > "$name_status_file"
 git diff -M -C --find-copies-harder \
-  {base_sha}...{head_sha} -- > unified.diff
-
+  "$base_sha...$head_sha" -- > "$unified_diff_file"
 python3 dot-agents/skills/pr-self-review/scripts/select_review_lanes.py \
-  --repo <owner/repo> --name-status-from name-status --diff-from unified.diff
+  --repo "$OWNER_REPO" \
+  --name-status-from "$name_status_file" \
+  --diff-from "$unified_diff_file" --json
 ```
 
-Feed it **both**. Name-status is the authority on *which paths moved* — a
-content-identical rename's source, a copy from an untouched source, and a
-binary deletion appear nowhere in a unified diff, and `-M -C
---find-copies-harder` is what makes Git report the first two as moves rather
-than as unrelated adds. The diff supplies *content* signals, so a neutral
-filename like `src/parser.py` calling `json.loads` still selects Risk. Omitting
-either is recorded as a weakness in the output rather than passing silently, and
-a malformed inventory is refused rather than partially parsed.
+Name-status owns path identity, including rename/copy sources and binary
+deletions. The unified diff owns content signals. Malformed or missing input
+fails closed. Risk runs for authentication, credentials, private data, untrusted
+input, process execution, network, filesystem, persistence, migrations, queues,
+retries, concurrency, deployment, publication, agent permissions, memory, or
+cryptography. Risk always runs for CairnOS.
 
-It reports the selected lanes and the reason for each. It can never suppress
-Standards or Spec, unrecognized security-adjacent content fails closed to Risk,
-and it always selects Risk for Bryan's CairnOS regardless of what the diff
-touches. See `pr-self-review` for the full contract.
+Correctness / Integration / Tests remains an optional caller-selected dimension
+for a dedicated behavior trace. It is not automatically added to
+`pr-self-review`.
 
-Without the classifier available, apply the same rule by hand and say you did.
+## 3. Read authorities once
 
-## 3. Identify the sources each lane needs
+Read the complete diff, commit list, repository instructions, neighboring code,
+and the approved ticket/plan/spec. Trace consumers for changed behavior. Read the
+diff a second time for omissions and surprising scope.
 
-**Standards sources**: whatever the repository documents about how code should
-be written — `AGENTS.md`, `CONTRIBUTING.md`, `CODING_STANDARDS.md`, and the
-conventions visible in neighboring code.
+Do not build broad related-issue or vault-topic caches during ordinary review.
+Follow an explicitly linked issue, ADR, note, or spec when it is necessary to
+validate intent; otherwise keep review on the candidate's governing authority.
 
-**Spec source**, in this order: issue references in the commit messages, a path
-the user passed, the approved plan in the effort's state directory, a spec under
-`docs/` or `specs/` matching the branch. If none exists, say so — the Spec lane
-reports "no spec available" rather than inventing an intent to measure against.
+## 4. Run one integrated review
 
-**Correctness / Integration / Tests sources**: the complete diff, callers and
-consumers of changed behavior, serialization or storage seams, error paths, and
-tests that claim to distinguish the changed behavior from retained base
-behavior.
+Use one review context for the selected dimensions. Keep the reasoning sections
+separate and execute Ponytail last. One reviewer writes:
 
-**Risk sources**: the changed paths themselves, plus whatever the repository
-documents about its security model, data handling, or deployment.
+- `review-standards.md`;
+- `review-spec.md`;
+- `review-risk.md` only when selected;
+- `review-ponytail.md`; and
+- a concise integrated finding list for disposition.
 
-**Ponytail sources**: the complete diff and the repository's actual language,
-framework, platform, dependency, and usage conventions. It needs no Claude
-plugin, slash command, or user-scope installation; the narrow contract below is
-the source of truth on every host.
+Each artifact records `base_sha`, `head_sha`, `merge_base_sha`, `diff_sha256`,
+`expected_head_branch`, confidence, and reviewed paths. Findings use real
+`file:line`, severity, observed behavior, consequence, and smallest correction.
 
-## 4. Run the lanes
+Do not duplicate CI findings. Do not merge dimensions into a majority verdict.
+Agreement raises the cost of a potential defect, not confidence in its cause.
 
-Run the selected primary lanes as **parallel children** so they cannot pollute each other's context —
-Hermes `delegate_task`, or the host's `Task`/`Agent`. On Hermes, never exceed
-three active children. Without delegation, run them serially with the same
-briefs; do not merge them into one prompt.
+### Standards
 
-Each child gets `expected_head_branch`, the immutable
-`{base_sha}...{head_sha}` diff range, the full
-`candidate_identity: {base_sha, head_sha, merge_base_sha, diff_sha256}`, the
-commit list, its own sources, and its own brief. Each writes `review-{lane}.md`.
+Report documented rule violations and concrete maintainability/test-quality
+defects. Repository rules override generic heuristics. Skip formatting, import
+order, and type/lint errors already enforced by tooling.
 
-After every selected primary lane has completed, run Ponytail as one isolated
-child against the **same exact candidate**, passing
-`expected_head_branch` and
-`candidate_identity: {base_sha, head_sha, merge_base_sha, diff_sha256}`, then
-write `review-ponytail.md`. This sequencing keeps Hermes within its three-child
-maximum and makes Ponytail the strong last quality pass instead of diluting it
-into Standards. If delegation is unavailable, run it serially after the primary
-reviews. Ponytail is always selected; the deterministic classifier continues to
-decide only whether Risk joins Standards and Spec.
+Use these smell prompts only when evidenced: mysterious name, duplicated code,
+feature envy, data clump, primitive obsession, repeated switch, shotgun surgery,
+divergent change, speculative generality, message chain, middle man, refused
+bequest, excess test sensitivity, and an interface wider than its callers earn.
 
-### Standards lane
+### Spec
 
-> Report, per file or hunk: (a) every place the diff violates a **documented**
-> standard — cite the file and the rule; and (b) any baseline smell you spot —
-> name it and quote the hunk. A documented repository standard **overrides** the
-> baseline: where the repo endorses something the baseline would flag, suppress
-> it. Documented breaches can be hard violations; baseline smells are **always**
-> judgment calls. Skip anything tooling already enforces. Under 400 words.
+Report requirements that are missing, partial, wrong, unrequested, outside the
+approved scope, or contrary to an accepted decision. Quote the authority. An
+empty Spec report is not proof that every acceptance criterion is met;
+`pr-self-review` performs the independent sweep.
 
-The baseline travels with the brief — the child has no other access to it:
+### Correctness / Integration / Tests (optional)
 
-- **Mysterious Name** — a name that doesn't reveal what it does or holds. →
-  Rename; if no honest name comes, the design is murky.
-- **Duplicated Code** — the same logic shape in more than one hunk or file. →
-  Extract, call from both.
-- **Feature Envy** — a method reaching into another object's data more than its
-  own. → Move it onto the data it envies.
-- **Data Clumps** — the same few fields travelling together. → Bundle into one
-  type.
-- **Primitive Obsession** — a string or primitive standing in for a domain
-  concept. → Give the concept its own small type.
-- **Repeated Switches** — the same cascade on the same type recurring. →
-  Polymorphism, or one shared map.
-- **Shotgun Surgery** — one logical change forcing scattered edits. → Gather
-  what changes together.
-- **Divergent Change** — one module edited for several unrelated reasons. →
-  Split so each changes for one reason.
-- **Speculative Generality** — abstraction or hooks for needs the spec does not
-  have. → Delete; inline back until a real need shows.
-- **Message Chains** — long `a.b().c().d()` the caller shouldn't depend on. →
-  Hide the walk behind one method.
-- **Middle Man** — a thing that mostly delegates onward. → Cut it, call the real
-  target.
-- **Refused Bequest** — a subclass ignoring most of what it inherits. → Drop the
-  inheritance, use composition.
+Trace callers, consumers, serialization/storage, errors, and tests. Report
+integration drift, state/concurrency bugs, missing wiring, or tests that cannot
+distinguish changed behavior from retained behavior. Do not duplicate another
+dimension's finding.
 
-Also carry: excess test sensitivity (a test that breaks on refactor without a
-behavior change), and interface shape that is wider than its implementation
-earns. Both are judgment calls.
+### Risk (conditional)
 
-### Spec lane
+Report concrete exploitable or operationally dangerous behavior. Name the actor,
+path, and consequence. Do not emit generic hardening advice without a path in the
+candidate.
 
-> Report: (a) requirements the spec asked for that are **missing or partial**;
-> (b) behavior in the diff that was **not asked for** (scope creep); (c)
-> requirements that look implemented but where the implementation is **wrong**;
-> (d) anything crossing an explicitly recorded **out-of-scope** boundary or
-> reversing an accepted decision. Quote the spec line for each finding. Under
-> 400 words.
+### Ponytail (mandatory, last)
 
-The Spec lane reads the ticket; it does not read minds. An obligation nobody
-implemented leaves **no diff line to object to**, which is why the caller runs
-an independent acceptance-criteria sweep on top of this lane rather than
-treating an empty Spec report as proof.
+Review over-engineering only. Walk from largest deletion to smallest
+simplification: `delete`, `yagni`, `stdlib`, `native`, then `shrink`. Show the
+smaller replacement. Never invent deletions to look useful. If nothing should be
+cut, write exactly `Lean already. Ship.` in the Summary.
 
-### Correctness / Integration / Tests lane (optional)
+Ponytail does not report correctness, security, spec conformance, coverage,
+naming, formatting, or generic maintainability. Long, defensive, or unfamiliar
+code is not automatically over-engineered.
 
-> Trace changed behavior through its callers, consumers, serialization or
-> storage, and error paths. Report incorrect edge handling, integration drift,
-> missing wiring, concurrency or state bugs, and tests that do not discriminate
-> the behavior they claim to prove. Distinguish retained base behavior from a
-> failure introduced by the PR. Cite a changed `file:line`, or the nearest real
-> integration seam when an omission has no changed line. For each finding, name
-> the concrete failure mode and the smallest reasonable correction. Do not
-> duplicate documented-standard breaches, pure spec omissions, security or
-> operational Risk findings, or over-engineering findings owned by the other
-> lanes. Under 400 words.
+## 5. Targeted Risk deepening
 
-### Risk lane (conditional)
+After the parent has dispositioned the integrated review and stabilized the
+candidate, add one targeted Risk reviewer for security, persistence, migration,
+protocol, concurrency, public-contract, or deployment changes. Give it only the
+exact candidate, governing authority, and implicated boundary.
 
-> Report concrete, exploitable or operationally dangerous behavior introduced or
-> exposed by this diff, in these areas: authentication and authorization;
-> secrets and credential handling; private or personal data; untrusted input and
-> injection; network calls and redirects; filesystem paths and permissions;
-> persistence and migrations; queues and retries; concurrency and locking;
-> deployment, promotion, and rollback; package publication; agent permissions
-> and unattended mutation; memory retention. For each, state the attacker or
-> operator, the path they take, and the consequence. Do not report generic
-> hardening advice with no path in this diff. Under 400 words.
+This targeted reviewer is an exception, not a second generic review. If it finds
+a valid blocker and the candidate changes, its artifact is stale; rerun one
+targeted Risk reviewer against the corrected identity. Do not restart the whole
+multi-dimension workflow in several model contexts.
 
-### Ponytail quality gate (mandatory final pass)
+## 6. Severity and output
 
-> Review **over-engineering only**. Be the lazy senior developer for whom the
-> best code is code that never existed. Walk the ladder from largest deletion
-> to smallest simplification: delete work the approved intent does not need;
-> remove YAGNI abstractions and flexibility with no demonstrated caller; replace
-> hand-rolled code with the stdlib; replace app code or dependencies with native
-> language, framework, platform, browser, or database capability; shrink verbose
-> constructions without changing behavior. Lead findings with `delete:`,
-> `yagni:`, `stdlib:`, `native:`, or `shrink:` and show the smaller replacement.
-> Never invent deletions to look useful. If nothing should be cut, return exactly
-> `Lean already. Ship.` in the Summary. Under 400 words.
+- Critical: production breakage, data exposure/corruption, or direct user harm.
+- Major: real blocking defect or meaningful operational risk.
+- Minor: non-blocking quality issue worth addressing.
+- Nit: optional wording, naming, or local simplification.
 
-This is deliberately narrow. Ponytail does **not** report correctness, security,
-spec conformance, test coverage, naming, formatting, or generic maintainability
-findings; Standards, Spec, Risk, the AC sweep, and verification own those. It
-must not propose a deletion merely because code is long, unfamiliar, defensive,
-or abstract. A deletion is valid only when the diff and its authorities prove
-the behavior or flexibility is unnecessary, duplicated by stdlib/native
-capability, or expressible more directly without weakening the contract.
+An empty dimension must state what was checked and its confidence. Reviewer
+output is advice. The acceptance owner validates observations, explanations, and
+prescriptions before correction.
 
-Severity follows the shared scale: an unjustified dependency or speculative
-subsystem is usually Major; reinvented stdlib, dead flexibility, and needless
-layers are Minor; behavior-preserving one-line shrinks are Nit. Ponytail never
-upgrades an over-engineering observation into a correctness or security claim.
+## Common Pitfalls
 
-## 5. Report
+1. Spending one model invocation per dimension.
+2. Reviewing before the parent has stabilized the candidate.
+3. Treating conventional green tests as adversarial boundary coverage.
+4. Treating reviewer convergence as independent proof.
+5. Letting Ponytail smuggle in correctness or security findings.
+6. Re-running every dimension when only a final targeted Risk boundary remains.
 
-Present the selected primary reports under `## Standards`, `## Spec`, optional
-`## Correctness / Integration / Tests`, and `## Risk` headings, then
-`## Ponytail` last, verbatim or lightly cleaned. **Do not merge or rerank across
-dimensions** — that is the exact collapse the separation prevents.
+## Verification Checklist
 
-End with one line per primary lane and one for Ponytail: how many findings, and
-the worst one *within that dimension*. Do not pick a single winner across them.
-
-Reviewer output is **advice, not a verdict**. When a caller owns disposition
-(`pr-self-review` does), it validates each finding independently before acting.
-Several lanes agreeing raises the cost of being wrong, not the confidence that
-you are right — they read the same files and can share a blind spot.
-
-## Related
-
-- `pr-self-review` — the loop: lane selection, mandatory Ponytail gate, validation, correction bound.
-- `select_review_lanes.py` — the deterministic classifier.
-- `tdd` / `diagnosing-bugs` — what a validated finding usually routes into.
-- `codebase-architecture` — when a Standards finding is really a design finding.
+- [ ] Exact candidate and clean branch frozen
+- [ ] Standards and Spec selected; Risk classifier recorded
+- [ ] One review context read the diff and authorities once
+- [ ] Separate artifacts preserve dimension visibility
+- [ ] Ponytail ran last and stayed narrow
+- [ ] Acceptance criteria were swept independently
+- [ ] Targeted Risk reviewer used only for a qualifying boundary
+- [ ] Every blocking finding was independently validated
+- [ ] Artifacts still match the candidate at disposition

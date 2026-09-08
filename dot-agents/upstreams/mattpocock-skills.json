@@ -220,12 +220,13 @@
         "Review lane selection preserves one load-bearing inventory shape: `git diff --name-status -z -M -C --find-copies-harder … --`. The classifier help keeps the generic `{base}...HEAD` template, while `code-review` and `pr-self-review` substitute their immutable base/head SHA pair. `--find-copies-harder` is load-bearing: plain `-C` only inspects modified files, so copying a risky *untouched* source emits a bare `A` and the risky source is never classified. Parsing is strict — a suffixed status, an impossible similarity score, a misaligned empty field, truncation, an empty path, a control character, or undecodable bytes all refuse, because a guess here is a silently narrowed review.",
         "The deterministic selector and its tests live under pr-self-review (scripts/select_review_lanes.py, tests/test_select_review_lanes.py) and are consumed by both code-review and pr-self-review; the Git name-status parser validates exact status bytes before any normalization and rejects every control character in a path, tab included.",
         "Keeps Standards, Spec, and conditional Risk as the primary lane architecture, then runs a mandatory host-independent Ponytail over-engineering quality gate last against every exact candidate. The shared contract is deliberately narrow (delete/YAGNI/stdlib/native/shrink only), requires `review-ponytail.md`, and does not depend on a Claude plugin or slash command.",
-        "Pins review artifacts to immutable base, head, merge-base, and binary-diff identities, and distributes `code-review` anywhere `pr-self-review` is curated, including Pi, so no host can receive the orchestrator without its mandatory Ponytail contract."
+        "Pins review artifacts to immutable base, head, merge-base, and binary-diff identities, and distributes `code-review` anywhere `pr-self-review` is curated, including Pi, so no host can receive the orchestrator without its mandatory Ponytail contract.",
+        "Runs Standards, Spec, conditional Risk, and Ponytail sequentially inside one independent review context while retaining separate artifacts; a second reviewer is reserved for targeted high-risk boundaries after the ordinary candidate stabilizes.",
+        "Allows a pre-PR reviewer to write only inside the exact cross-repository ticket state directory after rerunning the issue-work context validator and matching its persisted artifact."
       ],
       "acceptedUpstreamRules": [
         "Pin the fixed point and confirm it resolves with a non-empty diff before dispatching reviewers.",
         "Three-dot diff against the merge-base.",
-        "Standards and Spec run as separate parallel children so they cannot pollute each other's context.",
         "The full Fowler smell baseline travels inline with the Standards brief.",
         "A documented repository standard overrides the baseline; baseline smells are always judgment calls; skip what tooling enforces.",
         "Do not merge or rerank findings across lanes.",
@@ -233,6 +234,7 @@
       ],
       "rejectedUpstreamRules": [
         "Pure two-axis review — it leaves security and operational risk implicit.",
+        "A separate model invocation per review dimension — repeated repository and authority loading costs more than the observed independence benefit; dimensions stay distinct within one review context and one targeted Risk reviewer remains available for high-risk boundaries.",
         "Requiring `docs/agents/issue-tracker.md` and telling the user to run `/setup-matt-pocock-skills`; Bryan's forge adapters already exist."
       ],
       "watchedFiles": [
