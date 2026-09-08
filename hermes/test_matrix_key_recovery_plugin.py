@@ -32,7 +32,7 @@ class FakeStore:
 class FakeCrypto:
     def __init__(self, devices: dict) -> None:
         self.crypto_store = FakeStore(devices)
-        self.trust_name = "UNVERIFIED"
+        self.trust_name = "CROSS_SIGNED_TOFU"
         self.created = []
         self.shared = []
         self.sent = []
@@ -116,7 +116,7 @@ class MatrixKeyRecoveryPluginTest(unittest.IsolatedAsyncioTestCase):
 
         self.assertFalse(await crypto.allow_key_share(device, request))
 
-    async def test_nonmember_and_blacklisted_devices_keep_default_policy(self) -> None:
+    async def test_nonmember_and_untrusted_devices_keep_default_policy(self) -> None:
         client, crypto, device = self.wire()
         room = next(iter(MODULE.AUTHORIZED_ROOMS))
         request = SimpleNamespace(room_id=room)
@@ -131,8 +131,10 @@ class MatrixKeyRecoveryPluginTest(unittest.IsolatedAsyncioTestCase):
             return {MODULE.AUTHORIZED_USER: object()}
 
         client.get_joined_members = joined
-        crypto.trust_name = "BLACKLISTED"
-        self.assertFalse(await crypto.allow_key_share(device, request))
+        for trust_name in ("UNVERIFIED", "BLACKLISTED"):
+            with self.subTest(trust_name=trust_name):
+                crypto.trust_name = trust_name
+                self.assertFalse(await crypto.allow_key_share(device, request))
 
     async def test_unmanaged_key_events_and_group_sessions_are_unchanged(self) -> None:
         _, crypto, device = self.wire()
