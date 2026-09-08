@@ -103,6 +103,13 @@ Otherwise treat as `pr-url` mode from here on — same author check, same worktr
 Common to all three modes:
 
 - **Capability mapping.** Delegate isolated work with Hermes `delegate_task`, Claude/OpenCode/Pi `Task`/`Agent`, or the host equivalent. Use interactive clarification (Hermes: `clarify`) only for Phase 2.3's material intent-conflict escalation, and a verification context independent of the one that wrote the code for Phase 3.0. If delegation is unavailable, run the same lanes serially; do not require Superpowers.
+- **Provider-capacity gate.** In issue-work's fresh visible Claude mode, follow
+  `coding-agent-handoff-supervision` and run its live Claude capacity check before
+  cache writes, before the primary-lane batch, before mandatory Ponytail, and
+  before every exact-candidate rerun or blocked-UI answer. A 100%/exhausted signal
+  or an unavailable mandatory check stops the review. A user-authorized number
+  of correction rounds never overrides provider quota and the stop consumes no
+  correction pass.
 - **Correction routing.** Only a `pre-pr` caller's validated
   `implementation_loop` selects a delegated correction worker. Resume its
   complete identity contract, route findings back through that same Claude or
@@ -508,6 +515,13 @@ Hermes `delegate_task`, or the host's `Task`/`Agent`. **On Hermes never exceed
 three active children.** Without delegation, run them serially with the same
 briefs; do not merge them into one prompt.
 
+In fresh visible Claude mode, rerun the live capacity gate immediately before
+dispatching the primary batch. Rerun it again after that batch and before
+mandatory Ponytail. If either check fails, dispatch nothing further and write
+Ship Readiness as `Provider capacity exhausted — review incomplete; do not
+merge`. Preserve already-written artifacts as incomplete evidence; do not call
+the missing stage clean.
+
 Review-dimension definitions — the primary briefs, Fowler smell baseline, Risk
 area list, and narrow Ponytail contract — live in the
 [`code-review`](../code-review/SKILL.md) skill. Load it rather than restating
@@ -835,6 +849,11 @@ One normal correction pass, then at most two narrowly conditional follow-up pass
 This bound exists because the previous unbounded loop could spend hours
 re-reviewing its own edits; a stop is a reportable outcome, not a failure.
 
+The correction counter is not a provider budget. Before every Claude correction
+or rereview turn, the separate live capacity gate must pass. Exhausted capacity
+stops immediately, preserves partial state, and consumes no correction pass;
+“up to three rounds” is never permission to continue at 100% usage.
+
 **Pass 1 — the normal correction pass.** Repair every validated, in-scope
 implementation defect. Then re-run the classifier on the new changed-file set,
 run **all selected primary lanes** (Standards, Spec, and Risk when selected),
@@ -955,6 +974,10 @@ independent of the one that applied the fixes. Confirm the post-review test /
 lint / typecheck state is green.
 
 Feed the result into `summary.md`'s **Ship Readiness** section (3.1). `bound_findings` is a hard blocker even when verification is green: use `Correction bound reached — do not merge.` A missing or stale `review-ponytail.md` is also a hard blocker: use `Ponytail review missing — do not merge.` Otherwise green verification permits the normal readiness verdict, while red verification requires `Do not merge — verification failed: {key output}` regardless of disposition. A clean review over a red suite is not shippable.
+
+If the live Claude capacity gate stopped any required stage, use `Provider
+capacity exhausted — review incomplete; do not merge` regardless of prior green
+artifacts. Never spend another Claude turn just to polish that report.
 
 ### 3.1 Write summary.md
 
@@ -1113,6 +1136,7 @@ Frontmatter `ticket:` field is retained (not renamed) so tools that key on it ke
 | Classifier unavailable | Apply the same selection rule by hand, record in `summary.md` that you did, and resolve any doubt toward including Risk. |
 | A remaining blocker is a plan defect or architectural question | Stop before any correction pass. It is not a bounded implementation defect, and no number of edits makes it one. |
 | A related issue or note overlaps a finding | Validate actual ownership. Defer only when that context demonstrably owns or settles non-blocking work; a tag alone never decides disposition. |
+| Claude usage reaches 100% or the mandatory live check is unavailable | Stop before another batch, Ponytail pass, correction, blocked answer, or rereview; mark review incomplete/do-not-merge and consume no correction pass |
 
 ---
 

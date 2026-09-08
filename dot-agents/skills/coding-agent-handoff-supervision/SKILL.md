@@ -1,7 +1,7 @@
 ---
 name: coding-agent-handoff-supervision
 description: Use for visible, ticket-backed Claude or Hermes handoffs.
-version: 1.5.0
+version: 1.5.1
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
@@ -36,6 +36,13 @@ worker. Claude Agent View and the subscription wrapper remain available only
 after an explicit same-run background-only request. Do not use this workflow for
 a self-contained reasoning subtask whose result needs no visible terminal,
 branch inspection, or independent verification.
+
+Claude provider capacity is a hard runtime precondition, independent of task or
+correction authorization. Before every Claude start, first prompt, continuation,
+blocked-question answer, or review rerun, execute the live capacity gate in
+`references/herdr-claude-handoff.md`. A displayed 100%, an explicit usage-limit
+signal, or an unavailable mandatory live check stops before another Claude turn.
+Approval for “up to N rounds” limits work; it never overrides provider quota.
 
 ### Handoff boundary: Sol pairs, Claude executes, Sol accepts
 
@@ -145,6 +152,13 @@ Bryan explicitly asks to see it. If Herdr, the exact caller pane, or a compatibl
 injected client is unavailable, stop rather than silently changing worker kind,
 surface, or visibility.
 
+For Claude, run the reference's live provider-capacity gate **before creating or
+starting a pane**, again after startup before the first prompt, and before every
+later `agent prompt` or `agent send-keys`. Any nonzero gate result blocks that
+turn. Preserve partial edits, stop the watcher, close the handoff-owned pane, and
+record the session non-resumable; never spend another provider turn merely to
+produce a cleaner stopping report, and never switch providers automatically.
+
 Read `references/herdr-claude-handoff.md` for the exact discovery, non-focusing
 dispatch, monitoring, continuation, failure, and cleanup sequence.
 
@@ -231,6 +245,11 @@ Claude and Hermes. Text
 already visible in a worker's prompt box may be an automatic suggestion; never
 submit it without the user's direction.
 
+When the worker kind is Claude, the same live capacity gate is part of this
+pre-check. Run it before a correction prompt and before answering any blocked
+Claude UI with `agent send-keys`. Exhausted or unverifiable capacity stops and
+releases the pane; a remaining correction-round budget is irrelevant.
+
 **Complete when:** the original session identity returns to `working` after the
 follow-up, with no duplicate worker created.
 
@@ -295,6 +314,9 @@ publication readback, and live verification as applicable:
    or make Bryan infer whether it is still needed.
 12. **Cleaning before checking for unrelated edits.** Preserve user work and close
    only resources created by the handoff.
+13. **Confusing correction budget with provider quota.** “Three rounds remain”
+   describes workflow convergence, not paid-provider capacity. A 100% usage meter
+   is a hard stop even when the user authorized more rounds.
 
 ## Verification Checklist
 
@@ -314,6 +336,8 @@ publication readback, and live verification as applicable:
 - [ ] Active window, workspace, tab, and pane preserved unless focus was requested
 - [ ] Tracked watcher uses the verified Herdr client and a finite timeout
 - [ ] Follow-ups preserve the original session
+- [ ] Live Claude capacity passed before start, first prompt, every follow-up, and every blocked-UI answer
+- [ ] A 100%/exhausted or unverifiable mandatory capacity check stopped without another Claude turn or automatic provider switch
 - [ ] Every settled, blocked, abandoned, or handed-off agent has a concrete keep/close decision
 - [ ] Handoff-owned pane closed and absence verified as soon as no concrete next turn remains
 - [ ] Exact candidate independently reviewed through Standards, Spec, conditional Risk, and mandatory Ponytail
