@@ -506,7 +506,8 @@ For every delegated path:
    freshly recomputed Git worktree identity. Any incomplete legacy state,
    missing agent, or mismatch stops; never launch a duplicate. For Qwen, use its
    original session ID with `revise`. Repeat the complete Codex gate after each
-   revision; cap the correction loop at two revision passes.
+   revision; cap the correction loop at three revision passes. Never permit a
+   fourth correction.
 3. Mark plan/task checkboxes complete only after Codex accepts the final
    repository state. Preserve every implementation and revision artifact in the
    state directory.
@@ -527,7 +528,7 @@ Execute task-by-task with the host-native workflow. Load `tdd` for behavior chan
 - **plan_path:** `{TICKET_STATE_DIR}/plan.md`
 - **worktree path:** the absolute path from `progress.md`
 - **commit rules:** atomic (one logical unit per commit); message style matches `git log --oneline -20` in **this repo** (not global defaults); **never** add `Co-authored-by: Claude` or any AI signature; **never** use `--no-verify`.
-- **failure policy:** hand off the 3.5 escalation rule below — on a task whose tests fail, attempt a direct fix first; on a **second** consecutive failure of the same task, escalate per 3.5; hard cap at 3 attempts, then stop and report. Delegated Claude, Hermes, and Qwen paths instead use their two-revision bound above.
+- **failure policy:** hand off the 3.5 escalation rule below — on a task whose tests fail, attempt a direct fix first; on a **second** consecutive failure of the same task, escalate per 3.5; hard cap at 3 attempts, then stop and report. Delegated Claude, Hermes, and Qwen paths instead use their three-revision bound above.
 
 Keep `plan.md` checkboxes and the host task list synchronized, so a resumed run (`status: implementing`) picks up at the first unchecked task automatically.
 
@@ -549,7 +550,7 @@ Lint + typecheck when configured: TypeScript `tsc --noEmit`; Python `ruff check`
 
 On the host-native path, first failure of a task's tests: attempt a direct fix → commit → rerun. **Second consecutive failure of the same task:** load `diagnosing-bugs` rather than guessing again — it builds a tight failing loop and tests ranked hypotheses instead of applying another patch. **Hard cap at 3 attempts total.** On the 4th failure, stop and report the failing output to the user.
 
-On either delegated path, Codex first determines whether the failure is a plan defect, implementation defect, pre-existing failure, or external blocker. Send implementation defects back through the same retained worker session under the two-revision bound. A plan defect, ambiguity, destructive conflict, unavailable selected worker, or exhausted revision budget stops for the user instead of switching workers or guessing.
+On either delegated path, Codex first determines whether the failure is a plan defect, implementation defect, pre-existing failure, or external blocker. Send implementation defects back through the same retained worker session under the three-revision bound; never permit a fourth correction. A plan defect, ambiguity, destructive conflict, unavailable selected worker, or exhausted revision budget stops for the user instead of switching workers or guessing.
 
 ### 3.6 Progress log
 

@@ -1130,11 +1130,11 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
     def test_skill_documents_the_cairnos_always_risk_rule(self) -> None:
         self.assert_matches(self.body, r"(?i)cairn", "missing required wording: cairn")
 
-    def test_skill_documents_the_no_third_pass_invariant(self) -> None:
+    def test_skill_documents_the_no_fourth_pass_invariant(self) -> None:
         self.assert_matches(
             self.body,
-            r"(?i)no third correction pass|never a third correction pass",
-            "missing required wording: no third correction pass",
+            r"(?i)no fourth correction pass|never a fourth correction pass",
+            "missing required wording: no fourth correction pass",
         )
 
     def test_skill_keeps_the_independent_acceptance_criteria_sweep(self) -> None:
@@ -1163,11 +1163,11 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
             "AC sweep must split compound criteria; a half-satisfied compound reads as met",
         )
 
-    def test_the_second_correction_is_still_reviewed(self) -> None:
+    def test_the_third_correction_is_still_reviewed(self) -> None:
         """Reaching the bound must not ship an unexamined correction.
 
-        The code the second pass produced has never been looked at, so exiting
-        on `correction_passes == 2` would make the conditional final pass a way
+        The code the third pass produced has never been looked at, so exiting
+        on `correction_passes == 3` would make the final correction pass a way
         to slip an unreviewed change past the gate.
         """
         self.assert_matches(
@@ -1205,7 +1205,7 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
         )
 
     def test_the_review_only_pass_reselects_lanes(self) -> None:
-        """The second correction moved HEAD, so the Risk decision may have moved."""
+        """The third correction moved HEAD, so the Risk decision may have moved."""
         self.assert_matches(
             self.body,
             r"(?i)re-select the lanes against the \*current\* HEAD",
@@ -1213,7 +1213,7 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
         )
 
     def test_correction_passes_are_counted_per_committed_boundary(self) -> None:
-        """A delegated batch must not spend the conditional final pass early."""
+        """A delegated batch must not spend a conditional follow-up pass early."""
         self.assert_matches(
             self.body,
             r"(?i)once per committed correction boundary",
@@ -1226,7 +1226,7 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
         )
         self.assert_matches(
             self.body,
-            r"(?i)conditional final pass\s*\|",
+            r"(?i)after pass 1\s*\|\s*after pass 2\s*\|\s*after pass 3",
             "the native/delegated discrimination table must be present",
         )
 

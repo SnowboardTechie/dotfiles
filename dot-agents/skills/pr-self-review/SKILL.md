@@ -1,6 +1,6 @@
 ---
 name: pr-self-review
-description: Iterative self-review for authored PRs. Runs Standards, Spec, conditional Risk, then mandatory Ponytail over-engineering review on every candidate, with AC sweep, validation, and a two-pass correction bound.
+description: Iterative self-review for authored PRs. Runs Standards, Spec, conditional Risk, then mandatory Ponytail over-engineering review on every candidate, with AC sweep, validation, and a three-pass correction bound.
 ---
 
 # PR Self-Review
@@ -740,7 +740,7 @@ fixes_per_pass:     List<List<{key, file, line, lane, reported_by, summary, file
 pending_worker_fixes: List<{key, file, line, lane, severity, reported_by, finding}> # delegated issue-work paths only; cleared after each worker pass
 acks:               List<{key, file, line, lane, reported_by, summary, pass}> # fix-without-diff; for summary.md
 pass_count:         int
-correction_passes:  int                                              # 0, 1 (normal), or 2 (conditional final). Never 3.
+correction_passes:  int                                              # 0, 1 (normal), 2 or 3 (conditional). Never 4.
 loop_state:         "reviewing" | "final_review_only" | "clean" | "bound"
 final_review_done:  bool                                             # the terminal review-only pass has run
 ```
@@ -818,8 +818,8 @@ If no findings produced edits (all rejected / deferred / escalated / ack), skip 
 
 ### 2.5 Correction bound
 
-One normal correction pass, then at most one narrowly conditional final pass.
-**There is never a third correction pass**, on any path, delegated or native.
+One normal correction pass, then at most two narrowly conditional follow-up passes.
+**There is never a fourth correction pass**, on any path, delegated or native.
 This bound exists because the previous unbounded loop could spend hours
 re-reviewing its own edits; a stop is a reportable outcome, not a failure.
 
@@ -834,12 +834,13 @@ validated fix, normal correction-bound behavior applies and the resulting
 candidate must be reviewed again: all selected primary lanes first, then
 Ponytail last.
 
-**Pass 2 — the conditional final pass.** Permitted **only** when *every*
-remaining blocker is a bounded implementation defect that preserves the
-accepted goal, scope, architecture, and public contract. If even one blocker
-fails that test, do not start pass 2 — stop now.
+**Passes 2 and 3 — conditional follow-up passes.** Each is permitted **only**
+when every remaining blocker is a bounded implementation defect that preserves
+the accepted goal, scope, architecture, and public contract. If even one
+blocker fails that test, do not start the next pass — stop now. Pass 3 is the
+final permitted correction.
 
-**Stop immediately, without a correction pass, when any remaining blocker is:**
+**Stop immediately, without another correction pass, when any remaining blocker is:**
 
 - a plan defect — the approved plan itself is wrong;
 - an architectural question;
@@ -861,30 +862,30 @@ bounded review.
 correction boundary, in §2.4. It does not move when a worker is dispatched, when
 a batch is reconciled, or when a pass produced no diff. So:
 
-| Path | After the first correction commit | Conditional final pass |
-|---|---|---|
-| Native inline edits | `correction_passes == 1` | available |
-| Delegated worker batch, reconciled and committed | `correction_passes == 1` | available |
-| Either path, second correction commit | `correction_passes == 2` | spent — stop |
+| Path | After pass 1 | After pass 2 | After pass 3 |
+|---|---|---|---|
+| Native inline edits | `correction_passes == 1` | `== 2`, pass 3 conditionally available | `== 3`, spent |
+| Delegated worker batch, reconciled and committed | `correction_passes == 1` | `== 2`, pass 3 conditionally available | `== 3`, spent |
 
-**The second correction is still reviewed.** Reaching `correction_passes == 2`
-is not an exit. It means no further *fixes* are allowed — the code that pass
-produced has never been looked at, and shipping it unreviewed would make the
-conditional final pass a way to sneak an unexamined change past the gate.
+**Every correction is still reviewed.** Reaching `correction_passes == 3` is
+not an exit. It means no further fixes are allowed, but the code that pass
+produced still needs the complete exact-candidate review. Shipping it without
+that review would make the last correction a way to sneak an unexamined change
+past the gate.
 
 So the loop has a terminal state, `final_review_only`, entered exactly once:
 
 | State | `correction_passes` | Fixes allowed | Next |
 |---|---|---|---|
-| `reviewing` | 0 or 1 | yes | fixes committed → `reviewing`; nothing to fix → `clean` |
-| `reviewing` | 2 | **no** | → `final_review_only` |
-| `final_review_only` | 2 | **no** | zero validated blockers → `clean`; otherwise → `bound` |
+| `reviewing` | 0, 1, or 2 | yes, subject to the conditional-pass gate | fixes committed → `reviewing`; nothing to fix → `clean` |
+| `reviewing` | 3 | **no** | → `final_review_only` |
+| `final_review_only` | 3 | **no** | zero validated blockers → `clean`; otherwise → `bound` |
 | `clean` | any | — | ship readiness per §3.0 verification |
 | `bound` | any | — | `Correction bound reached — do not merge.` |
 
 **The `final_review_only` pass**, in full:
 
-1. Re-select the lanes against the *current* HEAD — the second correction moved
+1. Re-select the lanes against the *current* HEAD — the third correction moved
    it, so the changed-file set and therefore the Risk decision may have moved
    too.
 2. Run the selected primary lanes exactly as a normal pass, then run mandatory
@@ -893,7 +894,7 @@ So the loop has a terminal state, `final_review_only`, entered exactly once:
 3. Validate every finding exactly as §2.3 requires. Suppression still applies,
    so findings already rejected or deferred with evidence do not resurface.
 4. **Apply nothing.** No edit, no commit, no worker dispatch, on any path. A fix
-   here would be the third correction pass the bound forbids.
+   here would be the fourth correction pass the bound forbids.
 5. Zero validated blockers → state `clean`; the run exits normally.
 6. One or more validated blockers → every one becomes a `bound_findings` entry
    and Ship Readiness is `Correction bound reached — do not merge.`
@@ -912,11 +913,11 @@ Loop exits, in evaluation order:
   bound / ack — post-reconciliation `fixes_per_pass[pass_count]` is empty) →
   the code did not change, so re-reviewing it would produce the same findings.
   Exit `clean` or `bound` according to what remains.
-- **`correction_passes` has reached 2 and `final_review_only` has not run** →
+- **`correction_passes` has reached 3 and `final_review_only` has not run** →
   enter `final_review_only` and run one more review pass. **Do not exit here.**
 - **`final_review_only` has run** → exit `clean` if it found no validated
   blocker, `bound` otherwise.
-- **Fixes produced a diff and `correction_passes` < 2** → loop back to §2.1.
+- **Fixes produced a diff and `correction_passes` < 3** → loop back to §2.1.
   The counter already moved at the commit in §2.4; do not increment it again
   here. HEAD moved, so recompute the changed files and re-select the lanes; the
   range is still `{base}...HEAD`.
