@@ -33,6 +33,7 @@ class FakeCrypto:
     def __init__(self, devices: dict) -> None:
         self.crypto_store = FakeStore(devices)
         self.trust_name = "CROSS_SIGNED_TOFU"
+        self.trust_names = {}
         self.created = []
         self.shared = []
         self.sent = []
@@ -45,8 +46,8 @@ class FakeCrypto:
     async def _create_outbound_sessions(self, users, _force_recreate_session=False):
         self.created.append((users, _force_recreate_session))
 
-    async def resolve_trust(self, _device):
-        return SimpleNamespace(name=self.trust_name)
+    async def resolve_trust(self, device):
+        return SimpleNamespace(name=self.trust_names.get(device.device_id, self.trust_name))
 
     async def share_group_session(self, room_id, users):
         self.shared.append((room_id, users))
@@ -149,6 +150,27 @@ class MatrixKeyRecoveryPluginTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(crypto.created, [])
         self.assertEqual(len(crypto.sent), 1)
         self.assertFalse(crypto.sent[0][3])
+
+    async def test_pre_share_refresh_excludes_untrusted_devices(self) -> None:
+        _, crypto, trusted_device = self.wire()
+        untrusted_device = SimpleNamespace(
+            user_id=MODULE.AUTHORIZED_USER,
+            device_id="UNTRUSTED",
+            identity_key="untrusted-identity",
+            deleted=False,
+        )
+        crypto.crypto_store.devices = {
+            "DEVICE": trusted_device,
+            "UNTRUSTED": untrusted_device,
+        }
+
+        crypto.trust_names["UNTRUSTED"] = "UNVERIFIED"
+        await crypto.share_group_session(
+            next(iter(MODULE.AUTHORIZED_ROOMS)), [MODULE.AUTHORIZED_USER]
+        )
+
+        refreshed_devices = next(iter(crypto.created[0][0].values()))
+        self.assertEqual(set(refreshed_devices), {"DEVICE"})
 
 
 if __name__ == "__main__":

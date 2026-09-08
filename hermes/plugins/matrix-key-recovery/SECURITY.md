@@ -19,9 +19,10 @@ The plugin reads only Matrix crypto objects already held by the connected
 Mautrix client: current room membership, device identities and trust, existing
 Olm state, and a retained Megolm room key requested through Mautrix. It opens no
 files, reads no environment variables or credentials, starts no processes, and
-constructs no network destination. Its only egress is Mautrix's existing
-authenticated to-device channel to the exact requesting Matrix device. It does
-not log message bodies, room keys, device keys, credentials, or ciphertext.
+constructs no network destination. Its only egress is through Mautrix's existing
+authenticated homeserver connection: one-time-key claims for authorized devices
+and encrypted room-key delivery to the exact requesting device. It does not log
+message bodies, room keys, device keys, credentials, or ciphertext.
 
 ## Authorization boundary
 

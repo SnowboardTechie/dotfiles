@@ -61,11 +61,14 @@ def _wire_matrix(client, _adapter) -> None:
         )
         if room_text in AUTHORIZED_ROOMS and authorized_user is not None:
             devices = await crypto.crypto_store.get_devices(authorized_user)
-            devices = {
-                device_id: device
-                for device_id, device in (devices or {}).items()
-                if not getattr(device, "deleted", False)
-            }
+            trusted_devices = {}
+            for device_id, device in (devices or {}).items():
+                if getattr(device, "deleted", False):
+                    continue
+                trust = await crypto.resolve_trust(device)
+                if getattr(trust, "name", "").upper() in AUTHORIZED_DEVICE_TRUST:
+                    trusted_devices[device_id] = device
+            devices = trusted_devices
             if devices:
                 try:
                     await crypto._create_outbound_sessions(
