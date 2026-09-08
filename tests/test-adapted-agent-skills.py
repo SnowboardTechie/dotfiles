@@ -1184,6 +1184,21 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
             "the review-only pass must forbid fixes",
         )
 
+    def test_terminal_review_accepts_only_an_identity_verified_released_worker(self) -> None:
+        for token in (
+            "correction_passes: 3",
+            "worker_release_status: closed_after_exhausted_revisions",
+            "worker_revision_budget_exhausted: true",
+            "no replacement worker may be launched",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.body)
+        self.assert_matches(
+            self.body,
+            r"(?i)both the named Herdr agent and\s+pane are absent",
+            "the terminal review must verify both released worker resources are absent",
+        )
+
     def test_the_loop_state_table_covers_every_terminal_state(self) -> None:
         for state in ("reviewing", "final_review_only", "clean", "bound"):
             with self.subTest(state=state):

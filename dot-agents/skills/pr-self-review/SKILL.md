@@ -174,12 +174,24 @@ Common to all three modes:
   Any mismatch or stale artifact blocks review before cache writes.
 - **Validate the visible worker in `pre-pr`.** When the implementation loop is
   `coding-agent-handoff-supervision`, require the complete six-field record and
-  live Herdr availability. Fetch `herdr agent get {worker_agent_name}` and compare
+  Herdr identity. Normally fetch `herdr agent get {worker_agent_name}` and compare
   surface, name, pane, kind, and `.result.agent.agent_session.value`; recompute
   canonical worktree root, Git common directory, and branch and compare the
-  complete `worker_worktree_identity`. Refuse legacy/incomplete state, absent
-  agents, Agent View/background surfaces, and every mismatch. Do not repair the
-  record from live state and never launch a duplicate.
+  complete `worker_worktree_identity`. Refuse legacy/incomplete state, Agent
+  View/background surfaces, and every mismatch. Do not repair the record from
+  live state and never launch a duplicate.
+
+  The one allowed settled-worker exception is the terminal review after pass 3,
+  when no fourth correction is permitted and handoff supervision has therefore
+  released a worker with no concrete next turn. Require `correction_passes: 3`,
+  `worker_release_status: closed_after_exhausted_revisions`,
+  `worker_revision_budget_exhausted: true`, the complete historical six-field
+  identity, and recorded release evidence. Verify both the named Herdr agent and
+  pane are absent, not merely idle; recompute the candidate and worktree identity;
+  and treat the historical worker only as the distinctness identity for the
+  fresh reviewer. This exception never enables correction routing: the terminal
+  reviewer may apply nothing, no replacement worker may be launched, and any
+  validated blocker produces a bound/do-not-merge verdict.
 - **Validate the fresh reviewer in `pre-pr`.** Require `reviewer_surface: herdr`
   and `reviewer_kind: claude`. Fetch the current Herdr agent and compare
   `reviewer_agent_name`, `reviewer_pane_id`, and
