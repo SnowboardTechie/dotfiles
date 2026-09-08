@@ -166,6 +166,21 @@ multi-dimension workflow in several model contexts.
 - Minor: non-blocking quality issue worth addressing.
 - Nit: optional wording, naming, or local simplification.
 
+### Finding gate
+
+Zero findings is a valid successful review. Report only concrete defects: the
+candidate violates an authority or causes an observable failure or risk, the
+consequence matters, and the proposed correction materially improves the
+candidate. Do not turn an acknowledged limitation, accepted trade-off,
+imprecise-but-accurate wording, or improvement opportunity into a finding merely
+to produce a comment.
+
+When the acceptance owner challenges a finding, stop drafting alternative
+wording and revalidate it from the exact claim and evidence. If it survives,
+defend it with the evidence and consequence. If it does not, withdraw it
+immediately. Never preserve the original conclusion by changing qualifiers or
+offering a semantically equivalent rewrite.
+
 An empty dimension must state what was checked and its confidence. Reviewer
 output is advice. The acceptance owner validates observations, explanations, and
 prescriptions before correction.
@@ -188,5 +203,7 @@ prescriptions before correction.
 - [ ] Ponytail ran last and stayed narrow
 - [ ] Acceptance criteria were swept independently
 - [ ] Targeted Risk reviewer used only for a qualifying boundary
+- [ ] Every reported finding passed the concrete-defect gate
+- [ ] Every challenged finding was defended with evidence or withdrawn
 - [ ] Every blocking finding was independently validated
 - [ ] Artifacts still match the candidate at disposition
