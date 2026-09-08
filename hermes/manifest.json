@@ -255,20 +255,6 @@
       "enabledToolsets": ["web", "terminal", "no_mcp"],
       "workdir": "/Users/bryan/code/dotfiles",
       "attachToSession": false
-    },
-    {
-      "name": "Watch Herdr Homebrew Atuin fix",
-      "schedule": "35 9 * * *",
-      "model": null,
-      "provider": null,
-      "promptFile": "automations/herdr-homebrew-atuin-fix-watch/prompt.md",
-      "deliver": "matrix:!CsY4wEHn3w715wk78Uz9RQ9lNv2hV9CFPr6T6YgQNgE",
-      "skills": [],
-      "script": "check-herdr-homebrew-atuin-fix.py",
-      "noAgent": true,
-      "enabledToolsets": [],
-      "workdir": "/Users/bryan/code/dotfiles",
-      "attachToSession": false
     }
   ]
 }
