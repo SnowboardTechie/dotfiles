@@ -64,6 +64,7 @@ def select_worker(
     ticket_repo: str,
     remote_url: str,
     override: str,
+    task_shape: str = "substantial",
     ticket_host: str | None = None,
     implementation_repo: str | None = None,
     implementation_host: str | None = None,
@@ -87,9 +88,15 @@ def select_worker(
             f"{identity_label} {implementation_repo} does not match origin repository {remote_repo}"
         )
 
-    if override == "auto":
+    if task_shape not in {"single-loop", "substantial"}:
+        raise RoutingError(f"unsupported task shape: {task_shape}")
+
+    if override == "auto" and task_shape == "single-loop":
+        selected = "gpt"
+        reason = "single-loop work stays with the parent"
+    elif override == "auto":
         selected = "claude"
-        reason = "default visible Herdr handoff"
+        reason = "substantial work uses the visible Herdr handoff"
     elif override == "claude":
         selected = "claude"
         reason = "explicit visible Claude selection"
@@ -120,6 +127,7 @@ def select_worker(
         "remote_host": remote_host,
         "remote_repo": remote_repo,
         "cross_repository": cross_repository,
+        "task_shape": task_shape,
         "selected_worker": selected,
         "implementation_loop": loops[selected],
         "reason": reason,
@@ -170,6 +178,11 @@ def main() -> int:
         choices=("auto", "gpt", "qwen", "claude", "hermes"),
         default="auto",
     )
+    parser.add_argument(
+        "--task-shape",
+        choices=("single-loop", "substantial"),
+        default="substantial",
+    )
     args = parser.parse_args()
 
     workdir = args.workdir.expanduser().resolve()
@@ -185,6 +198,7 @@ def main() -> int:
             implementation_host=args.implementation_host,
             remote_url=remote,
             override=args.override,
+            task_shape=args.task_shape,
         )
         result["git_common_dir"] = str(common_dir)
     except (OSError, subprocess.SubprocessError, RoutingError) as exc:

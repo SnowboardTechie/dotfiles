@@ -1,250 +1,161 @@
-# Herdr-Native Claude and Hermes Handoffs
+# Herdr Helper Operations
 
-## Preconditions and caller identity
+`scripts/herdr_worker.py` is the executable owner of visible-worker mechanics.
+Use its `--help` output as the current command reference; do not copy raw Herdr
+JSON parsing or focus-sensitive pane commands into another skill.
 
-Use this path only when the parent process is inside Herdr:
+## Preconditions
 
-```sh
-test "${HERDR_ENV:-}" = 1
-test -n "${HERDR_PANE_ID:-}"
-test -x "${HERDR_BIN_PATH:-}"
-"$HERDR_BIN_PATH" status
-"$HERDR_BIN_PATH" pane current --pane "$HERDR_PANE_ID"
-"$HERDR_BIN_PATH" pane layout --pane "$HERDR_PANE_ID"
-```
+- `HERDR_ENV=1`
+- non-empty `HERDR_PANE_ID`
+- executable injected `HERDR_BIN_PATH`
+- named Git branch and existing worktree
+- for Claude, executable `~/.config/herdr/claude-usage.sh`
+- for Hermes, independently verified smart approvals and no yolo mode
 
-The pane-injected Herdr binary is authoritative. If a needed command differs
-from this reference, inspect that command's live `--help` before acting. If the
-built-in Herdr control skill is not already available in context, run
-`"$HERDR_BIN_PATH" --skill` and follow it.
+The helper requires both `endpoint_compatible: yes` and
+`private_protocol_compatible: yes` from the injected Herdr client. A different
+client found through `PATH` is not a fallback.
 
-Herdr's injected `HERDR_BIN_PATH` identifies the client paired with the pane
-even when shell startup has reordered `PATH`. Use that inherited absolute path
-directly in every command so separate tool calls and background processes do
-not depend on parent-shell state. Verify `status` reports a running server and
-`compatible: yes` before mutating layout. Do not reduce this to an exit-code
-check: an incompatible client can print status and exit successfully. If the
-injected path is absent, non-executable, or incompatible, stop. Visible work has
-no Agent View fallback.
-
-This is especially important for the watcher: a tracked background terminal
-may start a login shell that exposes an older Herdr client. Invoke the inherited
-`HERDR_BIN_PATH` directly; do not let that shell resolve `herdr` again. A
-protocol mismatch means the wrong client ran. Retry the same watcher once with
-the injected compatible path rather than starting another worker.
-
-Use the injected caller pane ID even when another Herdr tab is globally focused.
-Stop rather than substituting the focused pane if the caller cannot be resolved.
-
-## Gate live Claude capacity before every turn
-
-On Bryan's Herdr hosts, the status-rail module is also the machine-readable
-capacity authority. For a Claude handoff, run this **before pane creation or
-`agent start`**, again after startup before the first `agent prompt`, and before
-every later `agent prompt` or `agent send-keys`:
+## Start
 
 ```sh
-test -x "$HOME/.config/herdr/claude-usage.sh"
-"$HOME/.config/herdr/claude-usage.sh" --check-capacity
+python3 scripts/herdr_worker.py start \
+  --worktree "$WORKTREE" \
+  --identity-file "$STATE_DIR/worker-identity.json" \
+  --name "$AGENT_NAME" \
+  --kind claude \
+  --title "$TITLE"
 ```
 
-`--check-capacity` bypasses the display cache and performs a fresh read-only
-usage check. Exit 75 means the five-hour window is at 100%; exit 69 means current
-capacity could not be verified. **Any nonzero result blocks another Claude
-turn.** Also inspect the live Claude footer before a continuation: an explicit
-`100%`, `usage limit`, or `limit reached` signal overrides an earlier successful
-check.
+The command exclusively reserves a new identity path under a per-identity owner
+lock before any pane side effect, performs the live capacity check before pane
+creation, creates a
+right-hand `--no-focus` split from the injected caller pane, starts Claude with
+auto permissions and Opus/high effort, verifies the runtime session and Git
+worktree, then atomically writes the six-field identity file with mode 0600.
 
-Provider capacity and correction authorization are separate gates. A user may
-authorize up to three review rounds while the provider can execute zero more
-turns. Never interpret the round count as permission to exceed quota, never
-answer a blocked Claude question after the capacity gate fails, and never switch
-to another provider automatically. Preserve partial edits, stop the watcher,
-close the handoff-owned pane, mark it non-resumable, and report the capacity
-checkpoint.
+Any pre-existing identity path, including a closed record, is refused before a
+pane is created. Use a different state path for a separately authorized worker;
+never overwrite the ownership record of an existing or failed start.
 
-## Create the visible worker
+If split succeeds but startup or identity validation fails, it closes that new
+pane before returning failure.
 
-A horizontal handoff means a side-by-side split created to the caller's right.
-Keep focus on the caller while preparing the selected worker, and preserve the
-exact working directory:
+## Prompt and wait
 
 ```sh
-"$HERDR_BIN_PATH" pane split --pane "$HERDR_PANE_ID" \
-  --direction right --ratio 0.5 --cwd "$PWD" --no-focus
+python3 scripts/herdr_worker.py prompt \
+  --identity-file "$STATE_DIR/worker-identity.json" \
+  --prompt-file "$STATE_DIR/worker-prompt.md" \
+  --timeout-ms 7200000
 ```
 
-Read the new pane from `.result.pane.pane_id`; never derive it from sidebar
-position, example IDs, or the globally focused pane. Record the pane ID as a
-handoff-owned resource.
+Run this command through a tracked background terminal process with completion
+notification. It holds an OS file lock for the entire Claude turn, so concurrent
+Hermes sessions cannot race separate `agent list` checks and oversubscribe the
+subscription. The lock is process-owned and releases automatically on exit.
 
-Choose a useful unique Herdr agent name matching
-`[a-z][a-z0-9_-]{0,31}`. Check `"$HERDR_BIN_PATH" agent list` before naming it. The Herdr
-agent name is the stable control target.
+Before input is sent, the command rejects:
 
-Start the selected worker without an initial prompt so Herdr can verify
-interactive readiness. Claude is the default:
+- exhausted or unverifiable Claude capacity;
+- another working Claude agent;
+- a closed or malformed identity record;
+- any changed name, pane, kind, runtime session, root, Git common directory, or
+  branch; and
+- a worker already in `working` state.
+
+It calls Herdr `agent prompt --wait`, verifies the same identity after the turn,
+and returns compact JSON containing settled status plus start/end capacity. A
+failed end probe records `provider_capacity_end_verified: false`; it does not
+erase a successfully completed turn.
+
+Use `--text` instead of `--prompt-file` only for a genuinely short literal.
+
+## Inspect
 
 ```sh
-"$HERDR_BIN_PATH" agent start <agent-name> --kind claude --pane <new-pane-id> -- \
-  --permission-mode auto --model opus --effort high \
-  --name "<short task name>"
+python3 scripts/herdr_worker.py inspect \
+  --identity-file "$STATE_DIR/worker-identity.json"
 ```
 
-Use Hermes only after an explicit same-run selection:
+This is read-only and validates the worker and Git identity before reporting its
+current status. It does not acquire the provider-turn lease.
+
+## Read and answer a blocked worker
 
 ```sh
-"$HERDR_BIN_PATH" agent start <agent-name> --kind hermes --pane <new-pane-id>
+python3 scripts/herdr_worker.py read \
+  --identity-file "$STATE_DIR/worker-identity.json" \
+  --lines 120
+
+python3 scripts/herdr_worker.py answer-blocked \
+  --identity-file "$STATE_DIR/worker-identity.json" \
+  --text "$BRYAN_APPROVED_ANSWER" \
+  --timeout-ms 7200000
 ```
 
-Preserve explicitly requested agent arguments instead of overwriting them with
-the Claude example defaults. Do not pass Claude-only arguments to Hermes. Before
-starting Hermes, require `approvals.mode: smart` in the selected profile, require
-`HERMES_YOLO_MODE` to be unset, and pass no `--yolo` flag. If approval mode is
-`off`, cannot be verified, or startup arguments bypass approval, stop. If startup
-returns `agent_not_ready`, inspect `agent get` and `agent read` through the
-recorded binary. A trust, approval, or question UI is `blocked`; do not answer it
-for the user.
+Use `answer-blocked --keys down enter` instead for an approved interactive key
+choice. `read` validates identity before and after bounded terminal output.
+`answer-blocked` refuses a worker that is not recorded as `blocked`, acquires the
+Claude lease, reruns capacity, rejects another working Claude, captures the
+current `state_change_seq`, submits only the caller-approved text or keys, and
+holds the lease until a newer idle/done/blocked state is observed. Herdr `agent
+wait` without explicit lifecycle sequencing would match the old blocked state
+immediately and is not sufficient. Herdr `agent prompt` cannot resume a blocked
+agent; do not use it for answers.
 
-Claude's `auto` permission mode and Hermes's smart mode are approval gates, not
-hard confinement. Do not claim the visible worker has sandbox confinement. If the
-handoff requires hard filesystem, network, credential, or Git confinement, stop
-unless a separately verified runtime provides it.
-
-Submit the short ticket-backed handoff without waiting for completion:
+## Recover an interrupted start
 
 ```sh
-"$HOME/.config/herdr/claude-usage.sh" --check-capacity  # Claude only
-"$HERDR_BIN_PATH" agent prompt <agent-name> "<concept brief>"
-"$HERDR_BIN_PATH" agent get <agent-name>
+python3 scripts/herdr_worker.py recover-start \
+  --identity-file "$STATE_DIR/worker-identity.json"
 ```
 
-Before the first prompt, build and persist this exact identity record from
-`herdr agent get`, `git rev-parse --show-toplevel`, `git rev-parse
---path-format=absolute --git-common-dir`, and `git branch --show-current`:
+Every reservation stores intended worktree, name, kind, caller pane, and the
+worker pane as soon as it exists. Before splitting it also journals the complete
+pane inventory and caller tab/workspace identity. If interruption lands after
+the split side effect but before its return, recovery admits only the single new
+pane in that tab/workspace whose cwd matches the recorded worktree; zero is safe
+absence and multiple candidates fail closed. `recover-start` acquires the same
+start lock. It completes a six-field active identity only when the exact
+recorded agent, pane, kind, session, and Git worktree are live; otherwise it
+closes the exact recorded orphan pane, proves both agent and pane absent, and
+terminalizes the record. Transport, protocol, malformed-response, or identity
+uncertainty leaves the recoverable record intact for a later retry.
 
-```yaml
-worker_surface: herdr
-worker_agent_name: <agent-name>
-worker_pane_id: <new-pane-id>
-worker_kind: <claude|hermes>
-worker_runtime_session_id: <.result.agent.agent_session.value>
-worker_worktree_identity: {"root":"<canonical-root>","git_common_dir":"<canonical-common-dir>","branch":"<branch>"}
-```
-
-Verify the returned agent resolves to every persisted value and `working`. The
-agent name, pane ID, kind, underlying runtime session ID, surface, and worktree
-identity are distinct. Read the agent name from `.result.agent.name`, pane from
-`.result.agent.pane_id`, kind from `.result.agent.agent`, and runtime session ID
-from `.result.agent.agent_session.value`; require `.result.agent.cwd` to resolve
-to the worktree root. Missing or ambiguous fields stop before prompting.
-
-## Watch without changing focus
-
-Visibility and supervision are separate. Once `working` is verified, start a
-tracked background watcher in the parent runtime:
+## Close
 
 ```sh
-"$HERDR_BIN_PATH" agent wait <agent-name> --timeout 7200000
+python3 scripts/herdr_worker.py close \
+  --identity-file "$STATE_DIR/worker-identity.json"
 ```
 
-For Hermes, launch that command as a tracked background terminal process with
-completion notification enabled and give the outer process a timeout slightly
-longer than Herdr's two-hour bound. Preserve its process handle. Use a shorter
-bound when the task has a known shorter horizon, but never omit the timeout.
-The default wait settles on `idle`, `done`, or `blocked`; do not add `--until`
-unless the workflow needs one exact state.
+The command validates the live identity, atomically records
+`closing: true`/`cleanup_required: true` under the identity lock, closes only the
+recorded pane, verifies both pane and agent are absent from structured
+`agent_not_found` and `pane_not_found` responses, and marks the identity closed.
+Every other Herdr error preserves the closing record and fails; rerunning
+`close` resumes from that journal without requiring the now-absent agent. A
+closed identity is non-resumable. Re-running `close` is idempotent.
 
-If the wait times out, inspect the same agent. Re-arm one bounded watcher if it
-is still `working`; inspect terminal state if it is `unknown` or absent. A
-timeout is not permission to start a duplicate worker.
+## Failure Rules
 
-Do not run `agent focus` after creation, prompting, watcher startup, or worker
-updates. The pane is available in the caller's layout, but Bryan's active
-window, workspace, tab, and pane must remain unchanged. If Bryan explicitly
-asks to see this worker, focus the recorded agent at that time:
+- Never edit an identity file to make a mismatch pass.
+- Never delete or bypass the turn lease. Wait for the owning process to settle or
+  terminate it through its tracked process handle.
+- Never switch providers when capacity or identity fails.
+- Never use a globally focused pane when the injected caller pane is unavailable.
+- Preserve partial repository bytes before closing a capacity-blocked worker.
+- Ask Bryan before answering a blocked approval or question.
+
+## Validation
 
 ```sh
-"$HERDR_BIN_PATH" agent focus <agent-name>
+python3 -m unittest \
+  dot-agents/skills/coding-agent-handoff-supervision/tests/test_herdr_worker.py
+python3 dot-agents/skills/coding-agent-handoff-supervision/scripts/herdr_worker.py --help
 ```
 
-Focusing may change the worker's eventual settled label from `done` to `idle`
-because Herdr marks viewed work as seen. Both are completion signals for the
-turn, not acceptance signals for the implementation.
-
-When the watcher returns, inspect before acting:
-
-```sh
-"$HERDR_BIN_PATH" agent get <agent-name>
-"$HERDR_BIN_PATH" agent read <agent-name> --source recent-unwrapped --lines 120
-```
-
-If terminal alternate-screen history has discarded the complete response, ask
-the same worker to write its report to a temporary Markdown file and reply with
-the path. Do not request file output preemptively.
-
-## Continue the same session
-
-Before and after every correction prompt, run `agent get` and recompute the Git
-worktree identity. Compare all six fields exactly: `worker_surface`,
-`worker_agent_name`, `worker_pane_id`, `worker_kind`,
-`worker_runtime_session_id`, and `worker_worktree_identity`. A missing legacy
-field, lookup failure, mismatch, or absent agent stops; never launch a duplicate.
-Only then send a follow-up to the existing name:
-
-```sh
-"$HOME/.config/herdr/claude-usage.sh" --check-capacity  # Claude only
-"$HERDR_BIN_PATH" agent prompt <agent-name> "<follow-up>"
-"$HERDR_BIN_PATH" agent get <agent-name>
-```
-
-Verify all six fields still match and the original agent returns to `working`,
-then start a new tracked wait for that turn if completion reporting is still promised.
-Do not focus updates by default. Use `agent focus` through the recorded binary
-only when Bryan explicitly asks to see the follow-up.
-
-If the agent is `blocked`, read its terminal and ask Bryan before answering a
-question or approval. For Claude, rerun the live capacity gate before any
-`agent send-keys`; an exhausted or unverifiable gate means stop without
-answering. Never submit an automatic prompt suggestion already visible in
-Claude's input box.
-
-## Failure handling
-
-If Herdr is unavailable, caller-pane identity cannot be resolved, or Herdr cannot
-create or start the pane without disturbing unrelated work, stop. Agent View and
-background wrappers are separate explicit-only surfaces and cannot resume this
-visible-worker contract.
-
-If a split succeeds but startup or prompting fails, close only that empty or
-failed handoff-owned pane after verifying its ID. Do not silently start both a
-Herdr worker and a background worker.
-
-## Release the pane promptly
-
-The parent owns the lifecycle of every pane it created. Reassess the recorded
-agent after each settled result, correction decision, blocker, abandonment, and
-workflow handoff. Retain the pane only for active work, a specific blocked
-question or approval, or an identified same-session follow-up. Do not retain it
-merely because merge, publication, live verification, or unrelated parent work
-is still pending, and do not use an open pane as a status marker for Bryan.
-
-Once no concrete next turn remains, preserve any needed report, stop an armed
-watcher, verify the recorded agent and pane identity, and close the pane without
-a separate cleanup approval:
-
-```sh
-"$HERDR_BIN_PATH" agent get <agent-name>
-"$HERDR_BIN_PATH" pane get <new-pane-id>
-"$HERDR_BIN_PATH" pane close <new-pane-id>
-```
-
-Then require `pane get <new-pane-id>` to report that the pane is absent and mark
-the persisted session closed/non-resumable. If the workflow is being abandoned
-while the agent is still working, the verified `pane close` is also the explicit
-termination; record that outcome rather than leaving it running.
-
-Close only the recorded handoff-owned pane; never close the caller pane or an
-existing Claude or Hermes pane. A pane does not become user-owned merely because
-Bryan viewed or focused it, but do not race Bryan while he is actively
-interacting with it.
+The tests use a fake Herdr client and isolated Git repository; they never create
+a live pane or spend provider capacity.

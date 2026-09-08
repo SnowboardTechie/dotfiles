@@ -24,6 +24,33 @@ class SelectIssueWorkerTests(unittest.TestCase):
             ticket_repo="HHS/simpler-grants-protocol",
             remote_url="git@github.com:HHS/simpler-grants-protocol.git",
             override="auto",
+            task_shape="substantial",
+        )
+
+        self.assertEqual(result["selected_worker"], "claude")
+        self.assertEqual(
+            result["implementation_loop"],
+            "coding-agent-handoff-supervision",
+        )
+
+    def test_auto_routes_single_loop_work_to_parent(self) -> None:
+        result = select_issue_worker.select_worker(
+            ticket_repo="HHS/simpler-grants-protocol",
+            remote_url="git@github.com:HHS/simpler-grants-protocol.git",
+            override="auto",
+            task_shape="single-loop",
+        )
+
+        self.assertEqual(result["selected_worker"], "gpt")
+        self.assertIsNone(result["implementation_loop"])
+        self.assertEqual(result["reason"], "single-loop work stays with the parent")
+
+    def test_explicit_claude_overrides_single_loop_shape(self) -> None:
+        result = select_issue_worker.select_worker(
+            ticket_repo="bryan/cairn-os",
+            remote_url="git@git.snowboardtechie.com:bryan/cairn-os.git",
+            override="claude",
+            task_shape="single-loop",
         )
 
         self.assertEqual(result["selected_worker"], "claude")

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -105,6 +107,100 @@ class CrossRepoContextTests(unittest.TestCase):
             self.assertEqual(result["state_dir"], str(state.resolve()))
             self.assertEqual(result["implementation_root"], str(implementation.resolve()))
             self.assertEqual(result["implementation_trunk"], str(implementation_trunk.resolve()))
+
+    def test_cross_repository_review_paths_are_admitted_end_to_end(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            ticket = self.make_repo(
+                root,
+                "private-workspace",
+                "git@private.example:example/workspace.git",
+            )
+            implementation_trunk = self.make_repo(
+                root,
+                "public-project",
+                "git@public.example:example/project.git",
+            )
+            implementation = root / "public-project-worktree"
+            subprocess.run(
+                [
+                    "git",
+                    "worktree",
+                    "add",
+                    "-q",
+                    "-b",
+                    "feature",
+                    str(implementation),
+                ],
+                cwd=implementation_trunk,
+                check=True,
+            )
+            state = ticket / ".hermes" / "issue-work" / "example-workspace-7"
+            url = "https://private.example/example/workspace/issues/7"
+            self.write_progress(
+                state,
+                ticket_url=url,
+                worktree=implementation,
+                ticket_repo="example/workspace",
+                implementation_host="public.example",
+                implementation_repo="example/project",
+                implementation_trunk=implementation_trunk,
+                branch="feature",
+            )
+            context = validator.validate_context(
+                ticket_trunk=ticket,
+                state_dir=state,
+                worktree=implementation,
+                ticket_url=url,
+                ticket_host="private.example",
+                ticket_repo="example/workspace",
+                implementation_host="public.example",
+                implementation_repo="example/project",
+            )
+            context_path = state / "context-validation.json"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+            plan_path = state / "plan.md"
+            plan_path.write_text("# Plan\n", encoding="utf-8")
+            output_dir = state / "review"
+            output_dir.mkdir()
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT.resolve()),
+                    "--ticket-trunk",
+                    str(ticket),
+                    "--state-dir",
+                    str(state),
+                    "--worktree",
+                    str(implementation),
+                    "--ticket-url",
+                    url,
+                    "--ticket-host",
+                    "private.example",
+                    "--ticket-repo",
+                    "example/workspace",
+                    "--implementation-host",
+                    "public.example",
+                    "--implementation-repo",
+                    "example/project",
+                    "--context-validation",
+                    str(context_path),
+                    "--plan-path",
+                    str(plan_path),
+                    "--output-dir",
+                    str(output_dir),
+                ],
+                cwd=implementation,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+            admitted = json.loads(result.stdout)
+            self.assertEqual(admitted["state_dir"], str(state.resolve()))
+            self.assertEqual(admitted["output_dir"], str(output_dir.resolve()))
+            self.assertEqual(admitted["validator_script"], str(SCRIPT.resolve()))
 
     def test_same_repository_context_is_admitted(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

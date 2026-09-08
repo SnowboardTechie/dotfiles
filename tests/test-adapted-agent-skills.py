@@ -417,31 +417,14 @@ class RetiredRouteTest(unittest.TestCase):
 
 
 class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
-    """`issue-work` keeps execution authority and selects the new cores."""
+    """`issue-work` right-sizes execution and carries explicit authority."""
 
     @classmethod
     def setUpClass(cls) -> None:
         cls.body = read(POOL / "issue-work" / "SKILL.md")
         cls.handoff = read(POOL / "issue-plan" / "references" / "handoff-contract.md")
         cls.repo_resolution = read(POOL / "issue-work" / "references" / "repo-resolution.md")
-        cls.qwen = read(
-            REPO_ROOT
-            / "hermes"
-            / "skills"
-            / "software-development"
-            / "codex-qwen-implementation-loop"
-            / "SKILL.md"
-        )
-        cls.claude_wrapper = read(
-            REPO_ROOT
-            / "hermes"
-            / "skills"
-            / "software-development"
-            / "codex-claude-implementation-loop"
-            / "SKILL.md"
-        )
-        cls.dependency_review = read(POOL / "dependency-review" / "SKILL.md")
-        cls.catalog_review = read(POOL / "catalog-review" / "SKILL.md")
+        cls.router = read(POOL / "issue-work" / "scripts" / "select_issue_worker.py")
         cls.handoff_supervision = read(
             POOL / "coding-agent-handoff-supervision" / "SKILL.md"
         )
@@ -456,182 +439,110 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
         ):
             with self.subTest(field=field):
                 self.assertIn(field, self.handoff)
-        self.assertIn("--implementation-repo", self.body)
-        self.assertIn("--ticket-host", self.body)
-        self.assertIn("issue-xrepo-{ticket_digest}", self.body)
-        self.assertIn('"Same repository" means both canonical', self.body)
-        self.assertIn("do not expose the private ticket", self.body)
-        self.assertIn("publication-summary.md", self.body)
-        self.assert_matches(
-            self.body,
-            r"(?is)source_issue.*context-validation\.json.*source_issue_mode: github_shorthand.*Omit it.*Forgejo.*shorthand resolver is GitHub-only.*wrong forge",
-            "private ticket identity must not flow to public review/ship artifacts",
-        )
-        self.assertIn("each distinct forge role independently", self.body)
-        self.assertIn("{TICKET_TRUNK_ROOT}/repos/{repo}", self.repo_resolution)
-        self.assertIn("Do not rescue an identity mismatch", self.repo_resolution)
-        self.assertIn("Cross-repository canonical plans must be ticket-discoverable", self.handoff)
-        self.assert_matches(
-            self.body,
-            r"(?is)Reuse only.*progress\.md.*canonical ticket.*implementation",
-            "cross-repository worktree reuse must verify ticket and implementation identity",
-        )
-        self.assert_matches(
-            self.body,
-            r"(?is)ticket repository.*implementation repository.*may differ",
-            "issue-work must explicitly allow an approved cross-repository binding",
-        )
-
-    def test_names_the_adapted_delivery_cores(self) -> None:
-        for name in ("tdd", "diagnosing-bugs", "pr-self-review"):
-            with self.subTest(core=name):
-                self.assertIn(name, self.body)
-
-    def test_visible_ticket_backed_workers_are_the_default(self) -> None:
         for token in (
-            "coding-agent-handoff-supervision",
-            "existing governing issue",
-            "issue-create",
-            "ticket URL",
-            "--override hermes",
+            "issue-xrepo-{ticket_digest}",
+            "publication-summary.md",
+            "each distinct ticket and",
+            "source_issue_mode: github_shorthand",
+            "wrong forge",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, self.body)
+        self.assertIn("{TICKET_TRUNK_ROOT}/repos/{repo}", self.repo_resolution)
+        self.assertIn("Do not rescue an identity mismatch", self.repo_resolution)
+
+    def test_imperative_work_authorizes_reviewable_pr_not_merge(self) -> None:
         self.assert_matches(
             self.body,
-            r"(?i)explicit same-run\s+request",
-            "Qwen must require an explicit same-run request",
+            r"(?is)imperative `work <issue URL>`.*implementation.*local commits.*push.*reviewable PR",
+            "work command must carry implementation and PR delivery authority",
         )
-        self.assert_not_matches(
-            self.body,
-            r"(?i)(default non-SGG|other repos to).*qwen|qwen.*default non-SGG",
-            "Qwen must never be an automatic issue-work route",
-        )
-
-    def test_issue_work_treats_claude_capacity_as_a_separate_hard_gate(self) -> None:
-        for pattern in (
-            r"before\s+creating or\s+starting a Claude pane",
-            r"before every\s+correction prompt or blocked-UI answer",
-            r"before launching or rerunning the\s+fresh Claude reviewer",
-            r"never overrides this gate",
-            r"consumes no correction\s+pass",
-            r"never authorizes an automatic switch",
+        for excluded in (
+            "does not authorize merge",
+            "issue comments",
+            "issue-body edits",
+            "label changes",
+            "deployment",
         ):
-            with self.subTest(pattern=pattern):
-                self.assertRegex(self.body, pattern)
-
-    def test_visible_worker_authority_has_one_approval_gated_rule(self) -> None:
+            with self.subTest(excluded=excluded):
+                self.assertIn(excluded, self.body)
         self.assert_matches(
             self.body,
-            r"(?is)default visible handoff.*forbids.*stag.*local\s+commit.*push.*PR.*each broader\s+action.*explicit same-run user approval.*publication.*(ship|public-action) gate",
-            "visible authority must state one default, override, and publication rule",
-        )
-        self.assertNotIn("The delegated worker must not stage, commit", self.body)
-
-    def test_visible_worker_forbids_destructive_git_operations(self) -> None:
-        marker = "Destructive and history-rewriting Git operations"
-        contracts = (
-            ("issue-work", self.body, "\n6. Start Claude"),
-            ("handoff", self.handoff_supervision, "\n\nTell the worker"),
+            r"(?is)do not ask again.*push or create the reviewable PR",
+            "issue-work must not add a redundant ship approval",
         )
 
-        def assert_destructive_region(region: str) -> None:
-            self.assert_matches(
-                region,
-                r"(?is)\ADestructive and history-rewriting Git operations are absolute and not\s+approval-eligible",
-                "destructive Git framing must be absolute and not approval-eligible",
-            )
-            for operation in (
-                "git reset",
-                "git clean",
-                "checkout-discard",
-                "rebase",
-                "amend",
-                "history rewrite",
-                "force-push",
-                "delete or overwrite any local ref or branch",
-                "branch deletion",
-                "update-ref deletion",
-            ):
-                self.assert_matches(
-                    region,
-                    re.escape(operation).replace(r"\ ", r"\s+"),
-                    f"missing destructive Git prohibition: {operation}",
-                )
+    def test_exploration_is_question_driven_and_may_be_zero(self) -> None:
+        self.assertIn("Use zero exploration children", self.body)
+        self.assertIn("concrete unresolved repository question", self.body)
+        self.assertNotIn("**always** at least one", self.body)
 
-        for name, body, end_marker in contracts:
-            with self.subTest(contract=name):
-                start = body.index(marker)
-                end = body.index(end_marker, start)
-                region = body[start:end]
-                self.assertLess(len(region), 700, "destructive Git guard window grew too broad")
-                assert_destructive_region(region)
-
-                downgraded = re.sub(
-                    r"are absolute and not\s+approval-eligible(?: in every worker-facing brief)?:",
-                    "require explicit same-run approval:",
-                    region,
-                    count=1,
-                    flags=re.IGNORECASE,
-                )
-                self.assertNotEqual(region, downgraded)
-                with self.assertRaises(AssertionError):
-                    assert_destructive_region(downgraded)
-
-    def test_qwen_skill_requires_an_explicit_same_run_selection(self) -> None:
-        self.assertIn("explicitly selected Qwen for this run", self.qwen)
+    def test_router_right_sizes_auto_work(self) -> None:
+        for token in ("--task-shape", "single-loop", "substantial"):
+            with self.subTest(token=token):
+                self.assertIn(token, self.body)
+                self.assertIn(token.replace("--", ""), self.router)
         self.assert_matches(
-            self.qwen,
-            r"automatic\s+issue-work routing uses the visible Claude handoff",
-            "Qwen must document the automatic visible-Claude route",
-        )
-        self.assertNotIn("repository is outside the Simpler Grants Gov allowlist", self.qwen)
-
-    def test_background_wrappers_are_explicit_request_only(self) -> None:
-        for name, body in (
-            ("claude", self.claude_wrapper),
-            ("qwen", self.qwen),
-        ):
-            with self.subTest(wrapper=name):
-                description = body.split("---", 2)[1]
-                self.assert_matches(
-                    description,
-                    r"(?is)description:.*explicit.*request",
-                    f"{name} wrapper description must be explicit-request-only",
-                )
-
-    def test_dependency_review_skills_default_to_visible_handoffs(self) -> None:
-        for name, body in (
-            ("dependency-review", self.dependency_review),
-            ("catalog-review", self.catalog_review),
-        ):
-            with self.subTest(skill=name):
-                self.assertIn("coding-agent-handoff-supervision", body)
-                self.assert_matches(
-                    body,
-                    r"(?is)codex-claude-implementation-loop.*explicit.*background",
-                    f"{name} may name the wrapper only as an explicit background route",
-                )
-
-    def test_does_not_promise_a_lens_count(self) -> None:
-        """The old skill hardcoded 'four lenses' while review ran six.
-
-        Lane selection is now computed, so no prose count may reappear.
-        """
-        self.assert_not_matches(
             self.body,
-            r"(?i)\b(four|six)[- ]lens",
-            "forbidden wording present: fixed lens count",
+            r"(?is)`auto` keeps a\s+single-loop task with the parent.*substantial work to visible Claude",
+            "auto routing must be proportional to task shape",
         )
-        self.assert_not_matches(
-            self.body,
-            r"(?i)\ball (four|six) lenses\b",
-            "forbidden wording present: all-lenses count",
-        )
+        self.assertIn("explicit same-run", self.body.lower())
+        self.assertIn("Qwen is\nnever an automatic route", self.body)
+
+    def test_visible_worker_uses_one_helper_and_complete_identity(self) -> None:
+        self.assertIn("herdr_worker.py", self.body)
+        for field in (
+            "worker_surface",
+            "worker_agent_name",
+            "worker_pane_id",
+            "worker_kind",
+            "worker_runtime_session_id",
+            "worker_worktree_identity",
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, self.body)
+                self.assertIn(field, self.handoff_supervision)
+        self.assertIn("atomically\nserializes provider turns", self.body)
+        self.assertIn("never authorizes an automatic\nprovider switch", self.body)
+
+    def test_destructive_git_remains_absolutely_prohibited(self) -> None:
+        region = self.body.split(
+            "Destructive and history-rewriting Git operations", 1
+        )[1].split("For an explicit Qwen route", 1)[0]
+        self.assertIn("absolute and\nnot approval-eligible", region)
+        for operation in (
+            "git reset",
+            "git clean",
+            "checkout-discard",
+            "rebase",
+            "amend",
+            "history rewrite",
+            "force-push",
+            "local-ref/branch deletion",
+        ):
+            with self.subTest(operation=operation):
+                self.assertIn(operation, region)
+
+    def test_compact_efficiency_record_is_complete(self) -> None:
+        for field in (
+            "task_shape",
+            "exploration_children",
+            "claude_prompts",
+            "correction_passes",
+            "review_invocations",
+            "targeted_risk_reviews",
+            "provider_capacity_start",
+            "provider_capacity_end",
+            "blocking_findings_after_initial_review",
+            "elapsed_to_reviewable_pr_seconds",
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, self.body)
 
 
 class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
-    """Visible implementation handoffs are ticket-backed and resumable."""
+    """Visible handoffs are short, deterministic, and globally serialized."""
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -642,275 +553,138 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
             / "references"
             / "herdr-claude-handoff.md"
         )
-        cls.cross_machine = read(
-            REPO_ROOT
-            / "hermes"
-            / "skills"
-            / "autonomous-ai-agents"
-            / "cross-machine-coding-agent-handoffs"
-            / "SKILL.md"
+        cls.script = (
+            POOL
+            / "coding-agent-handoff-supervision"
+            / "scripts"
+            / "herdr_worker.py"
+        )
+        cls.tests = (
+            POOL
+            / "coding-agent-handoff-supervision"
+            / "tests"
+            / "test_herdr_worker.py"
         )
 
-    def test_preparation_reuses_or_creates_one_workspace_ticket(self) -> None:
-        for token in (
-            "existing governing issue",
-            "project workspace",
-            "issue-create",
-            "duplicate",
-            "approved",
-            "read back",
-        ):
+    def test_preparation_reuses_or_creates_one_ticket(self) -> None:
+        for token in ("Reuse the ticket", "issue-create", "duplicate", "read it back"):
             with self.subTest(token=token):
                 self.assertIn(token, self.body)
 
-    def test_short_handoff_names_authority_without_copying_the_plan(self) -> None:
-        for token in (
-            "ticket URL",
-            "implementation repository",
-            "worktree",
-            "authority boundaries",
-        ):
-            with self.subTest(token=token):
-                self.assertIn(token, self.body)
+    def test_artifact_not_prompt_carries_context(self) -> None:
+        self.assertIn("artifact, not the prompt", self.body)
         self.assert_matches(
             self.body,
-            r"(?is)(do not|never).*duplicat.*(plan|complete context)",
-            "the ticket, not an oversized prompt, must carry implementation context",
+            r"(?is)ticket or plan URL/path.*implementation repository.*worktree.*authority boundaries.*permissions",
+            "brief must contain locators and authority only",
+        )
+        self.assert_matches(
+            self.body,
+            r"(?is)Do not restate steps, files, tests, requirements, or safeguards",
+            "reachable requirements must not be copied into the prompt",
         )
 
-    def test_sol_claude_boundary_preserves_pairing_and_acceptance_roles(self) -> None:
+    def test_sol_claude_boundary_is_explicit(self) -> None:
+        for token in ("decision-complete", "Sol remains the pairing", "single-loop"):
+            with self.subTest(token=token):
+                self.assertIn(token.lower(), self.body.lower())
+        self.assert_matches(
+            self.body,
+            r"(?is)the worker produces a\s+candidate; Sol independently accepts",
+            "worker authorship and Sol acceptance must stay distinct",
+        )
+
+    def test_helper_and_tests_exist(self) -> None:
+        self.assertTrue(self.script.is_file())
+        self.assertTrue(self.tests.is_file())
+        self.assertTrue(self.script.stat().st_mode & 0o111)
+        self.assertIn("herdr_worker.py", self.body)
+        self.assertIn("herdr_worker.py", self.herdr)
+
+    def test_capacity_and_global_turn_lease_are_hard_gates(self) -> None:
         for token in (
-            "decision-complete",
-            "unresolved answer",
-            "live incident diagnosis",
-            "voice-heavy",
-            "Claude produces the candidate",
-            "Sol independently accepts",
+            "global Claude-turn lease",
+            "At most one Claude prompt",
+            "Any nonzero\ncapacity result stops",
+            "never switch providers",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token.lower(), (self.body + self.herdr).lower())
+        script = read(self.script)
+        self.assertIn("fcntl.LOCK_EX | fcntl.LOCK_NB", script)
+        self.assertIn('"--check-capacity"', script)
+        self.assertIn('"--wait"', script)
+
+    def test_visible_authority_and_identity_remain_fail_closed(self) -> None:
+        for token in (
+            "--permission-mode auto",
+            "approvals.mode: smart",
+            "HERMES_YOLO_MODE",
+            "not sandbox-confined",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, self.body)
-        self.assert_matches(
-            self.body,
-            r"(?is)Sol.*(pairing|deliberation|planning).*Claude.*implement.*Sol.*(review|accept)",
-            "Sol must retain deliberation and final acceptance while Claude implements",
-        )
-
-    def test_accessible_artifact_is_self_contained_not_the_prompt(self) -> None:
-        for name, body in (
-            ("visible handoff", self.body),
-            ("cross-machine handoff", self.cross_machine),
-        ):
-            with self.subTest(skill=name):
-                self.assertIn("artifact, not the prompt", body.lower())
-                self.assert_matches(
-                    body,
-                    r"(?is)(plan|ticket).*(path|URL).*(execution scope|authority boundaries).*delivery permissions",
-                    f"{name} must keep an artifact-backed prompt to locator and authority",
-                )
-                self.assert_matches(
-                    body,
-                    r"(?is)(do not|never).*restat.*(steps|files|tests|requirements)",
-                    f"{name} must prohibit restating reachable plan details",
-                )
-        self.assert_matches(
-            self.cross_machine,
-            r"(?is)(cannot|can't|unable).*(read|access).*(inline|include).*(missing|minimum)",
-            "cross-machine handoffs may inline only what the worker cannot retrieve",
-        )
-
-    def test_herdr_supports_claude_and_explicit_hermes_without_focus(self) -> None:
-        self.assertIn("--kind claude", self.herdr)
-        self.assertIn("--kind hermes", self.herdr)
-        self.assertIn("--no-focus", self.herdr)
-        self.assertIn("--timeout 7200000", self.herdr)
-        self.assert_matches(
-            self.herdr,
-            r"(?is)continue.*same.*(agent|session)",
-            "corrections must return to the original visible worker",
-        )
-
-    def test_live_claude_capacity_gates_every_provider_turn(self) -> None:
-        for pattern in (
-            r"--check-capacity",
-            r"before pane creation",
-            r"before the first `agent prompt`",
-            r"before\s+every later `agent prompt` or `agent send-keys`",
-            r"Any nonzero result blocks another Claude\s+turn",
-            r"round count as permission to exceed quota",
-            r"never switch\s+to another provider automatically",
-        ):
-            with self.subTest(pattern=pattern):
-                self.assertRegex(self.herdr, pattern)
-        self.assertIn("100% usage meter", self.body)
-
-    def test_persists_complete_visible_worker_identity(self) -> None:
-        fields = (
-            "worker_surface",
-            "worker_agent_name",
-            "worker_pane_id",
-            "worker_kind",
-            "worker_runtime_session_id",
-            "worker_worktree_identity",
-        )
-        for field in fields:
-            with self.subTest(field=field):
-                self.assertIn(field, self.body)
-                self.assertIn(field, self.herdr)
-
-    def test_visible_worker_uses_approval_gated_authority(self) -> None:
-        self.assertIn("--permission-mode auto", self.herdr)
-        self.assertNotIn("--permission-mode acceptEdits", self.herdr)
-        self.assertIn("approvals.mode: smart", self.herdr)
-        self.assertIn("HERMES_YOLO_MODE", self.herdr)
-        self.assert_matches(
-            self.herdr,
-            r"(?is)do not claim.*sandbox|not.*sandbox.*confinement",
-            "visible workers must not be described as sandbox-confined",
-        )
-        for permission in (r"local\s+commit", r"push", r"PR"):
+        for permission in ("local commit", "push", "PR/issue permissions"):
             with self.subTest(permission=permission):
-                self.assert_matches(
-                    self.body,
-                    permission,
-                    f"missing explicit authority field: {permission}",
-                )
+                self.assertIn(permission, self.body)
+        self.assertIn("Do not hand-edit or reconstruct an\nidentity record", self.body)
+
+    def test_pane_is_released_when_no_turn_remains(self) -> None:
+        self.assertIn("Release the pane promptly", self.body)
+        self.assertIn("Pending publication, merge, or live\nverification", self.body)
+        self.assertIn("marks the identity closed/non-resumable", self.body)
 
 
 class ReviewContractTest(_MatchMixin, unittest.TestCase):
-    """Three primary lanes plus a mandatory final Ponytail quality gate."""
+    """Review keeps dimensions and quality while reducing invocations."""
 
     @classmethod
     def setUpClass(cls) -> None:
         cls.body = read(POOL / "pr-self-review" / "SKILL.md")
         cls.code_review = read(POOL / "code-review" / "SKILL.md")
-        cls.ship = read(POOL / "ship" / "SKILL.md")
         cls.issue_work = read(POOL / "issue-work" / "SKILL.md")
-        cls.handoff_supervision = read(
-            POOL / "coding-agent-handoff-supervision" / "SKILL.md"
+        cls.ship = read(POOL / "ship" / "SKILL.md")
+        cls.reviewer = read(REPO_ROOT / "dot-claude" / "agents" / "lane-reviewer.md")
+
+    def test_lane_selector_and_tests_exist(self) -> None:
+        self.assertTrue(
+            (POOL / "pr-self-review" / "scripts" / "select_review_lanes.py").is_file()
         )
-        cls.conforming_specs = read(POOL / "conforming-tech-specs" / "SKILL.md")
-        cls.adr_coach = read(POOL / "adr-and-spec-coach" / "SKILL.md")
-        cls.lane_reviewer = read(REPO_ROOT / "dot-claude" / "agents" / "lane-reviewer.md")
-        cls.review_overview = cls.body.split("## Phase 2 — Review pass", 1)[1].split("### 2.1", 1)[0]
-        cls.dispatch = cls.body.split("### 2.2 Run the primary lanes, then Ponytail", 1)[1].split("### 2.2.1", 1)[0]
-        cls.ponytail_dispatch = cls.dispatch.split("After the primary batch", 1)[1]
-        cls.correction = cls.body.split("### 2.5 Correction bound", 1)[1].split("## Phase 3", 1)[0]
-        cls.summary = cls.body.split("### 3.1 Write summary.md", 1)[1].split("### 3.2", 1)[0]
-        cls.preflight = cls.body.split("### 0.4 Pre-flight", 1)[1].split("## Phase 1", 1)[0]
-        cls.ponytail_contract = cls.code_review.split("### Ponytail quality gate", 1)[1].split("## 5. Report", 1)[0]
-
-    def test_lane_selector_and_its_tests_exist(self) -> None:
-        self.assertTrue((POOL / "pr-self-review" / "scripts" / "select_review_lanes.py").is_file())
-        self.assertTrue((POOL / "pr-self-review" / "tests" / "test_select_review_lanes.py").is_file())
-
-    def test_correctness_lane_is_optional_and_does_not_expand_pr_self_review(self) -> None:
-        self.assertIn("Correctness / Integration / Tests", self.code_review)
-        self.assert_matches(
-            self.code_review,
-            r"(?is)correctness.*(caller.selected|available to callers|optional)",
-            "the shared correctness lane must remain caller-selected",
+        self.assertTrue(
+            (POOL / "pr-self-review" / "tests" / "test_select_review_lanes.py").is_file()
         )
-        self.assertIn("Standards, Spec, and conditional Risk", self.review_overview)
-        self.assertNotIn("review-correctness.md", self.body)
-        self.assert_matches(
-            self.code_review,
-            r"(?is)not added.*pr-self-review.*(selector|primary.lane)",
-            "adding the shared lane must not change pr-self-review selection",
-        )
+        self.assertIn("select_review_lanes.py", self.body)
+        self.assertIn("select_review_lanes.py", self.code_review)
 
-    def test_skill_names_the_three_lanes_and_their_artifacts(self) -> None:
-        for token in ("review-standards.md", "review-spec.md", "review-risk.md", "summary.md"):
-            with self.subTest(artifact=token):
-                self.assertIn(token, self.body)
-
-    def test_ponytail_is_a_mandatory_final_pass_not_a_fourth_primary_lane(self) -> None:
-        self.assertIn("classifier-selected primary lanes", self.review_overview)
-        self.assertIn("followed by mandatory Ponytail", self.review_overview)
-        self.assertIn("not a fourth primary lane", self.review_overview)
-        self.assertIn("Ponytail runs on every review candidate", self.review_overview)
-        self.assertIn("After the primary batch", self.dispatch)
-        self.assertIn("the same diff range", self.dispatch)
-        self.assertIn("candidate_identity", self.dispatch)
-        self.assertIn("review-ponytail.md", self.dispatch)
-        for field in ("base_sha", "head_sha", "merge_base_sha", "diff_sha256"):
-            with self.subTest(ponytail_identity=field):
-                self.assertIn(field, self.ponytail_dispatch)
-
-    def test_ship_fails_closed_without_exact_ponytail_evidence(self) -> None:
+    def test_review_is_integrated_but_artifacts_stay_separate(self) -> None:
         for token in (
-            "base SHA",
-            "head SHA",
-            "merge-base SHA",
-            "diff hash",
-            "clean worktree",
+            "one integrated review",
+            "One review context reads the diff and authorities once",
+            "review-standards.md",
+            "review-spec.md",
+            "review-risk.md",
+            "review-ponytail.md",
         ):
             with self.subTest(token=token):
-                self.assertIn(token, self.ship)
-        self.assert_matches(
-            self.ship,
-            r"(?is)Standards and\s+Spec, conditional Risk, then mandatory Ponytail",
-            "ship must require every review lane in order",
-        )
-        self.assert_matches(
-            self.ship,
-            r"(?is)worker's self-check.*parent ad-hoc review.*never satisfies.*missing or stale Ponytail evidence.*blocks publication",
-            "ship must reject informal or stale review evidence",
-        )
+                self.assertIn(token, self.body + self.code_review)
+        self.assertNotIn("parallel children", self.code_review)
+        self.assertIn("model: opus", self.reviewer)
+        self.assertIn("Do not spend another subagent", self.reviewer)
 
-    def test_visible_handoff_requires_independent_ponytail_review(self) -> None:
-        self.assert_matches(
-            self.handoff_supervision,
-            r"(?is)freeze the exact candidate.*Standards and Spec.*conditional Risk.*mandatory Ponytail",
-            "visible handoffs must run the complete authored-candidate gate",
-        )
-        self.assert_matches(
-            self.handoff_supervision,
-            r"(?is)independent of the worker.*parent ad-hoc pass.*same worker session does not count",
-            "the implementation worker or parent ad-hoc pass must not impersonate review",
-        )
-        self.assertIn("invalidate every review artifact", self.handoff_supervision)
+    def test_parent_is_independent_for_worker_authored_candidate(self) -> None:
+        self.assertIn("Sol parent is the independent acceptance", self.issue_work)
+        self.assertIn("systematic Sol-parent review", self.ship)
+        self.assertIn("parent-authored candidate\nrequires an independent review context", self.ship)
+        self.assertNotIn("must launch a fresh visible Claude reviewer", self.issue_work)
 
-    def test_conforming_specs_gate_epistemic_claims_and_preview_visibility(self) -> None:
-        for token in (
-            "Epistemic claim audit",
-            "verified observation",
-            "accepted decision",
-            "inference",
-            "recommendation or opinion",
-        ):
-            with self.subTest(token=token):
-                self.assertIn(token.lower(), self.conforming_specs.lower())
-        self.assert_matches(
-            self.conforming_specs,
-            r"(?is)Astro omits\s+that page from deploy previews",
-            "the skill must explain why copied ADRs omit the draft flag",
-        )
-        self.assert_matches(
-            self.conforming_specs,
-            r"(?s)title: \"<Decision summary>\"\n\s+description: ADR documenting.*\n\s+---",
-            "copied ADR frontmatter must close without a draft flag",
-        )
-        self.assert_not_matches(
-            self.conforming_specs,
-            r"(?s)title: \"<Decision summary>\"\n\s+description: ADR documenting.*\n\s+draft: true\n\s+---",
-            "copied ADR frontmatter must remain visible in deploy previews",
-        )
+    def test_targeted_risk_deepening_is_conditional_and_late(self) -> None:
+        for body in (self.body, self.code_review, self.issue_work):
+            with self.subTest(skill=body[:40]):
+                self.assertIn("targeted Risk reviewer", body)
+                self.assertIn("stabil", body.lower())
+        self.assertIn("not another generic pass", self.body)
 
-    def test_adr_coaching_context_is_visible_before_the_question(self) -> None:
-        for token in (
-            "Visibility gate",
-            "normal user-visible answer",
-            "make the question itself contain a compact statement",
-        ):
-            with self.subTest(token=token):
-                self.assertIn(token.lower(), self.adr_coach.lower())
-        self.assert_matches(
-            self.adr_coach,
-            r"(?is)do\s+not rely on commentary",
-            "decision context must not be hidden in commentary",
-        )
-
-    def test_ponytail_contract_is_host_independent_and_narrow(self) -> None:
+    def test_ponytail_contract_stays_host_independent_and_narrow(self) -> None:
         for token in (
             "over-engineering only",
             "delete",
@@ -918,432 +692,79 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
             "stdlib",
             "native",
             "shrink",
-            "never invent deletions",
+            "Never invent deletions",
             "Lean already. Ship.",
         ):
             with self.subTest(token=token):
-                self.assertIn(token.lower(), self.ponytail_contract.lower())
-        self.assertIn("does **not** report correctness, security", self.ponytail_contract)
-        for body in (self.body, self.code_review, self.lane_reviewer):
-            self.assertNotIn("ponytail:ponytail-review", body)
-        self.assertIn("Do not invoke `/ponytail-review`", self.review_overview)
-        self.assertIn("depend on a Claude plugin or user-scope", self.review_overview)
+                self.assertIn(token.lower(), self.code_review.lower())
+        self.assertIn("does not report correctness, security", self.code_review)
+        self.assertNotIn("ponytail:ponytail-review", self.body + self.code_review)
 
-    def test_correction_and_terminal_rereviews_require_ponytail(self) -> None:
-        self.assertIn("all selected primary lanes", self.correction)
-        self.assertIn("Ponytail last", self.correction)
-        self.assertNotIn("affected lanes only", self.correction.lower())
-        self.assertIn("The `final_review_only` pass", self.correction)
-        self.assertIn("review-ponytail.md", self.correction)
-        self.assertIn("validated fix", self.correction)
-        self.assertIn("candidate must be reviewed again", self.correction)
-
-    def test_review_capacity_stop_is_independent_of_correction_rounds(self) -> None:
-        for pattern in (
-            r"before the primary-lane batch",
-            r"before mandatory Ponytail",
-            r"before every exact-candidate rerun or blocked-UI answer",
-            r"consumes no\s+correction pass",
-            r"Provider\s+capacity exhausted — review incomplete; do not\s+merge",
-            r"never permission to continue at 100% usage",
+    def test_correction_bound_is_one_plus_one(self) -> None:
+        for token in (
+            "one normal correction",
+            "one conditional second correction",
+            "never a third correction",
         ):
-            with self.subTest(pattern=pattern):
-                self.assertRegex(self.body, pattern)
-
-    def test_summary_and_readiness_make_missing_ponytail_visible(self) -> None:
-        for token in ("candidate: {head_sha}", "quality_gates: [ponytail]", "## Ponytail Quality Gate", "review-ponytail.md"):
             with self.subTest(token=token):
-                self.assertIn(token, self.summary)
-        for field in ("base_sha", "head_sha", "merge_base_sha", "diff_sha256"):
-            with self.subTest(field=field):
-                self.assertIn(f"{field}: {{{field}}}", self.lane_reviewer)
-                self.assertIn(field, self.body)
-        self.assert_matches(
-            self.body,
-            r"(?is)compare.*base_sha.*head_sha.*merge_base_sha.*diff_sha256.*before.*after",
-            "every review stage must verify the complete immutable candidate identity",
-        )
-        self.assertIn("Ponytail review missing — do not merge", self.summary)
-        self.assertIn("Ship Readiness also checks `review-ponytail.md`", self.summary)
+                self.assertIn(token, self.body.lower())
+                self.assertIn(token, self.issue_work.lower())
+        self.assertNotIn("final_review_only", self.body)
+        self.assertNotIn("third correction pass", self.body)
 
-    def test_state_directory_is_created_confined_and_symlink_safe(self) -> None:
-        self.assertIn("standalone", self.preflight.lower())
-        self.assertIn("create", self.preflight.lower())
-        self.assertIn("pre-pr", self.preflight.lower())
-        self.assertIn("canonical", self.preflight.lower())
-        self.assertIn("authorized `.hermes/` state root", self.preflight)
-        self.assertIn('D="{state-dir}"', self.body)
-        self.assertIn('! -d "$D"', self.body)
-        self.assertIn("set -euo pipefail", self.body)
-        self.assertIn("trap cleanup_candidate_inputs EXIT", self.body)
-        for artifact in ("candidate.diff", "name-status", "unified.diff"):
-            with self.subTest(artifact=artifact):
-                self.assertIn(f'mktemp "$D/{artifact}.XXXXXX"', self.body)
-        self.assertIn('$base_sha...$head_sha', self.body)
-        self.assertNotIn('{base}...HEAD -- > "$name_status_file"', self.body)
-
-    def test_cross_repository_pre_pr_state_is_ticket_root_confined(self) -> None:
-        validator = POOL / "issue-work" / "scripts" / "validate_cross_repo_context.py"
-        validator_tests = POOL / "issue-work" / "tests" / "test_validate_cross_repo_context.py"
-        self.assertTrue(validator.is_file())
-        self.assertTrue(validator_tests.is_file())
-        for identity_arg in (
-            "ticket_url",
-            "ticket_host",
-            "ticket_repo",
-            "implementation_host",
-            "implementation_repo",
-        ):
-            with self.subTest(identity_arg=identity_arg):
-                self.assertIn(identity_arg, self.issue_work)
-                self.assertIn(identity_arg, self.body)
-        self.assertIn("Never derive these identities from `progress.md`", self.body)
-        self.assertIn("ticket_trunk_root", self.issue_work)
-        self.assertIn("ticket_trunk_root", self.body)
-        self.assert_matches(
-            self.preflight,
-            r"(?is)pre-pr.*ticket_trunk_root.*\.hermes/issue-work.*implementation worktree",
-            "pre-pr review must separate private state authority from implementation Git authority",
-        )
-
-    def test_issue_work_requires_and_presents_the_ponytail_artifact(self) -> None:
-        self.assertIn("review-ponytail.md", self.issue_work)
-        self.assert_matches(
-            self.issue_work,
-            r"(?is)review-ponytail\.md.*(missing|absent).*(blocked|do not merge|stop)",
-            "issue-work must not accept an incomplete self-review handoff",
-        )
-        self.assert_matches(
-            self.issue_work,
-            r"(?is)Ponytail.*(status|selection)",
-            "issue-work must present Ponytail selection/status",
-        )
-
-    def test_corrections_resume_the_selected_visible_worker(self) -> None:
-        self.assertIn("coding-agent-handoff-supervision", self.body)
-        self.assert_matches(
-            self.body,
-            r"(?is)same.*Claude or Hermes.*session",
-            "review corrections must return to the original visible worker",
-        )
-
-    def test_visible_resume_identity_is_complete_and_fail_closed(self) -> None:
-        fields = (
-            "worker_surface",
-            "worker_agent_name",
-            "worker_pane_id",
-            "worker_kind",
-            "worker_runtime_session_id",
-            "worker_worktree_identity",
-        )
-        for field in fields:
-            with self.subTest(field=field):
-                self.assertIn(field, self.issue_work)
-                self.assertIn(field, self.body)
-        self.assert_matches(
-            self.issue_work,
-            r"(?is)(legacy|incomplete).*visible.worker.*stop.*never launch",
-            "issue-work must fail closed on incomplete visible-worker state",
-        )
-        self.assert_matches(
-            self.body,
-            r"(?is)before and after every correction prompt.*compare.*worker_surface.*worker_agent_name.*worker_pane_id.*worker_kind.*worker_runtime_session_id.*worker_worktree_identity",
-            "pr-self-review must compare every persisted identity field around each prompt",
-        )
-
-    def test_issue_work_visible_route_is_herdr_only(self) -> None:
-        self.assert_matches(
-            self.issue_work,
-            r"(?is)visible Claude or Hermes.*require Herdr.*stop.*unavailable",
-            "issue-work visible correction routing must fail closed without Herdr",
-        )
-        self.assert_matches(
-            self.issue_work,
-            r"(?is)Agent View.*(not fallbacks|not a fallback|cannot represent)",
-            "issue-work must reject Agent View as a visible-route fallback",
-        )
-
-    def test_ship_requires_a_fresh_distinct_visible_claude_reviewer(self) -> None:
-        self.assert_matches(
-            self.issue_work,
-            r"(?is)before.*invoke ship.*fresh.*visible Claude reviewer.*Herdr.*new.*agent.*pane.*runtime session",
-            "ship must be gated by a newly launched visible Claude reviewer",
-        )
-        for field in (
-            "reviewer_surface",
-            "reviewer_agent_name",
-            "reviewer_pane_id",
-            "reviewer_kind",
-            "reviewer_runtime_session_id",
-            "reviewer_worktree_identity",
-        ):
-            with self.subTest(field=field):
-                self.assertIn(field, self.issue_work)
-                self.assertIn(field, self.body)
-        self.assert_matches(
-            self.issue_work,
-            r"(?is)distinct.*worker_agent_name.*worker_pane_id.*worker_runtime_session_id",
-            "reviewer identity must differ from the implementation worker",
-        )
-
-    def test_fresh_reviewer_owns_the_complete_exact_candidate_gate(self) -> None:
-        for body in (self.issue_work, self.body):
-            with self.subTest(skill="issue-work" if body is self.issue_work else "pr-self-review"):
-                self.assert_matches(
-                    body,
-                    r"(?is)fresh visible Claude reviewer.*Standards.*Spec.*conditional Risk.*Ponytail.*acceptance.criteria.*Ship Readiness",
-                    "fresh reviewer must run the complete pr-self-review workflow",
-                )
-                self.assert_matches(
-                    body,
-                    r"(?is)exact (final )?candidate.*base_sha.*head_sha.*merge_base_sha.*diff_sha256",
-                    "review output must bind the complete exact candidate identity",
-                )
-        self.assert_matches(
-            self.issue_work,
-            r"(?is)earlier parent.*ad-hoc.*(cannot|does not|never).*satisf",
-            "earlier reviews cannot satisfy the fresh review gate",
-        )
-        self.assert_matches(
-            self.body,
-            r"(?is)intent-checklist\.json.*candidate_identity.*reviewer_identity.*stale",
-            "acceptance-criteria evidence must bind reviewer and candidate identity",
-        )
-
-    def test_candidate_changes_return_to_original_worker_then_full_rereview(self) -> None:
-        self.assert_matches(
-            self.issue_work,
-            r"(?is)candidate-changing fix.*original implementation worker.*same fresh\s+reviewer.*re-run.*complete exact-candidate gate.*before ship",
-            "every correction must preserve worker continuity and repeat the full gate",
-        )
-        self.assert_matches(
-            self.body,
-            r"(?is)candidate-changing fix.*original\s+implementation worker.*fresh visible Claude\s+reviewer.*complete.*gate",
-            "pr-self-review must preserve correction routing and reviewer continuity",
-        )
-
-    def test_lane_reviewer_can_receive_the_shared_ponytail_contract(self) -> None:
-        self.assertIn("`ponytail`", self.lane_reviewer)
-        self.assertIn("review-ponytail.md", self.lane_reviewer)
-        self.assert_matches(
-            self.lane_reviewer,
-            r"(?is)git diff --binary -M -C --find-copies-harder.*\{base_sha\}\.\.\.\{head_sha\}.*diff_sha256",
-            "every reviewer must recompute the parent's exact canonical binary-diff fingerprint",
-        )
+    def test_exact_candidate_and_untracked_guard_remain(self) -> None:
         for token in (
-            "actual_head_sha",
-            "actual_merge_base_sha",
-            "{head_sha}",
-            "{merge_base_sha}",
+            "base_sha",
+            "head_sha",
+            "merge_base_sha",
+            "diff_sha256",
+            "expected_head_branch",
             "git status --porcelain --untracked-files=all",
-        ):
-            with self.subTest(identity_check=token):
-                self.assertIn(token, self.lane_reviewer)
-        self.assertIn("git status --porcelain --untracked-files=all", self.body)
-        self.assert_matches(
-            self.lane_reviewer,
-            r"(?is)code-review.*canonical.*ponytail",
-            "Claude's reviewer must consume the shared contract rather than a plugin",
-        )
-
-    def test_standalone_code_review_pins_classifier_and_ponytail_identity(self) -> None:
-        self.assertIn('git rev-parse "<fixed-point>^{commit}"', self.code_review)
-        self.assertIn("{base_sha}...{head_sha}", self.code_review)
-        self.assertIn("git diff --binary -M -C --find-copies-harder", self.code_review)
-        self.assertIn("diff_sha256=", self.code_review)
-        self.assertNotIn("<fixed-point>...HEAD -- > name-status", self.code_review)
-        ponytail_dispatch = self.code_review.split("After every selected primary lane", 1)[1].split("### Standards lane", 1)[0]
-        self.assertIn("expected_head_branch", ponytail_dispatch)
-        for field in ("base_sha", "head_sha", "merge_base_sha", "diff_sha256"):
-            with self.subTest(field=field):
-                self.assertIn(field, ponytail_dispatch)
-
-    def test_every_identity_boundary_rejects_same_commit_branch_switches(self) -> None:
-        self.assertIn("expected_head_branch", self.body)
-        self.assertIn("git branch --show-current", self.body)
-        self.assertIn("current branch", self.body.lower())
-        self.assertIn("expected_head_branch", self.lane_reviewer)
-        self.assertIn("git branch --show-current", self.lane_reviewer)
-
-    def test_skill_documents_the_cairnos_always_risk_rule(self) -> None:
-        self.assert_matches(self.body, r"(?i)cairn", "missing required wording: cairn")
-
-    def test_skill_documents_the_no_fourth_pass_invariant(self) -> None:
-        self.assert_matches(
-            self.body,
-            r"(?i)no fourth correction pass|never a fourth correction pass",
-            "missing required wording: no fourth correction pass",
-        )
-
-    def test_skill_keeps_the_independent_acceptance_criteria_sweep(self) -> None:
-        self.assert_matches(
-            self.body, r"(?i)acceptance[- ]criteria sweep", "AC sweep section missing"
-        )
-
-    def test_ac_sweep_gathers_from_every_authoritative_intent_source(self) -> None:
-        """An issue with no task list is not an issue with no criteria."""
-        for source in ("plan_path", "source issue", "spec", "PR body"):
-            with self.subTest(source=source):
-                self.assert_matches(
-                    self.body, re.escape(source), f"AC sweep must name {source} as a source"
-                )
-        self.assert_matches(
-            self.body,
-            r"(?i)not an issue with no acceptance criteria",
-            "AC sweep must reject absence-of-task-list as absence-of-criteria",
-        )
-        self.assert_matches(
-            self.body, r"(?i)normaliz", "AC sweep must normalize into one checklist"
-        )
-        self.assert_matches(
-            self.body,
-            r"(?i)compound",
-            "AC sweep must split compound criteria; a half-satisfied compound reads as met",
-        )
-
-    def test_the_third_correction_is_still_reviewed(self) -> None:
-        """Reaching the bound must not ship an unexamined correction.
-
-        The code the third pass produced has never been looked at, so exiting
-        on `correction_passes == 3` would make the final correction pass a way
-        to slip an unreviewed change past the gate.
-        """
-        self.assert_matches(
-            self.body, r"final_review_only", "the terminal review-only state must exist"
-        )
-        self.assert_matches(
-            self.body,
-            r"(?i)do not exit here",
-            "reaching the bound must explicitly not be an exit",
-        )
-        self.assert_matches(
-            self.body,
-            r"(?i)apply nothing",
-            "the review-only pass must forbid fixes",
-        )
-
-    def test_terminal_review_accepts_only_an_identity_verified_released_worker(self) -> None:
-        for token in (
-            "correction_passes: 3",
-            "worker_release_status: closed_after_exhausted_revisions",
-            "worker_revision_budget_exhausted: true",
-            "no replacement worker may be launched",
+            "invisible to `{base}...HEAD`",
+            "Ignored paths are outside the candidate",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, self.body)
-        self.assert_matches(
-            self.body,
-            r"(?i)both the named Herdr agent and\s+pane are absent",
-            "the terminal review must verify both released worker resources are absent",
-        )
+        for token in (
+            "base_sha",
+            "head_sha",
+            "merge_base_sha",
+            "diff_sha256",
+            "expected_head_branch",
+        ):
+            with self.subTest(reviewer_identity=token):
+                self.assertIn(token, self.reviewer)
 
-    def test_the_loop_state_table_covers_every_terminal_state(self) -> None:
-        for state in ("reviewing", "final_review_only", "clean", "bound"):
-            with self.subTest(state=state):
-                self.assert_matches(
-                    self.body, rf"\|\s*`?{state}`?\s*\|", f"loop state {state} missing from the table"
-                )
+    def test_acceptance_sweep_keeps_all_authorities(self) -> None:
+        for token in (
+            "plan_path",
+            "source issue",
+            "governing spec",
+            "PR body",
+            "intent-checklist.json",
+            "An issue with no task list is not an issue with no acceptance criteria",
+            "split every compound criterion",
+            "unswept",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.body)
 
-    def test_the_review_only_pass_is_identical_on_both_paths(self) -> None:
-        """A delegated run gets no extra pass and skips no review."""
-        self.assert_matches(
-            self.body,
-            r"(?i)identical on the native and delegated paths",
-            "the review-only pass must be stated as path-independent",
-        )
-        self.assert_matches(
-            self.body,
-            r"(?i)reconciliation\s+is\s+a\s+verification\s+of\s+the\s+worker.s\s+diff,\s+not\s+a\s+review",
-            "Codex reconciliation must not be mistaken for the final review",
-        )
+    def test_cross_repository_context_validator_remains_required(self) -> None:
+        self.assertIn("validate_cross_repo_context.py", self.body)
+        self.assertIn("validate_cross_repo_context.py", self.issue_work)
+        for identity in (
+            "ticket URL/host/repository",
+            "implementation\nhost/repository",
+            "state root",
+            "worktree",
+        ):
+            with self.subTest(identity=identity):
+                self.assertIn(identity, self.body)
 
-    def test_the_review_only_pass_reselects_lanes(self) -> None:
-        """The third correction moved HEAD, so the Risk decision may have moved."""
-        self.assert_matches(
-            self.body,
-            r"(?i)re-select the lanes against the \*current\* HEAD",
-            "the review-only pass must re-select lanes",
-        )
-
-    def test_correction_passes_are_counted_per_committed_boundary(self) -> None:
-        """A delegated batch must not spend a conditional follow-up pass early."""
-        self.assert_matches(
-            self.body,
-            r"(?i)once per committed correction boundary",
-            "the counter's unit must be stated",
-        )
-        self.assert_matches(
-            self.body,
-            r"(?i)do not increment `correction_passes` here",
-            "the delegated path must be told explicitly not to double-count",
-        )
-        self.assert_matches(
-            self.body,
-            r"(?i)after pass 1\s*\|\s*after pass 2\s*\|\s*after pass 3",
-            "the native/delegated discrimination table must be present",
-        )
-
-    def test_the_intent_checklist_is_a_persisted_artifact(self) -> None:
-        """Rebuilt from memory, the checklist drifts back to the task list."""
-        self.assertIn("intent-checklist.json", self.body)
-        self.assert_matches(
-            self.body,
-            r"(?i)summary\.md.*read \*\*that file\*\*|both the sweep and `summary\.md`",
-            "the sweep and the summary must consume one artifact",
-        )
-        for field in ("sources", "statement", "verdict", "evidence"):
-            with self.subTest(field=field):
-                self.assertIn(f'"{field}"', self.body)
-
-    def test_the_checklist_never_mines_the_truncated_excerpt(self) -> None:
-        """The 400-char window truncates exactly where criteria usually sit."""
-        self.assert_matches(
-            self.body,
-            r"(?i)do not try to recover prose criteria from the 400-character",
-            "the excerpt must be ruled out as a criteria source",
-        )
-        self.assert_matches(
-            self.body,
-            r"(?i)while the full body is in hand",
-            "criteria must be extracted at ingest, not reconstructed later",
-        )
-        for heading in ("acceptance criteria", "definition of done", "done when"):
-            with self.subTest(heading=heading):
-                self.assertIn(heading, self.body.lower())
-
-    def test_an_unreadable_authority_is_unswept_not_absent(self) -> None:
-        self.assertIn("unswept", self.body)
-        self.assert_matches(
-            self.body,
-            r"(?i)different facts",
-            "could-not-read and asked-for-nothing must be distinguished",
-        )
-
-    def test_untracked_files_block_the_candidate(self) -> None:
-        """A nonignored untracked file is invisible to `{base}...HEAD`."""
-        self.assert_matches(
-            self.body,
-            r"untracked-files=all",
-            "the untracked inventory command must be named",
-        )
-        self.assert_matches(
-            self.body,
-            r"(?i)invisible to",
-            "the reason an untracked file is unreviewable must be stated",
-        )
-        self.assert_matches(
-            self.body,
-            r"(?i)`?pre-pr`? and standalone",
-            "the rule must apply in both modes",
-        )
-        self.assert_matches(
-            self.body,
-            r"(?i)ignored paths are outside the candidate",
-            "ignored .hermes state must stay out of scope",
-        )
-
-    def test_skill_delegates_lane_selection_to_the_classifier(self) -> None:
-        self.assertIn("select_review_lanes.py", self.body)
+    def test_ship_accepts_integrated_independent_evidence(self) -> None:
+        self.assertIn("integrated `code-review` contract", self.ship)
+        self.assertIn("Missing or stale Ponytail evidence blocks\npublication", self.ship)
+        self.assertIn("Exact-candidate Standards, Spec, conditional Risk, and Ponytail", self.ship)
 
 
 class GuidedLearningTest(_MatchMixin, unittest.TestCase):

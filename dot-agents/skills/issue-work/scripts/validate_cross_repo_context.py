@@ -202,7 +202,90 @@ def validate_context(
         "branch": str(implementation["branch"]),
         "cross_repository": cross_repository,
         "source_issue_mode": source_issue_mode,
+        "validator_script": str(Path(__file__).resolve()),
     }
+
+
+def _admit_state_path(
+    *, path: Path, state_dir: Path, label: str, expected_kind: str
+) -> Path:
+    expanded = path.expanduser()
+    if not expanded.is_absolute():
+        fail(f"{label} must be absolute")
+    if expanded.is_symlink():
+        fail(f"{label} must not be a symlink")
+    resolved = expanded.resolve()
+    try:
+        resolved.relative_to(state_dir)
+    except ValueError:
+        fail(f"{label} escapes the validated ticket state directory: {resolved}")
+    if expected_kind == "file" and not resolved.is_file():
+        fail(f"{label} is not a file: {resolved}")
+    if expected_kind == "directory" and not resolved.is_dir():
+        fail(f"{label} is not a directory: {resolved}")
+    return resolved
+
+
+def validate_review_context(
+    *,
+    ticket_trunk: Path,
+    state_dir: Path,
+    worktree: Path,
+    ticket_url: str,
+    ticket_host: str,
+    ticket_repo: str,
+    implementation_host: str,
+    implementation_repo: str,
+    context_validation_path: Path,
+    plan_path: Path | None,
+    output_dir: Path,
+) -> Dict[str, object]:
+    current = validate_context(
+        ticket_trunk=ticket_trunk,
+        state_dir=state_dir,
+        worktree=worktree,
+        ticket_url=ticket_url,
+        ticket_host=ticket_host,
+        ticket_repo=ticket_repo,
+        implementation_host=implementation_host,
+        implementation_repo=implementation_repo,
+    )
+    state = Path(str(current["state_dir"]))
+    context_path = _admit_state_path(
+        path=context_validation_path,
+        state_dir=state,
+        label="context validation path",
+        expected_kind="file",
+    )
+    try:
+        recorded = json.loads(context_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        fail(f"context validation artifact is unreadable: {exc}")
+    if recorded != current:
+        fail("context validation artifact does not match fresh validation")
+    admitted_plan = None
+    if plan_path is not None:
+        admitted_plan = _admit_state_path(
+            path=plan_path,
+            state_dir=state,
+            label="plan path",
+            expected_kind="file",
+        )
+    admitted_output = _admit_state_path(
+        path=output_dir,
+        state_dir=state,
+        label="output directory",
+        expected_kind="directory",
+    )
+    result = dict(current)
+    result.update(
+        {
+            "context_validation_path": str(context_path),
+            "plan_path": str(admitted_plan) if admitted_plan else None,
+            "output_dir": str(admitted_output),
+        }
+    )
+    return result
 
 
 def main() -> int:
@@ -215,18 +298,34 @@ def main() -> int:
     parser.add_argument("--ticket-repo", required=True)
     parser.add_argument("--implementation-host", required=True)
     parser.add_argument("--implementation-repo", required=True)
+    parser.add_argument("--context-validation", type=Path)
+    parser.add_argument("--plan-path", type=Path)
+    parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
     try:
-        result = validate_context(
-            ticket_trunk=args.ticket_trunk,
-            state_dir=args.state_dir,
-            worktree=args.worktree,
-            ticket_url=args.ticket_url,
-            ticket_host=args.ticket_host,
-            ticket_repo=args.ticket_repo,
-            implementation_host=args.implementation_host,
-            implementation_repo=args.implementation_repo,
-        )
+        common = {
+            "ticket_trunk": args.ticket_trunk,
+            "state_dir": args.state_dir,
+            "worktree": args.worktree,
+            "ticket_url": args.ticket_url,
+            "ticket_host": args.ticket_host,
+            "ticket_repo": args.ticket_repo,
+            "implementation_host": args.implementation_host,
+            "implementation_repo": args.implementation_repo,
+        }
+        if args.context_validation is not None or args.output_dir is not None:
+            if args.context_validation is None or args.output_dir is None:
+                fail("review admission requires context validation and output directory")
+            result = validate_review_context(
+                **common,
+                context_validation_path=args.context_validation,
+                plan_path=args.plan_path,
+                output_dir=args.output_dir,
+            )
+        elif args.plan_path is not None:
+            fail("plan path is valid only during review admission")
+        else:
+            result = validate_context(**common)
     except (ContextError, OSError, subprocess.SubprocessError) as exc:
         print(json.dumps({"ok": False, "error": str(exc)}))
         return 1
