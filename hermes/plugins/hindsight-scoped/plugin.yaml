@@ -1,0 +1,6 @@
+name: hindsight-scoped
+version: 1.0.0
+description: "Hindsight automatic memory for interactive sessions; explicit-only for scheduled jobs."
+requires_env: []
+hooks:
+  - pre_llm_call

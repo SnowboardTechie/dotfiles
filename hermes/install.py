@@ -338,6 +338,31 @@ def enable_plugin(hermes_home: Path, name: str) -> str:
     return result.stdout.strip()
 
 
+def select_memory_provider(hermes_home: Path, name: str) -> str:
+    """Select the already-installed provider through Hermes's supported CLI."""
+    candidates = [
+        os.environ.get("HERMES_PYTHON"),
+        str(hermes_home / "hermes-agent" / "venv" / "bin" / "python"),
+        sys.executable,
+    ]
+    interpreter = next((Path(item) for item in candidates if item and Path(item).is_file()), None)
+    if interpreter is None:
+        raise InstallError("could not find a Python interpreter for memory provider selection")
+    environment = os.environ.copy()
+    environment["HERMES_HOME"] = str(hermes_home)
+    result = subprocess.run(
+        [str(interpreter), "-m", "hermes_cli.main", "config", "set", "memory.provider", name],
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "memory provider selection failed").strip()
+        raise InstallError(detail[:2000])
+    return result.stdout.strip()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--hermes-home", type=Path, default=Path.home() / ".hermes")
@@ -398,15 +423,6 @@ def main() -> int:
     resolved_hindsight_source = hindsight_source.resolve(strict=True)
     if resolved_asset_root not in resolved_hindsight_source.parents:
         raise InstallError(f"Hindsight config source escapes managed asset root: {hindsight_source}")
-    outcome = install_link(
-        hindsight_source,
-        hermes_home / "hindsight" / "config.json",
-        hermes_home=hermes_home,
-        adopt_identical=args.adopt_identical,
-        backup_root=backup_root,
-    )
-    results.append(f"Hindsight config: {outcome}")
-
     managed_plugins = manifest.get("plugins", [])
     for name in managed_plugins:
         relative = Path(name)
@@ -420,6 +436,23 @@ def main() -> int:
         )
         results.append(f"plugin {name}: {outcome}")
         results.append(f"plugin {name} activation: {enable_plugin(hermes_home, name)}")
+
+    memory_provider = manifest.get("memoryProvider")
+    if memory_provider:
+        if memory_provider not in managed_plugins:
+            raise InstallError("memoryProvider must name an installed managed plugin")
+        results.append(f"memory provider: {select_memory_provider(hermes_home, memory_provider)}")
+
+    # Select the scoped provider before enabling automatic memory. An old
+    # bundled provider must not pick up interactive settings for a cron run.
+    outcome = install_link(
+        hindsight_source,
+        hermes_home / "hindsight" / "config.json",
+        hermes_home=hermes_home,
+        adopt_identical=args.adopt_identical,
+        backup_root=backup_root,
+    )
+    results.append(f"Hindsight config: {outcome}")
 
     for relative_text in manifest["skills"]:
         relative = Path(relative_text)

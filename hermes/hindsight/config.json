@@ -2,7 +2,11 @@
   "mode": "local_external",
   "api_url": "http://127.0.0.1:8888",
   "bank_id": "bryan-general",
-  "memory_mode": "tools",
-  "auto_recall": false,
-  "auto_retain": false
+  "memory_mode": "hybrid",
+  "auto_recall": true,
+  "auto_retain": true,
+  "recall_sync": true,
+  "recall_max_tokens": 1536,
+  "recall_prompt_preamble": "# Hindsight memory — recalled historical context\nUse relevant preferences and corrections. Old task status is not current system state. Current user instructions and governing source files take precedence; verify live state when needed.",
+  "recall_types": ["observation", "world", "experience"]
 }

@@ -138,9 +138,14 @@ class MorningBriefSplitContractTest(unittest.TestCase):
         self.assertNotIn("sgg-sync-workday-note.py", manifest["scripts"])
         self.assertIn("sgg-sync-workday-note.py", manifest["removedScripts"])
         self.assertEqual(manifest["hindsightConfig"], "hindsight/config.json")
-        self.assertEqual(hindsight["memory_mode"], "tools")
-        self.assertIs(hindsight["auto_recall"], False)
-        self.assertIs(hindsight["auto_retain"], False)
+        # A cron privacy restriction must not disable ordinary conversations.
+        self.assertEqual(manifest["memoryProvider"], "hindsight-scoped")
+        self.assertIn("hindsight-scoped", manifest["plugins"])
+        self.assertEqual(hindsight["memory_mode"], "hybrid")
+        self.assertIs(hindsight["auto_recall"], True)
+        self.assertIs(hindsight["auto_retain"], True)
+        self.assertIs(hindsight["recall_sync"], True)
+        self.assertEqual(hindsight["recall_types"], ["observation", "world", "experience"])
         self.assertEqual(
             manifest["mcpRequirements"]["granola"]["tools"]["include"],
             ["list_meetings", "get_meetings"],
