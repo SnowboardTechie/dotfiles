@@ -1,20 +1,18 @@
 #!/usr/bin/env python3
-"""Notify once when stable npm TypeSpec packages contain the path-traversal fix."""
+"""Report TypeSpec fix-release status on each scheduled workday."""
 
-import argparse
 import json
-import os
 import re
 import sys
 import urllib.error
 import urllib.parse
 import urllib.request
-from pathlib import Path
+
 
 FIX = "e0f67bdf3c5a0875dfa98b475648af37caac71a6"
 PR = "https://github.com/HHS/simpler-grants-protocol/pull/1093"
 API = "https://api.github.com/repos/microsoft/typespec"
-STATE = Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes")) / "state/typespec-fix-1093.json"
+
 
 
 def fetch(url):
@@ -70,23 +68,17 @@ def ready_version():
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--state-file", type=Path, default=STATE)
-    args = parser.parse_args()
     try:
-        if args.state_file.exists():
-            state = json.loads(args.state_file.read_text())
-            if state.get("fixCommit") == FIX and state.get("notificationPrepared"):
-                return 0
         version = ready_version()
         if version is None:
+            print("@bryan:snowboardtechie.com PR #1093 reminder: "
+                  "No qualifying stable TypeSpec fix release verified yet.\n\n"
+                  "We are waiting for the upstream path-traversal fix to reach stable npm packages "
+                  "rather than merging with an audit suppression. "
+                  "Once available: update the PR, remove the suppressions, rerun CI/audits, and request reviews.\n"
+                  f"PR: {PR}\n"
+                  "Upstream fix: https://github.com/microsoft/typespec/pull/11777")
             return 0
-        args.state_file.parent.mkdir(parents=True, exist_ok=True)
-        temporary = args.state_file.with_name(f".{args.state_file.name}.{os.getpid()}.tmp")
-        temporary.write_text(json.dumps({"fixCommit": FIX, "version": version,
-            "notificationPrepared": True, "pr": PR}, indent=2) + "\n")
-        temporary.chmod(0o600)
-        temporary.replace(args.state_file)
         print(f"@bryan:snowboardtechie.com TypeSpec {version} is available on npm for both "
               "@typespec/compiler and @typespec/openapi3, and its stable release tag contains the path-traversal fix.\n\n"
               f"You can resume PR #1093: {PR}\n"
@@ -96,8 +88,7 @@ def main():
               "This confirms upstream release availability, not compatibility with our repository or audit-database freshness. "
               "No PR changes or review requests were made.\n"
               f"Release: https://github.com/microsoft/typespec/releases/tag/typespec-stable@{version}\n"
-              "Fix: https://github.com/microsoft/typespec/pull/11777\n"
-              "This is a one-time notification.")
+              "Fix: https://github.com/microsoft/typespec/pull/11777")
         return 0
     except (OSError, ValueError, urllib.error.URLError) as exc:
         print(f"@bryan:snowboardtechie.com TypeSpec release monitor failed: {exc}", file=sys.stderr)

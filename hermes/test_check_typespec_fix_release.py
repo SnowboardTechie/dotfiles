@@ -38,11 +38,11 @@ class WatchTests(unittest.TestCase):
 
     def invoke(self, state):
         out, err = io.StringIO(), io.StringIO()
-        with patch("sys.argv", [str(SCRIPT), "--state-file", str(state)]), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        with patch("sys.argv", [str(SCRIPT)]), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             code = MODULE.main()
         return code, out.getvalue(), err.getvalue()
 
-    def test_ready_release_notifies_only_once(self):
+    def test_ready_release_reports_on_every_run(self):
         with tempfile.TemporaryDirectory() as tmp:
             state = Path(tmp) / "state.json"
             with patch("urllib.request.urlopen", side_effect=self.sources):
@@ -51,9 +51,9 @@ class WatchTests(unittest.TestCase):
             self.assertIn("@bryan:snowboardtechie.com", out)
             self.assertIn("1.16.0", out)
             self.assertIn("https://github.com/HHS/simpler-grants-protocol/pull/1093", out)
-            self.assertTrue(state.exists())
-            with patch("urllib.request.urlopen", side_effect=AssertionError("already notified")):
-                self.assertEqual(self.invoke(state), (0, "", ""))
+            self.assertFalse(state.exists())
+            with patch("urllib.request.urlopen", side_effect=self.sources):
+                self.assertEqual(self.invoke(state), (0, out, ""))
 
 
     def test_readiness_and_source_failures(self):
@@ -81,7 +81,13 @@ class WatchTests(unittest.TestCase):
                 with patch("urllib.request.urlopen", side_effect=source):
                     code, out, err = self.invoke(state)
                 self.assertEqual(code, expected, err)
-                self.assertEqual(out, "")
+                if expected == 0:
+                    self.assertIn("@bryan:snowboardtechie.com", out)
+                    self.assertIn("PR #1093", out)
+                    self.assertIn("No qualifying stable TypeSpec fix release verified yet", out)
+                    self.assertIn("https://github.com/HHS/simpler-grants-protocol/pull/1093", out)
+                else:
+                    self.assertEqual(out, "")
                 self.assertFalse(state.exists())
 
     def test_network_failure_is_not_silent_success(self):

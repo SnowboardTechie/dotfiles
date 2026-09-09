@@ -83,7 +83,7 @@
   "cronJobs": [
     {
       "name": "Watch TypeSpec fix for SGG PR 1093",
-      "schedule": "0 10 * * *",
+      "schedule": "0 10 * * 1-5",
       "model": null,
       "provider": null,
       "promptFile": "automations/typespec-fix-release/prompt.md",
