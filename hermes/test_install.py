@@ -195,6 +195,27 @@ class ManagedDestinationTest(unittest.TestCase):
             (destination / "plugin.yaml").read_text(encoding="utf-8"), "name: reviewed\n"
         )
 
+    def test_memory_provider_selection_uses_profile_scoped_config_cli(self) -> None:
+        interpreter = self.root / "python"
+        interpreter.touch()
+        completed = MODULE.subprocess.CompletedProcess([], 0, "selected\n", "")
+        with patch.dict(MODULE.os.environ, {"HERMES_PYTHON": str(interpreter)}), patch.object(
+            MODULE.subprocess, "run", return_value=completed
+        ) as run:
+            result = MODULE.select_memory_provider(self.home, "hindsight-scoped")
+        self.assertEqual(result, "selected")
+        self.assertEqual(run.call_args.args[0], [
+            str(interpreter), "-m", "hermes_cli.main", "config", "set",
+            "memory.provider", "hindsight-scoped",
+        ])
+        self.assertEqual(run.call_args.kwargs["env"]["HERMES_HOME"], str(self.home))
+
+    def test_memory_provider_selection_failure_is_not_reported_as_success(self) -> None:
+        completed = MODULE.subprocess.CompletedProcess([], 1, "", "selection failed")
+        with patch.object(MODULE.subprocess, "run", return_value=completed):
+            with self.assertRaisesRegex(MODULE.InstallError, "selection failed"):
+                MODULE.select_memory_provider(self.home, "hindsight-scoped")
+
     def test_plugin_tree_copy_rejects_a_foreign_symlink(self) -> None:
         source = self.root / "plugin"
         source.mkdir()

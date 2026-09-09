@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "studioLocalHostName": "Bryans-Mac-Studio",
   "hindsightConfig": "hindsight/config.json",
+  "memoryProvider": "hindsight-scoped",
   "mcpRequirements": {
     "granola": {
       "url": "https://mcp.granola.ai/mcp",
@@ -57,7 +58,8 @@
     "check-studio-services.py"
   ],
   "plugins": [
-    "matrix-key-recovery"
+    "matrix-key-recovery",
+    "hindsight-scoped"
   ],
   "skills": [
     "apple/apple-mail",

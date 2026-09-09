@@ -17,6 +17,16 @@ Hub-installed skills should be recorded by source identifier if any are added la
 Credentials, sessions, memories, databases, logs, Matrix crypto state, cron output,
 locks, caches, and `cron/jobs.json` remain local and untracked.
 
+## Automatic memory
+
+`hindsight/config.json` enables automatic recall and retention for ordinary
+conversations. The manifest selects `hindsight-scoped`, a small adapter around
+Hermes's bundled Hindsight provider. Scheduled jobs and non-primary background
+contexts keep explicit-only memory; a cron privacy restriction must never disable
+memory for the whole interactive profile. Existing curated Granola imports and
+collector recall remain unchanged. See `plugins/hindsight-scoped/README.md` for
+the boundary, security review, lifecycle tests, activation, and rollback.
+
 ## Installation
 
 `setup-platform-configs.sh` invokes the installer on `Bryans-Mac-Studio`. It:
