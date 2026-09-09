@@ -145,7 +145,7 @@ new state path for a separately authorized new worker.
 Complete when the identity file validates one ready worker in the intended
 worktree.
 
-### 4. Submit one turn under the global lease
+### 4. Submit one turn per Claude session
 
 Put the short brief in a state-root file, then run `prompt` as a tracked bounded
 background process so completion returns to the parent:
@@ -159,17 +159,22 @@ python3 scripts/herdr_worker.py prompt \
 
 `prompt` atomically:
 
-1. acquires the global Claude-turn lease;
-2. rejects another working Claude agent;
+1. acquires a Claude-turn lease keyed to the recorded worker runtime session;
+2. rejects an overlapping turn in that same session, not unrelated agents;
 3. performs a fresh provider-capacity check;
 4. validates all six worker and Git identity fields;
 5. submits exactly one prompt with Herdr `--wait`;
 6. revalidates identity after settlement; and
 7. returns compact start/end capacity and status data.
 
-At most one Claude prompt may be in flight across issue-work sessions. Idle
-retained sessions do not own the lease. A process exit releases the lease, so no
-stale PID cleanup or bypass is allowed.
+At most one Claude turn may be in flight **within each worker runtime session**.
+Independent sessions may run concurrently in their own worktrees, including
+when they share a subscription. Another agent working on another task is not a
+handoff blocker. Capacity and exact worker/worktree identity checks still apply.
+The helper derives its lock filename from `worker_runtime_session_id`; different
+identity files for the same runtime session still share the lock. Idle retained
+sessions do not own a lease. Process exit releases it, so no stale PID cleanup
+or bypass is allowed.
 
 If the worker blocks on a question or approval, use the helper's identity-checked
 `read` operation, then ask Bryan. Never submit suggested input automatically.
@@ -235,7 +240,7 @@ resume a Herdr identity.
 ## Common Pitfalls
 
 1. Handing off a single-loop edit whose startup cost exceeds the work.
-2. Starting several Claude turns concurrently against one subscription window.
+2. Confusing per-session turn serialization with a global ban on concurrent Claude work.
 3. Making the prompt a second plan.
 4. Rechecking identity with improvised shell commands instead of the helper.
 5. Treating worker tests, idle status, or prose as parent acceptance.
@@ -252,8 +257,8 @@ resume a Herdr identity.
 - [ ] Destructive/history-rewriting Git operations remain prohibited
 - [ ] Visible path uses compatible injected Herdr without stealing focus
 - [ ] Helper atomically persisted all six identity fields
-- [ ] Claude capacity passed and one global turn lease was held
-- [ ] No second working Claude turn overlapped
+- [ ] Claude capacity passed and the worker runtime session's turn lease was held
+- [ ] No overlapping turn targeted the same session; unrelated sessions were not blocked
 - [ ] Parent inspected and tested the actual candidate
 - [ ] One integrated parent review and AC sweep completed
 - [ ] Corrections stayed within the one-plus-one bound

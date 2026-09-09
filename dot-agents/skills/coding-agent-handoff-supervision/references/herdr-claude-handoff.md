@@ -40,7 +40,10 @@ pane is created. Use a different state path for a separately authorized worker;
 never overwrite the ownership record of an existing or failed start.
 
 If split succeeds but startup or identity validation fails, it closes that new
-pane before returning failure.
+pane before returning failure. A failed agent start first captures bounded
+terminal output, so an approval or login prompt is not lost behind a generic
+`agent_not_ready` error. Report that exact blocker; never attribute startup
+failure to unrelated active agents or answer a prompt without authorization.
 
 ## Prompt and wait
 
@@ -52,14 +55,17 @@ python3 scripts/herdr_worker.py prompt \
 ```
 
 Run this command through a tracked background terminal process with completion
-notification. It holds an OS file lock for the entire Claude turn, so concurrent
-Hermes sessions cannot race separate `agent list` checks and oversubscribe the
-subscription. The lock is process-owned and releases automatically on exit.
+notification. It holds an OS file lock for the entire Claude turn, keyed by
+the recorded worker runtime session ID. This serializes input to one session,
+not all Claude work on the machine or subscription. Independent sessions may
+run concurrently in separate worktrees. The lock is process-owned and releases
+automatically on exit; `--lease-path` supplies a filename base whose final name
+is always session-scoped.
 
 Before input is sent, the command rejects:
 
 - exhausted or unverifiable Claude capacity;
-- another working Claude agent;
+- an overlapping turn targeting this same worker runtime session;
 - a closed or malformed identity record;
 - any changed name, pane, kind, runtime session, root, Git common directory, or
   branch; and
@@ -98,7 +104,7 @@ python3 scripts/herdr_worker.py answer-blocked \
 Use `answer-blocked --keys down enter` instead for an approved interactive key
 choice. `read` validates identity before and after bounded terminal output.
 `answer-blocked` refuses a worker that is not recorded as `blocked`, acquires the
-Claude lease, reruns capacity, rejects another working Claude, captures the
+same runtime-session lease as `prompt`, reruns capacity, captures the
 current `state_change_seq`, submits only the caller-approved text or keys, and
 holds the lease until a newer idle/done/blocked state is observed. Herdr `agent
 wait` without explicit lifecycle sequencing would match the old blocked state

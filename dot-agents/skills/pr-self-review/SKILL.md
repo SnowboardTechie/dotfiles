@@ -269,7 +269,8 @@ no further correction. Any validated blocker sets the result to
 `Correction bound reached — do not merge.`
 
 Provider capacity is an independent hard gate. Before every Claude correction,
-the Herdr helper must verify capacity and acquire the global turn lease. Exhausted
+the Herdr helper must verify capacity and acquire that worker runtime session's
+turn lease. Unrelated Claude sessions are not a concurrency blocker. Exhausted
 or unverifiable capacity consumes no correction and never permits an automatic
 provider switch.
 

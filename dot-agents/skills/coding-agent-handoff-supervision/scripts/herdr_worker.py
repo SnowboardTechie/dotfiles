@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from contextlib import nullcontext
 import fcntl
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -35,7 +36,7 @@ class CapacityProbe:
 
 
 class TurnLease:
-    """One process-wide Claude prompt at a time across Hermes sessions."""
+    """One Claude turn at a time within a particular runtime session."""
 
     def __init__(self, path: Path) -> None:
         expanded = path.expanduser()
@@ -56,7 +57,7 @@ class TurnLease:
             os.close(self.fd)
             self.fd = None
             raise HandoffError(
-                f"another Claude turn owns the global lease: {self.path}"
+                f"another Claude turn owns this session's lease: {self.path}"
             ) from exc
         os.ftruncate(self.fd, 0)
         os.write(self.fd, f"pid={os.getpid()}\n".encode())
@@ -346,18 +347,6 @@ def validate_identity(
     return agent
 
 
-def working_claude_names(payload: dict[str, Any], *, excluding: str) -> list[str]:
-    names = []
-    for agent in _extract_agents(payload):
-        if (
-            agent.get("agent") == "claude"
-            and agent.get("agent_status") == "working"
-            and agent.get("name") != excluding
-        ):
-            names.append(str(agent.get("name")))
-    return sorted(names)
-
-
 def resource_exists_from_result(
     result: subprocess.CompletedProcess[str],
     *,
@@ -479,7 +468,14 @@ class RealHerdr:
                 "--name",
                 title,
             ]
-        self._run(command, timeout_seconds=330)
+        result = self._run(command, timeout_seconds=330, allow_failure=True)
+        if result.returncode != 0:
+            detail = (result.stderr or result.stdout).strip()
+            try:
+                output = self.read_agent(name=name, lines=60).strip()
+            except Exception as exc:
+                output = f"Startup output unavailable: {exc}"
+            raise HandoffError(f"Herdr agent start failed: {detail}\n{output}")
 
     def get_agent(self, name: str) -> dict[str, Any]:
         return self._json(["agent", "get", name])
@@ -593,6 +589,16 @@ class HandoffController:
         if not probe.ok or probe.percentage is None:
             raise HandoffError(probe.message or "Claude capacity exhausted or unavailable")
         return probe
+
+    def _session_lease(self, record: dict[str, Any]) -> TurnLease:
+        session = record.get("worker_runtime_session_id")
+        if not isinstance(session, str) or not session:
+            raise HandoffError("worker identity omitted runtime session for turn lease")
+        digest = hashlib.sha256(session.encode("utf-8")).hexdigest()
+        path = self.lease_path.with_name(
+            f"{self.lease_path.stem}.{digest}{self.lease_path.suffix}"
+        )
+        return TurnLease(path)
 
     def start(
         self,
@@ -858,14 +864,9 @@ class HandoffController:
         record = _load_identity(identity_path)
         name = str(record.get("worker_agent_name", ""))
         kind = record.get("worker_kind")
-        lease = TurnLease(self.lease_path) if kind == "claude" else nullcontext()
+        lease = self._session_lease(record) if kind == "claude" else nullcontext()
         with lease:
             capacity_start = self._require_capacity() if kind == "claude" else None
-            others = working_claude_names(self.herdr.list_agents(), excluding=name)
-            if kind == "claude" and others:
-                raise HandoffError(
-                    "another Claude turn is active: " + ", ".join(others)
-                )
             before = validate_identity(record, self.herdr.get_agent(name))
             status = before.get("agent_status")
             if status == "working":
@@ -912,14 +913,9 @@ class HandoffController:
         name = str(record.get("worker_agent_name", ""))
         pane_id = str(record.get("worker_pane_id", ""))
         kind = record.get("worker_kind")
-        lease = TurnLease(self.lease_path) if kind == "claude" else nullcontext()
+        lease = self._session_lease(record) if kind == "claude" else nullcontext()
         with lease:
             capacity_start = self._require_capacity() if kind == "claude" else None
-            others = working_claude_names(self.herdr.list_agents(), excluding=name)
-            if kind == "claude" and others:
-                raise HandoffError(
-                    "another Claude turn is active: " + ", ".join(others)
-                )
             before = validate_identity(record, self.herdr.get_agent(name))
             if before.get("agent_status") != "blocked":
                 raise HandoffError("recorded worker is not blocked")

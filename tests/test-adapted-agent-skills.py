@@ -601,10 +601,10 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
         self.assertIn("herdr_worker.py", self.body)
         self.assertIn("herdr_worker.py", self.herdr)
 
-    def test_capacity_and_global_turn_lease_are_hard_gates(self) -> None:
+    def test_capacity_and_session_turn_lease_are_hard_gates(self) -> None:
         for token in (
-            "global Claude-turn lease",
-            "At most one Claude prompt",
+            "within each worker runtime session",
+            "Independent sessions may run concurrently",
             "Any nonzero\ncapacity result stops",
             "never switch providers",
         ):
@@ -614,6 +614,8 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
         self.assertIn("fcntl.LOCK_EX | fcntl.LOCK_NB", script)
         self.assertIn('"--check-capacity"', script)
         self.assertIn('"--wait"', script)
+        self.assertNotIn("working_claude_names", script)
+        self.assertIn('record.get("worker_runtime_session_id")', script)
 
     def test_visible_authority_and_identity_remain_fail_closed(self) -> None:
         for token in (

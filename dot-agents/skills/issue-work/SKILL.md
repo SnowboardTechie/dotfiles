@@ -228,8 +228,10 @@ Use its deterministic `herdr_worker.py` operations. Persist
 - `worker_worktree_identity`.
 
 The helper hard-gates Claude capacity before start and every prompt, atomically
-serializes provider turns across issue-work sessions, waits for settlement, and
-returns compact capacity/status data. A 100% or unverifiable check stops before
+serializes provider turns within each worker runtime session, waits for settlement, and
+returns compact capacity/status data. Independent Claude sessions may work
+concurrently in separate worktrees; another task's active session is not a
+blocker. A 100% or unverifiable check stops before
 another turn, consumes no correction pass, and never authorizes an automatic
 provider switch.
 
@@ -450,7 +452,7 @@ Stop when:
 - ticket, plan, repository, worktree, or candidate identity is ambiguous;
 - a material decision remains open;
 - selected provider capacity is exhausted or unverifiable;
-- another Claude turn holds the global lease;
+- another turn targets the same worker runtime session and holds its lease;
 - a visible-worker identity is missing or mismatched;
 - a plan, architecture, or scope defect is being presented as another correction;
 - correction allowance is exhausted with a blocker;
@@ -467,7 +469,7 @@ weaker review, or fabricated completion claim.
 1. Spawning exploration because the phase exists rather than because a question
    exists.
 2. Handing a single-loop edit to Claude automatically.
-3. Launching several Claude issue sessions concurrently.
+3. Treating independent Claude issue sessions as a global concurrency conflict.
 4. Reviewing once before commit and again through a fresh Claude reviewer.
 5. Running full CI after every correction.
 6. Asking for plan or PR permission already carried by an imperative work command.
@@ -481,7 +483,7 @@ weaker review, or fabricated completion claim.
 - [ ] Imperative/advisory authority recorded exactly
 - [ ] Exploration count follows unresolved questions, including zero
 - [ ] Task shape and router output preserved
-- [ ] At most one Claude prompt ran at a time globally
+- [ ] At most one turn targeted each Claude runtime session; independent sessions may overlap
 - [ ] Worker identity remained complete and unchanged
 - [ ] Parent inspected actual bytes and ran targeted checks
 - [ ] Repository planning closeout completed

@@ -31,6 +31,7 @@ class FakeHerdr:
         self.answer_count = 0
         self.wait_after_seq: int | None = None
         self.interrupt_after_split = False
+        self.runtime_session = "runtime-session"
 
     def status(self) -> str:
         return "endpoint_compatible: yes\nprivate_protocol_compatible: yes\n"
@@ -51,7 +52,7 @@ class FakeHerdr:
     def start_agent(self, *, name: str, kind: str, pane_id: str, title: str) -> None:
         self.agents[name] = {
             "agent": kind,
-            "agent_session": {"value": "runtime-session"},
+            "agent_session": {"value": self.runtime_session},
             "agent_status": "idle",
             "cwd": str(self.worktree),
             "name": name,
@@ -237,6 +238,12 @@ class HerdrWorkerTests(unittest.TestCase):
             title="Test worker",
         )
         fake.agents["worker"]["agent_status"] = "blocked"
+        fake.agents["unrelated"] = {
+            "agent": "claude",
+            "agent_session": {"value": "unrelated-runtime"},
+            "agent_status": "working",
+            "name": "unrelated",
+        }
 
         with self.assertRaisesRegex(self.module.HandoffError, "use answer-blocked"):
             controller.prompt(
@@ -336,7 +343,7 @@ class HerdrWorkerTests(unittest.TestCase):
         source = SCRIPT.read_text(encoding="utf-8")
         self.assertNotIn("--caller-pane", source)
 
-    def test_other_working_claude_blocks_turn(self) -> None:
+    def test_other_working_claude_does_not_block_turn(self) -> None:
         controller, fake = self.controller()
         identity_path = self.root / "identity.json"
         controller.start(
@@ -357,13 +364,55 @@ class HerdrWorkerTests(unittest.TestCase):
             "state_change_seq": 1,
         }
 
-        with self.assertRaisesRegex(self.module.HandoffError, "another Claude turn is active"):
-            controller.prompt(
-                identity_path=identity_path,
-                text="Do not send this",
-                timeout_ms=60_000,
-            )
-        self.assertEqual(fake.prompt_count, 0)
+        result = controller.prompt(
+            identity_path=identity_path,
+            text="Implement this independent task",
+            timeout_ms=60_000,
+        )
+        self.assertEqual(result["agent_status"], "idle")
+        self.assertEqual(fake.prompt_count, 1)
+
+    def test_concurrent_turns_are_scoped_to_runtime_session(self) -> None:
+        for same_session in (False, True):
+            for second_action in ("prompt", "answer"):
+                with self.subTest(same_session=same_session, second_action=second_action):
+                    first, first_fake = self.controller()
+                    second, second_fake = self.controller()
+                    second_fake.runtime_session = (
+                        first_fake.runtime_session if same_session else "independent-session"
+                    )
+                    paths = []
+                    for index, controller in enumerate((first, second)):
+                        path = self.root / f"{same_session}-{second_action}-{index}.json"
+                        controller.start(
+                            caller_pane="caller", worktree=self.repo, identity_path=path,
+                            name="worker", kind="claude", title="Test worker",
+                        )
+                        paths.append(path)
+                    if second_action == "answer":
+                        second_fake.agents["worker"]["agent_status"] = "blocked"
+
+                    def nested_turn(**kwargs):
+                        if second_action == "answer":
+                            return second.answer_blocked(
+                                identity_path=paths[1], text="Approved answer", keys=None,
+                                timeout_ms=60_000,
+                            )
+                        return second.prompt(
+                            identity_path=paths[1], text="Second turn", timeout_ms=60_000,
+                        )
+
+                    first_fake.prompt = nested_turn
+                    if same_session:
+                        with self.assertRaisesRegex(self.module.HandoffError, "another Claude turn owns"):
+                            first.prompt(identity_path=paths[0], text="First turn", timeout_ms=60_000)
+                        self.assertEqual(second_fake.prompt_count + second_fake.answer_count, 0)
+                    else:
+                        result = first.prompt(
+                            identity_path=paths[0], text="First turn", timeout_ms=60_000,
+                        )
+                        self.assertEqual(result["agent_status"], "idle")
+                        self.assertGreater(second_fake.prompt_count + second_fake.answer_count, 0)
 
     def test_turn_lease_is_nonblocking_and_process_safe(self) -> None:
         lease = self.root / "claude-turn.lock"
@@ -371,6 +420,22 @@ class HerdrWorkerTests(unittest.TestCase):
             with self.assertRaisesRegex(self.module.HandoffError, "another Claude turn owns"):
                 with self.module.TurnLease(lease):
                     pass
+
+    def test_startup_failure_includes_readable_output_before_cleanup(self) -> None:
+        module = self.module
+
+        class StartupHerdr(module.RealHerdr):
+            def _run(inner, args, *, timeout_seconds=60, allow_failure=False):
+                if args[:2] == ["agent", "start"]:
+                    if not allow_failure:
+                        raise module.HandoffError("agent_not_ready")
+                    return subprocess.CompletedProcess(args, 1, "agent_not_ready", "")
+                self.assertEqual(args[:2], ["agent", "read"])
+                return subprocess.CompletedProcess(args, 0, "Workspace trust approval required", "")
+
+        herdr = StartupHerdr(SCRIPT, self.repo)
+        with self.assertRaisesRegex(module.HandoffError, "Workspace trust approval required"):
+            herdr.start_agent(name="worker", kind="claude", pane_id="worker-pane", title="Test")
 
     def test_compatibility_check_requires_both_protocols(self) -> None:
         self.assertTrue(
