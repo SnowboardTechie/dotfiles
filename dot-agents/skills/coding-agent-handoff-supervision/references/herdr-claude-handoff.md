@@ -42,8 +42,12 @@ never overwrite the ownership record of an existing or failed start.
 If split succeeds but startup or identity validation fails, it closes that new
 pane before returning failure. A failed agent start first captures bounded
 terminal output, so an approval or login prompt is not lost behind a generic
-`agent_not_ready` error. Report that exact blocker; never attribute startup
-failure to unrelated active agents or answer a prompt without authorization.
+`agent_not_ready` error. For an authorized, inspected worktree, the helper
+automatically accepts Claude's ordinary folder-trust prompt after matching the
+exact displayed path and startup pane/cwd. It waits for a newer ready state;
+no extra user confirmation is needed. Other startup prompts remain blockers.
+Never attribute startup failure to unrelated active agents or broaden that
+folder-trust authorization into unrelated permissions.
 
 ## Prompt and wait
 

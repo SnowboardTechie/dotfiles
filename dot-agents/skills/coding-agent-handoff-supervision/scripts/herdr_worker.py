@@ -475,6 +475,42 @@ class RealHerdr:
                 output = self.read_agent(name=name, lines=60).strip()
             except Exception as exc:
                 output = f"Startup output unavailable: {exc}"
+            trust = re.search(
+                r"Accessing workspace:\s*(.*?)\s*Quick safety check:", output, re.S
+            )
+            shown_path = (
+                "".join(line.strip() for line in trust.group(1).splitlines())
+                if trust else ""
+            )
+            normalized = " ".join(output.split())
+            if (
+                kind == "claude"
+                and "agent_not_ready" in detail
+                and shown_path
+                and Path(shown_path).expanduser().resolve() == self.worktree
+                and "Is this a project you created or one you trust?" in normalized
+                and "❯ No, exit" in normalized
+                and "Yes, I trust this folder" in normalized
+            ):
+                before = _extract_agent(self.get_agent(name))
+                if (
+                    before.get("pane_id") != pane_id
+                    or Path(str(before.get("cwd", ""))).resolve() != self.worktree
+                    or before.get("agent_status") != "blocked"
+                ):
+                    raise HandoffError("workspace trust prompt identity changed")
+                sequence = _state_change_seq(before)
+                self.send_keys(name=name, keys=["down", "enter"])
+                ready = _extract_agent(
+                    self.wait_agent(name=name, after_seq=sequence, timeout_ms=300_000)
+                )
+                if (
+                    ready.get("agent_status") == "idle"
+                    and ready.get("pane_id") == pane_id
+                    and Path(str(ready.get("cwd", ""))).resolve() == self.worktree
+                ):
+                    return
+                output = self.read_agent(name=name, lines=60).strip()
             raise HandoffError(f"Herdr agent start failed: {detail}\n{output}")
 
     def get_agent(self, name: str) -> dict[str, Any]:

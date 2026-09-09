@@ -437,6 +437,47 @@ class HerdrWorkerTests(unittest.TestCase):
         with self.assertRaisesRegex(module.HandoffError, "Workspace trust approval required"):
             herdr.start_agent(name="worker", kind="claude", pane_id="worker-pane", title="Test")
 
+    def test_start_accepts_only_trust_for_its_authorized_worktree(self) -> None:
+        module = self.module
+        for requested in (str(self.repo), str(self.repo) + "-other"):
+            with self.subTest(requested=requested):
+                sent = []
+
+                class TrustHerdr(module.RealHerdr):
+                    def _run(inner, args, *, timeout_seconds=60, allow_failure=False):
+                        self.assertEqual(args[:2], ["agent", "start"])
+                        return subprocess.CompletedProcess(args, 1, "agent_not_ready", "")
+
+                    def read_agent(inner, *, name, lines):
+                        return (f"Accessing workspace:\n {requested}\n\n"
+                                "Quick safety check: Is this a project you created or one you trust?\n"
+                                "❯ No, exit\n  Yes, I trust this folder\n")
+
+                    def get_agent(inner, name):
+                        return {"result": {"agent": {
+                            "pane_id": "worker-pane", "cwd": str(self.repo),
+                            "agent_status": "blocked", "state_change_seq": 1,
+                        }}}
+
+                    def send_keys(inner, *, name, keys):
+                        sent.append((name, keys))
+
+                    def wait_agent(inner, *, name, after_seq, timeout_ms):
+                        self.assertEqual(after_seq, 1)
+                        return {"result": {"agent": {
+                            "pane_id": "worker-pane", "cwd": str(self.repo),
+                            "agent_status": "idle", "state_change_seq": 2,
+                        }}}
+
+                herdr = TrustHerdr(SCRIPT, self.repo)
+                if requested == str(self.repo):
+                    herdr.start_agent(name="worker", kind="claude", pane_id="worker-pane", title="Test")
+                    self.assertEqual(sent, [("worker", ["down", "enter"])])
+                else:
+                    with self.assertRaises(module.HandoffError):
+                        herdr.start_agent(name="worker", kind="claude", pane_id="worker-pane", title="Test")
+                    self.assertEqual(sent, [])
+
     def test_compatibility_check_requires_both_protocols(self) -> None:
         self.assertTrue(
             self.module.status_is_compatible(
