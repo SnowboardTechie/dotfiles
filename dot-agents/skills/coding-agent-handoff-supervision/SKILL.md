@@ -98,6 +98,13 @@ Visible workers are approval-gated, not sandbox-confined. Claude uses
 `HERMES_YOLO_MODE`, and no `--yolo`. Stop when hard confinement is required but
 cannot be proved.
 
+Starting a worker in the inspected worktree created for Bryan's authorized task
+already authorizes Claude's ordinary **Yes, I trust this folder** startup step.
+Do not ask Bryan again. The helper accepts only that recognizable trust prompt
+for the exact worktree and recorded startup pane, then verifies readiness.
+This is not blanket permission for unrelated paths, login prompts, destructive
+commands, broader permission modes, or new task decisions.
+
 Complete when the worker can identify the artifact, worktree, and authority
 boundary without a second copy of the plan.
 
