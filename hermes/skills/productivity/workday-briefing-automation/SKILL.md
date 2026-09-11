@@ -137,6 +137,7 @@ The morning job must retain read-only behavior for mail, calendar, GitHub, canon
 - Prefer URLs supplied by the collector. If an artifact is relevant but its URL is missing, resolve it with a read-only GitHub lookup before mentioning it; omit it rather than emit an unreliable or unlinked reference.
 - Respect repository ownership boundaries; broad dependency or notification triage may not belong to the user even when they can access it.
 - Keep the section bounded unless something is actively broken.
+- Reconcile carried-forward meeting actions against later issue creation, issue bodies/comments, PR discussion, and current handoff notes before presenting them as outstanding. Track the action's verb separately from the artifact's state: an open implementation issue can prove that “create the tickets” is complete. When follow-up work was split across tickets or folded into an existing issue by comment, inspect the linked set and that comment, not only the headline blocker. Separate completed coordination/scoping from remaining implementation; do not recommend rediscovering a documented sequence. If the remaining action is unclear, label the gap rather than recycling the earlier assignment.
 - Never comment, label, merge, dispatch, or otherwise mutate state from the morning brief.
 
 ### 7. Design a bounded output
