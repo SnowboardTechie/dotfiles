@@ -67,7 +67,7 @@ class MorningBriefSplitContractTest(unittest.TestCase):
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         job = next(job for job in manifest["cronJobs"] if job["name"] == "Personal Morning Brief")
 
-        self.assertEqual(job["schedule"], "20 7 * * 1-5")
+        self.assertEqual(job["schedule"], "0 7 * * 1-5")
         self.assertEqual(job["model"], "gpt-5.6-terra")
         self.assertEqual(job["provider"], "openai-codex")
         self.assertNotIn("baseUrl", job)
