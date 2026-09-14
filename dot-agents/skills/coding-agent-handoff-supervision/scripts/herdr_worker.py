@@ -23,6 +23,14 @@ class HandoffError(RuntimeError):
     """The visible-worker contract could not be verified."""
 
 
+class HandoffDeliveryError(HandoffError):
+    """Delivery failed after startup succeeded; the worker pane is left running."""
+
+    def __init__(self, message: str, *, details: dict[str, Any]) -> None:
+        super().__init__(message)
+        self.details = details
+
+
 class CapacityProbe:
     def __init__(self, *, ok: bool, returncode: int, message: str) -> None:
         self.ok = ok
@@ -347,6 +355,14 @@ def validate_identity(
     return agent
 
 
+def refuse_unsupervised(record: dict[str, Any], command: str) -> None:
+    if record.get("supervised") is False:
+        raise HandoffError(
+            f"worker was handed off unsupervised; {command} is refused. "
+            "Use inspect to observe it, or close to tidy the pane."
+        )
+
+
 def resource_exists_from_result(
     result: subprocess.CompletedProcess[str],
     *,
@@ -524,6 +540,10 @@ class RealHerdr:
             ["agent", "prompt", name, text, "--wait", "--timeout", str(timeout_ms)],
             timeout_seconds=max(60, timeout_ms // 1000 + 30),
         )
+
+    def deliver(self, *, name: str, text: str) -> dict[str, Any]:
+        """One-way send. No --wait: the caller keeps no claim on the turn."""
+        return self._json(["agent", "prompt", name, text])
 
     def read_agent(self, *, name: str, lines: int) -> str:
         return self._run(
@@ -758,6 +778,57 @@ class HandoffController:
         result["provider_capacity_start"] = capacity.percentage if capacity else None
         return result
 
+    def handoff(
+        self,
+        *,
+        caller_pane: str,
+        worktree: Path,
+        identity_path: Path,
+        prompt_path: Path,
+        name: str,
+        kind: str,
+        title: str,
+        text: str,
+    ) -> dict[str, Any]:
+        """Start a worker, deliver one prompt, and keep no claim on the result."""
+        if not text.strip():
+            raise HandoffError("handoff prompt text must not be empty")
+        started = self.start(
+            caller_pane=caller_pane,
+            worktree=worktree,
+            identity_path=identity_path,
+            name=name,
+            kind=kind,
+            title=title,
+        )
+        identity_file = _identity_target(identity_path)
+        # Marked before the send, so an interrupted delivery still leaves an
+        # honest record rather than one describing a supervised worker.
+        record = _load_identity(identity_path)
+        record["supervised"] = False
+        _atomic_write_json(identity_path, record)
+        paths = {
+            "identity_file": str(identity_file),
+            "prompt_file": str(prompt_path.expanduser().resolve()),
+        }
+        try:
+            self.herdr.deliver(name=name, text=text)
+        except Exception as exc:
+            raise HandoffDeliveryError(
+                f"handoff delivery failed after startup: {exc}. The worker pane is "
+                "still running; deliver the prompt file by hand in that pane.",
+                details={**paths, "delivered": False, "supervised": False},
+            ) from exc
+        return {
+            "ok": True,
+            "worker_agent_name": name,
+            "worker_pane_id": record.get("worker_pane_id"),
+            "supervised": False,
+            "delivered": True,
+            "provider_capacity_start": started.get("provider_capacity_start"),
+            **paths,
+        }
+
     def recover_start(self, *, identity_path: Path) -> dict[str, Any]:
         with StartLease(identity_path):
             record = _load_identity(identity_path)
@@ -898,6 +969,7 @@ class HandoffController:
         if not text.strip():
             raise HandoffError("prompt text must not be empty")
         record = _load_identity(identity_path)
+        refuse_unsupervised(record, "prompt")
         name = str(record.get("worker_agent_name", ""))
         kind = record.get("worker_kind")
         lease = self._session_lease(record) if kind == "claude" else nullcontext()
@@ -946,6 +1018,7 @@ class HandoffController:
         if keys is not None and not keys:
             raise HandoffError("answer keys must not be empty")
         record = _load_identity(identity_path)
+        refuse_unsupervised(record, "answer-blocked")
         name = str(record.get("worker_agent_name", ""))
         pane_id = str(record.get("worker_pane_id", ""))
         kind = record.get("worker_kind")
@@ -1085,6 +1158,14 @@ def _default_lease_path() -> Path:
     return state_home / "herdr" / "claude-turn.lock"
 
 
+def _validated_prompt_path(prompt_file: Path, identity_file: Path) -> Path:
+    prompt_path = prompt_file.expanduser().resolve()
+    state_root = identity_file.expanduser().resolve().parent
+    if not prompt_path.is_relative_to(state_root):
+        raise HandoffError("prompt file must stay inside the identity state directory")
+    return prompt_path
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -1108,6 +1189,14 @@ def build_parser() -> argparse.ArgumentParser:
     prompt_input.add_argument("--text")
     prompt_input.add_argument("--prompt-file", type=Path)
     prompt.add_argument("--timeout-ms", type=int, default=7_200_000)
+
+    handoff = subparsers.add_parser("handoff")
+    handoff.add_argument("--worktree", type=Path, required=True)
+    handoff.add_argument("--identity-file", type=Path, required=True)
+    handoff.add_argument("--prompt-file", type=Path, required=True)
+    handoff.add_argument("--name", required=True)
+    handoff.add_argument("--kind", choices=("claude", "hermes"), default="claude")
+    handoff.add_argument("--title")
 
     inspect = subparsers.add_parser("inspect")
     inspect.add_argument("--identity-file", type=Path, required=True)
@@ -1135,7 +1224,7 @@ def main() -> int:
     args = build_parser().parse_args()
     try:
         binary, injected_pane = _require_real_herdr_environment()
-        if args.command == "start":
+        if args.command in {"start", "handoff"}:
             worktree = args.worktree.expanduser().resolve()
             identity_path = args.identity_file
         else:
@@ -1159,14 +1248,24 @@ def main() -> int:
                 kind=args.kind,
                 title=args.title or args.name,
             )
+        elif args.command == "handoff":
+            prompt_path = _validated_prompt_path(args.prompt_file, args.identity_file)
+            result = controller.handoff(
+                caller_pane=injected_pane,
+                worktree=worktree,
+                identity_path=identity_path,
+                prompt_path=prompt_path,
+                name=args.name,
+                kind=args.kind,
+                title=args.title or args.name,
+                text=prompt_path.read_text(encoding="utf-8"),
+            )
         elif args.command == "prompt":
             text = args.text
             if args.prompt_file is not None:
-                prompt_path = args.prompt_file.expanduser().resolve()
-                state_root = args.identity_file.expanduser().resolve().parent
-                if not prompt_path.is_relative_to(state_root):
-                    raise HandoffError("prompt file must stay inside the identity state directory")
-                text = prompt_path.read_text(encoding="utf-8")
+                text = _validated_prompt_path(
+                    args.prompt_file, args.identity_file
+                ).read_text(encoding="utf-8")
             result = controller.prompt(
                 identity_path=identity_path,
                 text=text or "",
@@ -1188,7 +1287,9 @@ def main() -> int:
         else:
             result = controller.close(identity_path=identity_path)
     except (HandoffError, OSError, subprocess.SubprocessError) as exc:
-        print(json.dumps({"ok": False, "error": str(exc)}, sort_keys=True), file=sys.stderr)
+        failure = {"ok": False, "error": str(exc)}
+        failure.update(getattr(exc, "details", {}))
+        print(json.dumps(failure, sort_keys=True), file=sys.stderr)
         return 1
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0

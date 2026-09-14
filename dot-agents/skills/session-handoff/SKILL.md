@@ -1,0 +1,177 @@
+---
+name: session-handoff
+description: >
+  Use when the next slab of implementation work lives in Bryan's head rather
+  than on a tracker, and he wants it carried out by fresh sessions instead of
+  this one. Triggers: "hand this off", "what's next here and who runs it",
+  "write the prompt for the next session", "can this be split across agents",
+  "spin up a fresh context for this". Reconciles the vault record, decides
+  whether the frontier is one separable slice or several, and emits a handoff
+  prompt per slice. Needs no ticket. Decides slicing and agent topology; it
+  keeps no responsibility for what the new session then does.
+---
+
+# Session Handoff
+
+Slice untracked implementation work out of this session's head and into fresh
+contexts, leaving nothing behind for this session to watch.
+
+Every other route to a fresh agent starts from a ticket. This one starts from a
+vault record and a judgment about where the frontier actually is.
+
+## When to use
+
+All of these:
+
+- the work is **implementation**, not an open architecture question;
+- it is **untracked** — no issue exists and creating one is not the point;
+- this session holds context the record does not yet;
+- nobody is going to supervise the result in this session.
+
+Do not use it for open questions. If the work is not decision-complete, handing
+it off produces a confident wrong implementation. Say so and stop — route to
+`grilling` or brainstorming if this runtime carries one.
+
+Do not use it to plan decisions (`wayfinder`), and do not use it for work that
+already has a ticket (`issue-work`, `loop-issue`). Each of those routing targets
+is curated per runtime; when one is not installed here, still stop and name the
+problem rather than handing off anyway.
+
+## The boundary this skill exists to hold
+
+> **Tripwire: if you are about to call `prompt`, `inspect`, `read`,
+> `answer-blocked`, or `close`, you are in the wrong skill.**
+
+A handoff ends when the prompt is delivered. This session does not watch the
+worker, read its output, answer its questions, judge its diff, or close its
+pane. Acceptance is a **future invocation**, not a retained duty — a separate
+context gets invoked for it, the same way any PR gets reviewed.
+
+If Bryan wants a supervised worker whose output he accepts in this session, that
+is `coding-agent-handoff-supervision` — use it instead of this one, and never
+combine them. Where that skill is not installed for this runtime, say that the
+request is supervision rather than handoff, and stop.
+
+## 1. Reconcile the record
+
+Invoke `vault-pkm` first — it routes per-vault and the target vault's own
+`AGENTS.md` overrides its defaults.
+
+Then make the canonical surfaces this session actually moved agree with each
+other:
+
+- the status or project/log page;
+- the topic MOC or the exploration that owns the reasoning;
+- the index routing line that gets someone there.
+
+Reconcile **in place**. Never append a fresh note beside a stale one — that
+manufactures the contradiction the next session has to resolve. Commit under the
+vault's own git rules.
+
+This step is not hygiene. With nobody supervising, **the record is the handoff**
+and the prompt is only a pointer into it. That gives this skill its completion
+test: *if the record cannot stand alone, the handoff is not done*, however good
+the prompt is.
+
+## 2. Carve the frontier and decide who runs it
+
+One judgment, not two. What makes something a separate slice is exactly what
+makes it parallelizable, so deciding "what is next" and "how many agents" is a
+single test applied to each candidate piece.
+
+A piece stands alone only if **all four** hold:
+
+1. it touches files no other live piece touches;
+2. nothing must land before or after it;
+3. its own tests can go green without the other pieces;
+4. it is decision-complete by itself.
+
+Fail any one and it is not a slice — it is part of the piece beside it. Merge it
+into that piece and re-test.
+
+The output is **N prompts**, and N is usually one. Reach that by applying the
+test, not by preferring single agents.
+
+### Worked example — four changes that looked splittable and were not
+
+From the 2026-09-14 SGG factory review:
+
+- **Engine-side send counter.** Passes the file test. Fails (2): the submodule
+  re-pin must follow its commit. Fails (3): `test_bootstrap.py` asserts the
+  ledger and gitlink agree, so it cannot go green alone.
+- **Two changes to `review_pr.py`.** Both edit line 449 — one deletes an
+  argument from a phase, the other wraps that same phase. Fails (1).
+- **The fourth change.** A decision *not* to build something. Not work at all.
+
+Nothing survived alone. One slice, one agent.
+
+## 3. Route
+
+### Default: emit the prompt
+
+Print it for Bryan to carry into a fresh context. The prompt is a **pointer, not
+a copy**.
+
+Carry only what does not autoload and what drifts:
+
+- the vault note that owns the outcome, by path;
+- worktree paths and current heads;
+- ordering constraints;
+- the scope fence;
+- what to report back.
+
+Do **not** restate steps, files, tests, requirements, or safeguards that the
+reachable note already carries, and do not tell the agent to read `AGENTS.md` —
+it autoloads. A second copy of the specification is the copy that goes stale.
+
+### On explicit request: launch it
+
+Only when Bryan asks for the worker to be started, **and** this runtime is
+sitting in a Herdr pane. Check first: `HERDR_ENV=1`, a non-empty `HERDR_PANE_ID`,
+and an executable `HERDR_BIN_PATH`. Without them there is no launch route — emit
+the prompt as above, say why, and stop. That is a normal outcome, not a failure:
+the prompt is the deliverable and the launch is only convenience.
+
+Write the prompt to **session scratch beside the identity file** — not the vault,
+not `.hermes/`. It is a disposable pointer with no independent content, so a
+vault copy would be exactly the second copy the pointer contract forbids. The
+helper requires the prompt file to sit inside the identity file's directory.
+
+The helper lives in the dotfiles repo and is reached by its pool path, because
+`coding-agent-handoff-supervision` is not curated into every runtime's skills
+directory:
+
+```sh
+python3 dot-agents/skills/coding-agent-handoff-supervision/scripts/herdr_worker.py handoff \
+  --worktree "$WORKTREE" \
+  --identity-file "$SCRATCH/worker-identity.json" \
+  --prompt-file "$SCRATCH/worker-prompt.md" \
+  --name "$AGENT_NAME" \
+  --title "$TITLE"
+```
+
+`handoff` starts the worker, marks the record `supervised: false`, delivers the
+prompt once **without** `--wait`, and returns. It holds no turn lease and
+watches nothing.
+
+Then **terminate**. Report what was handed off, where the record lives, and the
+identity path — and stop.
+
+Two consequences worth knowing rather than rediscovering:
+
+- The helper **refuses** `prompt` and `answer-blocked` on a record carrying
+  `supervised: false`. The boundary above is structural, not just prose. If you
+  find yourself hitting that refusal, re-read the tripwire.
+- If delivery fails, the pane is **kept** — startup already succeeded and the
+  send is the cheap, retryable step. The command exits non-zero and reports both
+  the identity path and the prompt path so Bryan can finish it by hand. Do not
+  close the pane and do not retry into a supervision loop.
+
+## Completion
+
+The handoff is done when:
+
+- the vault record stands alone as the specification;
+- each slice passed all four parts of the test;
+- one prompt exists per slice, each a pointer rather than a copy; and
+- this session is carrying no further responsibility for any of them.
