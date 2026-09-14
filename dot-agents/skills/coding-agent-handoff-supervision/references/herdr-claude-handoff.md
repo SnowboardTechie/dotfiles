@@ -82,6 +82,49 @@ erase a successfully completed turn.
 
 Use `--text` instead of `--prompt-file` only for a genuinely short literal.
 
+## Handoff (one-way, unsupervised)
+
+```sh
+python3 scripts/herdr_worker.py handoff \
+  --worktree "$WORKTREE" \
+  --identity-file "$STATE_DIR/worker-identity.json" \
+  --prompt-file "$STATE_DIR/worker-prompt.md" \
+  --name "$AGENT_NAME" \
+  --title "$TITLE"
+```
+
+For a worker nobody in this session will supervise. It performs the same start
+sequence as `start` — identity reservation, capacity gate, unfocused split,
+startup, identity validation — then delivers the prompt exactly once through
+Herdr `agent prompt` **without** `--wait`, and returns.
+
+It is a separate subcommand rather than a `--detach` flag on `prompt` because
+`handoff` reads as terminal. A flag invites a later poll, which is the drift back
+into supervising that this command exists to prevent. Owned by the
+`session-handoff` skill; do not call it from a supervised workflow.
+
+It takes no Claude turn lease and starts no completion watch. Run it in the
+foreground: there is nothing to wait for. `--prompt-file` is required and obeys
+the same fence as `prompt` — it must sit inside the identity file's directory.
+
+At delivery the record gains `supervised: false`. Thereafter:
+
+- `prompt` and `answer-blocked` **refuse** that record, so a later session
+  cannot resume supervision of a handed-off worker by ignoring an instruction;
+- `inspect` and `read` still work and report the unsupervised state honestly;
+- `close` still works, so the tab can be tidied when Bryan is finished.
+
+The flag is written *before* the send, so an interrupted delivery still leaves an
+honest record rather than one describing a supervised worker.
+
+If the send fails, the pane is **kept**. By that point the split succeeded, the
+worker is running in the right worktree, and the identity file is written and
+valid; only the cheapest and most retryable step failed. Destroying a validated
+session for that would make Bryan pay the startup cost again for something he
+could fix by pressing enter. The command exits non-zero with `delivered: false`
+plus `identity_file` and `prompt_file`, so delivery can be completed by hand in
+the pane. A pane is closed only for the failures `start` already closes it for.
+
 ## Inspect
 
 ```sh

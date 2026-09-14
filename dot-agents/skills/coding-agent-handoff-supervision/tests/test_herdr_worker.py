@@ -27,6 +27,8 @@ class FakeHerdr:
         self.panes = {"caller"}
         self.agents: dict[str, dict] = {}
         self.prompt_count = 0
+        self.deliver_count = 0
+        self.deliver_error: Exception | None = None
         self.split_count = 0
         self.answer_count = 0
         self.wait_after_seq: int | None = None
@@ -71,6 +73,13 @@ class FakeHerdr:
     def prompt(self, *, name: str, text: str, timeout_ms: int) -> dict:
         self.prompt_count += 1
         self.agents[name]["agent_status"] = "idle"
+        return self.get_agent(name)
+
+    def deliver(self, *, name: str, text: str) -> dict:
+        if self.deliver_error is not None:
+            raise self.deliver_error
+        self.deliver_count += 1
+        self.agents[name]["agent_status"] = "working"
         return self.get_agent(name)
 
     def read_agent(self, *, name: str, lines: int) -> str:
@@ -708,6 +717,147 @@ class HerdrWorkerTests(unittest.TestCase):
         fake.agent_exists = original_agent_exists
         closed = controller.close(identity_path=identity_path)
         self.assertTrue(closed["closed"])
+
+    def handoff(self, controller, identity_path: Path, **overrides):
+        prompt_path = self.root / "handoff-prompt.md"
+        prompt_path.write_text("Read the vault note and implement it.\n", encoding="utf-8")
+        arguments = dict(
+            caller_pane="caller",
+            worktree=self.repo,
+            identity_path=identity_path,
+            prompt_path=prompt_path,
+            name="worker",
+            kind="claude",
+            title="Handed-off worker",
+            text=prompt_path.read_text(encoding="utf-8"),
+        )
+        arguments.update(overrides)
+        return controller.handoff(**arguments), prompt_path
+
+    def test_handoff_delivers_once_without_waiting_on_the_turn(self) -> None:
+        controller, fake = self.controller()
+        identity_path = self.root / "identity.json"
+
+        result, prompt_path = self.handoff(controller, identity_path)
+
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["delivered"])
+        self.assertIs(result["supervised"], False)
+        self.assertEqual(result["worker_pane_id"], "worker-pane")
+        self.assertEqual(result["identity_file"], str(identity_path.resolve()))
+        self.assertEqual(result["prompt_file"], str(prompt_path.resolve()))
+        # The one-way send is used exactly once, and the waiting send never is.
+        self.assertEqual(fake.deliver_count, 1)
+        self.assertEqual(fake.prompt_count, 0)
+
+    def test_handoff_holds_no_turn_lease_after_returning(self) -> None:
+        controller, _ = self.controller()
+        identity_path = self.root / "identity.json"
+
+        self.handoff(controller, identity_path)
+
+        record = json.loads(identity_path.read_text(encoding="utf-8"))
+        lease = controller._session_lease(record)
+        self.assertFalse(lease.path.exists(), "handoff created a turn lease file")
+        with lease:  # Would raise if the handoff still owned the session.
+            pass
+
+    def test_real_client_delivery_omits_the_wait_flag(self) -> None:
+        sent: list[list[str]] = []
+        client = self.module.RealHerdr.__new__(self.module.RealHerdr)
+        client._json = lambda args, **kwargs: sent.append(args) or {}
+
+        client.deliver(name="worker", text="go")
+
+        self.assertEqual(sent, [["agent", "prompt", "worker", "go"]])
+        self.assertNotIn("--wait", sent[0])
+
+    def test_failed_delivery_keeps_the_pane_and_reports_both_paths(self) -> None:
+        controller, fake = self.controller()
+        identity_path = self.root / "identity.json"
+        fake.deliver_error = RuntimeError("transport refused the send")
+
+        with self.assertRaises(self.module.HandoffDeliveryError) as raised:
+            self.handoff(controller, identity_path)
+
+        details = raised.exception.details
+        self.assertEqual(details["identity_file"], str(identity_path.resolve()))
+        self.assertEqual(
+            details["prompt_file"], str((self.root / "handoff-prompt.md").resolve())
+        )
+        self.assertFalse(details["delivered"])
+        # The started, validated worker survives the cheapest step failing.
+        self.assertIn("worker-pane", fake.panes)
+        self.assertIn("worker", fake.agents)
+        record = json.loads(identity_path.read_text(encoding="utf-8"))
+        self.assertIs(record["supervised"], False)
+        self.assertIsNot(record.get("closed"), True)
+
+    def test_handoff_record_refuses_supervision_but_allows_inspect_and_close(self) -> None:
+        controller, fake = self.controller()
+        identity_path = self.root / "identity.json"
+        self.handoff(controller, identity_path)
+
+        self.assertIs(
+            json.loads(identity_path.read_text(encoding="utf-8"))["supervised"], False
+        )
+
+        with self.assertRaisesRegex(self.module.HandoffError, "unsupervised"):
+            controller.prompt(
+                identity_path=identity_path, text="follow up", timeout_ms=60_000
+            )
+        with self.assertRaisesRegex(self.module.HandoffError, "unsupervised"):
+            controller.answer_blocked(
+                identity_path=identity_path,
+                text="yes",
+                keys=None,
+                timeout_ms=60_000,
+            )
+        # Refused before any input reached the worker.
+        self.assertEqual(fake.prompt_count, 0)
+        self.assertEqual(fake.answer_count, 0)
+
+        inspected = controller.inspect(identity_path=identity_path)
+        self.assertIs(inspected["supervised"], False)
+        self.assertEqual(inspected["worker_agent_name"], "worker")
+
+        closed = controller.close(identity_path=identity_path)
+        self.assertTrue(closed["closed"])
+        self.assertNotIn("worker-pane", fake.panes)
+
+    def test_handoff_refuses_empty_prompt_before_creating_a_pane(self) -> None:
+        controller, fake = self.controller()
+        identity_path = self.root / "identity.json"
+
+        with self.assertRaisesRegex(self.module.HandoffError, "must not be empty"):
+            self.handoff(controller, identity_path, text="   \n")
+
+        self.assertEqual(fake.split_count, 0)
+        self.assertEqual(fake.deliver_count, 0)
+        self.assertFalse(identity_path.exists())
+
+    def test_cli_exposes_handoff_with_a_required_prompt_file(self) -> None:
+        parser = self.module.build_parser()
+        arguments = parser.parse_args(
+            [
+                "handoff",
+                "--worktree", str(self.repo),
+                "--identity-file", str(self.root / "identity.json"),
+                "--prompt-file", str(self.root / "handoff-prompt.md"),
+                "--name", "worker",
+            ]
+        )
+        self.assertEqual(arguments.command, "handoff")
+        self.assertEqual(arguments.kind, "claude")
+        with self.assertRaises(SystemExit):
+            parser.parse_args(
+                [
+                    "handoff",
+                    "--worktree", str(self.repo),
+                    "--identity-file", str(self.root / "identity.json"),
+                    "--name", "worker",
+                ]
+            )
 
 
 if __name__ == "__main__":

@@ -81,7 +81,7 @@ fi
 
 # Common core shared by Claude, OpenCode, and Pi: dev/PR, PKM, and workflow learning.
 COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review code-review
-    vault-pkm vault-capture skill-retrospective obsidian)
+    vault-pkm vault-capture skill-retrospective obsidian session-handoff)
 
 # Planning and delivery cores adapted from an upstream suite (see
 # dot-agents/upstreams/mattpocock-skills.json). Curated for the three runtimes
@@ -113,6 +113,7 @@ HERMES_SKILLS=(
     manual-merge issue-create issue-plan issue-work loop-issue
     coding-agent-handoff-supervision
     vault-capture skill-retrospective adr-and-spec-coach voice-bryan
+    session-handoff
     dx-target dx-preview conforming-tech-specs
     catalog-review dependency-review dependency-triage sprint-deliverable-update
     "${ADAPTED_CORES[@]}"
