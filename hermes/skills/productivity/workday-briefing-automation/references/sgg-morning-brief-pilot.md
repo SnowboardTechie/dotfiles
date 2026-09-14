@@ -6,7 +6,7 @@ Prepare Bryan for SGG work by reconstructing the previous business day's resting
 
 ## Operational contract
 
-- Schedule: 7:30 AM Pacific, Monday–Friday; Monday looks back to Friday.
+- Schedule: 8:00 AM Pacific, Monday–Friday; Monday looks back to Friday.
 - Hermes workdir: `/Users/bryan/code/sgg`.
 - Delivery: private encrypted `SGG` Matrix room, continuable in Bryan's
   room-specific Hermes session. Mirror the labelled cron delivery into that
