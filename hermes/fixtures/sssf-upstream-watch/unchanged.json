@@ -1,0 +1,44 @@
+{
+  "$comment": "Quiet week. Upstream main is still exactly the reviewed sha and the fork sits at the pinned engine commit. The weekly report must still be delivered and must say `Recommendation: no update to consider this week`.",
+  "https://api.github.com/repos/disler/super-simple-software-factory": {
+    "full_name": "disler/super-simple-software-factory",
+    "default_branch": "main",
+    "archived": false,
+    "fork": false
+  },
+  "https://api.github.com/repos/disler/super-simple-software-factory/commits/main": {
+    "sha": "de31374882e7a4e3e5b7bb9bd09e69dc2f779356"
+  },
+  "https://api.github.com/repos/disler/super-simple-software-factory/compare/de31374882e7a4e3e5b7bb9bd09e69dc2f779356...de31374882e7a4e3e5b7bb9bd09e69dc2f779356": {
+    "status": "identical",
+    "ahead_by": 0,
+    "behind_by": 0,
+    "total_commits": 0,
+    "commits": [],
+    "files": []
+  },
+  "https://api.github.com/repos/disler/super-simple-software-factory/tags": [
+    {
+      "name": "v0.1.0",
+      "commit": { "sha": "de31374882e7a4e3e5b7bb9bd09e69dc2f779356" }
+    }
+  ],
+  "https://api.github.com/repos/SnowboardTechie/super-simple-software-factory": {
+    "full_name": "SnowboardTechie/super-simple-software-factory",
+    "default_branch": "main",
+    "archived": false,
+    "fork": true,
+    "parent": { "full_name": "disler/super-simple-software-factory" }
+  },
+  "https://api.github.com/repos/SnowboardTechie/super-simple-software-factory/commits/main": {
+    "sha": "fef6e49aac6c2ded86fdea30cd8689c1c9ee4d86"
+  },
+  "https://api.github.com/repos/disler/super-simple-software-factory/compare/disler:main...SnowboardTechie:main": {
+    "status": "ahead",
+    "ahead_by": 4,
+    "behind_by": 0,
+    "total_commits": 4,
+    "commits": [],
+    "files": []
+  }
+}

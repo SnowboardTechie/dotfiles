@@ -1,0 +1,40 @@
+{
+  "$comment": "Fixture copy of the SGG factory ledger shape. Mirrors /Users/bryan/code/sgg/factory/upstream.json so the collector can be exercised without the SGG workspace present. Not the live ledger; never advance a pin here.",
+  "engine": {
+    "path": "factory/engine",
+    "repository": "https://github.com/SnowboardTechie/super-simple-software-factory",
+    "default_branch": "main",
+    "pinned_sha": "fef6e49aac6c2ded86fdea30cd8689c1c9ee4d86"
+  },
+  "upstream": {
+    "repository": "https://github.com/disler/super-simple-software-factory",
+    "default_branch": "main",
+    "reviewed_sha": "de31374882e7a4e3e5b7bb9bd09e69dc2f779356"
+  },
+  "license": "MIT",
+  "update_policy": {
+    "detect": "weekly",
+    "apply": "reviewed-only",
+    "autoApply": false
+  },
+  "divergences": [
+    "artifact-root-confinement",
+    "bidirectional-changed-file-gate",
+    "content-fingerprint",
+    "explicit-path-commit",
+    "git-explicit-cwd",
+    "permission-enforcement-on-failure",
+    "protected-roots",
+    "run-targets",
+    "state-rooted-trace-db",
+    "test-suite",
+    "trace-redaction"
+  ],
+  "sgg_local_paths": {
+    "operator_entry_point": "factory/bin/sgg-factory",
+    "domain_layer": "factory/sgg/",
+    "engine_submodule": "factory/engine/",
+    "runtime_state": ".hermes/factory/",
+    "ledger": "factory/upstream.json"
+  }
+}

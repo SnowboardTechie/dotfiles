@@ -1,0 +1,59 @@
+{
+  "$comment": "Upstream force-pushed: the reviewed sha is no longer an ancestor of current main, so the compare range is `diverged` and no honest delta exists. The assessment must classify this `assessment blocked`, never `no update to consider`. The compare also reports more commits than it returns, which is the truncation indicator.",
+  "https://api.github.com/repos/disler/super-simple-software-factory": {
+    "full_name": "disler/super-simple-software-factory",
+    "default_branch": "main",
+    "archived": false,
+    "fork": false
+  },
+  "https://api.github.com/repos/disler/super-simple-software-factory/commits/main": {
+    "sha": "9f8e7d6c5b4a39281706f5e4d3c2b1a09f8e7d6c"
+  },
+  "https://api.github.com/repos/disler/super-simple-software-factory/compare/de31374882e7a4e3e5b7bb9bd09e69dc2f779356...9f8e7d6c5b4a39281706f5e4d3c2b1a09f8e7d6c": {
+    "status": "diverged",
+    "ahead_by": 12,
+    "behind_by": 5,
+    "total_commits": 260,
+    "commits": [
+      {
+        "sha": "0011223344556677889900aabbccddeeff001122",
+        "commit": { "message": "Rewrite history to drop a leaked key" }
+      }
+    ],
+    "files": [
+      {
+        "filename": ".claude/skills/sssf/templates/adws/adw_modules/runner.py",
+        "status": "modified"
+      }
+    ]
+  },
+  "https://api.github.com/repos/disler/super-simple-software-factory/git/trees/9f8e7d6c5b4a39281706f5e4d3c2b1a09f8e7d6c?recursive=1": {
+    "truncated": true,
+    "tree": [
+      {
+        "path": ".claude/skills/sssf/templates/adws/adw_modules/runner.py",
+        "type": "blob",
+        "sha": "1111aaaa2222bbbb3333cccc4444dddd5555eeee"
+      }
+    ]
+  },
+  "https://api.github.com/repos/disler/super-simple-software-factory/tags": [],
+  "https://api.github.com/repos/SnowboardTechie/super-simple-software-factory": {
+    "full_name": "SnowboardTechie/super-simple-software-factory",
+    "default_branch": "main",
+    "archived": false,
+    "fork": true,
+    "parent": { "full_name": "disler/super-simple-software-factory" }
+  },
+  "https://api.github.com/repos/SnowboardTechie/super-simple-software-factory/commits/main": {
+    "sha": "fef6e49aac6c2ded86fdea30cd8689c1c9ee4d86"
+  },
+  "https://api.github.com/repos/disler/super-simple-software-factory/compare/disler:main...SnowboardTechie:main": {
+    "status": "diverged",
+    "ahead_by": 4,
+    "behind_by": 12,
+    "total_commits": 4,
+    "commits": [],
+    "files": []
+  }
+}
