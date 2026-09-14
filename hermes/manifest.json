@@ -40,7 +40,6 @@
     "personal-mail-messages.js",
     "check-mattpocock-skill-updates.py",
     "check-herdr-homebrew-atuin-fix.py",
-    "check-typespec-fix-release.py",
     "check-studio-services.py"
   ],
   "removedScripts": [
@@ -56,7 +55,6 @@
     "personal-alignment-brief.py",
     "check-mattpocock-skill-updates.py",
     "check-herdr-homebrew-atuin-fix.py",
-    "check-typespec-fix-release.py",
     "check-studio-services.py"
   ],
   "plugins": [
@@ -81,20 +79,6 @@
     "software-development/upstream-contribution-assessment"
   ],
   "cronJobs": [
-    {
-      "name": "Watch TypeSpec fix for SGG PR 1093",
-      "schedule": "0 10 * * 1-5",
-      "model": null,
-      "provider": null,
-      "promptFile": "automations/typespec-fix-release/prompt.md",
-      "deliver": "matrix:!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU",
-      "skills": [],
-      "script": "check-typespec-fix-release.py",
-      "noAgent": true,
-      "enabledToolsets": [],
-      "workdir": "/Users/bryan/code/sgg",
-      "attachToSession": false
-    },
     {
       "name": "Workday Morning Brief",
       "schedule": "0 8 * * 1-5",
