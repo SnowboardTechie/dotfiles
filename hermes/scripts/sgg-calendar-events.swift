@@ -24,6 +24,11 @@ struct CalendarEvent: Codable {
     let attendeeCount: Int
 }
 
+struct EventStatusResult: Codable {
+    let status: String
+    let reason: String
+}
+
 func truncate(_ value: String?, to limit: Int) -> String? {
     guard let value else { return nil }
     let cleaned = value.replacingOccurrences(of: "\u{0000}", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -70,6 +75,14 @@ func currentUserAttendee(_ attendees: [EKParticipant]?) -> ParticipantSummary? {
     participantSummary(attendees?.first(where: { $0.isCurrentUser }))
 }
 
+func writeJSON<T: Encodable>(_ value: T) throws {
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+    encoder.dateEncodingStrategy = .iso8601
+    FileHandle.standardOutput.write(try encoder.encode(value))
+    FileHandle.standardOutput.write(Data("\n".utf8))
+}
+
 let store = EKEventStore()
 let semaphore = DispatchSemaphore(value: 0)
 var granted = false
@@ -109,8 +122,38 @@ guard granted else {
 }
 
 let systemCalendar = Calendar.current
+let arguments = Array(CommandLine.arguments.dropFirst())
+if arguments.count == 3 && arguments[0] == "--event-status" {
+    let expectedOccurrence = arguments[2] == "-"
+        ? nil
+        : ISO8601DateFormatter().date(from: arguments[2])
+    guard let event = store.event(withIdentifier: arguments[1]) else {
+        try writeJSON(EventStatusResult(status: "cancelled", reason: "calendar event was removed"))
+        exit(0)
+    }
+    if let expectedOccurrence {
+        guard let actualOccurrence = event.occurrenceDate,
+              abs(actualOccurrence.timeIntervalSince(expectedOccurrence)) <= 1 else {
+            try writeJSON(EventStatusResult(
+                status: "unknown",
+                reason: "calendar occurrence identity could not be confirmed"
+            ))
+            exit(0)
+        }
+    }
+    if event.status == .canceled {
+        try writeJSON(EventStatusResult(status: "cancelled", reason: "calendar event is cancelled"))
+        exit(0)
+    }
+    if event.attendees?.first(where: { $0.isCurrentUser })?.participantStatus == .declined {
+        try writeJSON(EventStatusResult(status: "cancelled", reason: "Bryan declined the calendar event"))
+        exit(0)
+    }
+    try writeJSON(EventStatusResult(status: "active", reason: "calendar event is still active"))
+    exit(0)
+}
 let start = systemCalendar.startOfDay(for: Date())
-let requestedDays = CommandLine.arguments.dropFirst().first.flatMap(Int.init) ?? 1
+let requestedDays = arguments.first.flatMap(Int.init) ?? 1
 guard (1...31).contains(requestedDays) else {
     FileHandle.standardError.write(Data("Calendar lookahead must be between 1 and 31 days.\n".utf8))
     exit(2)
@@ -137,9 +180,4 @@ let records = store.events(matching: predicate)
         )
     }
 
-let encoder = JSONEncoder()
-encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-encoder.dateEncodingStrategy = .iso8601
-let data = try encoder.encode(records)
-FileHandle.standardOutput.write(data)
-FileHandle.standardOutput.write(Data("\n".utf8))
+try writeJSON(records)

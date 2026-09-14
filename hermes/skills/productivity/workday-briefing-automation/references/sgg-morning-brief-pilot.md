@@ -85,10 +85,17 @@ content itself; every Granola source failure remains visible.
 
 Each one-shot job omits all calendar prose and matches exactly one completed
 Granola meeting from the validated time window and Granola participant metadata.
-It polls at most three times, 180 seconds apart, before reporting a missing-note
-failure. After retrieving private notes and the AI-generated summary without a
-transcript, the agent writes a complete source snapshot into a randomized mode-
-0600 file under a verified mode-0700 private staging directory. The installed
+After its first missing or ambiguous Granola result, it rechecks the exact event
+and original calendar identities against the current work calendar before
+retrying. The EventKit fallback resolves the event by identifier rather than by
+its former date, so cross-date reschedules do not become false cancellations. A
+cancelled, removed, or Bryan-declined event ends silently without another
+Granola call or a Hindsight write. Only a confirmed-active event receives up to
+two more Granola attempts, 180 seconds apart; an unavailable calendar check
+fails visibly rather than assuming the meeting remained active.
+After retrieving private notes and the AI-generated summary without a transcript,
+the agent writes a complete source snapshot into a randomized mode-0600 file
+under a verified mode-0700 private staging directory. The installed
 `sgg-granola-import.py` helper upserts and reads back
 `granola-meeting::<meeting-uuid>` in `coding-agent::sgg` with a source-artifact
 epistemic label. This makes the recorded context available to future SGG chats
