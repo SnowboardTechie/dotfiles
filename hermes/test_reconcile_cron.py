@@ -355,7 +355,14 @@ class MergedFeatureIntegrationTest(unittest.TestCase):
     dicts the real scheduler would receive.
     """
 
-    def run_reconcile(self, jobs: list[dict], definitions: list[dict]) -> dict:
+    # Static so other contract classes can drive the same end-to-end path
+    # without inheriting this class's own tests. It never touched `self`.
+    @staticmethod
+    def run_reconcile(
+        jobs: list[dict],
+        definitions: list[dict],
+        env: dict[str, str] | None = None,
+    ) -> dict:
         """Drive `reconcile_cron.main()` once and capture what it sent."""
         import sys as _sys
         import tempfile
@@ -436,10 +443,12 @@ class MergedFeatureIntegrationTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / "automations" / "x").mkdir(parents=True)
-            (root / "automations" / "x" / "prompt.md").write_text(
-                "Do the thing.\n", encoding="utf-8"
-            )
+            # One stand-in prompt per declared promptFile, so a real
+            # manifest entry can be driven through this harness unchanged.
+            for definition in definitions:
+                prompt = root / definition["promptFile"]
+                prompt.parent.mkdir(parents=True, exist_ok=True)
+                prompt.write_text("Do the thing.\n", encoding="utf-8")
             manifest = root / "manifest.json"
             manifest.write_text(
                 json.dumps({"cronJobs": definitions}), encoding="utf-8"
@@ -459,6 +468,7 @@ class MergedFeatureIntegrationTest(unittest.TestCase):
                     {
                         "HERMES_SOURCE_ROOT": str(root / "source"),
                         "MATRIX_ALLOWED_USERS": "@bryan:example.test",
+                        **(env or {}),
                     },
                 ):
                     captured["rc"] = MODULE.main()
@@ -618,6 +628,173 @@ class MergedFeatureIntegrationTest(unittest.TestCase):
             "reconciliation must not reset a finite pilot's remaining runs",
         )
         self.assertEqual(updated["store"]["Personal Brief"]["repeat"], {"times": 3})
+
+
+class SssfUpstreamWatchTest(unittest.TestCase):
+    """The tracked contract for `Watch SSSF upstream updates`.
+
+    This watcher is a plain `script` job, not a `monitorScript` one, and that is
+    the whole point: a monitor suppresses the run when its bytes repeat, and
+    Bryan asked for a weekly report that *includes* the quiet weeks. A future
+    edit promoting it to `monitorScript` would silently delete exactly the
+    report it was built to send, so the absence of that key is asserted here
+    rather than left to review.
+    """
+
+    NAME = "Watch SSSF upstream updates"
+    ASSET_ROOT = Path(__file__).parent
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.manifest = json.loads(
+            (cls.ASSET_ROOT / "manifest.json").read_text(encoding="utf-8")
+        )
+
+    def job(self) -> dict:
+        for definition in self.manifest["cronJobs"]:
+            if definition["name"] == self.NAME:
+                return definition
+        self.fail(f"manifest does not define {self.NAME!r}")
+
+    # -- declarative contract ------------------------------------------------
+
+    def test_it_is_a_weekly_report_not_a_change_suppressing_monitor(self) -> None:
+        job = self.job()
+        self.assertNotIn(
+            "monitorScript",
+            job,
+            "a monitor suppresses unchanged runs, which would drop the quiet-week report",
+        )
+        self.assertEqual(job["script"], "check-sssf-upstream.py")
+        self.assertIsNone(MODULE.monitor_script_value(job))
+
+    def test_the_schedule_is_the_planned_weekly_monday_slot(self) -> None:
+        self.assertEqual(self.job()["schedule"], "15 9 * * 1")
+
+    def test_the_collector_is_declared_and_installed_as_a_copy(self) -> None:
+        """The scheduler rejects a cron script whose symlink resolves outside
+        `HERMES_HOME/scripts`, so this one has to be in `copiedScripts` too."""
+        job = self.job()
+        self.assertNotIn("/", job["script"])
+        self.assertIn(job["script"], self.manifest["scripts"])
+        self.assertIn(job["script"], self.manifest["copiedScripts"])
+        script = self.ASSET_ROOT / "scripts" / job["script"]
+        self.assertTrue(script.is_file())
+        self.assertTrue(script.stat().st_mode & 0o111, "cron scripts are run directly")
+
+    def test_the_workdir_is_the_sgg_workspace_that_holds_the_ledger(self) -> None:
+        """The collector locates `factory/upstream.json` from the cron workdir,
+        because as an installed copy it cannot find the repository any other way."""
+        self.assertEqual(self.job()["workdir"], "/Users/bryan/code/sgg")
+
+    def test_it_is_pinned_to_the_codex_route(self) -> None:
+        job = self.job()
+        self.assertEqual(job["model"], "gpt-5.6-terra")
+        self.assertEqual(job["provider"], "openai-codex")
+        self.assertIsNone(job.get("baseUrl"))
+        MODULE.verify_inference_route(job)
+
+    def test_it_delivers_to_the_sgg_room_without_continuation(self) -> None:
+        job = self.job()
+        self.assertEqual(
+            job["deliver"], "matrix:!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU"
+        )
+        self.assertFalse(job["attachToSession"])
+        self.assertNotIn("continuation", job)
+        self.assertIsNone(MODULE.continuation_origin(job))
+
+    def test_its_toolsets_are_read_only(self) -> None:
+        job = self.job()
+        for forbidden in ("file", "delegation", "development", "default", "skills", "safe"):
+            with self.subTest(toolset=forbidden):
+                self.assertNotIn(forbidden, job["enabledToolsets"])
+        self.assertIn("no_mcp", job["enabledToolsets"])
+        self.assertEqual(job["enabledToolsets"], ["no_mcp"])
+
+    def test_its_prompt_resolves_and_always_reports(self) -> None:
+        job = self.job()
+        prompt = (self.ASSET_ROOT / job["promptFile"]).read_text(encoding="utf-8")
+        self.assertIn("@bryan:snowboardtechie.com", prompt)
+        self.assertIn("Every run produces a message", prompt)
+        self.assertNotIn(
+            "[SILENT]",
+            prompt.replace("never answer `[SILENT]`", ""),
+            "a weekly report has no silent branch",
+        )
+        for classification in (
+            "update now",
+            "review for update",
+            "skip for now",
+            "assessment blocked",
+        ):
+            with self.subTest(classification=classification):
+                self.assertIn(classification, prompt)
+        self.assertIn("no update to consider this week", prompt)
+
+    def test_the_prompt_forbids_mutation(self) -> None:
+        prompt = (self.ASSET_ROOT / self.job()["promptFile"]).read_text(encoding="utf-8")
+        self.assertRegex(prompt, r"(?i)never .*(edit|advance|install|activate)")
+        # Whitespace-tolerant: the prompt is wrapped prose, so a literal
+        # substring assertion breaks on a reflow that changed nothing.
+        self.assertRegex(prompt, r"never\s+advance the pin")
+        self.assertRegex(prompt, r"never\s+push")
+
+    def test_it_carries_the_skill_the_plan_assigned(self) -> None:
+        self.assertEqual(self.job()["skills"], ["cross-agent-skill-migration"])
+
+    # -- isolated reconciliation --------------------------------------------
+
+    def live_cron_state(self) -> object:
+        """A fingerprint of the real cron registry, or None when absent."""
+        live = Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes"))
+        jobs = live / "cron" / "jobs.json"
+        return jobs.read_bytes() if jobs.is_file() else None
+
+    def test_reconciling_it_touches_no_production_cron_state(self) -> None:
+        """Driven end to end through `main()` against fake cron modules and a
+        throwaway HERMES_HOME, then the real registry is compared byte for byte.
+        """
+        before = self.live_cron_state()
+        with tempfile.TemporaryDirectory() as tmp:
+            isolated = Path(tmp) / "hermes-home"
+            (isolated / "cron").mkdir(parents=True)
+            result = MergedFeatureIntegrationTest.run_reconcile(
+                [], [self.job()], env={"HERMES_HOME": str(isolated)}
+            )
+            self.assertEqual(result["rc"], 0)
+            self.assertFalse(
+                (isolated / "cron" / "jobs.json").exists(),
+                "reconciliation must not write a cron registry of its own",
+            )
+        self.assertEqual(before, self.live_cron_state(), "live cron state changed")
+
+    def test_reconciliation_sends_the_script_and_clears_the_monitor_field(self) -> None:
+        """`monitor_script` is sent as an empty string, never omitted: omitting
+        it would leave a stale live monitor while reporting the job synced."""
+        result = MergedFeatureIntegrationTest.run_reconcile([], [self.job()])
+        call = next(c for c in result["calls"] if c["name"] == self.NAME)
+        self.assertEqual(call["action"], "create")
+        self.assertEqual(call["script"], "check-sssf-upstream.py")
+        self.assertEqual(call["monitor_script"], "")
+        self.assertFalse(call["continuity"])
+        self.assertEqual(call["workdir"], "/Users/bryan/code/sgg")
+        self.assertEqual(call["enabled_toolsets"], ["no_mcp"])
+
+    def test_reconciling_it_leaves_an_unrelated_existing_job_alone(self) -> None:
+        """It is added to a manifest that already owns live jobs; a new entry
+        must not disturb one it does not name."""
+        unrelated = {
+            "id": "job-unrelated",
+            "name": "Monitor Studio services",
+            "schedule_display": "every 5m",
+            "script": "check-studio-services.py",
+            "enabled": True,
+            "state": "active",
+        }
+        result = MergedFeatureIntegrationTest.run_reconcile([unrelated], [self.job()])
+        self.assertEqual(result["rc"], 0)
+        self.assertEqual(result["store"]["Monitor Studio services"], unrelated)
+        self.assertEqual([c["name"] for c in result["calls"]], [self.NAME])
 
 
 if __name__ == "__main__":

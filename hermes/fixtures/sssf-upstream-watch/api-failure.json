@@ -1,0 +1,9 @@
+{
+  "$comment": "GitHub rate limit. The collector must still exit zero with a well-formed document — a `script` collector that died here would take the whole weekly report with it — reporting `status: unreachable` and naming the fault under `incomplete`. The assessment must read that as `assessment blocked`, never as a quiet week.",
+  "https://api.github.com/repos/disler/super-simple-software-factory": {
+    "__error__": "HTTP 403"
+  },
+  "https://api.github.com/repos/SnowboardTechie/super-simple-software-factory": {
+    "__error__": "HTTP 403"
+  }
+}
