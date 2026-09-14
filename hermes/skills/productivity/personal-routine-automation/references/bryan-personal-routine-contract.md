@@ -19,7 +19,7 @@ Generated briefings are ephemeral. If Bryan does not participate, create no note
 
 ## Cadence and suppression
 
-- Weekday personal morning brief: 7:20 AM Pacific, delta-only and read-only, delivered to Second Brain before the 7:30 AM SGG work brief.
+- Weekday personal morning brief: 7:20 AM Pacific, delta-only and read-only, delivered to Second Brain before the 8:00 AM SGG work brief.
 - Weekly personal orientation: Sunday at 11:00 AM Pacific, or when Bryan starts it earlier.
 - Weekday closes and Saturday orientations remain available on demand but are not scheduled by default.
 
