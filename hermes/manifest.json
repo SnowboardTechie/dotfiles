@@ -136,7 +136,7 @@
     },
     {
       "name": "Personal Morning Brief",
-      "schedule": "20 7 * * 1-5",
+      "schedule": "0 7 * * 1-5",
       "model": "gpt-5.6-terra",
       "provider": "openai-codex",
       "promptFile": "automations/personal-morning-brief/prompt.md",

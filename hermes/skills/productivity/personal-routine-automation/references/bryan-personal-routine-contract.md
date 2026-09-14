@@ -19,7 +19,7 @@ Generated briefings are ephemeral. If Bryan does not participate, create no note
 
 ## Cadence and suppression
 
-- Weekday personal morning brief: 7:20 AM Pacific, delta-only and read-only, delivered to Second Brain before the 8:00 AM SGG work brief.
+- Weekday personal morning brief: 7:00 AM Pacific, delta-only and read-only, delivered to Second Brain before the 8:00 AM SGG work brief.
 - Weekly personal orientation: Sunday at 11:00 AM Pacific, or when Bryan starts it earlier.
 - Weekday closes and Saturday orientations remain available on demand but are not scheduled by default.
 
@@ -115,7 +115,7 @@ Tracked source lives under `/Users/bryan/code/dotfiles/hermes/`:
 
 Jobs:
 
-- Personal Morning Brief: weekdays at 7:20 AM Pacific, recurring until removed, synthesized by the OpenAI Terra route from locally filtered inputs
+- Personal Morning Brief: weekdays at 7:00 AM Pacific, recurring until removed, synthesized by the OpenAI Terra route from locally filtered inputs
 - Personal Weekly Orientation: Sundays at 11:00 AM Pacific, recurring until removed, with a minimal collector and one-question opening
 - Personal Weekday Close, Personal Saturday Orientation, and Personal Sunday Reset: completed finite pilot records retained for audit but not recreated
 
