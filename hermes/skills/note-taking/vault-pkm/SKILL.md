@@ -173,10 +173,12 @@ After writing:
 Bryan treats Git synchronization as part of completing a non-draft vault update, not as a separate publishing action. Unless a vault-local rule says otherwise:
 
 1. Fetch and confirm the vault branch can be updated safely; preserve unrelated tracked and untracked work.
-2. Stage only the exact non-draft note paths changed for the task.
+2. Stage only the exact note paths authorized for the task.
 3. Run `git diff --cached --check`, commit with a concise vault-scoped message, and push.
 4. Fetch again and verify local `HEAD` equals the remote branch SHA.
-5. Leave `drafts/` uncommitted unless Bryan explicitly promotes or asks to commit the draft.
+5. During ordinary note work, leave `drafts/` uncommitted unless Bryan explicitly promotes or asks to commit the draft.
+
+For `session-handoff`, a `draft` or `noncanonical` designation is an authority label, not a Git transport rule. Invoking `session-handoff` is explicit authorization to commit and push task-owned drafts required by the handoff while preserving their draft status. Never include unrelated drafts.
 
 Do not wait for a separate commit/push request when Bryan asked to update non-draft project-vault notes and synchronization is safe. If synchronization is blocked by remote divergence or overlapping edits, preserve the work and report the blocker rather than forcing it.
 
@@ -186,9 +188,11 @@ For this user's coding-agent handoffs, synchronization is a prerequisite to prom
 
 1. Review the live implementation/release sources and every related canonical vault surface.
 2. Reconcile current state, accepted decisions, proposals, and superseded history.
-3. Commit and push the note updates before writing the Claude/Codex/OpenCode prompt.
-4. Cite the synchronized note paths or commit in the prompt when they help the agent orient.
-5. Require an implementation agent on another machine to commit and push its completed branch for review; opening a PR remains a separate permission boundary.
+3. Build the required artifact set from the handoff record and every linked or named note whose content the next agent needs.
+4. Commit and push every task-owned artifact in that set before writing the Claude/Codex/OpenCode prompt, including required drafts without promoting them.
+5. Fetch again and verify each required path is reachable from the pushed commit with no handoff-only local delta. Inheriting the same dirty working tree does not count.
+6. Cite the synchronized note paths or commit in the prompt when they help the agent orient.
+7. Require an implementation agent on another machine to commit and push its completed branch for review; opening a PR remains a separate permission boundary.
 
 This does **not** require notes to change after every conversational turn. Apply it at implementation-handoff boundaries and other meaningful resting points. For the full cross-machine artifact and review workflow, load `cross-machine-coding-agent-handoffs`.
 

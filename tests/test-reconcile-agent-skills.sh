@@ -9,7 +9,7 @@ set -u
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RECONCILER="$REPO_ROOT/scripts/reconcile-agent-skills.sh"
-POOL="$(cd "$REPO_ROOT/dot-agents/skills" && pwd)"
+POOL="$(cd "$REPO_ROOT/dot-agents/skills" && pwd -P)"
 
 TESTS=0
 FAILURES=0
@@ -78,10 +78,10 @@ H="$(new_home)"
 TMP_HOMES+=("$H")
 out="$(HOME="$H" "$RECONCILER" --apply 2>&1)"; rc=$?
 check "t1: apply exits 0 on a fresh home" test "$rc" -eq 0
-check "t1: Claude receives 29 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 29
-check "t1: OpenCode receives 23 pool links" test "$(links_into_pool "$H/.config/opencode/skills")" -eq 23
-check "t1: Pi receives 9 pool links"        test "$(links_into_pool "$H/.pi/agent/skills")" -eq 9
-check "t1: Hermes receives 29 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 29
+check "t1: Claude receives 30 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 30
+check "t1: OpenCode receives 24 pool links" test "$(links_into_pool "$H/.config/opencode/skills")" -eq 24
+check "t1: Pi receives 10 pool links"       test "$(links_into_pool "$H/.pi/agent/skills")" -eq 10
+check "t1: Hermes receives 30 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 30
 check "t1: Claude-only skill is linked"     link_resolves_to "$H/.claude/skills/find-skills" "$POOL/find-skills"
 check "t1: Claude gets Ponytail workflow"     link_resolves_to "$H/.claude/skills/pr-self-review" "$POOL/pr-self-review"
 check "t1: Claude gets shared review contract" link_resolves_to "$H/.claude/skills/code-review" "$POOL/code-review"

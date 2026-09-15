@@ -59,6 +59,19 @@ lowercase `decisions/`; second-brain uses Capitalized `Decisions/`).
 - Stage explicit files only. Preserve unrelated modified/untracked work; never
   use `git add .` or `git add -A` in a shared vault repository.
 
+## Handoff portability
+
+For `session-handoff`, build the required artifact set from the handoff record
+and every linked or named note whose content the next agent needs. A `draft` or
+`noncanonical` designation is an authority label, not a Git transport rule.
+Invoking `session-handoff` is explicit authorization to commit and push the
+task-owned drafts in that set while preserving their draft status. Do not stage
+unrelated drafts.
+
+After pushing, fetch and verify that every required artifact is reachable from
+the pushed commit and has no remaining local delta. A handoff that works only
+because the next session inherits the same dirty checkout is incomplete.
+
 ## Cross-repo isolation
 
 Vault commits live in the vault's repo, **never** in the working repo. Don't run
