@@ -303,6 +303,11 @@
     }
   },
   "effortLevel": "high",
+  "modelSettings": {
+    "claude-opus-5": {
+      "effortLevel": "xhigh"
+    }
+  },
   "theme": "dark",
   "skipAutoPermissionPrompt": true
 }
