@@ -20,6 +20,23 @@ to `vault-pkm`. This skill is **judgment, not mechanics.** `vault-pkm` owns
 where notes live, their frontmatter, their links, and commit discipline; this
 skill owns the decision that sits in front of all that.
 
+## Bryan's closeout authorization (overrides the slate gate below)
+
+Treat an end-of-session request such as "any notes to save before I end this
+chat?" as authorization to capture and reconcile the decisions and plans
+Bryan already adopted. Name the bounded destinations, write, verify, and
+follow the vault's commit/push rules without another approval round. The
+default slate-and-wait gate below applies when adoption or scope is
+genuinely unclear, not to an authorized closeout. Do not capture unadopted
+suggestions or make structural changes under this exception.
+
+Answer a substantive new question before capture housekeeping, even if an
+earlier capture was approved. If Bryan interrupts drafting to resume
+discussion, stop writing. Before resuming a partial capture, inspect live
+Git and newer notes: another session or a nightly snapshot may already have
+saved the draft or advanced the plan. Preserve that newer direction rather
+than duplicating or reverting it.
+
 Two failure modes this exists to prevent:
 
 - **Writing without being asked to write.** *"Anything worth capturing?"* is a

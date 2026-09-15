@@ -73,6 +73,12 @@ from the environment — a version, a config value, what an API actually returns
 what a repository already does — go get it. Read the file, run the command,
 fetch the doc.
 
+When planning a sibling template or implementation, inspect the existing
+siblings' relevant source and documentation before asking each decision.
+Present what they do as the baseline, then ask only about meaningful departures
+or unresolved gaps. Never substitute an old map or summary for current source,
+and never make Bryan repeatedly ask what the existing siblings already do.
+
 Do not block the whole round on it. A running investigation is an unsettled
 prerequisite, so only the questions downstream of it wait; ask the rest of the
 frontier now.
