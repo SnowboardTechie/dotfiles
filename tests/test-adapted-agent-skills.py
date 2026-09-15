@@ -253,6 +253,35 @@ class SkillFrontmatterTest(unittest.TestCase):
                     )
 
 
+class SessionHandoffPortabilityContractTest(unittest.TestCase):
+    """A handoff must carry every required vault artifact across machines."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.handoff = read(REPO_ROOT / "dot-agents/skills/session-handoff/SKILL.md")
+        cls.shared_commit_discipline = read(
+            REPO_ROOT / "dot-agents/skills/vault-pkm/references/commit-discipline.md"
+        )
+        cls.hermes_vault = read(REPO_ROOT / "hermes/skills/note-taking/vault-pkm/SKILL.md")
+
+    def test_handoff_dependencies_must_be_reachable_from_the_pushed_commit(self) -> None:
+        normalized = " ".join(self.handoff.split())
+        for phrase in (
+            "handoff dependency set",
+            "reachable from the pushed commit",
+            "same dirty working tree does not count",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, normalized)
+
+    def test_required_drafts_are_versioned_without_becoming_canonical(self) -> None:
+        for body in (self.handoff, self.shared_commit_discipline, self.hermes_vault):
+            with self.subTest(surface=body[:40]):
+                normalized = " ".join(body.split())
+                self.assertIn("authority label, not a Git transport rule", normalized)
+                self.assertIn("explicit authorization", normalized)
+
+
 class UpstreamLedgerTest(unittest.TestCase):
     """Pinned provenance is what keeps an adaptation from becoming a silent fork."""
 

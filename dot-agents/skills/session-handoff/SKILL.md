@@ -65,8 +65,21 @@ other:
 - the index routing line that gets someone there.
 
 Reconcile **in place**. Never append a fresh note beside a stale one — that
-manufactures the contradiction the next session has to resolve. Commit under the
-vault's own git rules.
+manufactures the contradiction the next session has to resolve.
+
+Form the **handoff dependency set**: the canonical record plus every vault file
+it links or names whose content the next agent needs. A `draft` or
+`noncanonical` designation is an authority label, not a Git transport rule.
+Invoking `session-handoff` is explicit authorization to commit and push
+task-owned drafts in that dependency set without promoting or approving them.
+Do not absorb unrelated drafts.
+
+Fetch, stage the exact dependency paths, check the staged diff, commit, push,
+fetch again, and verify every dependency is reachable from the pushed commit
+with no required local delta left behind. Availability in the same dirty
+working tree does not count. If vault-local policy truly forbids versioning a
+required artifact, stop and report that the handoff is not portable instead of
+emitting a prompt that points to local-only content.
 
 This step is not hygiene. With nobody supervising, **the record is the handoff**
 and the prompt is only a pointer into it. That gives this skill its completion
@@ -172,6 +185,8 @@ Two consequences worth knowing rather than rediscovering:
 The handoff is done when:
 
 - the vault record stands alone as the specification;
+- every required vault artifact is reachable from the synchronized commit and
+  has no handoff-only working-tree delta;
 - each slice passed all four parts of the test;
 - one prompt exists per slice, each a pointer rather than a copy; and
 - this session is carrying no further responsibility for any of them.
