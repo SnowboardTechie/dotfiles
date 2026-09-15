@@ -106,6 +106,10 @@ def calendar_event_status(token: str, *, json_command_fn=None) -> dict[str, str]
     event_id = str(identity["eventIdentifier"])
     if identity["source"] == "google_calendar":
         calendar_id = str(identity.get("calendarIdentifier") or "")
+        # A calendar id carried in the token is unverified, so confirm access
+        # before a 404 on the event can be read as a cancellation. Resolving the
+        # id from calendarList already proves access, so skip the second probe.
+        needs_access_probe = bool(calendar_id)
         if not calendar_id:
             calendar_list, error = json_command_fn(
                 [
@@ -132,22 +136,23 @@ def calendar_event_status(token: str, *, json_command_fn=None) -> dict[str, str]
             if not calendar or not calendar.get("id"):
                 return {"status": "unknown", "reason": "work calendar was not found"}
             calendar_id = str(calendar["id"])
-        _, error = json_command_fn(
-            [
-                "gws",
-                "calendar",
-                "calendarList",
-                "get",
-                "--params",
-                json.dumps({"calendarId": calendar_id}, separators=(",", ":")),
-            ],
-            timeout=45,
-        )
-        if error:
-            return {
-                "status": "unknown",
-                "reason": f"Google Calendar access could not be confirmed: {error}"[:500],
-            }
+        if needs_access_probe:
+            _, error = json_command_fn(
+                [
+                    "gws",
+                    "calendar",
+                    "calendarList",
+                    "get",
+                    "--params",
+                    json.dumps({"calendarId": calendar_id}, separators=(",", ":")),
+                ],
+                timeout=45,
+            )
+            if error:
+                return {
+                    "status": "unknown",
+                    "reason": f"Google Calendar access could not be confirmed: {error}"[:500],
+                }
         event, error = json_command_fn(
             [
                 "gws",

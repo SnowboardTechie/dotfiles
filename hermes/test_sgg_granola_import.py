@@ -332,9 +332,11 @@ class MeetingImportSchedulingTest(unittest.TestCase):
 
         self.assertNotIn(event["eventIdentifier"], token)
         self.assertEqual(result["status"], "cancelled")
-        self.assertEqual(len(calls), 3)
-        self.assertIn("events", calls[2])
-        self.assertIn("get", calls[2])
+        # Resolving the id from calendarList already proves access, so the
+        # separate access probe is not repeated.
+        self.assertEqual(len(calls), 2)
+        self.assertIn("events", calls[1])
+        self.assertIn("get", calls[1])
 
     def test_calendar_status_marks_missing_eventkit_event_cancelled(self) -> None:
         collector = load_module(COLLECTOR, "sgg_morning_brief_for_eventkit_status_test")
