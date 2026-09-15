@@ -124,22 +124,37 @@ guard granted else {
 let systemCalendar = Calendar.current
 let arguments = Array(CommandLine.arguments.dropFirst())
 if arguments.count == 3 && arguments[0] == "--event-status" {
+    let identifier = arguments[1]
     let expectedOccurrence = arguments[2] == "-"
         ? nil
         : ISO8601DateFormatter().date(from: arguments[2])
-    guard let event = store.event(withIdentifier: arguments[1]) else {
+
+    // event(withIdentifier:) returns the FIRST occurrence of a recurring series,
+    // whose status describes that occurrence and not the one we scheduled for.
+    // Search a window around the expected occurrence to resolve the real one.
+    var occurrence: EKEvent?
+    if let expectedOccurrence {
+        let window = store.predicateForEvents(
+            withStart: expectedOccurrence.addingTimeInterval(-86400),
+            end: expectedOccurrence.addingTimeInterval(86400),
+            calendars: nil
+        )
+        occurrence = store.events(matching: window).first {
+            $0.eventIdentifier == identifier
+                && abs(($0.occurrenceDate ?? $0.startDate).timeIntervalSince(expectedOccurrence)) <= 1
+        }
+    }
+
+    guard let event = occurrence ?? store.event(withIdentifier: identifier) else {
         try writeJSON(EventStatusResult(status: "cancelled", reason: "calendar event was removed"))
         exit(0)
     }
-    if let expectedOccurrence {
-        guard let actualOccurrence = event.occurrenceDate,
-              abs(actualOccurrence.timeIntervalSince(expectedOccurrence)) <= 1 else {
-            try writeJSON(EventStatusResult(
-                status: "unknown",
-                reason: "calendar occurrence identity could not be confirmed"
-            ))
-            exit(0)
-        }
+    // The series resolved but this occurrence left the window, so it was moved
+    // rather than cancelled. Never read the first occurrence's per-instance
+    // status as if it were this one's.
+    if occurrence == nil && expectedOccurrence != nil {
+        try writeJSON(EventStatusResult(status: "active", reason: "calendar event was rescheduled"))
+        exit(0)
     }
     if event.status == .canceled {
         try writeJSON(EventStatusResult(status: "cancelled", reason: "calendar event is cancelled"))
