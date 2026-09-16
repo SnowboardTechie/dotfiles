@@ -31,7 +31,11 @@ fi
 if command -v fzf >/dev/null 2>&1; then
   alias fman="compgen -c | fzf | xargs man"
 fi
-alias herdr-studio="herdr --remote bryan@bryans-mac-studio"
+# Studio is the primary workstation, so the usual fallback/mobile-MBP path
+# attaches over ordinary SSH. Keep Herdr's local-client remote mode available
+# when MBP-side image clipboard bridging is specifically useful.
+alias herdr-studio="ssh -t bryan@bryans-mac-studio herdr"
+alias herdr-studio-remote="herdr --remote bryan@bryans-mac-studio"
 alias herdr-mbp="herdr --remote bryan@bryans-mbp"
 alias herdr-gnarchy="herdr --remote bryan@gnarchy"
 alias herdr-imachy="herdr --remote bryan@imachy"
