@@ -215,7 +215,7 @@ dotfiles/
 ### Workspace Manager (Herdr)
 
 - Persistent local and remote terminal workspaces
-- `herdr-studio` attaches to the Studio server
+- `herdr-studio` attaches to the Studio server over ordinary SSH; `herdr-studio-remote` keeps Herdr's local-client remote mode for MBP-local image clipboard bridging
 - `theme.name = "terminal"` makes the UI follow the host terminal's ANSI palette, so it stays native under Nightfly on macOS and under whichever Omarchy theme is live on Arch
 - The tab bar's right edge is the **Glyph Rail**: one Nerd Font glyph per module, joined by a single Powerline soft divider (``) — Claude quota, OpenAI Codex subscription quota, account-wide rolling 24-hour OpenRouter spend, host identity, and the clock
 

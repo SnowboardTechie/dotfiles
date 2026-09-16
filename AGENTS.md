@@ -165,7 +165,7 @@ omarchy plugin validate omarchy/plugins/snowboardtechie.auto-suspend
 # Shell reload
 source ~/.zshrc
 
-# Remote Studio workspace
+# SSH-first Studio workspace (use herdr-studio-remote for MBP-local image bridging)
 herdr-studio
 
 # Nix rebuild (auto-detects this machine's flake output and confirms it)
@@ -178,7 +178,7 @@ git diff --check                 # Trailing whitespace check
 
 ## NOTES
 
-- `herdr-studio` attaches to the persistent Herdr server on Studio
+- `herdr-studio` attaches over ordinary SSH to the persistent Studio server; `herdr-studio-remote` keeps Herdr's local-client remote mode for MBP-local image clipboard bridging
 - `dot-config/opencode/` has its own `.gitignore` with selective whitelisting (track configs, ignore node_modules)
 - `grb` function: `grb` = rebase last 3, `grb N` = rebase last N, `grb branch` = rebase onto branch
 - `gpg-agent.conf` hardcodes `pinentry-mac` — NixOS users must override manually
