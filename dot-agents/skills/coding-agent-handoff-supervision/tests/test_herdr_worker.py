@@ -51,7 +51,15 @@ class FakeHerdr:
             raise RuntimeError("interrupted after split")
         return "worker-pane"
 
-    def start_agent(self, *, name: str, kind: str, pane_id: str, title: str) -> None:
+    def start_agent(
+        self,
+        *,
+        name: str,
+        kind: str,
+        pane_id: str,
+        title: str,
+        claude_model: str = "opus",
+    ) -> None:
         self.agents[name] = {
             "agent": kind,
             "agent_session": {"value": self.runtime_session},
@@ -429,6 +437,31 @@ class HerdrWorkerTests(unittest.TestCase):
             with self.assertRaisesRegex(self.module.HandoffError, "another Claude turn owns"):
                 with self.module.TurnLease(lease):
                     pass
+
+    def test_real_client_starts_claude_with_the_selected_model(self) -> None:
+        module = self.module
+        sent = []
+
+        class StartHerdr(module.RealHerdr):
+            def _run(inner, args, *, timeout_seconds=60, allow_failure=False):
+                sent.append(args)
+                return subprocess.CompletedProcess(args, 0, "", "")
+
+        herdr = StartHerdr(SCRIPT, self.repo)
+        herdr.start_agent(
+            name="worker",
+            kind="claude",
+            pane_id="worker-pane",
+            title="Fable worker",
+            claude_model="claude-fable-5-1",
+        )
+
+        self.assertEqual(sent[0][:3], ["agent", "start", "worker"])
+        self.assertEqual(
+            sent[0][sent[0].index("--model") + 1],
+            "claude-fable-5-1",
+        )
+        self.assertNotIn("opus", sent[0])
 
     def test_startup_failure_includes_readable_output_before_cleanup(self) -> None:
         module = self.module
@@ -849,6 +882,18 @@ class HerdrWorkerTests(unittest.TestCase):
         )
         self.assertEqual(arguments.command, "handoff")
         self.assertEqual(arguments.kind, "claude")
+        self.assertEqual(arguments.claude_model, "opus")
+        selected = parser.parse_args(
+            [
+                "handoff",
+                "--worktree", str(self.repo),
+                "--identity-file", str(self.root / "fable-identity.json"),
+                "--prompt-file", str(self.root / "handoff-prompt.md"),
+                "--name", "fable-worker",
+                "--claude-model", "claude-fable-5-1",
+            ]
+        )
+        self.assertEqual(selected.claude_model, "claude-fable-5-1")
         with self.assertRaises(SystemExit):
             parser.parse_args(
                 [
