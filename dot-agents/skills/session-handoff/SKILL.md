@@ -160,8 +160,13 @@ python3 dot-agents/skills/coding-agent-handoff-supervision/scripts/herdr_worker.
   --identity-file "$SCRATCH/worker-identity.json" \
   --prompt-file "$SCRATCH/worker-prompt.md" \
   --name "$AGENT_NAME" \
+  --claude-model opus \
   --title "$TITLE"
 ```
+
+`--claude-model` defaults to `opus`. When Bryan explicitly selects another
+Claude model, pass its exact full model name and carry that choice in the prompt;
+never add a fallback model.
 
 `handoff` starts the worker, marks the record `supervised: false`, delivers the
 prompt once **without** `--wait`, and returns. It holds no turn lease and

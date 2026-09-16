@@ -25,8 +25,12 @@ python3 scripts/herdr_worker.py start \
   --identity-file "$STATE_DIR/worker-identity.json" \
   --name "$AGENT_NAME" \
   --kind claude \
+  --claude-model opus \
   --title "$TITLE"
 ```
+
+`--claude-model` defaults to `opus`. Set the exact full model name when Bryan
+explicitly selects a different Claude model; do not add a fallback model.
 
 The command exclusively reserves a new identity path under a per-identity owner
 lock before any pane side effect, performs the live capacity check before pane
@@ -90,6 +94,7 @@ python3 scripts/herdr_worker.py handoff \
   --identity-file "$STATE_DIR/worker-identity.json" \
   --prompt-file "$STATE_DIR/worker-prompt.md" \
   --name "$AGENT_NAME" \
+  --claude-model opus \
   --title "$TITLE"
 ```
 

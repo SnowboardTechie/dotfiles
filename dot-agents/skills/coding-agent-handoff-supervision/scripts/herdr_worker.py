@@ -460,7 +460,15 @@ class RealHerdr:
             raise HandoffError("Herdr split returned an empty pane ID")
         return pane
 
-    def start_agent(self, *, name: str, kind: str, pane_id: str, title: str) -> None:
+    def start_agent(
+        self,
+        *,
+        name: str,
+        kind: str,
+        pane_id: str,
+        title: str,
+        claude_model: str = "opus",
+    ) -> None:
         command = [
             "agent",
             "start",
@@ -478,7 +486,7 @@ class RealHerdr:
                 "--permission-mode",
                 "auto",
                 "--model",
-                "opus",
+                claude_model,
                 "--effort",
                 "high",
                 "--name",
@@ -665,6 +673,7 @@ class HandoffController:
         name: str,
         kind: str,
         title: str,
+        claude_model: str = "opus",
     ) -> dict[str, Any]:
         if kind not in {"claude", "hermes"}:
             raise HandoffError(f"unsupported visible worker kind: {kind}")
@@ -733,6 +742,7 @@ class HandoffController:
                     kind=kind,
                     pane_id=pane_id,
                     title=title,
+                    claude_model=claude_model,
                 )
                 record = make_identity(
                     agent=_extract_agent(self.herdr.get_agent(name)),
@@ -789,6 +799,7 @@ class HandoffController:
         kind: str,
         title: str,
         text: str,
+        claude_model: str = "opus",
     ) -> dict[str, Any]:
         """Start a worker, deliver one prompt, and keep no claim on the result."""
         if not text.strip():
@@ -800,6 +811,7 @@ class HandoffController:
             name=name,
             kind=kind,
             title=title,
+            claude_model=claude_model,
         )
         identity_file = _identity_target(identity_path)
         # Marked before the send, so an interrupted delivery still leaves an
@@ -1182,6 +1194,7 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--name", required=True)
     start.add_argument("--kind", choices=("claude", "hermes"), default="claude")
     start.add_argument("--title")
+    start.add_argument("--claude-model", default="opus")
 
     prompt = subparsers.add_parser("prompt")
     prompt.add_argument("--identity-file", type=Path, required=True)
@@ -1197,6 +1210,7 @@ def build_parser() -> argparse.ArgumentParser:
     handoff.add_argument("--name", required=True)
     handoff.add_argument("--kind", choices=("claude", "hermes"), default="claude")
     handoff.add_argument("--title")
+    handoff.add_argument("--claude-model", default="opus")
 
     inspect = subparsers.add_parser("inspect")
     inspect.add_argument("--identity-file", type=Path, required=True)
@@ -1247,6 +1261,7 @@ def main() -> int:
                 name=args.name,
                 kind=args.kind,
                 title=args.title or args.name,
+                claude_model=args.claude_model,
             )
         elif args.command == "handoff":
             prompt_path = _validated_prompt_path(args.prompt_file, args.identity_file)
@@ -1259,6 +1274,7 @@ def main() -> int:
                 kind=args.kind,
                 title=args.title or args.name,
                 text=prompt_path.read_text(encoding="utf-8"),
+                claude_model=args.claude_model,
             )
         elif args.command == "prompt":
             text = args.text
