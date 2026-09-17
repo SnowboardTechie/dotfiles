@@ -10,12 +10,22 @@ is fetched only by exact id and returned as clean Markdown, never inline media.
 Writes require the note's current revision token (its modification timestamp as
 read) and are verified by an immediate readback. There is no delete command.
 
+This process never sends Apple Events itself. It shells out to the signed native
+helper "Apple Notes PKM Helper" (see ../helper), which is the only process that
+talks to Notes, so macOS attributes the Automation grant to a stable code
+identity rather than to this Python interpreter. The helper's signature is
+verified against the repository-owned expected identity before every batch of
+calls; a missing, unsigned, or mismatched helper fails closed.
+
 Exit codes: 0 ok · 1 error · 2 usage · 3 stale revision · 4 refused (unsafe)
-· 5 Automation permission denied · 6 post-write verification failed.
+· 5 Automation permission denied · 6 post-write verification failed
+· 7 native helper missing/unsigned/identity mismatch.
 
 Environment: APPLE_NOTES_PKM_ROOT / APPLE_NOTES_PKM_ACCOUNT override the scope
-(used by the disposable pilot folder and tests); APPLE_NOTES_PKM_OSASCRIPT points
-the tests at a stub interpreter.
+(used by the disposable pilot folder and tests). Test/override hooks:
+APPLE_NOTES_PKM_HELPER_BIN (helper executable path), APPLE_NOTES_PKM_CODESIGN
+(codesign binary), APPLE_NOTES_PKM_EXPECT_BUNDLE / APPLE_NOTES_PKM_EXPECT_CN
+(override the expected identity the signature is checked against).
 """
 from __future__ import annotations
 
@@ -36,13 +46,18 @@ from notes_markdown import (  # noqa: E402
 )
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-JXA = SCRIPT_DIR / "notes.jxa"
-OSASCRIPT = os.environ.get("APPLE_NOTES_PKM_OSASCRIPT", "/usr/bin/osascript")  # tests stub this
+HELPER_DIR = SCRIPT_DIR.parent / "helper"
+IDENTITY_PATH = HELPER_DIR / "identity.json"
+DEFAULT_HELPER_BIN = os.path.expanduser(
+    "~/Applications/Apple Notes PKM Helper.app/Contents/MacOS/apple-notes-pkm-helper"
+)
+HELPER_BIN = os.environ.get("APPLE_NOTES_PKM_HELPER_BIN", DEFAULT_HELPER_BIN)
+CODESIGN = os.environ.get("APPLE_NOTES_PKM_CODESIGN", "/usr/bin/codesign")
 DEFAULT_ROOT = os.environ.get("APPLE_NOTES_PKM_ROOT", "Second Brain")
 DEFAULT_ACCOUNT = os.environ.get("APPLE_NOTES_PKM_ACCOUNT", "iCloud")
 PERMISSION_MARKERS = ("Not authorized to send Apple events", "-1743", "-10004")
 
-EXIT_OK, EXIT_ERROR, EXIT_USAGE, EXIT_STALE, EXIT_REFUSED, EXIT_PERMISSION, EXIT_UNVERIFIED = 0, 1, 2, 3, 4, 5, 6
+EXIT_OK, EXIT_ERROR, EXIT_USAGE, EXIT_STALE, EXIT_REFUSED, EXIT_PERMISSION, EXIT_UNVERIFIED, EXIT_HELPER = 0, 1, 2, 3, 4, 5, 6, 7
 
 
 class HelperError(Exception):
@@ -52,25 +67,105 @@ class HelperError(Exception):
         self.extra = extra
 
 
+def _expected_identity() -> dict:
+    """Repository-owned expected identity of the native helper, env-overridable for tests."""
+    try:
+        data = json.loads(IDENTITY_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        data = {}
+    return {
+        "bundle_id": os.environ.get("APPLE_NOTES_PKM_EXPECT_BUNDLE", data.get("bundle_id", "")),
+        "signing_common_name": os.environ.get("APPLE_NOTES_PKM_EXPECT_CN", data.get("signing_common_name", "")),
+    }
+
+
+_verified_helper = None
+
+
+def verify_helper() -> None:
+    """Fail closed unless the native helper exists and its code signature matches
+    the repository-owned expected bundle id and signing identity. Cached per run."""
+    global _verified_helper
+    if _verified_helper is not None:
+        if isinstance(_verified_helper, HelperError):
+            raise _verified_helper
+        return
+    try:
+        if not os.path.isfile(HELPER_BIN):
+            raise HelperError(
+                f"native Notes helper is not installed at {HELPER_BIN}; "
+                "run scripts/reconcile-apple-notes-helper.sh --apply to build and sign it",
+                EXIT_HELPER,
+            )
+        try:
+            proc = subprocess.run(
+                [CODESIGN, "-dv", "--verbose=4", HELPER_BIN],
+                capture_output=True, text=True, timeout=30, check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise HelperError(f"could not run codesign to verify the native helper: {exc}", EXIT_HELPER) from exc
+        info = (proc.stderr or "") + (proc.stdout or "")  # codesign -dv writes to stderr
+        if proc.returncode != 0:
+            raise HelperError(
+                f"native helper is unsigned or its signature is invalid: {info.strip()[:200]}",
+                EXIT_HELPER,
+            )
+        expected = _expected_identity()
+        ident_match = re.search(r"^Identifier=(.+)$", info, re.M)
+        identifier = ident_match.group(1).strip() if ident_match else ""
+        authorities = [m.strip() for m in re.findall(r"^Authority=(.+)$", info, re.M)]
+        if expected["bundle_id"] and identifier != expected["bundle_id"]:
+            raise HelperError(
+                f"native helper bundle identity mismatch: expected {expected['bundle_id']!r}, got {identifier!r}",
+                EXIT_HELPER,
+            )
+        cn = expected["signing_common_name"]
+        if cn and not any(cn in a for a in authorities):
+            raise HelperError(
+                f"native helper signing identity mismatch: expected {cn!r} in code-signing authorities {authorities}",
+                EXIT_HELPER,
+            )
+    except HelperError as exc:
+        _verified_helper = exc
+        raise
+    _verified_helper = True
+
+
 def jxa(request: dict, *, timeout: int = 180) -> dict:
+    """Run one bounded Notes operation through the signed native helper.
+
+    The request dict is the same JXA request the embedded notes.jxa program
+    dispatches on; it carries only an op and scoped arguments, never a script,
+    application, path, or command to execute. The helper embeds the one allowed
+    program at link time, so untrusted request fields cannot redirect it.
+    """
     request = {"root": DEFAULT_ROOT, "account": DEFAULT_ACCOUNT, **request}
+    verify_helper()
+    deadline = float(timeout)
+    cap = os.environ.get("APPLE_NOTES_PKM_TIMEOUT")  # tests force a short deadline
+    if cap:
+        deadline = min(deadline, float(cap))
     try:
         proc = subprocess.run(
-            [OSASCRIPT, "-l", "JavaScript", str(JXA), json.dumps(request)],
-            capture_output=True, text=True, timeout=timeout, check=False,
+            [HELPER_BIN],
+            input=json.dumps(request),
+            capture_output=True, text=True, timeout=deadline, check=False,
         )
     except subprocess.TimeoutExpired as exc:
-        raise HelperError(f"Notes automation timed out after {timeout}s") from exc
+        raise HelperError(f"Notes automation timed out after {deadline}s", EXIT_ERROR) from exc
+    except OSError as exc:
+        raise HelperError(f"could not launch the native helper: {exc}", EXIT_HELPER) from exc
     stdout = proc.stdout.strip()
     stderr = proc.stderr.strip()
     if any(marker in stderr for marker in PERMISSION_MARKERS):
         raise HelperError(
-            "macOS Automation permission for Notes is missing or denied for this process; "
-            "grant it in System Settings > Privacy & Security > Automation (a human action)",
+            "macOS Automation permission for Notes is denied for the native helper "
+            "“Apple Notes PKM Helper”; approve it in System Settings > Privacy & "
+            "Security > Automation (a human action)",
             EXIT_PERMISSION, stderr=stderr,
         )
     if proc.returncode != 0 and not stdout:
-        raise HelperError(f"osascript failed: {stderr or proc.returncode}")
+        raise HelperError(f"native helper failed (exit {proc.returncode}): {stderr or 'no output'}", EXIT_HELPER)
     try:
         result = json.loads(stdout)
     except json.JSONDecodeError as exc:
@@ -79,7 +174,12 @@ def jxa(request: dict, *, timeout: int = 180) -> dict:
         number = result.get("errorNumber")
         message = result.get("error", "unknown error")
         if any(marker in message for marker in PERMISSION_MARKERS):
-            raise HelperError(message, EXIT_PERMISSION)
+            raise HelperError(
+                "macOS Automation permission for Notes is denied for the native helper "
+                "“Apple Notes PKM Helper”; approve it in System Settings > Privacy & "
+                "Security > Automation (a human action)",
+                EXIT_PERMISSION,
+            )
         if number == "stale":
             raise HelperError(message, EXIT_STALE)
         if number == "unsafe":
@@ -137,9 +237,24 @@ def verify_files(files: list[str]) -> list[str]:
 
 def cmd_health(args):
     if args.probe:
-        return jxa({"op": "probe", "activate": args.activate}, timeout=600)
+        result = jxa({"op": "probe", "activate": args.activate}, timeout=600)
+        steps = result.get("steps", {})
+        denied = [
+            name for name, step in steps.items()
+            if not step.get("ok") and any(m in str(step.get("error", "")) for m in PERMISSION_MARKERS)
+        ]
+        if denied:
+            raise HelperError(
+                "Notes Automation is denied for the native helper “Apple Notes PKM Helper” "
+                "(failed steps: " + ", ".join(denied) + "); approve it in System Settings > Privacy & "
+                "Security > Automation (a human action)",
+                EXIT_PERMISSION, steps=steps,
+            )
+        result["helper_bin"] = HELPER_BIN
+        return result
     result = jxa({"op": "health"})
     result["helper"] = str(SCRIPT_DIR)
+    result["helper_bin"] = HELPER_BIN
     result["scope"] = {"account": DEFAULT_ACCOUNT, "root": DEFAULT_ROOT}
     return result
 

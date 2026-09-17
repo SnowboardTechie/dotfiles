@@ -1,0 +1,8 @@
+{
+  "name": "Apple Notes PKM Helper",
+  "bundle_id": "com.snowboardtechie.apple-notes-pkm-helper",
+  "executable": "apple-notes-pkm-helper",
+  "app_path": "~/Applications/Apple Notes PKM Helper.app",
+  "signing_common_name": "Apple Notes PKM Helper",
+  "notes": "Expected identity of the one process allowed to send Apple Events to Notes. apple-notes-pkm.py verifies an installed helper's code signature against bundle_id + signing_common_name before use, and reconcile-apple-notes-helper.sh builds/signs/installs against the same. signing_common_name is the Common Name of the user-owned code-signing certificate the helper must be signed with; a stable (non-ad-hoc) identity is required so TCC's grant survives rebuilds. No binary and no signing secret is committed."
+}

@@ -1,7 +1,7 @@
 ---
 name: apple-notes
 description: "Apple Notes on this Mac: Bryan's personal second brain is the iCloud folder 'Second Brain', accessed only through the apple-notes-pkm skill and its bounded helper script. Use this pointer when a task mentions Apple Notes, Notes.app, or personal notes; do not use memo, a Notes MCP, or the Notes database."
-version: 2.0.0
+version: 2.1.0
 author: Bryan
 license: MIT
 platforms: [macos]
@@ -38,7 +38,11 @@ materialized every note). `memo` is not installed and is not the backend.
 1. Never return or read the whole library; search is capped and content is
    fetched only by exact id.
 2. Never delete a note; the helper has no delete and neither does this skill.
-3. Never widen macOS permissions. If the helper reports Automation permission
-   missing (exit 5), stop and tell Bryan; the one-time grant is his action.
+3. Never widen macOS permissions. Every Notes call runs through the signed
+   native helper **Apple Notes PKM Helper**, not through Python's own identity.
+   If the helper reports Automation permission denied (exit 5), stop and tell
+   Bryan; the one-time grant for that named helper is his action. Exit 7 means
+   the native helper is missing or its signature does not match the expected
+   identity — a build/setup problem, not a permission one.
 4. Notes outside the `Second Brain` folder are out of scope for agents.
 5. `/Users/bryan/second-brain` is a frozen Git rollback archive, not a source.

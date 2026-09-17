@@ -27,6 +27,16 @@ directory (`<skill dir>/scripts/apple-notes-pkm.py`). It prints one JSON
 object per call and is hard-scoped to the iCloud `Second Brain` folder: notes
 outside it do not exist as far as the helper is concerned. There is no delete.
 
+The Python CLI never sends Apple Events itself. It shells out to a signed
+native helper, **Apple Notes PKM Helper** (source in `helper/`), which is the
+only process that talks to Notes. That keeps the macOS Automation grant on a
+stable, human-named code identity instead of on a Python runtime that upgrades
+out from under its permission. The CLI verifies the helper's code signature
+against `helper/identity.json` before every batch of calls and fails closed
+(exit 7) if it is missing, unsigned, or the wrong identity. One-time setup and
+the required signing decision are in `helper/README.md`; build and install with
+`scripts/reconcile-apple-notes-helper.sh --apply`.
+
 ## When this applies
 
 - Bryan asks about anything personal: decisions, explorations, ideas, vehicles,
@@ -53,7 +63,8 @@ Not for project or workspace knowledge (`vault/` dirs, `~/code/notes/`) — load
 | Links in | `backlinks --title T` or `--id <id>` | `linked` (anchor text) vs `mentions` (title in body) |
 
 Exit codes: 0 ok · 1 error · 2 usage · 3 stale · 4 refused · 5 Automation
-permission missing (a human action) · 6 post-write verification failed.
+permission denied for **Apple Notes PKM Helper** (a human action) · 6 post-write
+verification failed · 7 native helper missing/unsigned/identity mismatch.
 
 ## Recall workflow
 
@@ -83,7 +94,10 @@ Guardrails: create only in an existing folder beneath the root (`Inbox` for
 unclassified capture, `Explorations`, `Decisions`, `Journal`, or a topic
 hub at the root). Never `replace` to "clean up" a note Bryan wrote; append or
 ask. Never grant, click, or widen macOS permissions on Bryan's behalf; if the
-helper returns exit 5, stop and ask.
+helper returns exit 5, stop and ask Bryan to approve **Apple Notes PKM Helper**
+under System Settings > Privacy & Security > Automation. Exit 7 means the signed
+native helper is missing or its identity does not match; that is a setup
+problem, not a permission one (see `helper/README.md`).
 
 ## Links and backlinks (best effort)
 

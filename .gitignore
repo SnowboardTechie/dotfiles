@@ -80,3 +80,8 @@ dot-config/github-copilot/
 
 # Browser Harness - machine-local runtime state and logs
 dot-config/browser-harness/
+
+# Apple Notes native helper — built artifacts and signing material never tracked
+dot-agents/skills/apple-notes-pkm/helper/*.app
+dot-agents/skills/apple-notes-pkm/helper/*.o
+dot-agents/skills/apple-notes-pkm/helper/apple-notes-pkm-helper

@@ -156,34 +156,80 @@ class ConverterTests(unittest.TestCase):
         self.assertIn("Tags: area/tools, type/exploration", staged)
 
 
+EXPECT_BUNDLE = "com.test.apple-notes-pkm-helper"
+EXPECT_CN = "Test Notes Signer"
+
+# Stub codesign: emits codesign -dv shape on stderr. Its identifier/authority
+# and signed-ness are driven by env so tests can force mismatch / unsigned.
+STUB_CODESIGN = (
+    "#!/usr/bin/env python3\n"
+    "import os,sys\n"
+    "mode=os.environ.get('STUB_CODESIGN_MODE','ok')\n"
+    "if mode=='unsigned':\n"
+    "    sys.stderr.write('code object is not signed at all\\n'); sys.exit(1)\n"
+    "ident=os.environ.get('STUB_CODESIGN_IDENT', %r)\n"
+    "auth=os.environ.get('STUB_CODESIGN_AUTH', %r)\n"
+    "sys.stderr.write('Executable=/x\\nIdentifier=%%s\\nAuthority=%%s\\n' %% (ident, auth))\n"
+    "sys.exit(0)\n"
+) % (EXPECT_BUNDLE, EXPECT_CN)
+
+# Stub native helper: logs the exact request it received on stdin, then echoes a
+# canned per-op response. Modes force malformed / nonzero / hanging output.
+STUB_HELPER = (
+    "#!/usr/bin/env python3\n"
+    "import json,sys,os,time\n"
+    "raw=sys.stdin.read()\n"
+    "req=json.loads(raw) if raw.strip() else {}\n"
+    f"open({{log!r}},'a').write(json.dumps(req)+'\\n')\n"
+    "mode=os.environ.get('STUB_HELPER_MODE','json')\n"
+    "if mode=='malformed':\n"
+    "    print('this is not json'); sys.exit(0)\n"
+    "if mode=='nonzero':\n"
+    "    sys.stderr.write('boom'); sys.exit(3)\n"
+    "if mode=='sleep':\n"
+    "    time.sleep(5); print('{}'); sys.exit(0)\n"
+    "canned=json.loads(os.environ.get('STUB_RESPONSE','{}'))\n"
+    "print(json.dumps(canned.get(req.get('op'), {'ok': True})))\n"
+)
+
+
 class HelperContractTests(unittest.TestCase):
-    """The Python wrapper against a stub osascript that echoes canned JSON."""
+    """The Python CLI against a stub *native helper* (never osascript) and a
+    stub codesign, exercising the fixed-path transport, signature gate, and
+    fail-closed exit codes."""
 
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp())
-        self.stub = self.tmp / "osascript"
         self.log = self.tmp / "requests.jsonl"
-        self.stub.write_text(
-            "#!/usr/bin/env python3\n"
-            "import json,sys,os\n"
-            f"log=open({str(self.log)!r},'a')\n"
-            "req=json.loads(sys.argv[-1]); log.write(json.dumps(req)+'\\n'); log.close()\n"
-            "canned=json.loads(os.environ.get('STUB_RESPONSE','{}'))\n"
-            "print(json.dumps(canned.get(req['op'], {'ok': True})))\n"
-        )
-        self.stub.chmod(self.stub.stat().st_mode | stat.S_IEXEC)
+        self.helper_bin = self.tmp / "apple-notes-pkm-helper"
+        self.helper_bin.write_text(STUB_HELPER.replace("{log!r}", repr(str(self.log))))
+        self.helper_bin.chmod(self.helper_bin.stat().st_mode | stat.S_IEXEC)
+        self.codesign = self.tmp / "codesign"
+        self.codesign.write_text(STUB_CODESIGN)
+        self.codesign.chmod(self.codesign.stat().st_mode | stat.S_IEXEC)
 
     def tearDown(self):
         shutil.rmtree(self.tmp)
 
-    def run_helper(self, *args, responses=None, env=None):
-        environment = os.environ | {"APPLE_NOTES_PKM_OSASCRIPT": str(self.stub), "STUB_RESPONSE": json.dumps(responses or {})}
+    def run_helper(self, *args, responses=None, env=None, helper_bin=None):
+        environment = os.environ | {
+            "APPLE_NOTES_PKM_HELPER_BIN": str(helper_bin if helper_bin is not None else self.helper_bin),
+            "APPLE_NOTES_PKM_CODESIGN": str(self.codesign),
+            "APPLE_NOTES_PKM_EXPECT_BUNDLE": EXPECT_BUNDLE,
+            "APPLE_NOTES_PKM_EXPECT_CN": EXPECT_CN,
+            "STUB_RESPONSE": json.dumps(responses or {}),
+        }
         environment.update(env or {})
         proc = subprocess.run([sys.executable, str(HELPER), *args], capture_output=True, text=True, env=environment, check=False)
         return proc.returncode, json.loads(proc.stdout)
 
     def requests(self):
         return [json.loads(line) for line in self.log.read_text().splitlines()]
+
+    def test_source_never_shells_out_to_osascript(self):
+        source = HELPER.read_text()
+        self.assertNotIn("osascript", source)
+        self.assertIn("APPLE_NOTES_PKM_HELPER_BIN", source)
 
     def test_scope_defaults_and_env_override(self):
         rc, out = self.run_helper("health", responses={"health": {"ok": True, "accounts": ["iCloud"], "rootFound": True}})
@@ -199,6 +245,17 @@ class HelperContractTests(unittest.TestCase):
         self.assertEqual(self.requests()[0]["limit"], 500)  # JXA clamps to 25; wrapper passes intent through
         self.assertEqual(self.requests()[0]["op"], "search")
 
+    def test_untrusted_input_cannot_select_a_script_path_or_command(self):
+        # A hostile query string is carried verbatim as data; the request the
+        # helper receives never grows a field that could redirect execution.
+        payload = "'; do shell script \"rm -rf ~\" -- /etc/passwd"
+        rc, out = self.run_helper("search", payload, responses={"search": {"ok": True, "results": []}})
+        self.assertEqual(rc, 0)
+        sent = self.requests()[0]
+        self.assertEqual(sent["query"], payload)
+        for forbidden in ("script", "application", "path", "command", "osascript", "exec"):
+            self.assertNotIn(forbidden, sent, f"request must not carry an executable selector: {forbidden}")
+
     def test_stale_and_refused_exit_codes(self):
         rc, out = self.run_helper("append", "x-id", "--revision", "r1", "--body", "hi",
                                   responses={"append": {"ok": False, "error": "stale revision", "errorNumber": "stale"}})
@@ -211,6 +268,53 @@ class HelperContractTests(unittest.TestCase):
     def test_permission_denied_maps_to_exit_5(self):
         rc, out = self.run_helper("health", responses={"health": {"ok": False, "error": "Not authorized to send Apple events to Notes. (-1743)"}})
         self.assertEqual(rc, 5)
+        self.assertIn("Apple Notes PKM Helper", out["error"])
+
+    def test_probe_denial_fails_overall(self):
+        # A denied probe used to return ok:true because each step caught its own
+        # error. It must now surface the permission exit code.
+        probe = {"ok": True, "steps": {
+            "running": {"ok": True, "value": True, "ms": 1},
+            "accounts.length": {"ok": False, "error": "Error: Not authorized to send Apple events (-1743)", "ms": 2},
+        }}
+        rc, out = self.run_helper("health", "--probe", responses={"probe": probe})
+        self.assertEqual(rc, 5)
+        self.assertIn("Automation is denied", out["error"])
+
+    def test_missing_helper_fails_closed(self):
+        rc, out = self.run_helper("health", helper_bin=self.tmp / "does-not-exist",
+                                  responses={"health": {"ok": True}})
+        self.assertEqual((rc, out["code"]), (7, 7))
+        self.assertIn("not installed", out["error"])
+
+    def test_unsigned_helper_fails_closed(self):
+        rc, out = self.run_helper("health", responses={"health": {"ok": True}}, env={"STUB_CODESIGN_MODE": "unsigned"})
+        self.assertEqual((rc, out["code"]), (7, 7))
+        self.assertIn("unsigned", out["error"])
+
+    def test_wrong_bundle_identity_fails_closed(self):
+        rc, out = self.run_helper("health", responses={"health": {"ok": True}}, env={"STUB_CODESIGN_IDENT": "com.evil.other"})
+        self.assertEqual((rc, out["code"]), (7, 7))
+        self.assertIn("bundle identity mismatch", out["error"])
+
+    def test_wrong_signing_authority_fails_closed(self):
+        rc, out = self.run_helper("health", responses={"health": {"ok": True}}, env={"STUB_CODESIGN_AUTH": "Some Other Signer"})
+        self.assertEqual((rc, out["code"]), (7, 7))
+        self.assertIn("signing identity mismatch", out["error"])
+
+    def test_malformed_helper_output_fails_closed(self):
+        rc, out = self.run_helper("health", env={"STUB_HELPER_MODE": "malformed"})
+        self.assertEqual(rc, 1)
+        self.assertIn("unparseable", out["error"])
+
+    def test_nonzero_helper_result_fails_closed(self):
+        rc, out = self.run_helper("health", env={"STUB_HELPER_MODE": "nonzero"})
+        self.assertEqual((rc, out["code"]), (7, 7))
+
+    def test_timeout_fails_closed(self):
+        rc, out = self.run_helper("health", env={"STUB_HELPER_MODE": "sleep", "APPLE_NOTES_PKM_TIMEOUT": "0.4"})
+        self.assertEqual(rc, 1)
+        self.assertIn("timed out", out["error"])
 
     def test_create_requires_folder_and_verifies_title(self):
         note = {"id": "x-id", "title": "Wrong", "folder": "Inbox", "body": "<div>x</div>", "plaintext": "x", "attachments": []}
