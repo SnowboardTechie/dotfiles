@@ -201,6 +201,6 @@ mv "$STAGE_APP" "$APP_PATH"
 
 echo "${GREEN}Installed $HELPER_NAME.${NC}"
 echo "  ${BOLD}Next (human action):${NC} the first run will prompt for Notes Automation."
-echo "  Approve “$HELPER_NAME” in System Settings > Privacy & Security > Automation."
+echo "  Approve “${HELPER_NAME}” in System Settings > Privacy & Security > Automation."
 echo "  Verify identity: codesign -dv --verbose=4 \"$INSTALLED_BIN\""
 exit 0
