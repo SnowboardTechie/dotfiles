@@ -282,6 +282,48 @@ class SessionHandoffPortabilityContractTest(unittest.TestCase):
                 self.assertIn("explicit authorization", normalized)
 
 
+class SessionHandoffEngagementContractTest(unittest.TestCase):
+    """Default launches are status-tracked; fire-and-forget is explicit; the
+    watch never becomes review."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.handoff = " ".join(read(REPO_ROOT / "dot-agents/skills/session-handoff/SKILL.md").split())
+        cls.reference = " ".join(read(
+            REPO_ROOT / "dot-agents/skills/coding-agent-handoff-supervision/references/herdr-claude-handoff.md"
+        ).split())
+
+    def test_default_launch_is_status_only_and_fire_and_forget_is_explicit(self) -> None:
+        for phrase in (
+            "default launch is status-tracked",
+            "herdr_worker.py handoff-status",
+            "Explicit fire-and-forget",
+            "coding-agent-handoff-supervision",
+            "never mix",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, self.handoff)
+
+    def test_tripwire_forbids_review_but_permits_the_tracked_wait(self) -> None:
+        for phrase in ("`prompt`, `inspect`, `read`,", "`answer-blocked`, or `close`",
+                       "status-only tracked wait", "Do not poll"):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, self.handoff)
+
+    def test_completion_distinguishes_delivered_settled_and_accepted(self) -> None:
+        for phrase in ("Handoff delivered", "Delegated turn settled",
+                       "Candidate independently accepted", "the qualifier is mandatory"):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, self.handoff)
+        self.assertIn("never add a fallback model", self.handoff)
+
+    def test_reference_documents_both_modes_and_recovery(self) -> None:
+        for phrase in ("handoff-status", "status-wait", "fire-and-forget, explicit only",
+                       "No worker output is ever returned", "can never double-submit"):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, self.reference)
+
+
 class UpstreamLedgerTest(unittest.TestCase):
     """Pinned provenance is what keeps an adaptation from becoming a silent fork."""
 

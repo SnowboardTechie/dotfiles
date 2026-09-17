@@ -86,7 +86,45 @@ erase a successfully completed turn.
 
 Use `--text` instead of `--prompt-file` only for a genuinely short literal.
 
-## Handoff (one-way, unsupervised)
+## Handoff with a status-only watch (default for `session-handoff`)
+
+```sh
+python3 scripts/herdr_worker.py handoff-status \
+  --worktree "$WORKTREE" \
+  --identity-file "$STATE_DIR/worker-identity.json" \
+  --prompt-file "$STATE_DIR/worker-prompt.md" \
+  --name "$AGENT_NAME" \
+  --claude-model opus \
+  --title "$TITLE"
+```
+
+Same start sequence as `start`, then: the record gains
+`engagement_mode: status-only` (plus the compatibility boolean
+`supervised: false`) and `status_phase: prompt-not-sent` **before** anything is
+sent; under the runtime-session turn lease and the capacity gate, the prompt is
+submitted exactly once through `agent prompt --wait`; `status_phase` becomes
+`turn-in-flight` (with the pre-send `state_change_seq`) right before the send and
+`settled` after. The result is compact: `terminal_status` ∈ `idle`, `done`,
+`blocked`, `failed`, `timed-out`, `disappeared`, `identity-mismatch`; agent
+name, pane, branch, identity and prompt paths; capacity start/end. **No worker
+output is ever returned.** The worker and pane are left intact.
+
+A status-only record refuses `prompt`, `answer-blocked`, `read`, `inspect`, and
+`close`: the watch reports state and locators, nothing more. Acceptance is a
+separate independent invocation working from the branch, not from the pane.
+
+Run it as a tracked background process with completion notification when it
+may outlast the foreground budget; report the status once when the event
+arrives. Never poll.
+
+Recovery after a lost acknowledgement: read `status_phase` in the identity
+file. `prompt-not-sent` — the send never happened; `status-wait` refuses and
+nothing is resent (start over deliberately if wanted). `turn-in-flight` or
+`settled` — run `status-wait --identity-file …`, which waits on the recorded
+turn via `agent wait` and re-settles. `handoff-status` itself refuses to reuse
+an existing identity file, so a retry can never double-submit.
+
+## Handoff (fire-and-forget, explicit only)
 
 ```sh
 python3 scripts/herdr_worker.py handoff \
@@ -106,13 +144,17 @@ Herdr `agent prompt` **without** `--wait`, and returns.
 It is a separate subcommand rather than a `--detach` flag on `prompt` because
 `handoff` reads as terminal. A flag invites a later poll, which is the drift back
 into supervising that this command exists to prevent. Owned by the
-`session-handoff` skill; do not call it from a supervised workflow.
+`session-handoff` skill and used only when Bryan explicitly asks for
+fire-and-forget; the skill's default launch is `handoff-status`. Do not call
+either from a supervised workflow.
 
 It takes no Claude turn lease and starts no completion watch. Run it in the
 foreground: there is nothing to wait for. `--prompt-file` is required and obeys
 the same fence as `prompt` — it must sit inside the identity file's directory.
 
-At delivery the record gains `supervised: false`. Thereafter:
+At delivery the record gains `engagement_mode: fire-and-forget` and the
+compatibility boolean `supervised: false` (legacy records carrying only the
+boolean read as fire-and-forget). Thereafter:
 
 - `prompt` and `answer-blocked` **refuse** that record, so a later session
   cannot resume supervision of a handed-off worker by ignoring an instruction;

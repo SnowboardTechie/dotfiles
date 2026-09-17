@@ -33,6 +33,11 @@ class FakeHerdr:
         self.answer_count = 0
         self.wait_after_seq: int | None = None
         self.interrupt_after_split = False
+        # Status-only controls: what the waited turn settles to, or how it fails.
+        self.prompt_status_after = "idle"
+        self.prompt_error: Exception | None = None
+        self.vanish_on_prompt = False
+        self.read_count = 0
         self.runtime_session = "runtime-session"
 
     def status(self) -> str:
@@ -80,7 +85,13 @@ class FakeHerdr:
 
     def prompt(self, *, name: str, text: str, timeout_ms: int) -> dict:
         self.prompt_count += 1
-        self.agents[name]["agent_status"] = "idle"
+        if self.prompt_error is not None:
+            raise self.prompt_error
+        if self.vanish_on_prompt:
+            del self.agents[name]
+            return {}
+        self.agents[name]["state_change_seq"] += 2
+        self.agents[name]["agent_status"] = self.prompt_status_after
         return self.get_agent(name)
 
     def deliver(self, *, name: str, text: str) -> dict:
@@ -91,6 +102,7 @@ class FakeHerdr:
         return self.get_agent(name)
 
     def read_agent(self, *, name: str, lines: int) -> str:
+        self.read_count += 1
         return f"recent output for {name} ({lines})"
 
     def send_text(self, *, pane_id: str, text: str) -> None:
@@ -766,6 +778,238 @@ class HerdrWorkerTests(unittest.TestCase):
         )
         arguments.update(overrides)
         return controller.handoff(**arguments), prompt_path
+
+    def handoff_status(self, controller, identity_path: Path, **overrides):
+        prompt_path = self.root / "handoff-prompt.md"
+        prompt_path.write_text("Read the vault note and implement it.\n", encoding="utf-8")
+        arguments = dict(
+            caller_pane="caller",
+            worktree=self.repo,
+            identity_path=identity_path,
+            prompt_path=prompt_path,
+            name="worker",
+            kind="claude",
+            title="Status-only worker",
+            text=prompt_path.read_text(encoding="utf-8"),
+            timeout_ms=60_000,
+        )
+        arguments.update(overrides)
+        return controller.handoff_status(**arguments), prompt_path
+
+    # --- status-only handoff -------------------------------------------------
+
+    def test_engagement_modes_are_distinct_and_legacy_records_read_as_fire_and_forget(self) -> None:
+        mode = self.module.engagement_mode
+        self.assertEqual(mode({"supervised": False}), "fire-and-forget")  # legacy record
+        self.assertEqual(mode({}), "supervised")  # supervised records never carried the flag
+        self.assertEqual(mode({"engagement_mode": "status-only", "supervised": False}), "status-only")
+        controller, _ = self.controller()
+        self.handoff_status(controller, self.root / "status.json")
+        self.handoff(controller, self.root / "fire.json", name="fire")
+        status_record = json.loads((self.root / "status.json").read_text(encoding="utf-8"))
+        fire_record = json.loads((self.root / "fire.json").read_text(encoding="utf-8"))
+        self.assertEqual(status_record["engagement_mode"], "status-only")
+        self.assertEqual(fire_record["engagement_mode"], "fire-and-forget")
+        # The compatibility boolean keeps its documented meaning on both.
+        self.assertIs(status_record["supervised"], False)
+        self.assertIs(fire_record["supervised"], False)
+
+    def test_status_only_submits_exactly_one_prompt_through_the_wait_path(self) -> None:
+        controller, fake = self.controller()
+        identity_path = self.root / "identity.json"
+
+        result, prompt_path = self.handoff_status(controller, identity_path)
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["engagement_mode"], "status-only")
+        self.assertEqual(result["terminal_status"], "idle")
+        self.assertTrue(result["delivered"])
+        self.assertEqual(fake.prompt_count, 1)  # the wait-capable send, once
+        self.assertEqual(fake.deliver_count, 0)  # never the one-way send
+        self.assertEqual(result["identity_file"], str(identity_path.resolve()))
+        self.assertEqual(result["prompt_file"], str(prompt_path.resolve()))
+        self.assertEqual(result["worker_pane_id"], "worker-pane")
+        self.assertEqual(result["worker_branch"], "main")
+        # The worker and pane are left intact for a future independent acceptance.
+        self.assertIn("worker-pane", fake.panes)
+        self.assertIn("worker", fake.agents)
+        record = json.loads(identity_path.read_text(encoding="utf-8"))
+        self.assertEqual(record["status_phase"], "settled")
+        self.assertEqual(record["terminal_status"], "idle")
+
+    def test_status_only_result_carries_no_worker_output(self) -> None:
+        controller, fake = self.controller()
+        result, _ = self.handoff_status(controller, self.root / "identity.json")
+        self.assertEqual(fake.read_count, 0)
+        self.assertNotIn("output", result)
+        self.assertNotIn("recent output", json.dumps(result))
+
+    def test_status_only_holds_the_turn_lease_and_capacity_gate(self) -> None:
+        # Exhausted capacity is refused by the shared start gate: no pane, no
+        # identity, no prompt.
+        controller, fake = self.controller(capacity_code=75)
+        with self.assertRaisesRegex(self.module.HandoffError, "exhausted"):
+            self.handoff_status(controller, self.root / "exhausted.json")
+        self.assertEqual((fake.split_count, fake.prompt_count), (0, 0))
+        self.assertFalse((self.root / "exhausted.json").exists())
+
+        # Capacity is re-checked right before the send (the same gate `prompt`
+        # uses). When it fails there, the started worker is kept and the record
+        # says honestly that the prompt was never sent.
+        controller, fake = self.controller()
+        identity_path = self.root / "identity.json"
+        probes = iter([True, False])
+        real_require = controller._require_capacity
+
+        def flaky_capacity():
+            if next(probes):
+                return real_require()
+            raise self.module.HandoffError("Claude capacity exhausted before the send")
+
+        controller._require_capacity = flaky_capacity
+        with self.assertRaisesRegex(self.module.HandoffError, "exhausted"):
+            self.handoff_status(controller, identity_path)
+        self.assertEqual(fake.prompt_count, 0)
+        self.assertIn("worker-pane", fake.panes)
+        record = json.loads(identity_path.read_text(encoding="utf-8"))
+        self.assertEqual(record["engagement_mode"], "status-only")
+        self.assertEqual(record["status_phase"], "prompt-not-sent")
+
+        # A turn already owning this runtime session's lease blocks the send.
+        controller, fake = self.controller()
+        identity_path = self.root / "leased.json"
+        lease = controller._session_lease({"worker_runtime_session_id": fake.runtime_session})
+        with lease:
+            with self.assertRaisesRegex(self.module.HandoffError, "lease"):
+                self.handoff_status(controller, identity_path)
+        self.assertEqual(fake.prompt_count, 0)
+        # And it releases its own lease once settled.
+        controller, fake = self.controller()
+        self.handoff_status(controller, self.root / "released.json")
+        with controller._session_lease({"worker_runtime_session_id": fake.runtime_session}):
+            pass
+
+    def test_status_only_terminal_states_are_distinct(self) -> None:
+        cases = {
+            "done": dict(prompt_status_after="done"),
+            "blocked": dict(prompt_status_after="blocked"),
+            "failed": dict(prompt_status_after="error"),
+            "timed-out": dict(prompt_error=self.module.HandoffError(
+                'Herdr agent prompt failed: {"error":{"code":"timeout"}}')),
+            "disappeared": dict(vanish_on_prompt=True),
+        }
+        for expected, setup in cases.items():
+            with self.subTest(terminal=expected):
+                controller, fake = self.controller()
+                for key, value in setup.items():
+                    setattr(fake, key, value)
+                result, _ = self.handoff_status(controller, self.root / f"{expected}.json")
+                self.assertEqual(result["terminal_status"], expected)
+                self.assertEqual(fake.prompt_count, 1)
+                self.assertNotIn("recent output", json.dumps(result))
+
+        # Identity mismatch: the recorded pane changes underneath the turn.
+        controller, fake = self.controller()
+        original = fake.prompt
+
+        def moved(**kwargs):
+            payload = original(**kwargs)
+            fake.agents["worker"]["pane_id"] = "someone-else"
+            return payload
+
+        fake.prompt = moved
+        result, _ = self.handoff_status(controller, self.root / "moved.json")
+        self.assertEqual(result["terminal_status"], "identity-mismatch")
+
+    def test_status_only_refuses_every_boundary_crossing_operation(self) -> None:
+        controller, fake = self.controller()
+        identity_path = self.root / "identity.json"
+        self.handoff_status(controller, identity_path)
+
+        with self.assertRaisesRegex(self.module.HandoffError, "status-only"):
+            controller.read(identity_path=identity_path, lines=10)
+        with self.assertRaisesRegex(self.module.HandoffError, "status-only"):
+            controller.inspect(identity_path=identity_path)
+        with self.assertRaisesRegex(self.module.HandoffError, "status-only"):
+            controller.prompt(identity_path=identity_path, text="fix it", timeout_ms=60_000)
+        with self.assertRaisesRegex(self.module.HandoffError, "status-only"):
+            controller.answer_blocked(identity_path=identity_path, text="yes", keys=None, timeout_ms=60_000)
+        with self.assertRaisesRegex(self.module.HandoffError, "status-only"):
+            controller.close(identity_path=identity_path)
+        self.assertEqual(fake.read_count, 0)
+        self.assertEqual(fake.prompt_count, 1)  # only the original submission
+        self.assertEqual(fake.answer_count, 0)
+        self.assertIn("worker-pane", fake.panes)
+
+    def test_status_wait_recovers_a_lost_acknowledgement_without_resending(self) -> None:
+        controller, fake = self.controller()
+        identity_path = self.root / "identity.json"
+        # Simulate the caller dying mid-wait: the record says the turn is in flight.
+        fake.prompt_error = RuntimeError("caller lost the connection")
+        result, _ = self.handoff_status(controller, identity_path)
+        self.assertEqual(result["terminal_status"], "failed")
+        record = json.loads(identity_path.read_text(encoding="utf-8"))
+        record["status_phase"] = "turn-in-flight"
+        identity_path.write_text(json.dumps(record), encoding="utf-8")
+        fake.prompt_error = None
+
+        recovered = controller.status_wait(identity_path=identity_path, timeout_ms=60_000)
+
+        self.assertEqual(recovered["terminal_status"], "idle")
+        self.assertEqual(fake.prompt_count, 1)  # no second submission
+        self.assertEqual(fake.deliver_count, 0)
+        self.assertEqual(fake.wait_after_seq, record["prompt_state_change_seq"])
+        self.assertNotIn("recent output", json.dumps(recovered))
+
+        # Interrupted before the send: nothing to wait for, and still no resend.
+        record["status_phase"] = "prompt-not-sent"
+        identity_path.write_text(json.dumps(record), encoding="utf-8")
+        with self.assertRaisesRegex(self.module.HandoffError, "never submitted"):
+            controller.status_wait(identity_path=identity_path, timeout_ms=60_000)
+        self.assertEqual(fake.prompt_count, 1)
+
+        # Not applicable to other modes.
+        self.handoff(controller, self.root / "fire.json", name="fire")
+        with self.assertRaisesRegex(self.module.HandoffError, "only to a status-only"):
+            controller.status_wait(identity_path=self.root / "fire.json", timeout_ms=60_000)
+
+    def test_fire_and_forget_creates_no_watcher_and_keeps_its_refusals(self) -> None:
+        controller, fake = self.controller()
+        result, _ = self.handoff(controller, self.root / "identity.json")
+        self.assertEqual(result["engagement_mode"], "fire-and-forget")
+        self.assertEqual(fake.prompt_count, 0)  # never the waiting path
+        self.assertNotIn("terminal_status", result)
+        record = json.loads((self.root / "identity.json").read_text(encoding="utf-8"))
+        self.assertNotIn("status_phase", record)
+
+    def test_cli_exposes_status_only_handoff_and_recovery_with_exact_model(self) -> None:
+        parser = self.module.build_parser()
+        arguments = parser.parse_args(
+            [
+                "handoff-status",
+                "--worktree", str(self.repo),
+                "--identity-file", str(self.root / "identity.json"),
+                "--prompt-file", str(self.root / "handoff-prompt.md"),
+                "--name", "worker",
+                "--claude-model", "claude-fable-5-1",
+            ]
+        )
+        self.assertEqual(arguments.command, "handoff-status")
+        self.assertEqual(arguments.claude_model, "claude-fable-5-1")
+        self.assertEqual(arguments.timeout_ms, 7_200_000)
+        recovery = parser.parse_args(
+            ["status-wait", "--identity-file", str(self.root / "identity.json")]
+        )
+        self.assertEqual(recovery.command, "status-wait")
+        with self.assertRaises(SystemExit):
+            parser.parse_args(
+                [
+                    "handoff-status",
+                    "--worktree", str(self.repo),
+                    "--identity-file", str(self.root / "identity.json"),
+                    "--name", "worker",
+                ]
+            )
 
     def test_handoff_delivers_once_without_waiting_on_the_turn(self) -> None:
         controller, fake = self.controller()

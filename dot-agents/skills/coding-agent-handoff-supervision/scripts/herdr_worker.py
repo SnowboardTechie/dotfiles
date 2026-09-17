@@ -355,12 +355,52 @@ def validate_identity(
     return agent
 
 
-def refuse_unsupervised(record: dict[str, Any], command: str) -> None:
+ENGAGEMENT_SUPERVISED = "supervised"
+ENGAGEMENT_STATUS_ONLY = "status-only"
+ENGAGEMENT_FIRE_AND_FORGET = "fire-and-forget"
+# A status-only watch reports terminal state and locators, nothing else: it never
+# reads output, steers, judges, or ends the worker.
+STATUS_ONLY_REFUSED = frozenset({"prompt", "answer-blocked", "read", "inspect", "close"})
+# Terminal states a status-only wait can report.
+TERMINAL_STATES = ("idle", "done", "blocked", "failed", "timed-out", "disappeared", "identity-mismatch")
+
+
+def engagement_mode(record: dict[str, Any]) -> str:
+    """How the originating session is engaged with this worker.
+
+    New records carry `engagement_mode` explicitly. Legacy records carry only
+    `supervised`; there False means the old immediate-return handoff, so it is
+    read as fire-and-forget and never as a watched (status-only) worker.
+    """
+    mode = record.get("engagement_mode")
+    if isinstance(mode, str) and mode:
+        return mode
     if record.get("supervised") is False:
-        raise HandoffError(
-            f"worker was handed off unsupervised; {command} is refused. "
-            "Use inspect to observe it, or close to tidy the pane."
-        )
+        return ENGAGEMENT_FIRE_AND_FORGET
+    return ENGAGEMENT_SUPERVISED
+
+
+def refuse_unsupervised(record: dict[str, Any], command: str) -> None:
+    mode = engagement_mode(record)
+    if mode == ENGAGEMENT_SUPERVISED:
+        return
+    if mode == ENGAGEMENT_FIRE_AND_FORGET:
+        if command in {"prompt", "answer-blocked"}:
+            raise HandoffError(
+                f"worker was handed off unsupervised; {command} is refused. "
+                "Use inspect to observe it, or close to tidy the pane."
+            )
+        return
+    if mode == ENGAGEMENT_STATUS_ONLY:
+        if command in STATUS_ONLY_REFUSED:
+            raise HandoffError(
+                f"worker was handed off status-only; {command} is refused. A "
+                "status-only watch reports terminal state and locators, never reads "
+                "output, steers, judges, or closes the worker; acceptance is a "
+                "separate independent invocation."
+            )
+        return
+    raise HandoffError(f"unknown engagement mode {mode!r}; {command} is refused")
 
 
 def resource_exists_from_result(
@@ -788,9 +828,10 @@ class HandoffController:
         result["provider_capacity_start"] = capacity.percentage if capacity else None
         return result
 
-    def handoff(
+    def _start_handed_off(
         self,
         *,
+        mode: str,
         caller_pane: str,
         worktree: Path,
         identity_path: Path,
@@ -799,9 +840,9 @@ class HandoffController:
         kind: str,
         title: str,
         text: str,
-        claude_model: str = "opus",
-    ) -> dict[str, Any]:
-        """Start a worker, deliver one prompt, and keep no claim on the result."""
+        claude_model: str,
+    ) -> tuple[dict[str, Any], dict[str, Any], dict[str, str]]:
+        """Start a worker and mark the engagement mode before any prompt is sent."""
         if not text.strip():
             raise HandoffError("handoff prompt text must not be empty")
         started = self.start(
@@ -817,27 +858,214 @@ class HandoffController:
         # Marked before the send, so an interrupted delivery still leaves an
         # honest record rather than one describing a supervised worker.
         record = _load_identity(identity_path)
-        record["supervised"] = False
+        record["engagement_mode"] = mode
+        record["supervised"] = False  # compatibility boolean: not a supervised worker
+        if mode == ENGAGEMENT_STATUS_ONLY:
+            record["status_phase"] = "prompt-not-sent"
         _atomic_write_json(identity_path, record)
         paths = {
             "identity_file": str(identity_file),
             "prompt_file": str(prompt_path.expanduser().resolve()),
         }
+        return started, record, paths
+
+    def handoff(
+        self,
+        *,
+        caller_pane: str,
+        worktree: Path,
+        identity_path: Path,
+        prompt_path: Path,
+        name: str,
+        kind: str,
+        title: str,
+        text: str,
+        claude_model: str = "opus",
+    ) -> dict[str, Any]:
+        """Fire-and-forget: start a worker, deliver one prompt, keep no claim on the result."""
+        started, record, paths = self._start_handed_off(
+            mode=ENGAGEMENT_FIRE_AND_FORGET,
+            caller_pane=caller_pane,
+            worktree=worktree,
+            identity_path=identity_path,
+            prompt_path=prompt_path,
+            name=name,
+            kind=kind,
+            title=title,
+            text=text,
+            claude_model=claude_model,
+        )
         try:
             self.herdr.deliver(name=name, text=text)
         except Exception as exc:
             raise HandoffDeliveryError(
                 f"handoff delivery failed after startup: {exc}. The worker pane is "
                 "still running; deliver the prompt file by hand in that pane.",
-                details={**paths, "delivered": False, "supervised": False},
+                details={
+                    **paths,
+                    "delivered": False,
+                    "supervised": False,
+                    "engagement_mode": ENGAGEMENT_FIRE_AND_FORGET,
+                },
             ) from exc
         return {
             "ok": True,
             "worker_agent_name": name,
             "worker_pane_id": record.get("worker_pane_id"),
+            "engagement_mode": ENGAGEMENT_FIRE_AND_FORGET,
             "supervised": False,
             "delivered": True,
             "provider_capacity_start": started.get("provider_capacity_start"),
+            **paths,
+        }
+
+    def handoff_status(
+        self,
+        *,
+        caller_pane: str,
+        worktree: Path,
+        identity_path: Path,
+        prompt_path: Path,
+        name: str,
+        kind: str,
+        title: str,
+        text: str,
+        timeout_ms: int,
+        claude_model: str = "opus",
+    ) -> dict[str, Any]:
+        """Status-only: start, submit exactly one prompt through the wait-capable
+        path under the same lease and capacity gates as `prompt`, and return the
+        compact terminal state. Never returns worker output."""
+        started, record, paths = self._start_handed_off(
+            mode=ENGAGEMENT_STATUS_ONLY,
+            caller_pane=caller_pane,
+            worktree=worktree,
+            identity_path=identity_path,
+            prompt_path=prompt_path,
+            name=name,
+            kind=kind,
+            title=title,
+            text=text,
+            claude_model=claude_model,
+        )
+        lease = self._session_lease(record) if kind == "claude" else nullcontext()
+        with lease:
+            capacity_start = self._require_capacity() if kind == "claude" else None
+            before = validate_identity(record, self.herdr.get_agent(name))
+            if before.get("agent_status") != "idle":
+                raise HandoffError(
+                    f"started worker is {before.get('agent_status')!r}, not idle; "
+                    "the status-only prompt was not sent"
+                )
+            # Persisted before the one send: a caller that dies past this point
+            # must never resend, only `status-wait`.
+            record["status_phase"] = "turn-in-flight"
+            record["prompt_state_change_seq"] = _state_change_seq(before)
+            _atomic_write_json(identity_path, record)
+            try:
+                self.herdr.prompt(name=name, text=text, timeout_ms=timeout_ms)
+            except Exception as exc:
+                outcome = self._classify_wait_failure(record, exc)
+            else:
+                outcome = self._settle(record)
+            capacity_end = self.capacity_probe(False) if kind == "claude" else None
+        return self._finish_status(
+            record, identity_path, outcome, paths,
+            provider_capacity_start=capacity_start.percentage if capacity_start else None,
+            capacity_end=capacity_end,
+        )
+
+    def status_wait(self, *, identity_path: Path, timeout_ms: int) -> dict[str, Any]:
+        """Recovery for a status-only handoff whose caller lost the acknowledgement:
+        wait for the already-submitted turn to settle. Never sends anything."""
+        record = _load_identity(identity_path)
+        if engagement_mode(record) != ENGAGEMENT_STATUS_ONLY:
+            raise HandoffError("status-wait applies only to a status-only handoff record")
+        phase = record.get("status_phase")
+        if phase == "prompt-not-sent":
+            raise HandoffError(
+                "status-only prompt was never submitted (handoff-status was interrupted "
+                "before the send); nothing to wait for and nothing is resent"
+            )
+        if phase not in {"turn-in-flight", "settled"}:
+            raise HandoffError(f"unknown status phase {phase!r}")
+        name = str(record.get("worker_agent_name", ""))
+        after_seq = record.get("prompt_state_change_seq")
+        if not isinstance(after_seq, int):
+            raise HandoffError("status-only record omitted the submitted turn's sequence")
+        try:
+            self.herdr.wait_agent(name=name, after_seq=after_seq, timeout_ms=timeout_ms)
+        except Exception as exc:
+            outcome = self._classify_wait_failure(record, exc)
+        else:
+            outcome = self._settle(record)
+        paths = {
+            "identity_file": str(_identity_target(identity_path)),
+            "prompt_file": None,
+        }
+        return self._finish_status(record, identity_path, outcome, paths)
+
+    def _settle(self, record: dict[str, Any]) -> dict[str, Any]:
+        """Map the worker's current state to one terminal status. No output is read."""
+        name = str(record.get("worker_agent_name", ""))
+        try:
+            payload = self.herdr.get_agent(name)
+        except Exception as exc:
+            return {"terminal_status": "disappeared", "detail": str(exc)[:200]}
+        try:
+            agent = validate_identity(record, payload)
+        except HandoffError as exc:
+            return {"terminal_status": "identity-mismatch", "detail": str(exc)[:200]}
+        status = str(agent.get("agent_status"))
+        if status in {"idle", "done", "blocked"}:
+            return {"terminal_status": status, "detail": None}
+        return {"terminal_status": "failed", "detail": f"agent status {status!r}"}
+
+    def _classify_wait_failure(self, record: dict[str, Any], exc: Exception) -> dict[str, Any]:
+        text = str(exc)
+        # ponytail: Herdr reports a caller timeout as error code "timeout" and a
+        # vanished worker as "agent_not_found"; match those codes in the message
+        # rather than parsing every transport's JSON shape.
+        if isinstance(exc, subprocess.TimeoutExpired) or "timeout" in text.lower():
+            return {"terminal_status": "timed-out", "detail": None}
+        if "agent_not_found" in text or "missing agent" in text:
+            return {"terminal_status": "disappeared", "detail": text[:200]}
+        settled = self._settle(record)
+        if settled["terminal_status"] in {"disappeared", "identity-mismatch"}:
+            return settled
+        return {"terminal_status": "failed", "detail": text[:200]}
+
+    def _finish_status(
+        self,
+        record: dict[str, Any],
+        identity_path: Path,
+        outcome: dict[str, Any],
+        paths: dict[str, Any],
+        *,
+        provider_capacity_start: int | None = None,
+        capacity_end: CapacityProbe | None = None,
+    ) -> dict[str, Any]:
+        record["status_phase"] = "settled"
+        record["terminal_status"] = outcome["terminal_status"]
+        _atomic_write_json(identity_path, record)
+        worktree = record.get("worker_worktree_identity") or {}
+        return {
+            "ok": True,
+            "engagement_mode": ENGAGEMENT_STATUS_ONLY,
+            "supervised": False,
+            "delivered": True,
+            "terminal_status": outcome["terminal_status"],
+            "detail": outcome.get("detail"),
+            "worker_agent_name": record.get("worker_agent_name"),
+            "worker_pane_id": record.get("worker_pane_id"),
+            "worker_branch": worktree.get("branch"),
+            "provider_capacity_start": provider_capacity_start,
+            "provider_capacity_end": capacity_end.percentage if capacity_end else None,
+            "provider_capacity_end_verified": (
+                capacity_end.ok and capacity_end.percentage is not None
+                if capacity_end
+                else None
+            ),
             **paths,
         }
 
@@ -948,6 +1176,7 @@ class HandoffController:
 
     def inspect(self, *, identity_path: Path) -> dict[str, Any]:
         record = _load_identity(identity_path)
+        refuse_unsupervised(record, "inspect")
         agent = validate_identity(
             record,
             self.herdr.get_agent(str(record.get("worker_agent_name", ""))),
@@ -960,6 +1189,7 @@ class HandoffController:
         if not 1 <= lines <= 1000:
             raise HandoffError("read lines must be between 1 and 1000")
         record = _load_identity(identity_path)
+        refuse_unsupervised(record, "read")
         name = str(record.get("worker_agent_name", ""))
         validate_identity(record, self.herdr.get_agent(name))
         output = self.herdr.read_agent(name=name, lines=lines)
@@ -1075,6 +1305,7 @@ class HandoffController:
     def close(self, *, identity_path: Path) -> dict[str, Any]:
         with StartLease(identity_path):
             record = _load_identity(identity_path)
+            refuse_unsupervised(record, "close")
             if record.get("starting") or (
                 record.get("cleanup_required") and not record.get("closing")
             ):
@@ -1203,7 +1434,10 @@ def build_parser() -> argparse.ArgumentParser:
     prompt_input.add_argument("--prompt-file", type=Path)
     prompt.add_argument("--timeout-ms", type=int, default=7_200_000)
 
-    handoff = subparsers.add_parser("handoff")
+    handoff = subparsers.add_parser(
+        "handoff",
+        help="fire-and-forget handoff: start, deliver one prompt without --wait, return; no watcher",
+    )
     handoff.add_argument("--worktree", type=Path, required=True)
     handoff.add_argument("--identity-file", type=Path, required=True)
     handoff.add_argument("--prompt-file", type=Path, required=True)
@@ -1211,6 +1445,26 @@ def build_parser() -> argparse.ArgumentParser:
     handoff.add_argument("--kind", choices=("claude", "hermes"), default="claude")
     handoff.add_argument("--title")
     handoff.add_argument("--claude-model", default="opus")
+
+    handoff_status = subparsers.add_parser(
+        "handoff-status",
+        help="status-only handoff: start, submit one prompt with --wait, report terminal state only",
+    )
+    handoff_status.add_argument("--worktree", type=Path, required=True)
+    handoff_status.add_argument("--identity-file", type=Path, required=True)
+    handoff_status.add_argument("--prompt-file", type=Path, required=True)
+    handoff_status.add_argument("--name", required=True)
+    handoff_status.add_argument("--kind", choices=("claude", "hermes"), default="claude")
+    handoff_status.add_argument("--title")
+    handoff_status.add_argument("--claude-model", default="opus")
+    handoff_status.add_argument("--timeout-ms", type=int, default=7_200_000)
+
+    status_wait = subparsers.add_parser(
+        "status-wait",
+        help="recover a status-only handoff whose acknowledgement was lost: wait, never resend",
+    )
+    status_wait.add_argument("--identity-file", type=Path, required=True)
+    status_wait.add_argument("--timeout-ms", type=int, default=7_200_000)
 
     inspect = subparsers.add_parser("inspect")
     inspect.add_argument("--identity-file", type=Path, required=True)
@@ -1238,7 +1492,7 @@ def main() -> int:
     args = build_parser().parse_args()
     try:
         binary, injected_pane = _require_real_herdr_environment()
-        if args.command in {"start", "handoff"}:
+        if args.command in {"start", "handoff", "handoff-status"}:
             worktree = args.worktree.expanduser().resolve()
             identity_path = args.identity_file
         else:
@@ -1275,6 +1529,24 @@ def main() -> int:
                 title=args.title or args.name,
                 text=prompt_path.read_text(encoding="utf-8"),
                 claude_model=args.claude_model,
+            )
+        elif args.command == "handoff-status":
+            prompt_path = _validated_prompt_path(args.prompt_file, args.identity_file)
+            result = controller.handoff_status(
+                caller_pane=injected_pane,
+                worktree=worktree,
+                identity_path=identity_path,
+                prompt_path=prompt_path,
+                name=args.name,
+                kind=args.kind,
+                title=args.title or args.name,
+                text=prompt_path.read_text(encoding="utf-8"),
+                timeout_ms=args.timeout_ms,
+                claude_model=args.claude_model,
+            )
+        elif args.command == "status-wait":
+            result = controller.status_wait(
+                identity_path=identity_path, timeout_ms=args.timeout_ms
             )
         elif args.command == "prompt":
             text = args.text
