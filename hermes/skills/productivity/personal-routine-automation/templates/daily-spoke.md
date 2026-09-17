@@ -1,11 +1,4 @@
----
-tags:
-  - personal-alignment
-  - type/daily
-created: YYYY-MM-DD
----
-
-# Daily Check-in — YYYY-MM-DD
+# YYYY-MM-DD-daily-check-in
 
 ## Current State
 - **Energy:**
@@ -22,4 +15,7 @@ created: YYYY-MM-DD
 -
 
 ## Related
-- [[YYYY-MM-DD-weekly-plan]]
+- YYYY-MM-DD-weekly-plan
+
+Created: YYYY-MM-DD
+Tags: personal-alignment, type/daily

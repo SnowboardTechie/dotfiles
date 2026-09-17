@@ -56,9 +56,10 @@ resolve_path() {
 # preserve them forever. Match the raw `readlink` target instead: it needs no
 # filesystem to resolve, so the outcome is the same on every platform.
 #
-# This is an exact allowlist of two historical targets, never a pattern. Every
-# other broken or foreign link is still preserved untouched.
-RETIRED_POOL_TARGETS=(agent-workspace git-master)
+# This is an exact allowlist of historical targets, never a pattern. Every
+# other broken or foreign link is still preserved untouched. `vault-capture`
+# was replaced by the backend-neutral `knowledge-capture` router (2026-09-16).
+RETIRED_POOL_TARGETS=(agent-workspace git-master vault-capture)
 
 is_legacy_pool_link() { # <link-path> -> 0 when it names a retired pool skill
     local raw legacy
@@ -80,8 +81,11 @@ if [[ -z "$SKILLS_SRC" || ! -d "$SKILLS_SRC" ]]; then
 fi
 
 # Common core shared by Claude, OpenCode, and Pi: dev/PR, PKM, and workflow learning.
+# PKM is split by backend: vault-pkm (project/workspace Markdown vaults),
+# apple-notes-pkm (personal second brain in Apple Notes), knowledge-capture
+# (the router that decides which of the two a capture belongs to).
 COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review code-review
-    vault-pkm vault-capture skill-retrospective obsidian session-handoff)
+    vault-pkm apple-notes-pkm knowledge-capture skill-retrospective obsidian session-handoff)
 
 # Planning and delivery cores adapted from an upstream suite (see
 # dot-agents/upstreams/mattpocock-skills.json). Curated for the three runtimes
@@ -107,12 +111,13 @@ OPENCODE_SKILLS=("${COMMON_SKILLS[@]}"
 
 # Hermes keeps its bundled/local obsidian and vault-pkm implementations. Personal
 # skills live in a dedicated category so the shared pool remains canonical while
-# Hermes's curator and bundled-skill lifecycle stay separate.
+# Hermes's curator and bundled-skill lifecycle stay separate. apple-notes-pkm is
+# the one personal-knowledge backend every runtime shares, Hermes included.
 HERMES_SKILLS=(
     ship worktrunk update-pr-description pr-self-review code-review multiagent-pr-review
     manual-merge issue-create issue-plan issue-work loop-issue
     coding-agent-handoff-supervision
-    vault-capture skill-retrospective adr-and-spec-coach voice-bryan
+    apple-notes-pkm knowledge-capture skill-retrospective adr-and-spec-coach voice-bryan
     session-handoff
     dx-target dx-preview conforming-tech-specs
     catalog-review dependency-review dependency-triage sprint-deliverable-update

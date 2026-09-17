@@ -176,7 +176,7 @@ implementation_trunk: /absolute/path/to/implementation-trunk
 
 The executor mutates checkboxes only in the derived snapshot. The implementation
 worktree, tests, commits, and PR operate only in the implementation repository.
-Repository-owned planning closeout and later `vault-capture` remain separate.
+Repository-owned planning closeout and later `knowledge-capture` remain separate.
 
 ## Clear-issue fallback
 

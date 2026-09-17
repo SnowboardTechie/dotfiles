@@ -35,7 +35,11 @@ one-line change to a curation array.
 Not every tool gets every skill. Pi is kept lean (the common core only). Hermes
 gets adapted personal workflows but keeps its bundled/local `obsidian` and
 `vault-pkm` implementations, so those names are intentionally excluded from its
-pool links.
+pool links. Personal knowledge has one backend for every runtime:
+`apple-notes-pkm` (Apple Notes "Second Brain", accessed only through the helper
+script inside that skill), with `knowledge-capture` routing resting-point
+captures between it and `vault-pkm`. `vault-capture` is retired; the reconciler
+prunes its stale links.
 
 The **single authoritative curation source** is the set of `*_SKILLS` Bash arrays
 in [`../scripts/reconcile-agent-skills.sh`](../scripts/reconcile-agent-skills.sh):

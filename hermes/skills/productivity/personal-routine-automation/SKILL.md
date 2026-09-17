@@ -8,7 +8,7 @@ metadata:
   created_by: agent
   hermes:
     tags: [productivity, routines, reflection, weekly-reset, automation, pkm, wellbeing]
-    related_skills: [vault-pkm, workday-briefing-automation, scheduled-automation-change-management, skill-retrospective]
+    related_skills: [apple-notes-pkm, workday-briefing-automation, scheduled-automation-change-management, skill-retrospective]
 ---
 
 # Personal Routine Automation
@@ -21,7 +21,7 @@ The core loop is:
 
 > proactive invitation → honest check-in → bounded choice → vault capture → agreed delegation → later review
 
-Read `references/bryan-personal-routine-contract.md` when operating Bryan's personal routine in `~/second-brain`.
+Read `references/bryan-personal-routine-contract.md` when operating Bryan's personal routine. Its artifacts live in Apple Notes (`Second Brain/Journal`), reached only through the `apple-notes-pkm` helper.
 
 ## 1. Diagnose the Actual Failure
 
@@ -39,10 +39,10 @@ Automation materially changes a workflow when initiation friction was the main f
 Keep each system in a clear role:
 
 - A reminder/task system holds simple, self-contained actions that require little or no reasoning.
-- A vault holds thoughts, plans, decisions, learning, project context, and durable reflection.
-- Hermes reviews those sources, resurfaces relevant context, facilitates the routine, and updates the vault according to local PKM rules.
+- The personal second brain (Apple Notes) holds thoughts, plans, decisions, learning, project context, and durable reflection; project vaults hold project state.
+- Hermes reviews those sources, resurfaces relevant context, facilitates the routine, and updates the second brain according to `apple-notes-pkm`.
 
-Do not duplicate every chore into the vault. Do not let a journal become a second canonical project status page. Read `vault-pkm` and the vault-local instructions before writing.
+Do not duplicate every chore into the second brain. Do not let a journal become a second canonical project status page. Read `apple-notes-pkm` (personal) or `vault-pkm` (project) before writing.
 
 ## 3. Separate Automation From Autonomy
 
@@ -120,7 +120,7 @@ When the user wants a durable journal and planning record, prefer one dated week
 
 Daily notes preserve feelings, gratitude, and detail. The weekly hub must contain enough synthesis to remain useful without opening every daily note. Keep each dated weekly note as its own historical artifact instead of rewriting a permanent `current-week` page.
 
-When the routine changes project state, update the relevant canonical project note through `vault-pkm`. The weekly journal is historical context, not a substitute for canonical status.
+When the routine changes personal project state, update the relevant canonical hub note in Apple Notes through `apple-notes-pkm` (`append`, never a rewrite); project-vault state goes through `vault-pkm`. The weekly journal is historical context, not a substitute for canonical status.
 
 ## 7. Distinguish Reminder and Working Surfaces
 
@@ -149,7 +149,7 @@ Keep, refine, or remove each component based on observed use rather than complet
 
 ## 9. Bryan's Interactive Operating Procedure
 
-For Bryan, read `references/bryan-personal-routine-contract.md`, `/Users/bryan/second-brain/AGENTS.md`, and the canonical exploration named there before capture.
+For Bryan, read `references/bryan-personal-routine-contract.md` and the `apple-notes-pkm` skill before capture; the canonical exploration is the Apple Note `2026-07-19-hermes-personal-alignment-routines` in `Second Brain/Explorations` (read it by id after a bounded title search).
 
 The only recurring scheduled interactive routine is `Personal Weekly Orientation` on Sunday. Its opening collector is intentionally minimal and its delivery asks one concrete question. Weekday and Saturday modes remain available on demand. `Personal Morning Brief` is a separate read-only delta report: it uses only its locally filtered injected payload, carries its previous completed output for deduplication, and must remain silent when nothing materially changed.
 
@@ -159,23 +159,23 @@ Start every interactive routine by using `date` for Pacific time and running:
 python3 /Users/bryan/.hermes/scripts/personal-alignment-brief.py --mode MODE
 ```
 
-Use `weekday`, `saturday`, or `sunday`. Read only relevant source files named by the collector. Name intended paths before writing. No participation means no note, and generated Matrix text is never archived.
+Use `weekday`, `saturday`, or `sunday`. The collector reports note titles and ids in `checkIn`; read only those notes, by id, through the helper. Name the intended folder and title before writing. No participation means no note, and generated Matrix text is never archived.
 
 ### Weekday and Saturday capture
 
-Target `Journal/YYYY-MM-DD-daily-check-in.md`. Ask exactly one small question at a time, beginning with current energy or what Bryan needs from the transition. Adaptively ask about anything weighing on him, one specific gratitude, what went well, and what would make the remaining day intentional. Saturday also distinguishes what still matters from what can be deliberately deprioritized, renegotiated, or parked. Never present these topics as a questionnaire or preview the full sequence.
+Target the note `YYYY-MM-DD-daily-check-in` in `Second Brain/Journal`. Ask exactly one small question at a time, beginning with current energy or what Bryan needs from the transition. Adaptively ask about anything weighing on him, one specific gratitude, what went well, and what would make the remaining day intentional. Saturday also distinguishes what still matters from what can be deliberately deprioritized, renegotiated, or parked. Never present these topics as a questionnaire or preview the full sequence.
 
-At a resting point, use `templates/daily-spoke.md`, record only Bryan's actual reflections and concise synthesis, link the Monday-dated weekly hub when present, and add the spoke under its `## Daily Reflections` section.
+At a resting point, create the spoke from `templates/daily-spoke.md` (`create --folder Journal --title …`), record only Bryan's actual reflections and concise synthesis, name the Monday-dated weekly hub by exact title, and `append` one line naming the spoke under the hub's `Daily Reflections` section.
 
 ### Sunday capture
 
-Use `Journal/CURRENT-MONDAY-weekly-plan.md` as the ending hub and `Journal/NEXT-MONDAY-weekly-plan.md` as the new hub. Review the current hub and spokes, relevant personal project notes, concise canonical SGG context, all calendars, incomplete Reminders, filtered recent Mail, weather, and the physical whiteboard through Bryan's report. Subscription-calendar birthdays are informational rather than availability conflicts unless separate evidence shows a gathering, call, travel, or other commitment.
+Use the note `CURRENT-MONDAY-weekly-plan` as the ending hub and `NEXT-MONDAY-weekly-plan` as the new hub, both in `Second Brain/Journal`. Review the current hub and spokes, relevant personal project notes, concise canonical SGG context, all calendars, incomplete Reminders, filtered recent Mail, weather, and the physical whiteboard through Bryan's report. Subscription-calendar birthdays are informational rather than availability conflicts unless separate evidence shows a gathering, call, travel, or other commitment.
 
-Guide the reset through feelings and gratitude, wins, honest goal outcomes, cross-day patterns, coming capacity, candidate resurfacing with reasons, adaptive active goals, an explicit parked list, bounded Hermes delegation, and a concise whiteboard slate. Ask exactly one adaptive question at a time and do not front-load collected context or preview the full sequence. Keep the reset in planning mode: clarify only enough to define success, then record the outcome and move on instead of beginning research or execution. If Bryan says a task is not for now, stop expanding it and return to the reset. Before proposing a new plan or Hermes delegation for a named project, inspect its canonical notes or repository state for existing plans, issues, or active agents; ask rather than assume when current execution state is unavailable. Finalize the current hub when it exists, create the next hub with `templates/weekly-hub.md`, link spokes, and update canonical project notes when state changed.
+Guide the reset through feelings and gratitude, wins, honest goal outcomes, cross-day patterns, coming capacity, candidate resurfacing with reasons, adaptive active goals, an explicit parked list, bounded Hermes delegation, and a concise whiteboard slate. Ask exactly one adaptive question at a time and do not front-load collected context or preview the full sequence. Keep the reset in planning mode: clarify only enough to define success, then record the outcome and move on instead of beginning research or execution. If Bryan says a task is not for now, stop expanding it and return to the reset. Before proposing a new plan or Hermes delegation for a named project, inspect its canonical notes or repository state for existing plans, issues, or active agents; ask rather than assume when current execution state is unavailable. Finalize the current hub when it exists (`append` its End of Week material; `replace` only if the hub has no attachments and Bryan asked for a rewrite), create the next hub from `templates/weekly-hub.md`, name the spokes by title, and update canonical project notes when state changed.
 
 ### Capture and synchronization authority
 
-Participation through a resting point authorizes these exact vault writes without another approval prompt. Name every path, read back changes, stage exact non-draft paths, commit, push, and verify the remote SHA. This does not authorize unrelated files, public communication, or advancing a resurfaced project without an agreed plan.
+Participation through a resting point authorizes these exact Apple Notes writes without another approval prompt. Name every folder and title, pass the fresh `revision` on every `append`/`replace`, and rely on the helper's readback verification (report the returned id). There is nothing to commit or push: iCloud carries the change to Bryan's devices. This does not authorize unrelated notes, public communication, or advancing a resurfaced project without an agreed plan.
 
 ### Stop when the direction is clear
 

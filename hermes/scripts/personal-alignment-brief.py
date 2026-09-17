@@ -14,9 +14,11 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from personal_notes import find_note, note_ref  # noqa: E402
+
 HOME = Path.home()
 HERMES_HOME = Path(os.environ.get("HERMES_HOME", HOME / ".hermes"))
-SECOND_BRAIN = HOME / "second-brain"
 SGG_NOTES = HOME / "code" / "notes" / "sgg"
 PACIFIC = ZoneInfo("America/Los_Angeles")
 PILOT_REVIEW_DATE = "2026-08-09"
@@ -143,34 +145,59 @@ def changed_paths(history: str) -> list[str]:
     return sorted({line.strip() for line in history.splitlines() if line.strip() and not line.startswith("COMMIT ")})
 
 
-def note_context(now: datetime, mode: str) -> dict[str, Any]:
+def note_context(now: datetime, mode: str) -> tuple[dict[str, Any], str | None]:
+    """Locate the routine's notes in Apple Notes by exact title (bounded searches)."""
     today = now.date()
     current_start = monday(today)
     next_start = current_start + timedelta(days=7)
     if mode == "sunday":
         next_start = today + timedelta(days=1)
-    daily_path = SECOND_BRAIN / "Journal" / f"{today.isoformat()}-daily-check-in.md"
-    current_hub = SECOND_BRAIN / "Journal" / f"{current_start.isoformat()}-weekly-plan.md"
-    next_hub = SECOND_BRAIN / "Journal" / f"{next_start.isoformat()}-weekly-plan.md"
-    week_days = [current_start + timedelta(days=index) for index in range(7)]
-    daily_spokes = [
-        str(SECOND_BRAIN / "Journal" / f"{day.isoformat()}-daily-check-in.md")
-        for day in week_days
-        if (SECOND_BRAIN / "Journal" / f"{day.isoformat()}-daily-check-in.md").exists()
-    ]
-    completion_path = next_hub if mode == "sunday" else daily_path
-    return {
-        "dailyPath": str(daily_path),
+    daily_title = f"{today.isoformat()}-daily-check-in"
+    current_title = f"{current_start.isoformat()}-weekly-plan"
+    next_title = f"{next_start.isoformat()}-weekly-plan"
+    errors: list[str] = []
+
+    def lookup(title: str):
+        note, error = find_note(title)
+        if error:
+            errors.append(f"{title}: {error}")
+        return note
+
+    daily = lookup(daily_title)
+    current_hub = lookup(current_title)
+    next_hub = lookup(next_title)
+    spokes = []
+    for index in range(7):
+        day = current_start + timedelta(days=index)
+        if day > today:
+            break
+        title = f"{day.isoformat()}-daily-check-in"
+        note = daily if title == daily_title else lookup(title)
+        if note:
+            spokes.append({"title": title, "id": note["id"], "location": note_ref(title)})
+    completion = next_hub if mode == "sunday" else daily
+    completion_title = next_title if mode == "sunday" else daily_title
+    context = {
+        "backend": "apple-notes",
+        "journalFolder": note_ref("", "Journal").rstrip("/"),
+        "dailyTitle": daily_title,
+        "dailyPath": note_ref(daily_title),
+        "dailyId": daily["id"] if daily else None,
         "currentWeekStart": current_start.isoformat(),
-        "currentWeekHubPath": str(current_hub),
-        "currentWeekHubExists": current_hub.exists(),
+        "currentWeekHubTitle": current_title,
+        "currentWeekHubPath": note_ref(current_title),
+        "currentWeekHubId": current_hub["id"] if current_hub else None,
+        "currentWeekHubExists": bool(current_hub),
         "nextWeekStart": next_start.isoformat(),
-        "nextWeekHubPath": str(next_hub),
-        "nextWeekHubExists": next_hub.exists(),
-        "currentWeekDailySpokes": daily_spokes,
-        "completionPath": str(completion_path),
-        "alreadyCompleted": completion_path.exists(),
+        "nextWeekHubTitle": next_title,
+        "nextWeekHubPath": note_ref(next_title),
+        "nextWeekHubId": next_hub["id"] if next_hub else None,
+        "nextWeekHubExists": bool(next_hub),
+        "currentWeekDailySpokes": spokes,
+        "completionTitle": completion_title,
+        "alreadyCompleted": bool(completion) or bool(errors),
     }
+    return context, ("; ".join(errors)[:1000] if errors else None)
 
 
 def main() -> int:
@@ -187,7 +214,7 @@ def main() -> int:
     reminders, reminders_error = collect_reminders(mode)
     mail, mail_error = collect_mail(now, mode)
     weather, weather_error = (None, "disabled for test") if args.no_network else collect_weather()
-    second_history, second_error = git_history(SECOND_BRAIN, now - timedelta(days=21))
+    check_in, second_error = note_context(now, mode)
     sgg_history, sgg_error = git_history(SGG_NOTES.parent, now - timedelta(days=7))
 
     errors = {key: value for key, value in {
@@ -204,16 +231,15 @@ def main() -> int:
         "mode": mode,
         "pilot": {"reviewDate": PILOT_REVIEW_DATE, "isReviewDate": now.date().isoformat() >= PILOT_REVIEW_DATE},
         "sourceErrors": errors,
-        "checkIn": note_context(now, mode),
+        "checkIn": check_in,
         "calendar": calendar,
         "reminders": reminders,
         "email": mail,
         "weather": weather,
         "notes": {
-            "secondBrainRoot": str(SECOND_BRAIN),
-            "secondBrainInstructions": str(SECOND_BRAIN / "AGENTS.md"),
-            "alignmentDesign": str(SECOND_BRAIN / "Explorations" / "2026-07-19-hermes-personal-alignment-routines.md"),
-            "recentSecondBrainPaths": changed_paths(second_history)[:100],
+            "secondBrainBackend": "apple-notes",
+            "secondBrainSkill": "apple-notes-pkm",
+            "alignmentDesign": note_ref("2026-07-19-hermes-personal-alignment-routines", "Explorations"),
             "sggRoot": str(SGG_NOTES),
             "sggInstructions": str(SGG_NOTES / "AGENTS.md"),
             "sggCanonical": [str(SGG_NOTES / "INDEX.md"), str(SGG_NOTES / "status.md")],

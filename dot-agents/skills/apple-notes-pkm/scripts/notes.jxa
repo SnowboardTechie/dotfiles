@@ -1,0 +1,500 @@
+// notes.jxa — static JXA backend for apple-notes-pkm.py.
+//
+// Invoked as: osascript -l JavaScript notes.jxa '<json request>'
+// Prints one JSON document. Every operation is scoped to one root folder in
+// one account (default: "Second Brain" in "iCloud"); a note outside that
+// subtree is treated as nonexistent. No delete operation exists here.
+//
+// The request is a JSON object: {"op": "...", "root": "...", "account": "...", ...}.
+// Arguments always arrive through argv, never through string interpolation.
+
+ObjC.import('Foundation');
+
+function run(argv) {
+  let request;
+  try {
+    request = JSON.parse(argv[0] || '{}');
+  } catch (e) {
+    return JSON.stringify({ ok: false, error: 'invalid request JSON: ' + e });
+  }
+  try {
+    const result = dispatch(request);
+    return JSON.stringify(Object.assign({ ok: true }, result));
+  } catch (e) {
+    const message = String(e && e.message ? e.message : e);
+    const code = e && e.errorNumber !== undefined ? e.errorNumber : null;
+    return JSON.stringify({ ok: false, error: message, errorNumber: code });
+  }
+}
+
+const Notes = Application('Notes');
+Notes.includeStandardAdditions = false;
+
+function fail(message) {
+  throw new Error(message);
+}
+
+function iso(date) {
+  return date ? new Date(date).toISOString() : null;
+}
+
+function accountFor(request) {
+  const wanted = request.account || 'iCloud';
+  const accounts = Notes.accounts();
+  for (const account of accounts) {
+    if (account.name() === wanted) return account;
+  }
+  fail('account not found: ' + wanted + ' (available: ' + accounts.map(a => a.name()).join(', ') + ')');
+}
+
+function topFolder(account, name) {
+  for (const folder of account.folders()) {
+    if (folder.name() === name) return folder;
+  }
+  return null;
+}
+
+function childFolder(folder, name) {
+  for (const child of folder.folders()) {
+    if (child.name() === name) return child;
+  }
+  return null;
+}
+
+function rootFor(request) {
+  const account = accountFor(request);
+  const rootName = request.root || 'Second Brain';
+  const root = topFolder(account, rootName);
+  return { account, root, rootName };
+}
+
+// Resolve "A/B/C" beneath root. Returns null when any segment is missing.
+function folderAtPath(root, path) {
+  let folder = root;
+  const parts = (path || '').split('/').filter(p => p.length > 0);
+  for (const part of parts) {
+    folder = childFolder(folder, part);
+    if (!folder) return null;
+  }
+  return folder;
+}
+
+// Folder id -> path beneath root. Nested folders report the account as their
+// scripting container, so paths are derived by walking down from the root.
+let folderIndexCache = null;
+function folderIndex(root) {
+  if (folderIndexCache) return folderIndexCache;
+  const index = {};
+  walkFolders(root, (folder, path) => { index[folder.id()] = path; });
+  folderIndexCache = index;
+  return index;
+}
+
+function noteFolderPath(note, root) {
+  let container;
+  try {
+    container = note.container();
+  } catch (e) {
+    return null;
+  }
+  const path = folderIndex(root)[container.id()];
+  return path === undefined ? null : path;
+}
+
+function summarize(note, folderPath) {
+  return {
+    id: note.id(),
+    title: note.name(),
+    folder: folderPath,
+    modified: iso(note.modificationDate()),
+    created: iso(note.creationDate()),
+  };
+}
+
+// Walk root and every descendant folder.
+function walkFolders(root, visit, path) {
+  visit(root, path || '');
+  for (const child of root.folders()) {
+    walkFolders(child, visit, (path ? path + '/' : '') + child.name());
+  }
+}
+
+function directNotes(folder) {
+  // `notes of folder` in Notes returns the folder's own notes; subfolders are
+  // walked explicitly, and results are de-duplicated by id as a safeguard.
+  return folder.notes();
+}
+
+function snippetFor(text, query, width) {
+  if (!text) return '';
+  const lower = text.toLowerCase();
+  const at = query ? lower.indexOf(query.toLowerCase()) : -1;
+  let start = 0;
+  if (at > 0) start = Math.max(0, at - Math.floor(width / 3));
+  const piece = text.substr(start, width).replace(/\s+/g, ' ').trim();
+  return (start > 0 ? '…' : '') + piece + (start + width < text.length ? '…' : '');
+}
+
+function requireNote(request, root) {
+  if (!request.id) fail('id is required');
+  let note;
+  try {
+    note = Notes.notes.byId(request.id);
+    note.name(); // force resolution
+  } catch (e) {
+    fail('note not found: ' + request.id);
+  }
+  const folderPath = noteFolderPath(note, root);
+  if (folderPath === null) fail('note is outside the root folder: ' + request.id);
+  return { note, folderPath };
+}
+
+function attachmentsOf(note) {
+  const out = [];
+  const seen = {};
+  for (const attachment of note.attachments()) {
+    const id = attachment.id();
+    if (seen[id]) continue;
+    seen[id] = true;
+    let name = null;
+    let contentIdentifier = null;
+    try { name = attachment.name(); } catch (e) {}
+    try { contentIdentifier = attachment.contentIdentifier(); } catch (e) {}
+    out.push({ id: attachment.id(), name: name, contentIdentifier: contentIdentifier });
+  }
+  return out;
+}
+
+function fullNote(note, folderPath) {
+  const summary = summarize(note, folderPath);
+  summary.body = note.body();
+  summary.plaintext = note.plaintext();
+  summary.attachments = attachmentsOf(note);
+  summary.shared = note.shared();
+  summary.passwordProtected = note.passwordProtected();
+  summary.revision = summary.modified;
+  return summary;
+}
+
+function ensureRevision(note, expected) {
+  if (!expected) fail('revision is required for writes');
+  const current = iso(note.modificationDate());
+  if (current !== expected) {
+    const err = new Error('stale revision: note changed since it was read (current ' + current + ', expected ' + expected + ')');
+    err.errorNumber = 'stale';
+    throw err;
+  }
+}
+
+function addAttachments(note, files) {
+  // Notes accepts images and HTML through `make new attachment with data`, but
+  // silently ignores some types (PDFs on macOS 26/27). Count before and after
+  // and fail loudly instead of reporting a phantom attachment.
+  const added = [];
+  for (const file of files || []) {
+    const before = attachmentsOf(note).length;
+    Notes.make({ new: 'attachment', withData: Path(file), at: note });
+    if (attachmentsOf(note).length === before) {
+      const err = new Error('Notes did not accept the attachment (type unsupported by Automation): ' + file);
+      err.errorNumber = 'unsafe';
+      err.attached = added;
+      throw err;
+    }
+    added.push(file);
+  }
+  return added;
+}
+
+function dispatch(request) {
+  const op = request.op;
+  if (op === 'ping') return { running: Notes.running(), name: Notes.name(), version: Notes.version() };
+  if (op === 'probe') return opProbe(request);
+  if (op === 'health') return opHealth(request);
+  const ctx = rootFor(request);
+  if (op === 'ensure-root') return opEnsureRoot(ctx, request);
+  if (!ctx.root) fail('root folder not found in account ' + ctx.account.name() + ': ' + ctx.rootName);
+  switch (op) {
+    case 'folders': return opFolders(ctx, request);
+    case 'ensure-folder': return opEnsureFolder(ctx, request);
+    case 'search': return opSearch(ctx, request);
+    case 'list': return opList(ctx, request);
+    case 'inventory': return opInventory(ctx, request);
+    case 'read': return opRead(ctx, request);
+    case 'create': return opCreate(ctx, request);
+    case 'append': return opAppend(ctx, request);
+    case 'replace': return opReplace(ctx, request);
+    case 'attach': return opAttach(ctx, request);
+    case 'links': return opLinks(ctx, request);
+    case 'backlinks': return opBacklinks(ctx, request);
+    default: fail('unknown op: ' + op);
+  }
+}
+
+// Diagnostic: time each scripting surface separately so a hang is attributable.
+function opProbe(request) {
+  const steps = {};
+  const timed = (label, fn) => {
+    const started = Date.now();
+    try {
+      steps[label] = { ok: true, value: fn(), ms: Date.now() - started };
+    } catch (e) {
+      steps[label] = { ok: false, error: String(e), ms: Date.now() - started };
+    }
+  };
+  if (request.activate) timed('activate', () => { Notes.activate(); return true; });
+  timed('running', () => Notes.running());
+  timed('defaultAccount', () => Notes.defaultAccount().name());
+  timed('accounts.length', () => Notes.accounts.length);
+  timed('account names', () => Notes.accounts.name());
+  timed('folders.length', () => Notes.folders.length);
+  timed('notes.length', () => Notes.notes.length);
+  return { steps: steps };
+}
+
+function opHealth(request) {
+  const accounts = Notes.accounts().map(a => a.name());
+  const wanted = request.account || 'iCloud';
+  const rootName = request.root || 'Second Brain';
+  const result = { accounts: accounts, account: wanted, root: rootName, accountFound: accounts.indexOf(wanted) >= 0, rootFound: false, folders: [], noteCount: 0 };
+  if (!result.accountFound) return result;
+  const account = accountFor(request);
+  const root = topFolder(account, rootName);
+  if (!root) return result;
+  result.rootFound = true;
+  let count = 0;
+  walkFolders(root, (folder, path) => {
+    const n = directNotes(folder).length;
+    count += n;
+    result.folders.push({ path: path, notes: n });
+  });
+  result.noteCount = count;
+  return result;
+}
+
+function opEnsureRoot(ctx, request) {
+  if (ctx.root) return { created: false, root: ctx.rootName };
+  const folder = Notes.Folder({ name: ctx.rootName });
+  ctx.account.folders.push(folder);
+  return { created: true, root: ctx.rootName };
+}
+
+function opFolders(ctx) {
+  const folders = [];
+  walkFolders(ctx.root, (folder, path) => {
+    folders.push({ path: path, notes: directNotes(folder).length });
+  });
+  return { folders: folders };
+}
+
+function opEnsureFolder(ctx, request) {
+  const parts = (request.path || '').split('/').filter(p => p.length > 0);
+  if (!parts.length) fail('path is required');
+  let folder = ctx.root;
+  const created = [];
+  let walked = '';
+  for (const part of parts) {
+    walked = walked ? walked + '/' + part : part;
+    let child = childFolder(folder, part);
+    if (!child) {
+      child = Notes.Folder({ name: part });
+      folder.folders.push(child);
+      child = childFolder(folder, part);
+      if (!child) fail('could not create folder ' + walked);
+      created.push(walked);
+      folderIndexCache = null;
+    }
+    folder = child;
+  }
+  return { path: parts.join('/'), created: created };
+}
+
+function opSearch(ctx, request) {
+  const query = (request.query || '').trim();
+  if (!query) fail('query is required');
+  const limit = Math.max(1, Math.min(25, request.limit || 10));
+  const scope = request.folder ? folderAtPath(ctx.root, request.folder) : ctx.root;
+  if (!scope) fail('folder not found: ' + request.folder);
+  const seen = {};
+  const results = [];
+  let truncated = false;
+  const mode = request.mode || 'any'; // 'title' | 'body' | 'any'
+  walkFolders(scope, (folder, path) => {
+    if (results.length >= limit) { truncated = true; return; }
+    const prefix = request.folder ? (path ? request.folder + '/' + path : request.folder) : path;
+    let matches;
+    if (mode === 'title') {
+      matches = folder.notes.whose({ name: { _contains: query } })();
+    } else if (mode === 'body') {
+      matches = folder.notes.whose({ plaintext: { _contains: query } })();
+    } else {
+      matches = folder.notes.whose({ _or: [{ name: { _contains: query } }, { plaintext: { _contains: query } }] })();
+    }
+    for (const note of matches) {
+      const id = note.id();
+      if (seen[id]) continue;
+      seen[id] = true;
+      if (results.length >= limit) { truncated = true; break; }
+      const row = summarize(note, prefix);
+      row.snippet = snippetFor(note.plaintext(), query, 160);
+      results.push(row);
+    }
+  });
+  return { query: query, limit: limit, truncated: truncated, results: results };
+}
+
+function opList(ctx, request) {
+  const folder = request.folder ? folderAtPath(ctx.root, request.folder) : ctx.root;
+  if (!folder) fail('folder not found: ' + request.folder);
+  const limit = Math.max(1, Math.min(100, request.limit || 50));
+  const notes = directNotes(folder);
+  const rows = [];
+  for (const note of notes) {
+    if (rows.length >= limit) break;
+    rows.push(summarize(note, request.folder || ''));
+  }
+  return { folder: request.folder || '', total: notes.length, truncated: notes.length > rows.length, results: rows };
+}
+
+// Migration/verification only: every note beneath root as summaries, no content.
+function opInventory(ctx) {
+  const rows = [];
+  const seen = {};
+  walkFolders(ctx.root, (folder, path) => {
+    for (const note of directNotes(folder)) {
+      const id = note.id();
+      if (seen[id]) continue;
+      seen[id] = true;
+      const row = summarize(note, path);
+      row.attachmentCount = attachmentsOf(note).length;
+      rows.push(row);
+    }
+  });
+  return { count: rows.length, results: rows };
+}
+
+function opRead(ctx, request) {
+  const { note, folderPath } = requireNote(request, ctx.root);
+  return { note: fullNote(note, folderPath) };
+}
+
+function opCreate(ctx, request) {
+  if (request.folder === undefined || request.folder === null) fail('folder is required');
+  if (!request.body) fail('body is required');
+  const folder = request.folder ? folderAtPath(ctx.root, request.folder) : ctx.root;
+  if (!folder) fail('folder not found: ' + request.folder);
+  const note = Notes.Note({ body: request.body });
+  folder.notes.push(note);
+  const created = note; // push binds the specifier to the stored note
+  const attached = addAttachments(created, request.attachments);
+  const full = fullNote(created, request.folder || '');
+  full.attachedFiles = attached;
+  return { note: full };
+}
+
+function opAppend(ctx, request) {
+  const { note, folderPath } = requireNote(request, ctx.root);
+  if (!request.body) fail('body is required');
+  ensureRevision(note, request.revision);
+  if (note.passwordProtected()) fail('refusing to write a password-protected note');
+  note.body = note.body() + request.body;
+  return { note: fullNote(note, folderPath) };
+}
+
+function opReplace(ctx, request) {
+  const { note, folderPath } = requireNote(request, ctx.root);
+  if (!request.body) fail('body is required');
+  ensureRevision(note, request.revision);
+  if (note.passwordProtected()) fail('refusing to write a password-protected note');
+  const attachments = attachmentsOf(note).length;
+  if (attachments > 0) {
+    const err = new Error('refusing full replacement: note has ' + attachments + ' attachment(s) that a body rewrite would not preserve');
+    err.errorNumber = 'unsafe';
+    throw err;
+  }
+  const body = note.body();
+  if (/<(img|object|video|audio|iframe|embed)\b/i.test(body)) {
+    const err = new Error('refusing full replacement: note body contains rich objects the helper cannot preserve');
+    err.errorNumber = 'unsafe';
+    throw err;
+  }
+  note.body = request.body;
+  return { note: fullNote(note, folderPath) };
+}
+
+function opAttach(ctx, request) {
+  const { note, folderPath } = requireNote(request, ctx.root);
+  if (!request.files || !request.files.length) fail('files are required');
+  ensureRevision(note, request.revision);
+  const attached = addAttachments(note, request.files);
+  const full = fullNote(note, folderPath);
+  full.attachedFiles = attached;
+  return { note: full };
+}
+
+function anchorsIn(body) {
+  const anchors = [];
+  const re = /<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
+  let m;
+  while ((m = re.exec(body)) !== null) {
+    const attrs = m[1];
+    const hrefMatch = /href\s*=\s*"([^"]*)"/i.exec(attrs) || /href\s*=\s*'([^']*)'/i.exec(attrs);
+    const text = m[2].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ').trim();
+    anchors.push({ href: hrefMatch ? hrefMatch[1] : null, text: text });
+  }
+  return anchors;
+}
+
+function titleIndexLookup(ctx, title, limit) {
+  const out = [];
+  walkFolders(ctx.root, (folder, path) => {
+    if (out.length >= limit) return;
+    for (const note of folder.notes.whose({ name: title })()) {
+      if (out.length >= limit) break;
+      out.push(summarize(note, path));
+    }
+  });
+  return out;
+}
+
+function opLinks(ctx, request) {
+  const { note, folderPath } = requireNote(request, ctx.root);
+  const body = note.body();
+  const anchors = anchorsIn(body);
+  const links = [];
+  for (const anchor of anchors) {
+    const internal = !!(anchor.href && /^applenotes:/i.test(anchor.href));
+    const row = { text: anchor.text, href: anchor.href, internal: internal, targets: [] };
+    if (internal || !anchor.href) {
+      const label = anchor.text.split('›')[0].split(' > ')[0].trim();
+      row.targets = label ? titleIndexLookup(ctx, label, 5) : [];
+    }
+    links.push(row);
+  }
+  return { id: note.id(), title: note.name(), folder: folderPath, links: links };
+}
+
+function opBacklinks(ctx, request) {
+  let title = request.title;
+  if (!title && request.id) {
+    const { note } = requireNote(request, ctx.root);
+    title = note.name();
+  }
+  if (!title) fail('title or id is required');
+  const limit = Math.max(1, Math.min(25, request.limit || 10));
+  const linked = [];
+  const mentions = [];
+  const seen = {};
+  walkFolders(ctx.root, (folder, path) => {
+    for (const note of folder.notes.whose({ plaintext: { _contains: title } })()) {
+      const id = note.id();
+      if (seen[id]) continue;
+      seen[id] = true;
+      if (request.id && id === request.id) continue;
+      const row = summarize(note, path);
+      const hasAnchor = anchorsIn(note.body()).some(a => a.text === title || a.text.indexOf(title) === 0);
+      if (hasAnchor && linked.length < limit) linked.push(row);
+      else if (!hasAnchor && mentions.length < limit) mentions.push(row);
+    }
+  });
+  return { title: title, linked: linked, mentions: mentions, limit: limit };
+}

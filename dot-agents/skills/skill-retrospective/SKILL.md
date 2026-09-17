@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [Skills, Retrospective, Workflows, Learning]
-    related_skills: [vault-capture]
+    related_skills: [knowledge-capture]
 ---
 
 # Skill Retrospective
@@ -37,7 +37,7 @@ Also use for a supplied transcript or prior-session reference.
 Do not use when:
 
 - The user already identified one proven procedure and only wants it authored.
-- The main result belongs in a knowledge vault. Use `vault-capture`.
+- The main result belongs in a knowledge store. Use `knowledge-capture` (project vault or Apple Notes).
 - The task is still in progress and more evidence is likely.
 - A loaded skill is already known to be stale or wrong and host policy requires
   an immediate patch. Fix it during the task instead of postponing it.

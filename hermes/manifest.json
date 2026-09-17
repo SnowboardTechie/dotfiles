@@ -9,7 +9,10 @@
       "auth": "oauth",
       "enabled": true,
       "tools": {
-        "include": ["list_meetings", "get_meetings"],
+        "include": [
+          "list_meetings",
+          "get_meetings"
+        ],
         "exclude": [],
         "resources": false,
         "prompts": false
@@ -34,6 +37,7 @@
     "sgg-calendar-events.swift",
     "sgg-mail-messages.js",
     "sgg-pr-review-event.py",
+    "personal_notes.py",
     "personal-morning-brief.py",
     "personal-weekly-orientation.py",
     "personal-alignment-brief.py",
@@ -51,6 +55,7 @@
     "sgg-pr-review-reminder.py",
     "sgg-granola-import.py",
     "sgg-pr-review-event.py",
+    "personal_notes.py",
     "personal-morning-brief.py",
     "personal-weekly-orientation.py",
     "personal-alignment-brief.py",
@@ -65,6 +70,7 @@
   ],
   "skills": [
     "apple/apple-mail",
+    "apple/apple-notes",
     "autonomous-ai-agents/cross-machine-coding-agent-handoffs",
     "devops/homelab-change-management",
     "mlops/openai-compatible-model-endpoints",
@@ -113,10 +119,15 @@
       "provider": "openai-codex",
       "promptFile": "automations/sgg-pr-review-reminder/prompt.md",
       "deliver": "matrix:!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU",
-      "skills": ["sgg-pr-review-reminder", "voice-bryan"],
+      "skills": [
+        "sgg-pr-review-reminder",
+        "voice-bryan"
+      ],
       "script": "sgg-pr-review-reminder.py",
       "noAgent": false,
-      "enabledToolsets": ["safe"],
+      "enabledToolsets": [
+        "safe"
+      ],
       "workdir": "/Users/bryan/code/sgg",
       "attachToSession": false
     },
@@ -127,11 +138,17 @@
       "provider": "openai-codex",
       "promptFile": "automations/personal-morning-brief/prompt.md",
       "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
-      "skills": ["personal-routine-automation", "vault-pkm"],
+      "skills": [
+        "personal-routine-automation",
+        "apple-notes-pkm"
+      ],
       "script": "personal-morning-brief.py",
       "noAgent": false,
-      "enabledToolsets": ["file", "terminal"],
-      "workdir": "/Users/bryan/second-brain",
+      "enabledToolsets": [
+        "file",
+        "terminal"
+      ],
+      "workdir": "/Users/bryan",
       "attachToSession": true,
       "carryPreviousOutput": true,
       "continuation": {
@@ -146,11 +163,17 @@
       "provider": "openai-codex",
       "promptFile": "automations/personal-weekly-orientation/prompt.md",
       "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
-      "skills": ["personal-routine-automation"],
+      "skills": [
+        "personal-routine-automation",
+        "apple-notes-pkm"
+      ],
       "script": "personal-weekly-orientation.py",
       "noAgent": false,
-      "enabledToolsets": ["file", "terminal"],
-      "workdir": "/Users/bryan/second-brain",
+      "enabledToolsets": [
+        "file",
+        "terminal"
+      ],
+      "workdir": "/Users/bryan",
       "attachToSession": true,
       "continuation": {
         "chatName": "Second Brain",
@@ -164,13 +187,19 @@
       "provider": "openai-codex",
       "promptFile": "automations/personal-weekday-close/prompt.md",
       "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
-      "skills": ["personal-routine-automation"],
+      "skills": [
+        "personal-routine-automation",
+        "apple-notes-pkm"
+      ],
       "script": "personal-alignment-brief.py",
       "noAgent": false,
       "repeat": 15,
       "createIfMissing": false,
-      "enabledToolsets": ["file", "terminal"],
-      "workdir": "/Users/bryan/second-brain",
+      "enabledToolsets": [
+        "file",
+        "terminal"
+      ],
+      "workdir": "/Users/bryan",
       "attachToSession": true,
       "continuation": {
         "chatName": "Second Brain",
@@ -184,13 +213,19 @@
       "provider": "openai-codex",
       "promptFile": "automations/personal-saturday-orientation/prompt.md",
       "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
-      "skills": ["personal-routine-automation"],
+      "skills": [
+        "personal-routine-automation",
+        "apple-notes-pkm"
+      ],
       "script": "personal-alignment-brief.py",
       "noAgent": false,
       "repeat": 3,
       "createIfMissing": false,
-      "enabledToolsets": ["file", "terminal"],
-      "workdir": "/Users/bryan/second-brain",
+      "enabledToolsets": [
+        "file",
+        "terminal"
+      ],
+      "workdir": "/Users/bryan",
       "attachToSession": true,
       "continuation": {
         "chatName": "Second Brain",
@@ -204,13 +239,19 @@
       "provider": "openai-codex",
       "promptFile": "automations/personal-sunday-reset/prompt.md",
       "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
-      "skills": ["personal-routine-automation"],
+      "skills": [
+        "personal-routine-automation",
+        "apple-notes-pkm"
+      ],
       "script": "personal-alignment-brief.py",
       "noAgent": false,
       "repeat": 4,
       "createIfMissing": false,
-      "enabledToolsets": ["file", "terminal"],
-      "workdir": "/Users/bryan/second-brain",
+      "enabledToolsets": [
+        "file",
+        "terminal"
+      ],
+      "workdir": "/Users/bryan",
       "attachToSession": true,
       "continuation": {
         "chatName": "Second Brain",
@@ -224,10 +265,18 @@
       "provider": "openai-codex",
       "promptFile": "automations/workday-dependency-triage/prompt.md",
       "deliver": "matrix:!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU",
-      "skills": ["dependency-triage", "dependency-review", "catalog-review"],
+      "skills": [
+        "dependency-triage",
+        "dependency-review",
+        "catalog-review"
+      ],
       "script": null,
       "noAgent": false,
-      "enabledToolsets": ["terminal", "delegation", "skills"],
+      "enabledToolsets": [
+        "terminal",
+        "delegation",
+        "skills"
+      ],
       "workdir": "/Users/bryan/code/sgg",
       "attachToSession": false
     },
@@ -253,10 +302,16 @@
       "promptFile": "automations/mattpocock-skill-update-watch/prompt.md",
       "monitorScript": "check-mattpocock-skill-updates.py",
       "deliver": "matrix",
-      "skills": ["cross-agent-skill-migration"],
+      "skills": [
+        "cross-agent-skill-migration"
+      ],
       "script": null,
       "noAgent": false,
-      "enabledToolsets": ["web", "terminal", "no_mcp"],
+      "enabledToolsets": [
+        "web",
+        "terminal",
+        "no_mcp"
+      ],
       "workdir": "/Users/bryan/code/dotfiles",
       "attachToSession": false
     },
@@ -267,10 +322,14 @@
       "provider": "openai-codex",
       "promptFile": "automations/sssf-upstream-watch/prompt.md",
       "deliver": "matrix:!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU",
-      "skills": ["cross-agent-skill-migration"],
+      "skills": [
+        "cross-agent-skill-migration"
+      ],
       "script": "check-sssf-upstream.py",
       "noAgent": false,
-      "enabledToolsets": ["no_mcp"],
+      "enabledToolsets": [
+        "no_mcp"
+      ],
       "workdir": "/Users/bryan/code/sgg",
       "attachToSession": false
     }

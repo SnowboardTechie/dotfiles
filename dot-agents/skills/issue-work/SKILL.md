@@ -278,7 +278,7 @@ Update repository-owned specs, plans, status notes, README/roadmap surfaces, and
 their regression tests when the implementation changes living state. If none
 needs change, record exactly which sources were inspected and why.
 
-External vault writes remain governed by `vault-capture` or `issue-plan`.
+External vault writes remain governed by `knowledge-capture` or `issue-plan`.
 
 Complete when code and living repository authority describe the same state.
 

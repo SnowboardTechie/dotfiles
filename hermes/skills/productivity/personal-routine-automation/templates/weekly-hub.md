@@ -1,12 +1,4 @@
----
-tags:
-  - personal-alignment
-  - type/weekly
-created: YYYY-MM-DD
-status: active
----
-
-# Week of YYYY-MM-DD
+# YYYY-MM-DD-weekly-plan
 
 ## Starting Point
 ### Last Week's Shape
@@ -37,3 +29,7 @@ status: active
 ### Carry Forward
 
 ## Related
+
+Created: YYYY-MM-DD
+Status: active
+Tags: personal-alignment, type/weekly

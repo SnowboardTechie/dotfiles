@@ -17,10 +17,11 @@
 ## Vault Integration
 
 `~/notes/**` is an archived legacy path pattern, not an active vault or write
-destination. Active personal knowledge lives in `~/second-brain/`; project
-knowledge follows each repository's top-level `vault/` conventions. Follow the
-`vault-pkm` routing rules under **Project vaults & personal vaults** below rather
-than maintaining a duplicate vault inventory here.
+destination. Active personal knowledge lives in Apple Notes (iCloud folder
+`Second Brain`, via the `apple-notes-pkm` skill); `~/second-brain/` is a frozen
+rollback archive. Project knowledge follows each repository's top-level `vault/`
+conventions. Follow the routing rules under **Project vaults & the personal
+second brain** below rather than maintaining a duplicate vault inventory here.
 
 ---
 
@@ -165,22 +166,27 @@ When I encounter a missing or unavailable LSP:
 4. **Upon confirmation**, add the appropriate language server package to the flake's `buildInputs`
 5. **Suggest** running `direnv reload` to activate the changes
 
-## Project vaults & personal vaults
+## Project vaults & the personal second brain
 
 Several repos under `~/code/` have a top-level `vault/` directory, either as a
 tracked project-owned vault or a legacy symlink. `~/code/notes/` contains
 retained dormant or historical project snapshots; inspect each vault's
 `INDEX.md` disposition before treating it as current. `~/notes/**` is an
 archived legacy path pattern and must not be treated as an active source or
-write destination unless Bryan explicitly directs otherwise. `~/second-brain/`
-is Bryan's active personal-knowledge vault.
+write destination unless Bryan explicitly directs otherwise.
 
-When working in any of these — or when capturing decisions, taking notes,
-investigating debugs, recording learnings, or making sense of project context
-that doesn't live in code — read
+When working in any of these — or when capturing project decisions, taking
+project notes, investigating debugs, recording learnings, or making sense of
+project context that doesn't live in code — read
 `~/code/dotfiles/dot-agents/skills/vault-pkm/SKILL.md` (and its `references/`)
-before writing anything to a vault.
+before writing anything to a vault. If a vault has its own `AGENTS.md` at its
+root (`vault/AGENTS.md`), read it after the skill — it overrides skill defaults
+for that specific vault.
 
-If a vault has its own `AGENTS.md` at its root (`vault/AGENTS.md` for project
-vaults; `~/second-brain/AGENTS.md` for the personal vault), read it after the
-skill — it overrides skill defaults for that specific vault.
+Bryan's **personal** second brain is Apple Notes (iCloud folder `Second Brain`).
+For personal recall or capture read
+`~/code/dotfiles/dot-agents/skills/apple-notes-pkm/SKILL.md` and use only its
+helper script (`scripts/apple-notes-pkm.py`) — never memo, an MCP, or the Notes
+database. `knowledge-capture` routes resting-point captures: personal →
+`apple-notes-pkm`, project → `vault-pkm`. `~/second-brain/` on disk is a frozen
+read-only rollback archive: never write there and never treat it as current.

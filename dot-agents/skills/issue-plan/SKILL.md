@@ -98,7 +98,8 @@ Cross-repository canonical plans must be ticket-discoverable through step 1 or
 2. Do not place their sole canonical handoff in an implementation-only vault:
 `issue-work` cannot know the implementation identity until it finds that handoff.
 
-Do not silently fall back to `~/second-brain` for project implementation plans.
+Do not silently fall back to the personal second brain (Apple Notes, or the
+frozen `~/second-brain` archive) for project implementation plans.
 If no project vault can be resolved, stop and ask where this project's durable
 notes belong.
 

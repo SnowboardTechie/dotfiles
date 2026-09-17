@@ -73,7 +73,9 @@ class MorningBriefSplitContractTest(unittest.TestCase):
         self.assertNotIn("baseUrl", job)
         self.assertEqual(job["deliver"], "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4")
         self.assertEqual(job["script"], "personal-morning-brief.py")
-        self.assertEqual(job["workdir"], "/Users/bryan/second-brain")
+        self.assertEqual(job["workdir"], "/Users/bryan")
+        self.assertIn("apple-notes-pkm", job["skills"])
+        self.assertNotIn("vault-pkm", job["skills"])
         self.assertTrue(job["attachToSession"])
         self.assertTrue(job["carryPreviousOutput"])
         self.assertEqual(job["continuation"]["chatName"], "Second Brain")
@@ -183,6 +185,29 @@ class MorningBriefSplitContractTest(unittest.TestCase):
         self.assertIn("Never use or mention events from Traci's calendar", prompt)
         self.assertNotIn("recentSecondBrainPaths", collector)
         self.assertIn("currentWeekDirection", collector)
+
+    def test_personal_collectors_read_apple_notes_not_the_frozen_vault(self) -> None:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        self.assertIn("personal_notes.py", manifest["scripts"])
+        self.assertIn("personal_notes.py", manifest["copiedScripts"])
+        for path in (PERSONAL_COLLECTOR, WEEKLY_ORIENTATION_COLLECTOR, ALIGNMENT_COLLECTOR):
+            collector = path.read_text(encoding="utf-8")
+            self.assertNotIn('HOME / "second-brain"', collector, path)
+            self.assertNotIn("SECOND_BRAIN", collector, path)
+            self.assertIn("from personal_notes import", collector, path)
+        for job in manifest["cronJobs"]:
+            self.assertNotEqual(job.get("workdir"), "/Users/bryan/second-brain", job["name"])
+            if job["name"].startswith("Personal"):
+                self.assertIn("apple-notes-pkm", job["skills"], job["name"])
+        for name in ("personal-weekday-close", "personal-saturday-orientation", "personal-sunday-reset", "personal-weekly-orientation", "personal-morning-brief"):
+            prompt = (ROOT / "automations" / name / "prompt.md").read_text(encoding="utf-8")
+            self.assertNotIn("Read /Users/bryan/second-brain/AGENTS.md", prompt, name)
+            self.assertIn("apple-notes-pkm", prompt, name)
+
+    def test_active_goal_extraction_accepts_notes_readback_headings(self) -> None:
+        collector = load_personal_collector()
+        note = "# 2026-09-14-weekly-plan\n\n**Active Goals and Projects**\n- Finish the shed roof.\n\n**Explicitly Parked**\n- Not this.\n"
+        self.assertEqual(collector.extract_active_goals(note), ["Finish the shed roof."])
 
     def test_personal_brief_is_delta_only_and_silent_when_unchanged(self) -> None:
         prompt = PERSONAL_PROMPT.read_text(encoding="utf-8")

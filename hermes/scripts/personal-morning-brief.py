@@ -14,9 +14,11 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from personal_notes import find_note, note_ref, read_markdown  # noqa: E402
+
 HOME = Path.home()
 HERMES_HOME = Path(os.environ.get("HERMES_HOME", HOME / ".hermes"))
-SECOND_BRAIN = HOME / "second-brain"
 PACIFIC = ZoneInfo("America/Los_Angeles")
 EXCLUDED_CALENDARS = {"Bryan @ Agile6", "Traci"}
 PROHIBITED_UNATTENDED_PATTERN = re.compile(
@@ -79,14 +81,26 @@ def filter_prohibited_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     ]
 
 
+def _heading_text(line: str) -> str | None:
+    stripped = line.strip()
+    if stripped.startswith("#"):
+        return stripped.lstrip("#").strip().casefold()
+    if stripped.startswith("**") and stripped.endswith("**") and len(stripped) > 4:
+        return stripped.strip("*").strip().casefold()
+    return None
+
+
 def extract_active_goals(note: str) -> list[str]:
+    """Bullets under the hub's `Active Goals and Projects` heading, as read back
+    from Apple Notes (Markdown headings or bold lead-ins) or from a template."""
     in_section = False
     goals: list[str] = []
     for line in note.splitlines():
-        if line.strip() == "## Active Goals and Projects":
+        heading = _heading_text(line)
+        if heading == "active goals and projects":
             in_section = True
             continue
-        if in_section and line.startswith("## "):
+        if in_section and heading is not None:
             break
         if in_section and line.startswith("- "):
             goal = line[2:].strip()
@@ -192,14 +206,13 @@ def main() -> int:
     calendar, calendar_error = collect_calendar()
     reminders, reminders_error = collect_reminders()
     weather, weather_error = collect_weather()
-    current_hub = SECOND_BRAIN / "Journal" / f"{monday.isoformat()}-weekly-plan.md"
+    hub_title = f"{monday.isoformat()}-weekly-plan"
     current_week_direction: list[str] = []
-    notes_error: str | None = None
-    if current_hub.is_file():
-        try:
-            current_week_direction = extract_active_goals(current_hub.read_text(encoding="utf-8"))
-        except OSError as exc:
-            notes_error = str(exc)[:1000]
+    hub, notes_error = find_note(hub_title)
+    if hub and not notes_error:
+        markdown, notes_error = read_markdown(hub["id"])
+        if not notes_error:
+            current_week_direction = extract_active_goals(markdown)
 
     errors = {
         key: value
@@ -224,6 +237,9 @@ def main() -> int:
             "weeklyDirection": len(current_week_direction),
         },
         "notes": {
+            "backend": "apple-notes",
+            "currentWeekHub": note_ref(hub_title),
+            "currentWeekHubExists": bool(hub),
             "currentWeekDirection": current_week_direction,
         },
     }
