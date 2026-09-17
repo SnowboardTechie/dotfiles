@@ -2,7 +2,9 @@
 # Build/identity tests for the native "Apple Notes PKM Helper".
 #
 # These do NOT contact Notes.app (that needs a signed helper and a human TCC
-# grant). They prove the buildable surface: the source compiles with notes.jxa
+# grant): notes.jxa rejects an unknown op before it resolves any Notes object,
+# so the bad-op request below never sends an Apple Event or triggers a TCC
+# prompt. They prove the buildable surface: the source compiles with notes.jxa
 # embedded, the helper's stdin/argument contract fails closed, the reconciler
 # refuses to install without a stable signing identity, and no binary or signing
 # secret is committed.
@@ -60,6 +62,14 @@ check "rejects empty stdin (exit 2)" bash -c '"$1" </dev/null >/dev/null 2>&1; t
 out="$(echo '{"op":"nonsense"}' | "$BIN" 2>/dev/null)"; rc=$?
 check "dispatches embedded program for a bad op (exit 0)" test "$rc" -eq 0
 check "embedded program reports unknown op" bash -c 'echo "$1" | grep -q "unknown op: nonsense"' _ "$out"
+
+# --- Entitlements: hardened runtime may send Apple Events only with this one ----
+check "entitlements.plist is valid" plutil -lint -s "$HELPER_DIR/entitlements.plist"
+check "entitlements grant only apple-events" bash -c '
+    keys="$(plutil -convert json -o - "$1" | python3 -c "import json,sys;print(\"\\n\".join(sorted(json.load(sys.stdin))))")"
+    [[ "$keys" == "com.apple.security.automation.apple-events" ]]' _ "$HELPER_DIR/entitlements.plist"
+check "reconciler signs with the entitlements and verifies them" bash -c '
+    grep -q -- "--entitlements \"\$ENTITLEMENTS\"" "$1" && grep -q "APPLE_EVENTS_ENTITLEMENT" "$1"' _ "$RECONCILER"
 
 # --- Reconciler fails closed without a stable signing identity -----------------
 FAKE_HOME="$TMP/home"; mkdir -p "$FAKE_HOME"

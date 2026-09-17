@@ -205,11 +205,17 @@ function addAttachments(note, files) {
   return added;
 }
 
+const KNOWN_OPS = ['ensure-root', 'folders', 'ensure-folder', 'search', 'list', 'inventory',
+  'read', 'create', 'append', 'replace', 'attach', 'links', 'backlinks'];
+
 function dispatch(request) {
   const op = request.op;
   if (op === 'ping') return { running: Notes.running(), name: Notes.name(), version: Notes.version() };
   if (op === 'probe') return opProbe(request);
   if (op === 'health') return opHealth(request);
+  // Reject unknown ops before touching Notes so a bad request never sends an
+  // Apple Event (and never triggers a TCC prompt).
+  if (!KNOWN_OPS.includes(op)) fail('unknown op: ' + op);
   const ctx = rootFor(request);
   if (op === 'ensure-root') return opEnsureRoot(ctx, request);
   if (!ctx.root) fail('root folder not found in account ' + ctx.account.name() + ': ' + ctx.rootName);
@@ -238,7 +244,10 @@ function opProbe(request) {
     try {
       steps[label] = { ok: true, value: fn(), ms: Date.now() - started };
     } catch (e) {
-      steps[label] = { ok: false, error: String(e), ms: Date.now() - started };
+      // String(e) for an Apple Events denial is just "Error: An error occurred.";
+      // keep errorNumber (-1743) so the caller can recognise the denial.
+      const code = e && e.errorNumber !== undefined ? e.errorNumber : null;
+      steps[label] = { ok: false, error: String(e), errorNumber: code, ms: Date.now() - started };
     }
   };
   if (request.activate) timed('activate', () => { Notes.activate(); return true; });

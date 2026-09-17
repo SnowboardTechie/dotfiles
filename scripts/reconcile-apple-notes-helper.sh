@@ -25,6 +25,9 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 HELPER_SRC_DIR="$REPO_ROOT/dot-agents/skills/apple-notes-pkm/helper"
 JXA_PROGRAM="$REPO_ROOT/dot-agents/skills/apple-notes-pkm/scripts/notes.jxa"
 IDENTITY_JSON="$HELPER_SRC_DIR/identity.json"
+# Hardened-runtime apps can send Apple Events only with this entitlement.
+ENTITLEMENTS="$HELPER_SRC_DIR/entitlements.plist"
+APPLE_EVENTS_ENTITLEMENT="com.apple.security.automation.apple-events"
 
 # Where the setup decision records which keychain identity to sign with. The
 # file holds only a certificate Common Name (not a secret); absent means the
@@ -86,6 +89,7 @@ if ! xcrun --find clang >/dev/null 2>&1; then
     exit 1
 fi
 [[ -f "$JXA_PROGRAM" ]] || { echo "  ${RED}ERROR${NC}: embedded program missing: $JXA_PROGRAM"; exit 1; }
+[[ -f "$ENTITLEMENTS" ]] || { echo "  ${RED}ERROR${NC}: entitlements missing: $ENTITLEMENTS"; exit 1; }
 
 # --- Signing identity resolution (metadata only) ----------------------------
 # Prints the resolved CN on success, empty on failure. Never prints key material.
@@ -133,6 +137,10 @@ report_installed() {
     authority="$(printf '%s\n' "$info" | sed -n 's/^Authority=//p' | head -1)"
     if codesign --verify --deep --strict "$APP_PATH" >/dev/null 2>&1; then verify_rc="valid"; else verify_rc="INVALID"; fi
     echo "  installed: yes (identifier=$identifier, authority=$authority, signature=$verify_rc)"
+    if ! codesign -d --entitlements - "$INSTALLED_BIN" 2>/dev/null | grep -Fq "$APPLE_EVENTS_ENTITLEMENT"; then
+        echo "  ${YELLOW}WARNING${NC}: installed helper lacks the $APPLE_EVENTS_ENTITLEMENT entitlement (hardened runtime cannot send Apple Events)"
+        issues=$((issues + 1))
+    fi
     if [[ "$identifier" != "$BUNDLE_ID" ]]; then
         echo "  ${YELLOW}WARNING${NC}: installed bundle id ($identifier) != expected ($BUNDLE_ID)"
         issues=$((issues + 1))
@@ -174,7 +182,7 @@ xcrun clang -fobjc-arc -O2 -Wall -Wextra \
 
 echo "  signing with $SIGNING_CN"
 codesign --force --sign "$SIGNING_CN" --identifier "$BUNDLE_ID" \
-    --options runtime --timestamp=none "$STAGE_APP"
+    --options runtime --entitlements "$ENTITLEMENTS" --timestamp=none "$STAGE_APP"
 
 echo "  verifying staged signature"
 codesign --verify --deep --strict --verbose=2 "$STAGE_APP"
@@ -183,6 +191,8 @@ staged_id="$(printf '%s\n' "$staged_info" | sed -n 's/^Identifier=//p' | head -1
 staged_auth="$(printf '%s\n' "$staged_info" | sed -n 's/^Authority=//p' | head -1)"
 [[ "$staged_id" == "$BUNDLE_ID" ]] || { echo "${RED}ERROR${NC}: staged bundle id $staged_id != $BUNDLE_ID" >&2; exit 1; }
 [[ "$staged_auth" == *"$EXPECT_CN"* ]] || { echo "${RED}ERROR${NC}: staged authority $staged_auth lacks $EXPECT_CN" >&2; exit 1; }
+codesign -d --entitlements - "$STAGE_APP/Contents/MacOS/$EXECUTABLE" 2>/dev/null | grep -Fq "$APPLE_EVENTS_ENTITLEMENT" \
+    || { echo "${RED}ERROR${NC}: staged helper lacks the $APPLE_EVENTS_ENTITLEMENT entitlement" >&2; exit 1; }
 
 echo "  installing to $APP_PATH"
 mkdir -p "$(dirname "$APP_PATH")"

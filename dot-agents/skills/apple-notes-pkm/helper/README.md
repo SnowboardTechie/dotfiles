@@ -30,6 +30,10 @@ so the grant lands on one named, signed app and survives rebuilds.
 
 - `main.m` — the helper (Objective-C, ARC; Foundation + OSAKit).
 - `Info.plist` — bundle metadata and `NSAppleEventsUsageDescription`.
+- `entitlements.plist` — the single entitlement
+  `com.apple.security.automation.apple-events`. The helper is signed with the
+  hardened runtime, and a hardened-runtime app can send Apple Events only with
+  this entitlement; without it every send fails `-1743` and no prompt appears.
 - `identity.json` — the expected stable identity: bundle id, executable name,
   install path, and the code-signing certificate Common Name the build must sign
   with. `apple-notes-pkm.py` and the reconciler both verify against this.
@@ -75,5 +79,9 @@ Automation. No agent grants, clicks, or widens this on your behalf.
 codesign -dv --verbose=4 "$HOME/Applications/Apple Notes PKM Helper.app/Contents/MacOS/apple-notes-pkm-helper"
 ```
 
-`Identifier=` must equal `bundle_id` and an `Authority=` line must contain
-`signing_common_name` from `identity.json`.
+`Identifier=` must equal `bundle_id` and an `Authority=` line must equal
+`signing_common_name` from `identity.json`. Also confirm the entitlement:
+
+```bash
+codesign -d --entitlements - "$HOME/Applications/Apple Notes PKM Helper.app/Contents/MacOS/apple-notes-pkm-helper" | grep apple-events
+```

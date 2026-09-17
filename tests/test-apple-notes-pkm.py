@@ -270,6 +270,27 @@ class HelperContractTests(unittest.TestCase):
         self.assertEqual(rc, 5)
         self.assertIn("Apple Notes PKM Helper", out["error"])
 
+    def test_permission_denied_by_error_number_only_maps_to_exit_5(self):
+        # OSAKit (unlike osascript) does not append "(-1743)" to the message:
+        # JXA stringifies the denial as just "Error: An error occurred." and the
+        # code arrives separately in errorNumber. That shape must still be exit 5.
+        rc, out = self.run_helper("health", responses={"health": {"ok": False, "error": "Error: An error occurred.", "errorNumber": -1743}})
+        self.assertEqual(rc, 5)
+        self.assertIn("Apple Notes PKM Helper", out["error"])
+
+    def test_probe_denial_by_error_number_only_fails_overall(self):
+        probe = {"ok": True, "steps": {
+            "running": {"ok": True, "value": True, "ms": 1},
+            "defaultAccount": {"ok": False, "error": "Error: An error occurred.", "errorNumber": -1743, "ms": 2},
+        }}
+        rc, out = self.run_helper("health", "--probe", responses={"probe": probe})
+        self.assertEqual(rc, 5)
+        self.assertIn("defaultAccount", out["error"])
+
+    def test_signing_authority_must_match_exactly(self):
+        rc, out = self.run_helper("health", responses={"health": {"ok": True}}, env={"STUB_CODESIGN_AUTH": EXPECT_CN + " Evil"})
+        self.assertEqual((rc, out["code"]), (7, 7))
+
     def test_probe_denial_fails_overall(self):
         # A denied probe used to return ok:true because each step caught its own
         # error. It must now surface the permission exit code.
