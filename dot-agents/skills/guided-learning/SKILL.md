@@ -1,6 +1,6 @@
 ---
 name: guided-learning
-description: Run a stateful personal learning mission in an explicitly named vault workspace — assess first, teach against a mission, and record only demonstrated understanding. Use only when Bryan explicitly asks to learn, study, or continue a learning mission and names the workspace. Never starts itself.
+description: Run a stateful personal learning mission in an explicitly named workspace (an Apple Notes folder beneath "Second Brain", or a project vault path) — assess first, teach against a mission, and record only demonstrated understanding. Use only when Bryan explicitly asks to learn, study, or continue a learning mission and names the workspace. Never starts itself.
 disable-model-invocation: true
 ---
 
@@ -23,20 +23,25 @@ list live in
 
 ## 0. Resolve the workspace, or stop
 
-The workspace is an **absolute path inside a vault**, supplied by Bryan or read
-from a prior session's state. There is no default and no inference from the
-current directory.
+The workspace is either an **Apple Notes folder beneath `Second Brain`**
+(personal missions; read and written only through the `apple-notes-pkm`
+helper) or an **absolute path inside a project vault**, supplied by Bryan or
+read from a prior session's state. There is no default and no inference from
+the current directory.
 
 **Refuse and stop** when:
 
-- no absolute workspace path was given — ask for one; do not guess;
-- the path resolves inside this **installed skill directory**, or anywhere under
+- no workspace was named — ask for one; do not guess;
+- a path resolves inside this **installed skill directory**, or anywhere under
   `dot-agents/skills/`. The skill is shared, version-controlled procedure; a
   learning zone is Bryan's personal knowledge. Writing one into the other would
   publish his learning state to every machine and every runtime;
-- the path is outside a vault Bryan named, or on a cloud-sync path.
+- a path is outside a vault Bryan named, or points at `~/second-brain` (a
+  frozen archive) or any other cloud-sync path.
 
-The current pilot workspace is `~/second-brain/Learning/Agent-Assisted Planning/`.
+The current pilot workspace is the Apple Notes folder
+`Second Brain/Learning/Agent-Assisted Planning` (imported from the vault on
+2026-09-16; notes titled `INDEX` and `RESOURCES`).
 
 See [`references/workspace-contract.md`](references/workspace-contract.md) for
 the full layout and what may and may not be created in it.
@@ -45,12 +50,13 @@ the full layout and what may and may not be created in it.
 
 In order, every session:
 
-1. The vault's own `AGENTS.md`. It overrides everything below for that vault —
-   frontmatter shape, filenames, linking, commit discipline.
-2. The workspace's `INDEX.md`: mission, observable success, constraints, out of
-   scope, current orientation.
-3. `RESOURCES.md`.
-4. Every existing record in `learning-records/`, if the directory exists.
+1. The backend's conventions: `apple-notes-pkm` (note shapes, guarded writes)
+   for a Notes workspace; the vault's own `AGENTS.md` for a vault workspace.
+2. The workspace's `INDEX` note: mission, observable success, constraints, out
+   of scope, current orientation.
+3. `RESOURCES`.
+4. Every existing record in the `learning-records` subfolder (Notes) or
+   directory (vault), if it exists.
 
 Never open a session by teaching. What has already been demonstrated determines
 what is worth teaching next, and only the records say what that is.
@@ -132,8 +138,8 @@ superseded and point at the new one. The history of how understanding changed is
 itself signal — it shows which ideas were sticky and which had to be unlearned.
 Never delete a record, and never quietly rewrite one.
 
-The same applies to the mission: revise `INDEX.md` with Bryan's confirmation and
-record *why* it changed.
+The same applies to the mission: revise `INDEX` with Bryan's confirmation and
+record *why* it changed (in Notes, `append` the revision; never rewrite history).
 
 ## 8. End every session with a choice
 
@@ -156,12 +162,13 @@ Offer these, and let Bryan pick:
 - **No HTML lessons, stylesheets, reusable widgets, or quizzes.** The upstream
   skill builds all of them; none is adopted. They are earned by real use, not
   scaffolded up front.
-- **Never write outside the resolved workspace** except to the vault surfaces
-  that vault's `AGENTS.md` sanctions.
+- **Never write outside the resolved workspace** except to the surfaces the
+  backend sanctions (`apple-notes-pkm` folders; a vault's `AGENTS.md`).
 - **Never post, publish, or share** any of it.
 
 ## Related
 
 - `wayfinder` / `grilling` — the preferred real-work application surface.
-- `vault-pkm` — cross-vault conventions; the vault's own `AGENTS.md` overrides it.
+- `apple-notes-pkm` — the personal backend (helper, note shapes, write safety).
+- `vault-pkm` — project-vault conventions; the vault's own `AGENTS.md` overrides it.
 - `voice-bryan` — wording for anything another person will read.

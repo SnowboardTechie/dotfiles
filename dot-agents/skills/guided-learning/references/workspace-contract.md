@@ -5,36 +5,37 @@ step 0 of [`../SKILL.md`](../SKILL.md).
 
 ## Resolution
 
-The workspace is an **absolute path inside a vault**, named by Bryan or carried
-forward from a prior session. Three refusals, in order:
+The workspace is an **Apple Notes folder beneath `Second Brain`** (personal
+missions) or an **absolute path inside a project vault**, named by Bryan or
+carried forward from a prior session. Three refusals, in order:
 
 | Condition | Response |
 |---|---|
-| No absolute path supplied | Ask for one. Never infer from the current working directory. |
+| No workspace named | Ask for one. Never infer from the current working directory. |
 | Path resolves inside the installed skill directory or `dot-agents/skills/` | Refuse. Explain that skill directories are shared version-controlled procedure, not personal state. |
-| Path is outside a vault Bryan named, or on a cloud-sync path | Refuse and ask where it belongs. |
+| Path is outside a vault Bryan named, is `~/second-brain` (frozen archive), or is on a cloud-sync path | Refuse and ask where it belongs. |
 
-The pilot workspace is `~/second-brain/Learning/Agent-Assisted Planning/`.
+The pilot workspace is the Apple Notes folder `Second Brain/Learning/Agent-Assisted Planning`.
 
 ## Layout
 
 ```
-<workspace>/
-├── INDEX.md            # mission, observable success, constraints, out of scope,
-│                       # current orientation, links
-├── RESOURCES.md        # curated high-trust sources and what each is good for
-└── learning-records/   # created lazily, on the first approved record only
-    └── 0001-<slug>.md
+<workspace>/               # Notes folder, or vault directory
+├── INDEX                  # mission, observable success, constraints, out of scope,
+│                          # current orientation, links (note title / INDEX.md)
+├── RESOURCES              # curated high-trust sources and what each is good for
+└── learning-records/      # subfolder, created lazily on the first approved record
+    └── 0001-<slug>        # one note (or .md file) per record
 ```
 
-That is the whole layout. `INDEX.md` and `RESOURCES.md` exist from the start
-because a mission with no stated success criteria cannot be assessed against,
-and ungrounded teaching is the failure mode this skill most needs to avoid.
+That is the whole layout. `INDEX` and `RESOURCES` exist from the start because
+a mission with no stated success criteria cannot be assessed against, and
+ungrounded teaching is the failure mode this skill most needs to avoid.
 
 ## Created lazily, never scaffolded
 
-`learning-records/` comes into existence when the first record is approved — not
-before. An empty directory of records reads as "nothing learned yet" when the
+`learning-records` comes into existence when the first record is approved — not
+before (in Notes: `ensure-folder` only at that moment). An empty directory of records reads as "nothing learned yet" when the
 truth is "no session has happened yet", and the two are different facts.
 
 ## Never created
@@ -52,15 +53,14 @@ Each was rejected for the same reason: it is machinery that must be maintained
 before it has been shown to help. If real use earns one, it gets added
 deliberately, with Bryan's approval, at that point.
 
-## Vault rules win
+## Backend rules win
 
-The vault's own `AGENTS.md` governs frontmatter, filenames, linking, and commit
-discipline inside the workspace. Read it first every session; where it
-disagrees with anything here, it wins.
-
-For `~/second-brain/`, that means hierarchical `tags:` as a YAML list, a
-`created:` date, a `status:`, `[[wikilinks]]` over Markdown links, and
-`second-brain(<Type>): <topic>` commit subjects.
+For a Notes workspace, `apple-notes-pkm` governs: titles are the first line,
+retained metadata is plain trailing text (`Created:`, `Status:`, `Tags:`),
+targets are named by exact title, and every write passes a fresh `revision`.
+For a vault workspace, the vault's own `AGENTS.md` governs frontmatter,
+filenames, linking, and commit discipline. Read the applicable one first every
+session; where it disagrees with anything here, it wins.
 
 ## The zone stays in the vault
 

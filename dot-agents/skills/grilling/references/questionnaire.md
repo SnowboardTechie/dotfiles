@@ -47,9 +47,9 @@ Ask Bryan for the path before writing, and offer both shapes:
 
 - **Temporary** — under the effort's state directory, when the questionnaire is
   scaffolding that dies with the decision.
-- **Vault-native** — inside the relevant project vault or `~/second-brain`, when
-  the answers are durable knowledge. Follow that vault's conventions and its
-  `AGENTS.md`.
+- **Knowledge-native** — inside the relevant project vault (`vault-pkm`) or,
+  for personal decisions, the Apple Notes second brain (`apple-notes-pkm`),
+  when the answers are durable knowledge. Follow that backend's conventions.
 
 Never pick silently, and never write into the installed skill directory.
 

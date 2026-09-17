@@ -5,16 +5,16 @@ description: >
   outing, activity, or date idea to a named person in any chat, especially phrases
   such as “Traci wants to see…”, “Dad would love…”, “save this for Mom”, or “we
   should go here”; also use when planning or shopping for gifts, dates, or shared
-  experiences. Captures clear signals into person-specific notes in Bryan's
-  second-brain vault and resurfaces them later without turning every mention into a
-  task.
+  experiences. Captures clear signals into person-specific notes in Bryan's Apple
+  Notes second brain (through apple-notes-pkm) and resurfaces them later without
+  turning every mention into a task.
 version: 1.0.0
 author: Hermes Agent
 metadata:
   created_by: agent
   hermes:
     tags: [gifts, dates, relationships, preferences, capture, pkm]
-    related_skills: [vault-pkm]
+    related_skills: [apple-notes-pkm]
 ---
 
 # Gift and Experience Capture
@@ -26,15 +26,16 @@ be able to mention an idea naturally in Matrix or another Hermes surface and tru
 that it will be available when planning a date, choosing an experience, or shopping
 for a gift.
 
-The canonical system is a small compiled knowledge zone in
-`/Users/bryan/second-brain`:
+The canonical system is a small compiled knowledge zone at the root of the Apple
+Notes folder `Second Brain`:
 
-- Hub: `Gift and Experience Ideas.md`
-- One detail note per person: `{Person} Gift and Experience Ideas.md`
-- Event-specific plans remain separate and link to the relevant person note.
+- Hub: the note `Gift and Experience Ideas`
+- One detail note per person: `{Person} Gift and Experience Ideas`
+- Event-specific plans remain separate and name the relevant person note by title.
 
-Load `vault-pkm` and follow `/Users/bryan/second-brain/AGENTS.md` before reading or
-writing this zone. The vault, not Hermes memory or chat history, is canonical.
+Load `apple-notes-pkm` and use only its helper (`search`, `read`, `create`,
+`append`) for this zone. Apple Notes, not Hermes memory or chat history, is
+canonical. `/Users/bryan/second-brain` is a frozen archive: never read or write it.
 
 ## Capture Contract
 
@@ -54,8 +55,8 @@ Examples of clear signals:
 - “Save this as a possible gift for Mom.”
 - “We should go here for a date.” when the partner is unambiguous from context.
 
-Before the write, name the exact vault-relative person-note path in one short sentence,
-then make the capture. Do not ask for confirmation after a clear signal. Afterward,
+Before the write, name the exact person-note title in one short sentence, then make
+the capture. Do not ask for confirmation after a clear signal. Afterward,
 confirm the captured idea and path concisely.
 
 Ask exactly one concise clarification question only when the person or capture intent
@@ -72,11 +73,14 @@ the context instead of upgrading it to a known preference.
 
 ## Capture Workflow
 
-1. Read the hub and search for an existing person note and duplicate idea.
-2. Read the person note before editing. If none exists, announce the proposed path,
-   create it at the vault root, and add its wikilink under the hub's `## People`
-   section. Do not create a new folder or MOC for each person.
-3. Append one row to `## Open Ideas` with:
+1. `search --mode title` for the hub and the person note; `read` them by id and check
+   for a duplicate idea.
+2. If no person note exists, announce the proposed title, `create` it in the root
+   folder (`--folder ""`) from the shape below, and `append` its title under the hub's
+   `People` section. Do not create a new folder or MOC for each person.
+3. `append` one bullet under `Open Ideas` (a bullet, not a table row: appended
+   Markdown cannot join an existing native table; the imported tables stay as history)
+   with:
    - capture date;
    - kind (`gift`, `date`, `movie`, `show`, `restaurant`, `food`, `activity`,
      `place`, or `other`);
@@ -87,34 +91,19 @@ the context instead of upgrading it to a known preference.
    or invent details unless Bryan asks.
 5. Deduplicate before appending. If the same open idea already exists, add only new
    context or a newer signal instead of creating another row.
-6. Read back the changed section, inspect the diff, stage only the exact vault files,
-   and follow the vault's commit-and-push rules.
+6. Pass the fresh `revision` from the read; the helper verifies the append by readback.
+   Nothing is committed or pushed — iCloud syncs the note.
 7. Reply with a compact confirmation, not a planning discussion.
 
-Escape Markdown table pipes inside captured text as `\|`. Use `—` when there is no
-source URL. Keep one idea per row.
+Bullet shape: `- YYYY-MM-DD · kind · idea — signal / context (source or —)`. Keep one
+idea per bullet.
 
 ## Person Note Shape
 
 Use this shape for the first capture involving a person:
 
 ```markdown
----
-aliases:
-  - {Person} Gift Ideas
-  - {Person} Date Ideas
-tags:
-  - area/relationships
-  - gifts
-  - experiences
-  - type/reference
-created: YYYY-MM-DD
-status: active
----
-
-# {Person} — Gift and Experience Ideas
-
-Part of [[Gift and Experience Ideas]].
+Part of Gift and Experience Ideas.
 
 ## Preferences & Signals
 
@@ -122,31 +111,39 @@ _Durable, source-supported preferences that improve future choices._
 
 ## Open Ideas
 
-| Captured | Kind | Idea | Signal / context | Source |
-|---|---|---|---|---|
+- (one bullet per idea: `YYYY-MM-DD · kind · idea — signal / context (source)`)
 
 ## Used or Retired
 
-| Updated | Idea | Outcome |
-|---|---|---|
+- (one bullet per outcome: `YYYY-MM-DD · idea — outcome`)
 
 ## Related
+
+Aliases: {Person} Gift Ideas, {Person} Date Ideas
+Created: YYYY-MM-DD
+Status: active
+Tags: area/relationships, gifts, experiences, type/reference
 ```
 
+The helper writes the title (`{Person} Gift and Experience Ideas`) as the note's
+first line; do not repeat it in the body.
+
 For people other than Bryan's partner, omit the `{Person} Date Ideas` alias when it
-would be misleading. A preference belongs under `## Preferences & Signals` only when
-it is durable and directly supported; ordinary one-off candidates remain in the open
-ideas table.
+would be misleading. A preference belongs under `Preferences & Signals` only when it
+is durable and directly supported; ordinary one-off candidates remain in the open
+ideas list.
 
 ## Lifecycle Updates
 
 When Bryan later says an idea was bought, booked, visited, watched, rejected, or is no
 longer relevant:
 
-1. Find the exact open row.
-2. Remove it from `## Open Ideas`.
-3. Add it to `## Used or Retired` with the update date and outcome.
-4. Preserve why it was originally considered when that context remains useful.
+1. Find the exact open bullet (or imported table row).
+2. `append` the outcome under `Used or Retired` with the update date; an appended
+   note cannot remove the original bullet, so mark it as retired in the appended
+   line rather than rewriting the note (`replace` is refused when attachments exist
+   and is never used to prune Bryan's history).
+3. Preserve why it was originally considered when that context remains useful.
 
 Do not silently delete history. Do not infer completion from calendar events, receipts,
 or elapsed time unless Bryan asks for reconciliation and the evidence is explicit.
@@ -156,8 +153,8 @@ or elapsed time unless Bryan asks for reconciliation and the evidence is explici
 When Bryan asks for gift, birthday, holiday, anniversary, restaurant, date, movie,
 show, or outing ideas:
 
-1. Start at `Gift and Experience Ideas.md`.
-2. Read the relevant person note and linked event-specific plans.
+1. Start at the hub note `Gift and Experience Ideas` (title search, then read by id).
+2. Read the relevant person note and any event-specific plans it names.
 3. Surface relevant open ideas first.
 4. Distinguish direct person signals, Bryan's possibilities, and new agent suggestions.
 5. If current availability, showtimes, menus, prices, or product stock matter, verify
@@ -169,7 +166,7 @@ show, or outing ideas:
 - Capture is context, not a Reminder, shopping task, reservation, or purchase.
 - Never contact the person, reveal the list, make a booking, or buy anything without
   explicit authorization.
-- Keep the zone private in Bryan's vault.
+- Keep the zone private in Bryan's Apple Notes.
 - Keep the hub orienting and the person notes detailed; do not accumulate idea rows in
   the hub.
 - Create a person note only after the first real signal. Empty pre-created profiles add
@@ -183,4 +180,4 @@ show, or outing ideas:
 - [ ] No duplicate open idea was introduced.
 - [ ] Exact names, context, uncertainty, and user-provided URL were preserved.
 - [ ] The write was announced before editing and confirmed afterward.
-- [ ] The exact vault changes were read back, committed, pushed, and remotely verified.
+- [ ] The helper's readback verification passed and the note id was reported.

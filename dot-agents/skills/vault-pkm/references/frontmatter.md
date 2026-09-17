@@ -1,7 +1,8 @@
 # Frontmatter shape
 
-Every vault note has YAML frontmatter. The shape differs slightly between
-project vaults and ~/second-brain/.
+Every project-vault note has YAML frontmatter. (The former personal vault's
+shape is kept below only to explain the tag-namespace split; personal notes now
+live in Apple Notes without frontmatter — see `apple-notes-pkm`.)
 
 ## Project vaults
 
@@ -23,9 +24,9 @@ source-checked: 2026-07-15         # optional: checked date for claims that can 
 ---
 ```
 
-**Note:** Project vaults use `domain/` (not `area/`) to avoid cross-vault tag
-collision with second-brain's `area/<life-domain>` namespace. The two vaults
-have different categorical universes; tag namespaces stay separate.
+**Note:** Project vaults use `domain/` (not `area/`) — `area/<life-domain>` was
+the personal vault's namespace and the imported Apple Notes still carry it as
+searchable `Tags:` text. The two universes stay separate.
 
 **No `related:`** field. Use inline `[[wikilinks]]` for lateral relations in
 the note body. Use `up:` for parent-MOC relations (typed for Bases queries).
@@ -39,7 +40,11 @@ support. Original reasoning, project logs, and historical narrative do not need
 decorative citations. Label observed current state, accepted decisions, proposed
 design, historical state, and unverified inference explicitly in prose.
 
-## ~/second-brain/
+## Personal notes (historical shape; frozen archive only)
+
+`~/second-brain/` is a frozen rollback archive. Its notes used this shape,
+which the Apple Notes import preserved as trailing `Tags:`/`Created:`/`Status:`
+lines:
 
 ```yaml
 ---
@@ -55,14 +60,14 @@ status: active                     # active | decided | complete
 
 ## Key differences
 
-- Project vaults use `domain/` for project-internal areas; second-brain uses
+- Project vaults use `domain/` for project-internal areas; personal notes used
   `area/` for life-area categorization. Tag namespaces deliberately separate.
-- Project vaults use `project/<vault>` for cross-vault search; second-brain
-  notes don't (they're not tied to a code project).
-- Project vaults express parent-MOC relations via `up:`; second-brain relies
-  on inline wikilinks throughout the note body.
-- second-brain's type values are Exploration/Decision/Idea (matching its
-  folder structure); project vaults are richer (moc, learning, investigation, etc.).
+- Project vaults use `project/<vault>` for cross-vault search; personal notes
+  don't (they're not tied to a code project).
+- Project vaults express parent-MOC relations via `up:`; personal notes rely
+  on inline links throughout the note body.
+- Personal type values are Exploration/Decision/Idea (matching the Notes
+  folders); project vaults are richer (moc, learning, investigation, etc.).
 
 ## Properties UI expectations
 

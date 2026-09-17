@@ -78,10 +78,10 @@ H="$(new_home)"
 TMP_HOMES+=("$H")
 out="$(HOME="$H" "$RECONCILER" --apply 2>&1)"; rc=$?
 check "t1: apply exits 0 on a fresh home" test "$rc" -eq 0
-check "t1: Claude receives 30 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 30
-check "t1: OpenCode receives 24 pool links" test "$(links_into_pool "$H/.config/opencode/skills")" -eq 24
-check "t1: Pi receives 10 pool links"       test "$(links_into_pool "$H/.pi/agent/skills")" -eq 10
-check "t1: Hermes receives 30 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 30
+check "t1: Claude receives 31 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 31
+check "t1: OpenCode receives 25 pool links" test "$(links_into_pool "$H/.config/opencode/skills")" -eq 25
+check "t1: Pi receives 11 pool links"       test "$(links_into_pool "$H/.pi/agent/skills")" -eq 11
+check "t1: Hermes receives 31 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 31
 check "t1: Claude-only skill is linked"     link_resolves_to "$H/.claude/skills/find-skills" "$POOL/find-skills"
 check "t1: Claude gets Ponytail workflow"     link_resolves_to "$H/.claude/skills/pr-self-review" "$POOL/pr-self-review"
 check "t1: Claude gets shared review contract" link_resolves_to "$H/.claude/skills/code-review" "$POOL/code-review"
@@ -99,6 +99,8 @@ check "t1: OpenCode gets gamedev"           link_resolves_to "$H/.config/opencod
 check "t1: Pi does not get manual-merge"    test ! -e "$H/.pi/agent/skills/manual-merge"
 check "t1: Hermes excludes obsidian"        test ! -e "$H/.hermes/skills/personal/obsidian"
 check "t1: Hermes excludes vault-pkm"       test ! -e "$H/.hermes/skills/personal/vault-pkm"
+check "t1: every tool gets apple-notes-pkm" bash -c 'for d in "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ -L "$d/apple-notes-pkm" && -L "$d/knowledge-capture" ]] || exit 1; done' _ "$H"
+check "t1: no tool gets retired vault-capture" bash -c 'for d in "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ ! -e "$d/vault-capture" ]] || exit 1; done' _ "$H"
 
 # --- Test 8: re-running --apply is idempotent --------------------------------
 before="$(snapshot "$H")"
@@ -170,6 +172,7 @@ ln -s "$GONE_POOL/agent-workspace" "$H11/.claude/skills/agent-workspace"
 # Same retired names, but pointing at THIS repo's pool (also missing now).
 ln -s "$POOL/agent-workspace" "$H11/.claude/skills/legacy-in-pool"
 ln -s "$POOL/git-master"      "$H11/.claude/skills/legacy-in-pool-2"
+ln -s "$POOL/vault-capture"   "$H11/.claude/skills/vault-capture"
 # Unrelated broken and foreign links that must survive.
 ln -s "$H11/nowhere"    "$H11/.claude/skills/diagnose-crash"
 ln -s "$H11/other-pack" "$H11/.claude/skills/omarchy"
@@ -182,6 +185,7 @@ check "t11: check exits 0 with dangling legacy links" test "$rc" -eq 0
 # the same on every platform, so assert the outcome, not which branch reported it.
 check "t11: check plans a prune for the retired link"  bash -c 'grep -qE "would prune (stale|retired) pool link: legacy-in-pool$" <<<"$1"' _ "$out"
 check "t11: check plans the second retired prune"      bash -c 'grep -qE "would prune (stale|retired) pool link: legacy-in-pool-2$" <<<"$1"' _ "$out"
+check "t11: check plans the vault-capture prune"       bash -c 'grep -qE "would prune (stale|retired) pool link: vault-capture$" <<<"$1"' _ "$out"
 check "t11: unrelated broken link is preserved"       bash -c 'grep -q "preserved (foreign symlink): diagnose-crash" <<<"$1"' _ "$out"
 check "t11: foreign package link is preserved"        bash -c 'grep -q "preserved (foreign symlink): omarchy" <<<"$1"' _ "$out"
 check "t11: another pool path is preserved"           bash -c 'grep -q "preserved (foreign symlink): agent-workspace" <<<"$1"' _ "$out"
@@ -191,6 +195,7 @@ out="$(HOME="$H11" "$RECONCILER" --apply 2>&1)"; rc=$?
 check "t11: apply exits 0"                            test "$rc" -eq 0
 check "t11: retired pool link is gone"                test ! -L "$H11/.claude/skills/legacy-in-pool"
 check "t11: second retired pool link is gone"         test ! -L "$H11/.claude/skills/legacy-in-pool-2"
+check "t11: retired vault-capture link is gone"       test ! -L "$H11/.claude/skills/vault-capture"
 check "t11: unrelated broken link survived apply"     test -L "$H11/.claude/skills/diagnose-crash"
 check "t11: foreign package link survived apply"      test -L "$H11/.claude/skills/omarchy"
 check "t11: another pool path survived apply"         test -L "$H11/.claude/skills/agent-workspace"

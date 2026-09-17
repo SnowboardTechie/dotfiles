@@ -1,8 +1,10 @@
 # Learning record format
 
-Records live in `<workspace>/learning-records/`, numbered sequentially:
-`0001-<dash-case-slug>.md`. Scan the directory for the highest number and
-increment. Create the directory with the first approved record, not before.
+Records live in `<workspace>/learning-records`, numbered sequentially:
+`0001-<dash-case-slug>` (a note title in Apple Notes; a `.md` file in a vault).
+List the subfolder (`apple-notes-pkm list --folder …`) or directory for the
+highest number and increment. Create it with the first approved record, not
+before.
 
 They are the learning equivalent of ADRs: they capture non-obvious lessons, key
 insights, and stated prior knowledge that steer future sessions. Adapted from
@@ -12,27 +14,24 @@ Matt Pocock's `teach/LEARNING-RECORD-FORMAT.md`; see
 ## Template
 
 ```markdown
----
-tags:
-  - area/ai-agents
-  - type/learning-record
-created: YYYY-MM-DD
-status: active
----
-
-# {Short title of what was learned or established}
-
 {One to three sentences: what was learned, and why it changes what to teach next.}
 
 **Evidence:** {how it was demonstrated — the question answered, the real work it
 was applied to, the prior knowledge cited.}
+
+Created: YYYY-MM-DD
+Status: active
+Tags: area/ai-agents, type/learning-record
 ```
 
-Frontmatter follows `~/second-brain/AGENTS.md`, because the record lives in that
-vault. The body may be a single paragraph. The value is recording *that* this is
-now known and *why* it changes the next session — not filling out sections.
+The record's title (`0001-<slug>`) is the note's first line, written by the
+helper. In a vault workspace the same fields go in YAML frontmatter per that
+vault's `AGENTS.md`. The body may be a single paragraph. The value is recording
+*that* this is now known and *why* it changes the next session — not filling
+out sections.
 
-`status:` is `active`, or `superseded` once a later record replaces it.
+`Status:` is `active`, or `superseded` once a later record replaces it (in
+Notes, `append` the supersession line; do not rewrite).
 
 ## Evidence is required
 
@@ -62,7 +61,7 @@ cannot name the evidence, there is no record to write yet.
 
 ## Supersession
 
-When a later record contradicts an earlier one, set the earlier record's
-frontmatter to `status: superseded`, add a line pointing at the replacement, and
-say what changed. Never delete. How an understanding evolved is itself signal —
+When a later record contradicts an earlier one, mark the earlier record
+`Status: superseded` (append in Notes; edit frontmatter in a vault), add a line
+naming the replacement, and say what changed. Never delete. How an understanding evolved is itself signal —
 it shows which ideas were sticky and which had to be unlearned.

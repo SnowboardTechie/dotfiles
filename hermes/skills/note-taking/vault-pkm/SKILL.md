@@ -1,13 +1,13 @@
 ---
 name: vault-pkm
-description: Use when recalling, exploring, planning, or capturing durable knowledge in a personal or project Markdown/Obsidian vault. Enforces look-first context gathering, per-vault instructions, atomic linked notes, explicit capture boundaries, and lightweight experimentation instead of imposing unused PKM machinery.
+description: Use when recalling, exploring, planning, or capturing durable knowledge in a project or workspace Markdown/Obsidian vault (a repo's vault/ or ~/code/notes/). Enforces look-first context gathering, per-vault instructions, atomic linked notes, explicit capture boundaries, and lightweight experimentation instead of imposing unused PKM machinery. Bryan's personal second brain is Apple Notes, handled by apple-notes-pkm; ~/second-brain is a frozen archive.
 version: 1.1.0
 author: Hermes Agent
 license: MIT
 metadata:
   hermes:
     tags: [pkm, obsidian, vaults, atomic-notes, knowledge-management]
-    related_skills: [obsidian]
+    related_skills: [obsidian, apple-notes-pkm, knowledge-capture]
 ---
 
 # Vault PKM
@@ -16,15 +16,17 @@ metadata:
 
 Treat a vault as a living knowledge system, not a generic folder of Markdown files. First understand its local structure and prior thinking; then help the user reason; finally leave a durable, linked artifact only when the work reaches a useful resting point.
 
+Scope: project and workspace vaults only. Personal knowledge (decisions, explorations, ideas, journal, gifts, vehicles, learning) lives in Apple Notes since 2026-09-16 — load `apple-notes-pkm` for it. `~/second-brain` on disk is a frozen rollback archive: never read it as current, never write to it.
+
 The user is the author. The agent is a collaborative researcher and writer: concise and direct by default, willing to explain connections, challenge weak assumptions, surface concerns, and propose worthwhile ideas without flattery.
 
 ## When to Use
 
 Load this skill when:
 
-- Reading, searching, recalling, creating, or editing notes in a personal or project vault.
-- Capturing decisions, investigations, learnings, plans, or project context that belongs outside code.
-- The user refers to `~/second-brain`, a project `vault/`, Obsidian, atomic notes, PKM, evergreen notes, daily notes, or weekly planning.
+- Reading, searching, recalling, creating, or editing notes in a project or workspace vault.
+- Capturing project decisions, investigations, learnings, plans, or project context that belongs outside code.
+- The user refers to a project `vault/`, `~/code/notes/`, Obsidian, atomic notes, or PKM for a project. (A mention of `~/second-brain`, personal journals, or weekly planning routes to `apple-notes-pkm` instead.)
 - A task may benefit from connecting current work to prior decisions or knowledge in a vault.
 
 Do not use it merely because a repository contains incidental Markdown documentation. Use repository-specific development skills for code docs unless the material is explicitly part of a knowledge vault.
@@ -39,7 +41,7 @@ Determine the concrete vault path from the user, project context, or environment
 
 ### 2. Read local instructions before touching notes
 
-Look for `AGENTS.md` at the vault root. For project vaults, inspect `vault/AGENTS.md`; for a personal vault, inspect its root instructions. These local instructions override generic conventions in this skill.
+Look for `AGENTS.md` at the vault root (`vault/AGENTS.md`). These local instructions override generic conventions in this skill.
 
 Pay attention to:
 
@@ -124,7 +126,7 @@ Do not introduce a new taxonomy, template system, plugin dependency, daily-note 
 
 ### 6a. Use compiled knowledge zones selectively
 
-When a mixed personal vault contains a mature cluster of MOCs, references, project logs, explorations, and decisions, treat that cluster as a **compiled knowledge zone** rather than forcing the entire vault into an LLM-wiki schema.
+When a vault contains a mature cluster of MOCs, references, project logs, explorations, and decisions, treat that cluster as a **compiled knowledge zone** rather than forcing the entire vault into an LLM-wiki schema.
 
 - Make existing canonical roles legible; do not pre-create empty folders or pages.
 - Prioritize orientation and trust: repair stale MOCs/indexes and unsupported consequential claims before normalizing metadata.
