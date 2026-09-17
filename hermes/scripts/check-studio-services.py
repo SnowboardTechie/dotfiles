@@ -42,7 +42,7 @@ PROBES = (
         "hindsight-ui",
     ),
     Probe("Open WebUI", "https://ai.thompson.codes/health", "open-webui"),
-    Probe("Grafana", "http://100.121.238.48:3000/api/health", "grafana"),
+    Probe("Grafana", "http://100.121.238.48:33000/api/health", "grafana"),
     Probe("Prometheus", "http://127.0.0.1:9090/-/ready", "prometheus"),
     Probe("Alertmanager", "http://127.0.0.1:9093/-/ready", "alertmanager"),
     Probe("Loki", "http://127.0.0.1:3100/ready", "loki"),
