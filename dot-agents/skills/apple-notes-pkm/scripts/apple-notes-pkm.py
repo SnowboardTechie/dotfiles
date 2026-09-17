@@ -56,6 +56,13 @@ CODESIGN = os.environ.get("APPLE_NOTES_PKM_CODESIGN", "/usr/bin/codesign")
 DEFAULT_ROOT = os.environ.get("APPLE_NOTES_PKM_ROOT", "Second Brain")
 DEFAULT_ACCOUNT = os.environ.get("APPLE_NOTES_PKM_ACCOUNT", "iCloud")
 PERMISSION_MARKERS = ("Not authorized to send Apple events", "-1743", "-10004")
+PERMISSION_NUMBERS = ("-1743", "-10004")
+
+
+def is_permission_error(message, number=None) -> bool:
+    """True when a JXA error is an Automation (TCC) denial. JXA stringifies a
+    denial as just "Error: An error occurred.", so the errorNumber must count."""
+    return any(m in str(message) for m in PERMISSION_MARKERS) or str(number) in PERMISSION_NUMBERS
 
 EXIT_OK, EXIT_ERROR, EXIT_USAGE, EXIT_STALE, EXIT_REFUSED, EXIT_PERMISSION, EXIT_UNVERIFIED, EXIT_HELPER = 0, 1, 2, 3, 4, 5, 6, 7
 
@@ -120,7 +127,7 @@ def verify_helper() -> None:
                 EXIT_HELPER,
             )
         cn = expected["signing_common_name"]
-        if cn and not any(cn in a for a in authorities):
+        if cn and cn not in authorities:
             raise HelperError(
                 f"native helper signing identity mismatch: expected {cn!r} in code-signing authorities {authorities}",
                 EXIT_HELPER,
@@ -173,7 +180,7 @@ def jxa(request: dict, *, timeout: int = 180) -> dict:
     if not result.get("ok"):
         number = result.get("errorNumber")
         message = result.get("error", "unknown error")
-        if any(marker in message for marker in PERMISSION_MARKERS):
+        if is_permission_error(message, number):
             raise HelperError(
                 "macOS Automation permission for Notes is denied for the native helper "
                 "“Apple Notes PKM Helper”; approve it in System Settings > Privacy & "
@@ -241,7 +248,7 @@ def cmd_health(args):
         steps = result.get("steps", {})
         denied = [
             name for name, step in steps.items()
-            if not step.get("ok") and any(m in str(step.get("error", "")) for m in PERMISSION_MARKERS)
+            if not step.get("ok") and is_permission_error(step.get("error", ""), step.get("errorNumber"))
         ]
         if denied:
             raise HelperError(
