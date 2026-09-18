@@ -33,6 +33,7 @@ class ContinuationOriginTest(unittest.TestCase):
     def definition(self, **overrides: object) -> dict:
         definition = {
             "name": "Test Brief",
+            "deliveryIntent": "briefing",
             "deliver": "matrix:!room",
             "attachToSession": True,
             "continuation": {
@@ -59,13 +60,31 @@ class ContinuationOriginTest(unittest.TestCase):
         )
 
     def test_non_continuable_job_has_no_origin(self) -> None:
-        definition = self.definition(attachToSession=False)
+        definition = self.definition(deliveryIntent="alert", attachToSession=False)
         definition.pop("continuation")
         self.assertIsNone(MODULE.continuation_origin(definition))
 
     def test_rejects_metadata_on_non_continuable_job(self) -> None:
         with self.assertRaises(SystemExit):
-            MODULE.continuation_origin(self.definition(attachToSession=False))
+            MODULE.continuation_origin(
+                self.definition(deliveryIntent="alert", attachToSession=False)
+            )
+
+    def test_rejects_flat_briefing_delivery(self) -> None:
+        definition = self.definition(attachToSession=False)
+        definition.pop("continuation")
+        with self.assertRaises(SystemExit):
+            MODULE.continuation_origin(definition)
+
+    def test_rejects_threaded_alert_delivery(self) -> None:
+        with self.assertRaises(SystemExit):
+            MODULE.continuation_origin(self.definition(deliveryIntent="alert"))
+
+    def test_requires_explicit_delivery_intent(self) -> None:
+        definition = self.definition()
+        definition.pop("deliveryIntent")
+        with self.assertRaises(SystemExit):
+            MODULE.continuation_origin(definition)
 
     def test_rejects_home_channel_fallback(self) -> None:
         with patch.dict(os.environ, {"MATRIX_ALLOWED_USERS": "@bryan:example.test"}):
@@ -240,6 +259,7 @@ class MonitorScriptTest(unittest.TestCase):
     def definition(self, **overrides: object) -> dict:
         definition = {
             "name": "Watch Something",
+            "deliveryIntent": "alert",
             "schedule": "5 9 * * 1",
             "model": "gpt-5.6-terra",
             "provider": "openai-codex",
@@ -483,6 +503,7 @@ class MergedFeatureIntegrationTest(unittest.TestCase):
 
     WATCHER = {
         "name": "Watch Something",
+        "deliveryIntent": "alert",
         "schedule": "5 9 * * 1",
         "model": "gpt-5.6-terra",
         "provider": "openai-codex",
@@ -498,6 +519,7 @@ class MergedFeatureIntegrationTest(unittest.TestCase):
     }
     BRIEF = {
         "name": "Personal Brief",
+        "deliveryIntent": "briefing",
         "schedule": "20 7 * * 1-5",
         "model": "gpt-5.6-terra",
         "provider": "openai-codex",
@@ -694,14 +716,19 @@ class SssfUpstreamWatchTest(unittest.TestCase):
         self.assertIsNone(job.get("baseUrl"))
         MODULE.verify_inference_route(job)
 
-    def test_it_delivers_to_the_sgg_room_without_continuation(self) -> None:
+    def test_it_delivers_as_a_continuable_sgg_briefing(self) -> None:
         job = self.job()
         self.assertEqual(
             job["deliver"], "matrix:!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU"
         )
-        self.assertFalse(job["attachToSession"])
-        self.assertNotIn("continuation", job)
-        self.assertIsNone(MODULE.continuation_origin(job))
+        self.assertEqual(job["deliveryIntent"], "briefing")
+        self.assertTrue(job["attachToSession"])
+        self.assertEqual(job["continuation"]["chatName"], "SGG")
+        with patch.dict(os.environ, {"MATRIX_ALLOWED_USERS": "@bryan:example.test"}):
+            self.assertEqual(
+                MODULE.continuation_origin(job)["chat_id"],
+                "!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU",
+            )
 
     def test_its_toolsets_are_read_only(self) -> None:
         job = self.job()

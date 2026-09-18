@@ -223,7 +223,9 @@ class ContractTest(unittest.TestCase):
         self.assertEqual(self.job["script"], "sgg-pr-review-reminder.py")
         self.assertEqual(self.job["enabledToolsets"], ["safe"])
         self.assertFalse(self.job["noAgent"])
-        self.assertFalse(self.job["attachToSession"])
+        self.assertEqual(self.job["deliveryIntent"], "briefing")
+        self.assertTrue(self.job["attachToSession"])
+        self.assertEqual(self.job["continuation"]["chatName"], "SGG")
         self.assertTrue(PROMPT.is_file())
         self.assertTrue(SKILL.is_file())
 

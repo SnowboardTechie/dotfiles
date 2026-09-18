@@ -34,6 +34,20 @@ def _env_value(name: str) -> str:
 
 
 def continuation_origin(definition: dict) -> dict | None:
+    delivery_intent = definition.get("deliveryIntent")
+    if delivery_intent not in {"briefing", "alert"}:
+        fail(
+            f"{definition['name']!r} requires deliveryIntent 'briefing' or 'alert'"
+        )
+    if delivery_intent == "briefing" and not definition["attachToSession"]:
+        fail(
+            f"{definition['name']!r} is a briefing and must set attachToSession true"
+        )
+    if delivery_intent == "alert" and definition["attachToSession"]:
+        fail(
+            f"{definition['name']!r} is an alert and must not attach to a session"
+        )
+
     continuation = definition.get("continuation")
     if not definition["attachToSession"]:
         if continuation is not None:
