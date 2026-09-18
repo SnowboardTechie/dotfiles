@@ -143,6 +143,12 @@ simplification: `delete`, `yagni`, `stdlib`, `native`, then `shrink`. Show the
 smaller replacement. Never invent deletions to look useful. If nothing should be
 cut, write exactly `Lean already. Ship.` in the Summary.
 
+Ponytail reads the spec for outcomes, not for form. When a spec line names a
+form rather than a behavior (a comment, a doc paragraph, a wrapper, a helper, a
+file), that form is a candidate like any other line of the diff: if Ponytail
+would cut it, report the cut and mark the spec line over-specified. A spec that
+asked for the form is a finding against the spec, not a reason to pass.
+
 Ponytail does not report correctness, security, spec conformance, coverage,
 naming, formatting, or generic maintainability. Long, defensive, or unfamiliar
 code is not automatically over-engineered.
@@ -193,6 +199,7 @@ prescriptions before correction.
 4. Treating reviewer convergence as independent proof.
 5. Letting Ponytail smuggle in correctness or security findings.
 6. Re-running every dimension when only a final targeted Risk boundary remains.
+7. Passing a form (comment, doc paragraph, wrapper) because the spec named it.
 
 ## Verification Checklist
 
@@ -201,6 +208,7 @@ prescriptions before correction.
 - [ ] One review context read the diff and authorities once
 - [ ] Separate artifacts preserve dimension visibility
 - [ ] Ponytail ran last and stayed narrow
+- [ ] Spec lines that name a form were judged by Ponytail, not exempted
 - [ ] Acceptance criteria were swept independently
 - [ ] Targeted Risk reviewer used only for a qualifying boundary
 - [ ] Every reported finding passed the concrete-defect gate

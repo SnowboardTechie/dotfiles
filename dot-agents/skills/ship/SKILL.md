@@ -70,6 +70,12 @@ review is mandatory before publication:
   diff hash, expected branch, and clean worktree;
 - invalidate the review after any candidate change and rerun the complete gate.
 
+When dispatching the delegate, hand it the spec as acceptance criteria stated as
+outcomes, one line each (`the release gate blocks at high`, `the job graph is
+unchanged`, `nothing consumer-facing moves`). The diff is the inventory of edits.
+A spec that lists the edits (`with a comment recording why`) pre-approves their
+form and blinds Ponytail to it.
+
 A worker's self-check, an unstructured skim, build output, or an artifact that
 omits Ponytail never satisfies this gate. A systematic Sol-parent review of a
 worker-authored candidate does satisfy independence; a parent-authored candidate
@@ -235,6 +241,9 @@ Report the PR as a Markdown link.
 6. **Rewriting `origin` after an SSH-only agent failure.** On GitHub, use the
    bounded authenticated HTTPS retry in Step 5 and verify the remote SHA; preserve
    the developer's configured remote.
+
+7. **Writing the delegate's spec as an inventory of edits.** State outcomes; the
+   diff lists the edits. Named forms in the spec exempt themselves from Ponytail.
 
 ## Verification Checklist
 
