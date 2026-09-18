@@ -78,6 +78,14 @@ room. Send one message in the room before the first scheduled delivery. The
 installer preserves finite repeat progress while reconciling delivery,
 `attach_to_session`, and the local continuation origin.
 
+Every cron definition declares `deliveryIntent`. Recurring human briefings,
+reports, orientations, and reminders use `briefing`; the reconciler requires
+them to set `attachToSession: true` and provide Matrix continuation metadata,
+so each delivery opens its own replyable thread with the briefing in context.
+Fire-and-forget monitors and change notifications use `alert` and remain flat
+room messages. This distinction is enforced during reconciliation rather than
+left as a convention for future jobs.
+
 Run directly when needed:
 
 ```bash

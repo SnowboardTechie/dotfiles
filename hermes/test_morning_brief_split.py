@@ -51,6 +51,20 @@ class MorningBriefSplitContractTest(unittest.TestCase):
                 self.assertEqual(jobs[name]["provider"], provider)
                 self.assertEqual(jobs[name].get("baseUrl"), base_url)
 
+    def test_every_human_briefing_is_threaded_and_continuable(self) -> None:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        for job in manifest["cronJobs"]:
+            with self.subTest(job=job["name"]):
+                self.assertIn(job["deliveryIntent"], {"briefing", "alert"})
+                if job["deliveryIntent"] == "briefing":
+                    self.assertTrue(job["attachToSession"])
+                    self.assertEqual(
+                        job["continuation"]["userEnv"], "MATRIX_ALLOWED_USERS"
+                    )
+                else:
+                    self.assertFalse(job["attachToSession"])
+                    self.assertNotIn("continuation", job)
+
     def test_every_agent_job_uses_the_codex_subscription(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         for job in manifest["cronJobs"]:

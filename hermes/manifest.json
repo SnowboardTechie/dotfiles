@@ -89,6 +89,7 @@
   "cronJobs": [
     {
       "name": "Workday Morning Brief",
+      "deliveryIntent": "briefing",
       "schedule": "0 8 * * 1-5",
       "model": "gpt-5.6-terra",
       "provider": "openai-codex",
@@ -114,6 +115,7 @@
     },
     {
       "name": "SGG PR Review Reminder",
+      "deliveryIntent": "briefing",
       "schedule": "45 5 * * 2,4",
       "model": "gpt-5.6-terra",
       "provider": "openai-codex",
@@ -129,10 +131,15 @@
         "safe"
       ],
       "workdir": "/Users/bryan/code/sgg",
-      "attachToSession": false
+      "attachToSession": true,
+      "continuation": {
+        "chatName": "SGG",
+        "userEnv": "MATRIX_ALLOWED_USERS"
+      }
     },
     {
       "name": "Personal Morning Brief",
+      "deliveryIntent": "briefing",
       "schedule": "0 7 * * 1-5",
       "model": "gpt-5.6-terra",
       "provider": "openai-codex",
@@ -158,6 +165,7 @@
     },
     {
       "name": "Personal Weekly Orientation",
+      "deliveryIntent": "briefing",
       "schedule": "0 11 * * 0",
       "model": "gpt-5.6-terra",
       "provider": "openai-codex",
@@ -182,6 +190,7 @@
     },
     {
       "name": "Personal Weekday Close",
+      "deliveryIntent": "briefing",
       "schedule": "0 17 * * 1-5",
       "model": "gpt-5.6-terra",
       "provider": "openai-codex",
@@ -208,6 +217,7 @@
     },
     {
       "name": "Personal Saturday Orientation",
+      "deliveryIntent": "briefing",
       "schedule": "0 11 * * 6",
       "model": "gpt-5.6-terra",
       "provider": "openai-codex",
@@ -234,6 +244,7 @@
     },
     {
       "name": "Personal Sunday Reset",
+      "deliveryIntent": "briefing",
       "schedule": "0 11 * * 0",
       "model": "gpt-5.6-terra",
       "provider": "openai-codex",
@@ -260,6 +271,7 @@
     },
     {
       "name": "Workday Dependency Triage",
+      "deliveryIntent": "briefing",
       "schedule": "0 10 * * 1-5",
       "model": "gpt-5.6-sol",
       "provider": "openai-codex",
@@ -278,10 +290,15 @@
         "skills"
       ],
       "workdir": "/Users/bryan/code/sgg",
-      "attachToSession": false
+      "attachToSession": true,
+      "continuation": {
+        "chatName": "SGG",
+        "userEnv": "MATRIX_ALLOWED_USERS"
+      }
     },
     {
       "name": "Monitor Studio services",
+      "deliveryIntent": "alert",
       "schedule": "every 5m",
       "model": null,
       "provider": null,
@@ -296,6 +313,7 @@
     },
     {
       "name": "Watch Matt Pocock skill updates",
+      "deliveryIntent": "alert",
       "schedule": "5 9 * * 1",
       "model": "gpt-5.6-terra",
       "provider": "openai-codex",
@@ -317,6 +335,7 @@
     },
     {
       "name": "Watch SSSF upstream updates",
+      "deliveryIntent": "briefing",
       "schedule": "15 9 * * 1",
       "model": "gpt-5.6-terra",
       "provider": "openai-codex",
@@ -331,7 +350,11 @@
         "no_mcp"
       ],
       "workdir": "/Users/bryan/code/sgg",
-      "attachToSession": false
+      "attachToSession": true,
+      "continuation": {
+        "chatName": "SGG",
+        "userEnv": "MATRIX_ALLOWED_USERS"
+      }
     }
   ]
 }
