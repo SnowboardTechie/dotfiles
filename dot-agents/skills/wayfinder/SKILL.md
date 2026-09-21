@@ -333,6 +333,33 @@ decision, not him.
    than resolving it on the route. If the decision invalidates other parts of
    the map, update those tickets.
 
+## Retire an abandoned map
+
+When Bryan explicitly abandons the destination and asks to archive or retire the
+map, do **not** invent resolutions for unanswered tickets. This is an
+administrative closeout, not a decision pass.
+
+1. Read the map and its complete ticket set, then search the project vault for
+   separately stored plans or notes tied to the map. Preserve resolved tickets
+   and their index records unchanged.
+2. Preview one consistent closeout comment for every open ticket. Close open
+   tickets in dependency order — blockers before the tickets they block — and
+   read each issue back as `closed`. Forgejo can acknowledge an attempted close
+   while leaving a still-blocked issue open, so a 2xx response is not completion.
+3. After every ticket reads back closed, append the abandonment reason to the
+   map, state that prior research remains historical context, and close the map
+   last. Read back the exact comment and closed state.
+4. If related project-vault notes exist, follow `vault-pkm` and the vault-local
+   archive convention; never delete or silently rewrite them. If none exist,
+   report that explicitly instead of manufacturing an archive note.
+
+The adapter currently has no whole-map retirement command. Do not route this
+through `resolve`, because that would publish false decisions. Until retirement
+is automated, Tea/API writes are the narrow administrative exception to the
+adapter-only rule: retain the same private-repository check, exact map/ticket
+identity checks, preview-before-write behavior, and exact readback after every
+comment and close.
+
 ## Handoff
 
 The map ends where implementation begins. When the route is clear:
