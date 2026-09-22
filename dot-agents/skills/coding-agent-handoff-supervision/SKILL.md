@@ -98,6 +98,13 @@ Visible workers are approval-gated, not sandbox-confined. Claude uses
 `HERMES_YOLO_MODE`, and no `--yolo`. Stop when hard confinement is required but
 cannot be proved.
 
+Claude effort defaults to `xhigh` for every handoff, including simple or
+documentation-only work; do not downgrade those tasks. Escalate to
+`--claude-effort max` only when the work is simultaneously narrowly scoped,
+security-critical, and expensive enough that another correction cycle would be
+especially costly. Broad or decision-incomplete work does not qualify for
+`max`; narrow the scope or settle the decisions first.
+
 Starting a worker in the inspected worktree created for Bryan's authorized task
 already authorizes Claude's ordinary **Yes, I trust this folder** startup step.
 Do not ask Bryan again. The helper accepts only that recognizable trust prompt
@@ -124,6 +131,9 @@ python3 scripts/herdr_worker.py start \
   --kind claude \
   --title "$TITLE"
 ```
+
+`--claude-effort` defaults to `xhigh`. Add `--claude-effort max` only when all
+three escalation conditions above hold.
 
 For explicit Hermes selection, use `--kind hermes` after independently checking
 its smart-approval prerequisites.

@@ -71,7 +71,7 @@ target-project vault.
    high-reasoning route. Reject any fallback chain or conflicting
    `delegation.model`, `delegation.provider`, or `delegation.base_url` override.
    Do not repair configuration.
-8. Verify Claude authentication and the Opus/high-effort route without exposing
+8. Verify Claude authentication and the Opus/xhigh-effort route without exposing
    credentials. No model-family fallback is allowed.
 
 Completion: one authorized teammate PR, one clean implementation trunk, one
@@ -143,11 +143,11 @@ prompt.
 
 Pass both reviewers the same candidate and manifest identity plus the same
 [reviewer-orchestrator contract](references/reviewer-orchestrator-contract.md).
-Pass distinct worktrees, state roots, and output paths. Claude uses Opus/high
-effort in auto permission mode and same-family Opus leaves. Hermes uses the instigating root's active GPT
-model/provider/base URL, high reasoning, smart approvals, no yolo, and leaves
-that inherit or exactly match that GPT route. There is no fallback or background
-substitution.
+Pass distinct worktrees, state roots, and output paths. Claude uses Opus/xhigh
+effort in auto permission mode and same-family Opus leaves. Hermes uses the
+instigating root's active GPT model/provider/base URL, high reasoning, smart
+approvals, no yolo, and leaves that inherit or exactly match that GPT route.
+There is no fallback or background substitution.
 
 Prompt only after both agents are ready and both identity records verify. Arm
 one bounded, silent completion supervisor for each. A reviewer-orchestrator can

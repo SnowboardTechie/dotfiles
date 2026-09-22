@@ -64,6 +64,7 @@ class FakeHerdr:
         pane_id: str,
         title: str,
         claude_model: str = "opus",
+        claude_effort: str = "xhigh",
     ) -> None:
         self.agents[name] = {
             "agent": kind,
@@ -450,7 +451,7 @@ class HerdrWorkerTests(unittest.TestCase):
                 with self.module.TurnLease(lease):
                     pass
 
-    def test_real_client_starts_claude_with_the_selected_model(self) -> None:
+    def test_real_client_starts_claude_with_the_selected_model_and_default_effort(self) -> None:
         module = self.module
         sent = []
 
@@ -473,7 +474,17 @@ class HerdrWorkerTests(unittest.TestCase):
             sent[0][sent[0].index("--model") + 1],
             "claude-fable-5-1",
         )
+        self.assertEqual(sent[0][sent[0].index("--effort") + 1], "xhigh")
         self.assertNotIn("opus", sent[0])
+
+        herdr.start_agent(
+            name="critical-worker",
+            kind="claude",
+            pane_id="critical-pane",
+            title="Critical worker",
+            claude_effort="max",
+        )
+        self.assertEqual(sent[1][sent[1].index("--effort") + 1], "max")
 
     def test_startup_failure_includes_readable_output_before_cleanup(self) -> None:
         module = self.module
@@ -996,6 +1007,7 @@ class HerdrWorkerTests(unittest.TestCase):
         )
         self.assertEqual(arguments.command, "handoff-status")
         self.assertEqual(arguments.claude_model, "claude-fable-5-1")
+        self.assertEqual(arguments.claude_effort, "xhigh")
         self.assertEqual(arguments.timeout_ms, 7_200_000)
         recovery = parser.parse_args(
             ["status-wait", "--identity-file", str(self.root / "identity.json")]
@@ -1127,6 +1139,7 @@ class HerdrWorkerTests(unittest.TestCase):
         self.assertEqual(arguments.command, "handoff")
         self.assertEqual(arguments.kind, "claude")
         self.assertEqual(arguments.claude_model, "opus")
+        self.assertEqual(arguments.claude_effort, "xhigh")
         selected = parser.parse_args(
             [
                 "handoff",
@@ -1135,9 +1148,11 @@ class HerdrWorkerTests(unittest.TestCase):
                 "--prompt-file", str(self.root / "handoff-prompt.md"),
                 "--name", "fable-worker",
                 "--claude-model", "claude-fable-5-1",
+                "--claude-effort", "max",
             ]
         )
         self.assertEqual(selected.claude_model, "claude-fable-5-1")
+        self.assertEqual(selected.claude_effort, "max")
         with self.assertRaises(SystemExit):
             parser.parse_args(
                 [
