@@ -26,8 +26,26 @@ class CalendarBriefContractTest(unittest.TestCase):
         self.assertIn("store.predicateForEvents(", status_branch)
         self.assertIn("$0.eventIdentifier == identifier", status_branch)
         self.assertIn("timeIntervalSince(expectedOccurrence)", status_branch)
-        # A moved occurrence is still an active meeting, never a cancellation.
-        self.assertIn('status: "active", reason: "calendar event was rescheduled"', status_branch)
+        # Moving to another day cancels this import job's original time window.
+        missing_occurrence_branch = status_branch.split(
+            "if occurrence == nil && expectedOccurrence != nil", 1
+        )[1].split("if event.status", 1)[0]
+        self.assertIn(
+            'status: "cancelled", reason: "calendar event moved to another day"',
+            missing_occurrence_branch,
+        )
+        self.assertNotIn('status: "active"', missing_occurrence_branch)
+        # A resolved occurrence is also cancelled when its current start crossed
+        # the scheduled Pacific date; otherwise the final branch remains active.
+        date_branch = status_branch.split("if let expectedLocalDate", 1)[1]
+        self.assertIn(
+            'status: "cancelled", reason: "calendar event moved to another day"',
+            date_branch,
+        )
+        self.assertIn(
+            'status: "active", reason: "calendar event is still active"',
+            date_branch,
+        )
         # The identifier lookup may only be a fallback behind the window search.
         self.assertIn("occurrence ?? store.event(withIdentifier: identifier)", status_branch)
         self.assertNotIn("guard let event = store.event(withIdentifier:", status_branch)

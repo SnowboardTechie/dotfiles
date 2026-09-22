@@ -12,7 +12,7 @@ import os
 import stat
 import subprocess
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -47,21 +47,32 @@ def _event_datetime(value: Any) -> datetime | None:
 
 def _meeting_import_name(event: dict[str, Any]) -> str:
     occurrence = _event_datetime(event.get("occurrenceDate"))
+    scheduled_start = _event_datetime(event.get("start"))
     identity = "\0".join(
         str(event.get(key) or "")
         for key in ("calendar", "eventIdentifier")
     )
-    identity = f"{identity}\0{occurrence.isoformat() if occurrence else ''}"
+    identity = "\0".join((
+        identity,
+        occurrence.isoformat() if occurrence else "",
+        scheduled_start.astimezone(PACIFIC).date().isoformat() if scheduled_start else "",
+    ))
     digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:12]
     return f"Import Granola meeting {digest}"
 
 
 def _meeting_status_token(event: dict[str, Any]) -> str:
+    scheduled_start = _event_datetime(event.get("start"))
     payload = {
         "source": str(event.get("source") or ""),
         "eventIdentifier": str(event.get("eventIdentifier") or ""),
         "calendarIdentifier": event.get("calendarIdentifier"),
         "occurrenceDate": event.get("occurrenceDate"),
+        "scheduledLocalDate": (
+            scheduled_start.astimezone(PACIFIC).date().isoformat()
+            if scheduled_start is not None
+            else None
+        ),
     }
     encoded = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
     return base64.urlsafe_b64encode(encoded).decode("ascii").rstrip("=")
@@ -79,10 +90,21 @@ def _decode_meeting_status_token(token: str) -> dict[str, Any]:
         raise ValueError("invalid calendar status token")
     if payload.get("source") not in {"google_calendar", "apple_calendar"}:
         raise ValueError("unsupported calendar status source")
+    scheduled_local_date = payload.get("scheduledLocalDate")
+    try:
+        if not isinstance(scheduled_local_date, str):
+            raise ValueError
+        date.fromisoformat(scheduled_local_date)
+    except ValueError as exc:
+        raise ValueError("calendar status token is missing a valid scheduled local date") from exc
     return payload
 
 
-def _cancelled_or_active(event: dict[str, Any]) -> dict[str, str]:
+def _cancelled_or_active(
+    event: dict[str, Any],
+    *,
+    scheduled_local_date: str | None = None,
+) -> dict[str, str]:
     if str(event.get("status") or "").lower() == "cancelled":
         return {"status": "cancelled", "reason": "calendar event is cancelled"}
     current_user = next(
@@ -91,6 +113,14 @@ def _cancelled_or_active(event: dict[str, Any]) -> dict[str, str]:
     )
     if str((current_user or {}).get("responseStatus") or "").lower() == "declined":
         return {"status": "cancelled", "reason": "Bryan declined the calendar event"}
+    current_start, _ = _google_event_time(event.get("start"))
+    parsed_start = _event_datetime(current_start)
+    if (
+        scheduled_local_date
+        and parsed_start is not None
+        and parsed_start.astimezone(PACIFIC).date().isoformat() != scheduled_local_date
+    ):
+        return {"status": "cancelled", "reason": "calendar event moved to another day"}
     return {"status": "active", "reason": "calendar event is still active"}
 
 
@@ -172,15 +202,19 @@ def calendar_event_status(token: str, *, json_command_fn=None) -> dict[str, str]
             if "404" in normalized or "410" in normalized or "not found" in normalized:
                 return {"status": "cancelled", "reason": "calendar event was removed"}
             return {"status": "unknown", "reason": f"Google Calendar lookup failed: {error}"[:500]}
-        return _cancelled_or_active(event or {})
+        return _cancelled_or_active(
+            event or {},
+            scheduled_local_date=identity.get("scheduledLocalDate"),
+        )
 
     binary = HERMES_HOME / "scripts" / "bin" / "sgg-calendar-events"
     occurrence_value = identity.get("occurrenceDate")
     if occurrence_value and _event_datetime(occurrence_value) is None:
         return {"status": "unknown", "reason": "calendar occurrence identity is invalid"}
     occurrence = str(occurrence_value or "-")
+    scheduled_local_date = str(identity.get("scheduledLocalDate") or "-")
     status_result, error = json_command_fn(
-        [str(binary), "--event-status", event_id, occurrence],
+        [str(binary), "--event-status", event_id, occurrence, scheduled_local_date],
         timeout=30,
     )
     if error:

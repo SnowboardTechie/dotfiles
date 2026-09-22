@@ -124,7 +124,7 @@ class MeetingImportSchedulingTest(unittest.TestCase):
         self.assertEqual(update_calls[0]["job_id"], "one-shot-1")
         self.assertEqual(rerun["updated"], [{"name": existing_name, "jobId": "one-shot-1"}])
 
-    def test_calendar_edit_updates_same_one_shot_instead_of_creating_duplicate(self) -> None:
+    def test_cross_date_edit_replaces_pending_import_with_new_day_job(self) -> None:
         collector = load_module(COLLECTOR, "sgg_morning_brief_for_calendar_edit_test")
         now = datetime(2026, 9, 1, 7, 30, tzinfo=ZoneInfo("America/Los_Angeles"))
         original = {
@@ -148,24 +148,42 @@ class MeetingImportSchedulingTest(unittest.TestCase):
             "end": "2026-09-02T20:00:00Z",
         }
         original_name = collector._meeting_import_name(original)
+        same_day = {
+            **original,
+            "start": "2026-09-01T20:00:00Z",
+            "end": "2026-09-01T21:00:00Z",
+        }
+        self.assertEqual(collector._meeting_import_name(same_day), original_name)
         calls: list[dict] = []
 
         def cronjob(**kwargs):
             calls.append(kwargs)
             if kwargs["action"] == "list":
                 return json.dumps(
-                    {"success": True, "jobs": [{"job_id": "one-shot-1", "name": original_name}]}
+                    {
+                        "success": True,
+                        "jobs": [{
+                            "job_id": "one-shot-1",
+                            "name": original_name,
+                            "state": "scheduled",
+                            "next_run_at": "2026-09-01T12:15:00-07:00",
+                        }],
+                    }
                 )
-            if kwargs["action"] == "update":
-                return json.dumps({"success": True, "job_id": "one-shot-1"})
-            self.fail("calendar edit attempted to create a duplicate one-shot job")
+            if kwargs["action"] == "create":
+                return json.dumps({"success": True, "job_id": "one-shot-2"})
+            if kwargs["action"] == "remove":
+                return json.dumps({"success": True})
+            self.fail(f"unexpected cron action: {kwargs['action']}")
 
         result = collector.schedule_meeting_note_imports([changed], now=now, cronjob_fn=cronjob)
 
-        self.assertEqual(collector._meeting_import_name(changed), original_name)
-        update = next(call for call in calls if call["action"] == "update")
-        self.assertEqual(update["schedule"], "2026-09-02T13:15:00-07:00")
-        self.assertEqual(result["updated"], [{"name": original_name, "jobId": "one-shot-1"}])
+        changed_name = collector._meeting_import_name(changed)
+        self.assertNotEqual(changed_name, original_name)
+        create = next(call for call in calls if call["action"] == "create")
+        self.assertEqual(create["schedule"], "2026-09-02T13:15:00-07:00")
+        self.assertEqual(result["scheduled"], [{"name": changed_name, "jobId": "one-shot-2"}])
+        self.assertEqual(result["removed"], [{"name": original_name, "jobId": "one-shot-1"}])
 
     def test_removes_pending_import_when_calendar_event_is_no_longer_eligible(self) -> None:
         collector = load_module(COLLECTOR, "sgg_morning_brief_for_cancellation_test")
@@ -362,24 +380,59 @@ class MeetingImportSchedulingTest(unittest.TestCase):
         self.assertEqual(result["status"], "cancelled")
         self.assertEqual(result["reason"], "calendar event was removed")
         self.assertEqual(
-            calls[0][-3:],
-            ["--event-status", "eventkit-item-123", "2026-09-01T18:00:00Z"],
+            calls[0][-4:],
+            ["--event-status", "eventkit-item-123", "2026-09-01T18:00:00Z", "2026-09-01"],
         )
 
-    def test_eventkit_status_follows_a_cross_date_reschedule_by_identifier(self) -> None:
-        collector = load_module(COLLECTOR, "sgg_morning_brief_for_eventkit_reschedule_test")
+    def test_google_status_treats_cross_date_reschedule_as_cancelled_for_original_job(self) -> None:
+        collector = load_module(COLLECTOR, "sgg_morning_brief_for_google_reschedule_test")
         event = {
-            "eventIdentifier": "eventkit-item-123",
-            "source": "apple_calendar",
-            "calendar": "Bryan @ Agile6",
-            "occurrenceDate": "2026-09-01T18:00:00Z",
+            "eventIdentifier": "event-123",
+            "calendarIdentifier": "work-calendar",
+            "source": "google_calendar",
             "start": "2026-09-01T11:00:00-07:00",
         }
 
         result = collector.calendar_event_status(
             collector._meeting_status_token(event),
             json_command_fn=lambda args, **kwargs: (
-                {"status": "active", "reason": "calendar event is still active"},
+                {"status": "confirmed", "start": {"dateTime": "2026-09-02T11:00:00-07:00"}},
+                None,
+            ),
+        )
+
+        self.assertEqual(result["status"], "cancelled")
+        self.assertEqual(result["reason"], "calendar event moved to another day")
+
+    def test_status_token_without_scheduled_date_fails_closed(self) -> None:
+        collector = load_module(COLLECTOR, "sgg_morning_brief_for_old_token_test")
+        token = collector._meeting_status_token({
+            "eventIdentifier": "event-123",
+            "calendarIdentifier": "work-calendar",
+            "source": "google_calendar",
+        })
+
+        def unexpected_lookup(args, **kwargs):
+            self.fail("an incomplete status token reached the calendar API")
+
+        result = collector.calendar_event_status(token, json_command_fn=unexpected_lookup)
+
+        self.assertEqual(result["status"], "unknown")
+        self.assertIn("scheduled local date", result["reason"])
+
+    def test_google_status_keeps_same_day_reschedule_active(self) -> None:
+        collector = load_module(COLLECTOR, "sgg_morning_brief_for_google_same_day_test")
+        event = {
+            "eventIdentifier": "event-123",
+            "calendarIdentifier": "work-calendar",
+            "source": "google_calendar",
+            "start": "2026-09-01T11:00:00-07:00",
+        }
+
+        result = collector.calendar_event_status(
+            collector._meeting_status_token(event),
+            json_command_fn=lambda args, **kwargs: (
+                {"status": "confirmed", "start": {"dateTime": "2026-09-01T15:00:00-07:00"}},
                 None,
             ),
         )

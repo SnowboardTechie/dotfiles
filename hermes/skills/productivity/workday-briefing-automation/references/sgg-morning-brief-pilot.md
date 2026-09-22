@@ -62,9 +62,10 @@ decide whether that meeting is relevant.
 
 Separately, the deterministic collector creates one one-shot job for each
 eligible timed event on `Bryan @ Agile6`, scheduled exactly 15 minutes after the
-event's end. EventKit's event identifier plus its original recurring-occurrence
-date gives the job an idempotent name, so even a cross-date reschedule updates
-timing metadata on the same pending job instead of duplicating it. Declined,
+event's end. EventKit's event identifier, original recurring-occurrence date,
+and current scheduled Pacific date give each job an idempotent identity.
+Same-day time changes update one pending job; a cross-day move replaces the old
+pending job or creates a new-day job after the original has completed. Declined,
 all-day, non-meeting, identifier-less, and already-past events are excluded;
 pending imports absent from the eligible set are removed so cancellations and
 declines cannot leave an obsolete job armed.
@@ -87,11 +88,12 @@ Each one-shot job omits all calendar prose and matches exactly one completed
 Granola meeting from the validated time window and Granola participant metadata.
 After its first missing or ambiguous Granola result, it rechecks the exact event
 and original calendar identities against the current work calendar before
-retrying. The EventKit fallback resolves the event by identifier rather than by
-its former date, so cross-date reschedules do not become false cancellations. A
-cancelled, removed, or Bryan-declined event ends silently without another
-Granola call or a Hindsight write. Only a confirmed-active event receives up to
-two more Granola attempts, 180 seconds apart; an unavailable calendar check
+retrying. Cancellation is scoped to the original import window: if the event
+moves to another Pacific calendar day, the old job ends silently just like a
+cancelled, removed, or Bryan-declined event. A later morning collector run owns
+scheduling a replacement import on the new day. Same-day time changes remain
+active. Only a confirmed-active event receives up to two more Granola attempts,
+180 seconds apart; an unavailable calendar check
 fails visibly rather than assuming the meeting remained active.
 After retrieving private notes and the AI-generated summary without a transcript,
 the agent writes a complete source snapshot into a randomized mode-0600 file
