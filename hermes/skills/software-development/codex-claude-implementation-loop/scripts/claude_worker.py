@@ -32,7 +32,6 @@ IMPLEMENT_SCHEMA = REFERENCE_DIR / "implementation-result-schema.json"
 REVISION_SCHEMA = REFERENCE_DIR / "revision-result-schema.json"
 MAX_INPUT_CHARS = 200_000
 DEFAULT_WORKER_CONFIG_DIR = Path.home() / ".hermes" / "claude-code-worker"
-DEFAULT_CLAUDE_MODEL = "claude-opus-5-5"
 USAGE_WARNING_PERCENT = 75.0
 USAGE_BLOCK_PERCENT = 85.0
 USAGE_LINE_RE = re.compile(
@@ -226,7 +225,7 @@ def enforce_usage_preflight(
     if highest_percentage > USAGE_BLOCK_PERCENT and not allow_high_usage:
         raise WorkerError(
             "Claude usage is above the 85% handoff limit "
-            f"({highest['window']}: {highest_percentage:g}%); refusing to launch Opus 5.5. "
+            f"({highest['window']}: {highest_percentage:g}%); refusing to launch Opus. "
             "After explicit user approval, rerun with --allow-high-usage."
         )
 
@@ -257,7 +256,7 @@ def guarded_usage_preflight(
     except WorkerError as exc:
         if not allow_high_usage:
             raise WorkerError(
-                "Claude usage could not be verified; refusing to launch Opus 5.5 without "
+                "Claude usage could not be verified; refusing to launch Opus without "
                 "an explicit override. After user approval, rerun with "
                 f"--allow-high-usage. Preflight error: {exc}"
             ) from exc
@@ -495,7 +494,7 @@ def execute_worker_locked(
         json.dumps(disabled_user_plugin_settings(config_dir), separators=(",", ":")),
         "--disable-slash-commands",
         "--name",
-        "Hermes Opus 5.5 implementation worker",
+        "Hermes Opus implementation worker",
         "--prompt-suggestions",
         "false",
         "--model",
@@ -590,11 +589,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     def add_common(subparser: argparse.ArgumentParser) -> None:
         subparser.add_argument("--workdir", default=os.getcwd())
-        subparser.add_argument("--model", default=DEFAULT_CLAUDE_MODEL)
+        subparser.add_argument("--model", default="opus")
         subparser.add_argument(
             "--allow-non-opus",
             action="store_true",
-            help="allow a model other than Opus 5.5 only after explicit user confirmation",
+            help="allow a non-Opus model only after explicit user confirmation",
         )
         subparser.add_argument(
             "--allow-high-usage",
@@ -631,14 +630,14 @@ def main() -> int:
     args = parser.parse_args()
     if (
         hasattr(args, "model")
-        and args.model != DEFAULT_CLAUDE_MODEL
+        and "opus" not in args.model.lower()
         and not args.allow_non_opus
     ):
         return emit(
             {
                 "ok": False,
                 "error": (
-                    "models other than Claude Opus 5.5 require explicit user confirmation; "
+                    "non-Opus Claude models require explicit user confirmation; "
                     "rerun with --allow-non-opus only after receiving it"
                 ),
             },
