@@ -31,13 +31,17 @@ python3 scripts/herdr_worker.py start \
 
 `--claude-model` defaults to `opus`. Set the exact full model name when Bryan
 explicitly selects a different Claude model; do not add a fallback model.
+`--claude-effort` defaults to `xhigh`, including for simple and documentation
+work. Use `--claude-effort max` only for narrowly scoped, security-critical work
+where another correction cycle would be especially expensive.
 
 The command exclusively reserves a new identity path under a per-identity owner
 lock before any pane side effect, performs the live capacity check before pane
 creation, creates a
 right-hand `--no-focus` split from the injected caller pane, starts Claude with
-auto permissions and Opus/high effort, verifies the runtime session and Git
-worktree, then atomically writes the six-field identity file with mode 0600.
+auto permissions and Opus/xhigh effort by default, verifies the runtime session
+and Git worktree, then atomically writes the six-field identity file with mode
+0600.
 
 Any pre-existing identity path, including a closed record, is refused before a
 pane is created. Use a different state path for a separately authorized worker;

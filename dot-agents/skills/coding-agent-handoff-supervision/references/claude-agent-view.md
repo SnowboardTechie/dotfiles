@@ -12,12 +12,14 @@ Herdr worker was successfully created.
 Use a positional prompt so Claude creates an attachable background session:
 
 ```sh
-claude --bg --permission-mode auto --model opus --effort high \
+claude --bg --permission-mode auto --model opus --effort xhigh \
   --name "Short task name" "<concept brief>"
 ```
 
 Do not combine `--bg` with `-p`. Preserve an explicitly requested model, effort,
-or safer permission mode. Verify immediately:
+or safer permission mode. Keep `xhigh` even for simple or documentation-only
+work. Use `max` only for narrowly scoped, security-critical work where another
+correction cycle would be especially expensive. Verify immediately:
 
 ```sh
 claude agents --json --all

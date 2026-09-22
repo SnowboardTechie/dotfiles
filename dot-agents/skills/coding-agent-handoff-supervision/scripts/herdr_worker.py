@@ -19,6 +19,10 @@ import time
 from typing import Any, Callable
 
 
+CLAUDE_EFFORTS = ("low", "medium", "high", "xhigh", "max")
+DEFAULT_CLAUDE_EFFORT = "xhigh"
+
+
 class HandoffError(RuntimeError):
     """The visible-worker contract could not be verified."""
 
@@ -508,6 +512,7 @@ class RealHerdr:
         pane_id: str,
         title: str,
         claude_model: str = "opus",
+        claude_effort: str = DEFAULT_CLAUDE_EFFORT,
     ) -> None:
         command = [
             "agent",
@@ -528,7 +533,7 @@ class RealHerdr:
                 "--model",
                 claude_model,
                 "--effort",
-                "high",
+                claude_effort,
                 "--name",
                 title,
             ]
@@ -714,6 +719,7 @@ class HandoffController:
         kind: str,
         title: str,
         claude_model: str = "opus",
+        claude_effort: str = DEFAULT_CLAUDE_EFFORT,
     ) -> dict[str, Any]:
         if kind not in {"claude", "hermes"}:
             raise HandoffError(f"unsupported visible worker kind: {kind}")
@@ -783,6 +789,7 @@ class HandoffController:
                     pane_id=pane_id,
                     title=title,
                     claude_model=claude_model,
+                    claude_effort=claude_effort,
                 )
                 record = make_identity(
                     agent=_extract_agent(self.herdr.get_agent(name)),
@@ -841,6 +848,7 @@ class HandoffController:
         title: str,
         text: str,
         claude_model: str,
+        claude_effort: str,
     ) -> tuple[dict[str, Any], dict[str, Any], dict[str, str]]:
         """Start a worker and mark the engagement mode before any prompt is sent."""
         if not text.strip():
@@ -853,6 +861,7 @@ class HandoffController:
             kind=kind,
             title=title,
             claude_model=claude_model,
+            claude_effort=claude_effort,
         )
         identity_file = _identity_target(identity_path)
         # Marked before the send, so an interrupted delivery still leaves an
@@ -881,6 +890,7 @@ class HandoffController:
         title: str,
         text: str,
         claude_model: str = "opus",
+        claude_effort: str = DEFAULT_CLAUDE_EFFORT,
     ) -> dict[str, Any]:
         """Fire-and-forget: start a worker, deliver one prompt, keep no claim on the result."""
         started, record, paths = self._start_handed_off(
@@ -894,6 +904,7 @@ class HandoffController:
             title=title,
             text=text,
             claude_model=claude_model,
+            claude_effort=claude_effort,
         )
         try:
             self.herdr.deliver(name=name, text=text)
@@ -932,6 +943,7 @@ class HandoffController:
         text: str,
         timeout_ms: int,
         claude_model: str = "opus",
+        claude_effort: str = DEFAULT_CLAUDE_EFFORT,
     ) -> dict[str, Any]:
         """Status-only: start, submit exactly one prompt through the wait-capable
         path under the same lease and capacity gates as `prompt`, and return the
@@ -947,6 +959,7 @@ class HandoffController:
             title=title,
             text=text,
             claude_model=claude_model,
+            claude_effort=claude_effort,
         )
         lease = self._session_lease(record) if kind == "claude" else nullcontext()
         with lease:
@@ -1426,6 +1439,9 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--kind", choices=("claude", "hermes"), default="claude")
     start.add_argument("--title")
     start.add_argument("--claude-model", default="opus")
+    start.add_argument(
+        "--claude-effort", choices=CLAUDE_EFFORTS, default=DEFAULT_CLAUDE_EFFORT
+    )
 
     prompt = subparsers.add_parser("prompt")
     prompt.add_argument("--identity-file", type=Path, required=True)
@@ -1445,6 +1461,9 @@ def build_parser() -> argparse.ArgumentParser:
     handoff.add_argument("--kind", choices=("claude", "hermes"), default="claude")
     handoff.add_argument("--title")
     handoff.add_argument("--claude-model", default="opus")
+    handoff.add_argument(
+        "--claude-effort", choices=CLAUDE_EFFORTS, default=DEFAULT_CLAUDE_EFFORT
+    )
 
     handoff_status = subparsers.add_parser(
         "handoff-status",
@@ -1457,6 +1476,9 @@ def build_parser() -> argparse.ArgumentParser:
     handoff_status.add_argument("--kind", choices=("claude", "hermes"), default="claude")
     handoff_status.add_argument("--title")
     handoff_status.add_argument("--claude-model", default="opus")
+    handoff_status.add_argument(
+        "--claude-effort", choices=CLAUDE_EFFORTS, default=DEFAULT_CLAUDE_EFFORT
+    )
     handoff_status.add_argument("--timeout-ms", type=int, default=7_200_000)
 
     status_wait = subparsers.add_parser(
@@ -1516,6 +1538,7 @@ def main() -> int:
                 kind=args.kind,
                 title=args.title or args.name,
                 claude_model=args.claude_model,
+                claude_effort=args.claude_effort,
             )
         elif args.command == "handoff":
             prompt_path = _validated_prompt_path(args.prompt_file, args.identity_file)
@@ -1529,6 +1552,7 @@ def main() -> int:
                 title=args.title or args.name,
                 text=prompt_path.read_text(encoding="utf-8"),
                 claude_model=args.claude_model,
+                claude_effort=args.claude_effort,
             )
         elif args.command == "handoff-status":
             prompt_path = _validated_prompt_path(args.prompt_file, args.identity_file)
@@ -1543,6 +1567,7 @@ def main() -> int:
                 text=prompt_path.read_text(encoding="utf-8"),
                 timeout_ms=args.timeout_ms,
                 claude_model=args.claude_model,
+                claude_effort=args.claude_effort,
             )
         elif args.command == "status-wait":
             result = controller.status_wait(
