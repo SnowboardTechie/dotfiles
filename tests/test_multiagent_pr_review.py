@@ -288,10 +288,10 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
             with self.subTest(adjudication_field=token):
                 self.assertIn(token, self.adjudication_template)
 
-    def test_claude_lane_agent_is_opus_5_5_and_confined(self) -> None:
+    def test_claude_lane_agent_is_opus_and_confined(self) -> None:
         self.assertTrue(CLAUDE_AGENT.is_file())
         fields = frontmatter(self.agent)
-        self.assertEqual(fields.get("model"), "claude-opus-5-5")
+        self.assertEqual(fields.get("model"), "opus")
         self.assertIn("Write", fields.get("tools", ""))
         for lane in ("standards", "spec", "correctness", "risk", "ponytail"):
             self.assertIn(f"`{lane}`", self.agent)

@@ -741,7 +741,7 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
             with self.subTest(token=token):
                 self.assertIn(token, self.body + self.code_review)
         self.assertNotIn("parallel children", self.code_review)
-        self.assertIn("model: claude-opus-5-5", self.reviewer)
+        self.assertIn("model: opus", self.reviewer)
         self.assertIn("Do not spend another subagent", self.reviewer)
 
     def test_parent_is_independent_for_worker_authored_candidate(self) -> None:
