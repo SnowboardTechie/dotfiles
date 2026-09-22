@@ -2,7 +2,7 @@
 name: lane-reviewer
 description: Independent integrated reviewer for exact candidates.
 tools: Bash, Read, Write, Grep, Glob
-model: opus
+model: claude-opus-5-5
 ---
 
 # Integrated Candidate Reviewer

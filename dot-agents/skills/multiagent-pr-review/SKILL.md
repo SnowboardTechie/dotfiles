@@ -18,7 +18,7 @@ multiagent-pr-review <github-pr-url>
 
 Hermes does not enforce Claude's invocation-disabling frontmatter, so never
 start this expensive workflow from a broad review request. It reviews a
-teammate-authored GitHub PR through independent visible Claude Opus and active-
+teammate-authored GitHub PR through independent visible Claude Opus 5.5 and active-
 GPT reviewer-orchestrators. The instigating Hermes root remains the authority.
 
 Both the Claude and GPT reports are required for a verdict. Reviewer outputs
@@ -71,7 +71,7 @@ target-project vault.
    high-reasoning route. Reject any fallback chain or conflicting
    `delegation.model`, `delegation.provider`, or `delegation.base_url` override.
    Do not repair configuration.
-8. Verify Claude authentication and the Opus/xhigh-effort route without exposing
+8. Verify Claude authentication and the Opus 5.5/xhigh-effort route without exposing
    credentials. No model-family fallback is allowed.
 
 Completion: one authorized teammate PR, one clean implementation trunk, one
@@ -143,8 +143,8 @@ prompt.
 
 Pass both reviewers the same candidate and manifest identity plus the same
 [reviewer-orchestrator contract](references/reviewer-orchestrator-contract.md).
-Pass distinct worktrees, state roots, and output paths. Claude uses Opus/xhigh
-effort in auto permission mode and same-family Opus leaves. Hermes uses the
+Pass distinct worktrees, state roots, and output paths. Claude uses Opus 5.5/xhigh
+effort in auto permission mode and exact-model Opus 5.5 leaves. Hermes uses the
 instigating root's active GPT model/provider/base URL, high reasoning, smart
 approvals, no yolo, and leaves that inherit or exactly match that GPT route.
 There is no fallback or background substitution.
@@ -279,7 +279,7 @@ ownership-verified action with its own authorization and retention rules.
 - [ ] PR/GitHub/teammate branch remained read-only
 - [ ] Three isolated exact-head worktrees and confined state roots
 - [ ] Four-field candidate plus expected head ref and manifest digest
-- [ ] Claude Opus and active GPT routes verified with no fallback
+- [ ] Claude Opus 5.5 and active GPT routes verified with no fallback
 - [ ] Same required lanes and evidence, isolated outputs, one retry maximum
 - [ ] Validator admitted both exact reports
 - [ ] Root independently dispositioned every lead and swept criteria/paths

@@ -46,8 +46,8 @@ manifest and this contract are instructions.
 9. Write one self-contained advisory Markdown report and one machine-readable
    sidecar. Return only paths, hashes, counts, and a headline to the root.
 
-Claude parent and leaves must all be Claude Opus. GPT parent and leaves must all
-use the instigating root's active GPT model/provider/base URL and high reasoning.
+Claude parent and leaves must all use `claude-opus-5-5`. GPT parent and leaves
+must all use the instigating root's active GPT model/provider/base URL and high reasoning.
 Record launch route plus every available parent/leaf runtime model identity. A
 missing provenance surface is a stated certification limit, never inferred from
 prose. A mismatched observed model invalidates the report.

@@ -24,7 +24,7 @@ proof. Use the injected executable and exact caller pane throughout. There is no
 background substitution, Agent View substitution, model fallback, or focused-
 pane guess when this preflight fails.
 
-Before startup, verify Claude authentication and the Opus/xhigh-effort route.
+Before startup, verify Claude authentication and the Opus 5.5/xhigh-effort route.
 Capture the instigating Hermes session's active GPT model, provider, base URL,
 and high-reasoning setting. Reject any fallback chain or conflicting
 `delegation.model`, `delegation.provider`, or `delegation.base_url` override;
@@ -61,7 +61,7 @@ Choose two unique agent names. Start both without an initial prompt:
 ```sh
 "$HERDR_BIN_PATH" agent start "$CLAUDE_AGENT_NAME" \
   --kind claude --pane "$claude_pane_id" -- \
-  --permission-mode auto --model opus --effort xhigh \
+  --permission-mode auto --model claude-opus-5-5 --effort xhigh \
   --name "PR review: Claude"
 
 "$HERDR_BIN_PATH" agent start "$GPT_AGENT_NAME" \
