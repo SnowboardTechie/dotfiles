@@ -63,7 +63,7 @@ class FakeHerdr:
         kind: str,
         pane_id: str,
         title: str,
-        claude_model: str = "opus",
+        claude_model: str = "claude-opus-5-5",
         claude_effort: str = "xhigh",
     ) -> None:
         self.agents[name] = {
@@ -483,6 +483,10 @@ class HerdrWorkerTests(unittest.TestCase):
             pane_id="critical-pane",
             title="Critical worker",
             claude_effort="max",
+        )
+        self.assertEqual(
+            sent[1][sent[1].index("--model") + 1],
+            "claude-opus-5-5",
         )
         self.assertEqual(sent[1][sent[1].index("--effort") + 1], "max")
 
@@ -1138,7 +1142,7 @@ class HerdrWorkerTests(unittest.TestCase):
         )
         self.assertEqual(arguments.command, "handoff")
         self.assertEqual(arguments.kind, "claude")
-        self.assertEqual(arguments.claude_model, "opus")
+        self.assertEqual(arguments.claude_model, "claude-opus-5-5")
         self.assertEqual(arguments.claude_effort, "xhigh")
         selected = parser.parse_args(
             [
