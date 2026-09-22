@@ -1,7 +1,7 @@
 ---
 name: coding-agent-handoff-supervision
 description: Use for visible, ticket-backed coding-agent handoffs.
-version: 2.0.0
+version: 2.1.0
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
@@ -87,6 +87,16 @@ only:
 Do not restate steps, files, tests, requirements, or safeguards from a reachable
 plan or ticket. If the worker cannot access it, make it reachable first; for a
 true cross-machine handoff use `cross-machine-coding-agent-handoffs`.
+
+Treat the artifact's scope as closed. A worker may inspect broadly enough to
+implement safely, but it edits only what the settled acceptance criteria
+require. Unexpected adjacent defects are reported to Sol; the worker does not
+add characterization tests, production fixes, trackers, or "helpful" cleanup
+for them. In particular, "cover every existing call site" means apply the
+selected mechanism at every site, not exhaustively discover every latent
+behavior behind those calls unless the governing artifact explicitly requires
+conformance exhaustiveness. The parent dispositions observations against the
+original contract before authorizing any correction.
 
 Destructive and history-rewriting Git operations are absolute and not
 approval-eligible: forbid `git reset`, `git clean`, checkout-discard operations,
@@ -261,10 +271,12 @@ resume a Herdr identity.
 3. Making the prompt a second plan.
 4. Rechecking identity with improvised shell commands instead of the helper.
 5. Treating worker tests, idle status, or prose as parent acceptance.
-6. Starting a fresh worker for corrections instead of resuming the recorded one.
-7. Running a generic fresh Claude reviewer after Sol already reviewed the work.
-8. Leaving a settled pane open as a status marker.
-9. Confusing correction allowance with provider capacity.
+6. Letting a worker-discovered adjacent defect expand the ticket or candidate without a new user decision.
+7. Using "all call sites" as permission for an exhaustive domain audit rather than bounded application of the selected mechanism.
+8. Starting a fresh worker for corrections instead of resuming the recorded one.
+9. Running a generic fresh Claude reviewer after Sol already reviewed the work.
+10. Leaving a settled pane open as a status marker.
+11. Confusing correction allowance with provider capacity.
 
 ## Verification Checklist
 
