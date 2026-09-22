@@ -123,11 +123,17 @@ guard granted else {
 
 let systemCalendar = Calendar.current
 let arguments = Array(CommandLine.arguments.dropFirst())
-if arguments.count == 3 && arguments[0] == "--event-status" {
+if arguments.count == 4 && arguments[0] == "--event-status" {
     let identifier = arguments[1]
     let expectedOccurrence = arguments[2] == "-"
         ? nil
         : ISO8601DateFormatter().date(from: arguments[2])
+    let expectedLocalDate = arguments[3] == "-" ? nil : arguments[3]
+    let localDate = DateFormatter()
+    localDate.calendar = Calendar(identifier: .gregorian)
+    localDate.locale = Locale(identifier: "en_US_POSIX")
+    localDate.timeZone = TimeZone(identifier: "America/Los_Angeles")
+    localDate.dateFormat = "yyyy-MM-dd"
 
     // event(withIdentifier:) returns the FIRST occurrence of a recurring series,
     // whose status describes that occurrence and not the one we scheduled for.
@@ -149,11 +155,11 @@ if arguments.count == 3 && arguments[0] == "--event-status" {
         try writeJSON(EventStatusResult(status: "cancelled", reason: "calendar event was removed"))
         exit(0)
     }
-    // The series resolved but this occurrence left the window, so it was moved
-    // rather than cancelled. Never read the first occurrence's per-instance
-    // status as if it were this one's.
+    // The series resolved but this occurrence left its original-day window.
+    // That cancels this time-bound import job; a later morning run owns any
+    // replacement job on the new day.
     if occurrence == nil && expectedOccurrence != nil {
-        try writeJSON(EventStatusResult(status: "active", reason: "calendar event was rescheduled"))
+        try writeJSON(EventStatusResult(status: "cancelled", reason: "calendar event moved to another day"))
         exit(0)
     }
     if event.status == .canceled {
@@ -162,6 +168,11 @@ if arguments.count == 3 && arguments[0] == "--event-status" {
     }
     if event.attendees?.first(where: { $0.isCurrentUser })?.participantStatus == .declined {
         try writeJSON(EventStatusResult(status: "cancelled", reason: "Bryan declined the calendar event"))
+        exit(0)
+    }
+    if let expectedLocalDate,
+       localDate.string(from: event.startDate) != expectedLocalDate {
+        try writeJSON(EventStatusResult(status: "cancelled", reason: "calendar event moved to another day"))
         exit(0)
     }
     try writeJSON(EventStatusResult(status: "active", reason: "calendar event is still active"))
