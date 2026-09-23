@@ -93,8 +93,12 @@ moves to another Pacific calendar day, the old job ends silently just like a
 cancelled, removed, or Bryan-declined event. A later morning collector run owns
 scheduling a replacement import on the new day. Same-day time changes remain
 active. Only a confirmed-active event receives up to two more Granola attempts,
-180 seconds apart; an unavailable calendar check
-fails visibly rather than assuming the meeting remained active.
+180 seconds apart. The status helper resolves the raw identity from the local
+cron registry by job name, so secret redaction or model transcription cannot
+corrupt the opaque token. An unavailable calendar check stops without retrying.
+All one-shot imports deliver locally and always suppress user-facing output;
+their private local execution transcripts retain the status-helper, Granola,
+and import-helper results for later troubleshooting.
 After retrieving private notes and the AI-generated summary without a transcript,
 the agent writes a complete source snapshot into a randomized mode-0600 file
 under a verified mode-0700 private staging directory. The installed
@@ -103,8 +107,8 @@ under a verified mode-0700 private staging directory. The installed
 epistemic label. This makes the recorded context available to future SGG chats
 without promoting it to canonical project state. The helper verifies its exact
 submitted snapshot and Hindsight response; it does not claim a cryptographic
-binding to the prior MCP tool result. Success is silent; missing or ambiguous
-meetings and failed Hindsight verification notify Bryan in the SGG room.
+binding to the prior MCP tool result. Success and failure are both silent to
+Bryan; diagnostics remain in the private local execution transcript.
 
 #### Concluded workday-note pilot
 
