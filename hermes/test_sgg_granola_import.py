@@ -104,7 +104,7 @@ class MeetingImportSchedulingTest(unittest.TestCase):
         self.assertEqual(len(creates), 1)
         self.assertEqual(creates[0]["schedule"], "2026-09-01T12:15:00-07:00")
         self.assertEqual(creates[0]["repeat"], 1)
-        self.assertEqual(creates[0]["deliver"], collector.SGG_MATRIX_DESTINATION)
+        self.assertEqual(creates[0]["deliver"], "local")
         self.assertEqual(creates[0]["enabled_toolsets"], ["file", "terminal", "granola", "no_mcp"])
         self.assertEqual(result["scheduled"], [{"name": creates[0]["name"], "jobId": "one-shot-1"}])
 
@@ -312,18 +312,56 @@ class MeetingImportSchedulingTest(unittest.TestCase):
             "currentUserAttendee": {"status": "accepted"},
         }
 
-        prompt = collector._meeting_import_prompt(event, "Import Granola meeting test")
+        job_name = "Import Granola meeting test"
+        prompt = collector._meeting_import_prompt(event, job_name)
 
         self.assertNotIn(event["title"], prompt)
         self.assertNotIn(event["organizer"]["name"], prompt)
         self.assertIn("Calendar title, organizer, attendee names", prompt)
         self.assertIn("wait 180 seconds", prompt)
         self.assertIn("at most three list attempts", prompt)
-        self.assertIn("python3 /Users/bryan/.hermes/scripts/sgg-morning-brief.py meeting-status --token", prompt)
+        self.assertIn(
+            f'python3 /Users/bryan/.hermes/scripts/sgg-morning-brief.py meeting-status --job-name "{job_name}"',
+            prompt,
+        )
+        self.assertNotIn("meeting-status --token", prompt)
         self.assertIn("first Granola list attempt", prompt)
         self.assertIn("respond with exactly `[SILENT]`", prompt)
         self.assertIn("Do not make a second Granola call unless", prompt)
-        self.assertLess(prompt.index("meeting-status --token"), prompt.index("wait 180 seconds"))
+        self.assertNotIn("@bryan:snowboardtechie.com", prompt)
+        self.assertIn("If `status` is `unknown`, do not retry. Respond with exactly `[SILENT]`", prompt)
+        self.assertIn("If the third Granola attempt still has no unambiguous match", prompt)
+        self.assertIn("whether the helper reports verified success or failure", prompt)
+        self.assertIn("never notify Bryan", prompt)
+        self.assertLess(prompt.index("meeting-status --job-name"), prompt.index("wait 180 seconds"))
+
+    def test_job_name_status_lookup_uses_raw_registry_token(self) -> None:
+        collector = load_module(COLLECTOR, "sgg_morning_brief_for_job_status_test")
+        event = {
+            "eventIdentifier": "event-123",
+            "calendarIdentifier": "work-calendar",
+            "source": "google_calendar",
+            "start": "2026-09-23T11:00:00-07:00",
+        }
+        name = collector._meeting_import_name({**event, "calendar": "Bryan @ Agile6"})
+        token = collector._meeting_status_token(event)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            jobs_path = Path(temp_dir) / "jobs.json"
+            jobs_path.write_text(
+                json.dumps({"jobs": [{"name": name, "prompt": f"Calendar status token: {token}"}]}),
+                encoding="utf-8",
+            )
+            result = collector.calendar_event_status_for_job(
+                name,
+                jobs_path=jobs_path,
+                json_command_fn=lambda args, **kwargs: (
+                    {"status": "cancelled"},
+                    None,
+                ),
+            )
+
+        self.assertEqual(result["status"], "cancelled")
 
     def test_calendar_status_marks_cancelled_google_event_from_opaque_prompt_token(self) -> None:
         collector = load_module(COLLECTOR, "sgg_morning_brief_for_status_test")
