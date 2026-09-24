@@ -45,7 +45,8 @@
     "check-mattpocock-skill-updates.py",
     "check-sssf-upstream.py",
     "check-herdr-homebrew-atuin-fix.py",
-    "check-studio-services.py"
+    "check-studio-services.py",
+    "check-hermes-context-threshold.py"
   ],
   "removedScripts": [
     "sgg-sync-workday-note.py"
@@ -62,7 +63,8 @@
     "check-mattpocock-skill-updates.py",
     "check-sssf-upstream.py",
     "check-herdr-homebrew-atuin-fix.py",
-    "check-studio-services.py"
+    "check-studio-services.py",
+    "check-hermes-context-threshold.py"
   ],
   "plugins": [
     "matrix-key-recovery",
@@ -309,6 +311,21 @@
       "noAgent": true,
       "enabledToolsets": [],
       "workdir": "/Users/bryan/code/dotfiles",
+      "attachToSession": false
+    },
+    {
+      "name": "Hermes context threshold watchdog",
+      "deliveryIntent": "alert",
+      "schedule": "17 3 * * *",
+      "model": null,
+      "provider": null,
+      "promptFile": "automations/hermes-context-threshold-watchdog/prompt.md",
+      "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
+      "skills": [],
+      "script": "check-hermes-context-threshold.py",
+      "noAgent": true,
+      "enabledToolsets": [],
+      "workdir": "/Users/bryan",
       "attachToSession": false
     },
     {
