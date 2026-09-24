@@ -12,7 +12,7 @@ Review a single dependency pull request in the SGG / CommonGrants monorepo and d
 
 ## Input
 
-First confirm the PR belongs to one of the maintained SGG dependency queues: `HHS/simpler-grants-protocol`, `common-grants/py-cg-grants-gov`, or `common-grants/ts-cg-grants-gov`. Stop if it belongs to `HHS/simpler-grants-gov`; that Renovate queue is outside this workflow. The lane matrix below is fullest for `simpler-grants-protocol`; for either plugin repo, use only commands actually defined by that repo.
+First confirm the PR belongs to a repository in the SGG workspace manifest `~/code/sgg/repos.tsv`. The lane matrix below is fullest for `simpler-grants-protocol`; for any other repo, use only commands actually defined by that repo. `HHS/simpler-grants-gov` is an app with a Renovate queue and no published packages: skip the catalog lane and release attribution (Step 4) there.
 
 Accepts either:
 
