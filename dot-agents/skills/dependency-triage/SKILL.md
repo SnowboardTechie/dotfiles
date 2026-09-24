@@ -31,9 +31,9 @@ Do not use this skill to deeply debug one PR. Use `dependency-review` for that.
 
 ### SGG scope prerequisite
 
-From the `~/code/sgg/` umbrella, triage every repository listed in the workspace manifest `~/code/sgg/repos.tsv` (GitHub `owner/repo` is its origin path). Do not ask which repository is in scope; narrow only when the invocation names one.
+From the `~/code/sgg/` umbrella, triage every repository listed in the workspace manifest `~/code/sgg/repos.tsv` (GitHub `owner/repo` is its origin path), except `HHS/simpler-grants-gov`. Bryan doesn't manage that repo's dependencies, so skip its Renovate queue. Do not ask which repository is in scope; narrow only when the invocation names one.
 
-The catalog lane and release-please attribution rules below apply only to repositories that have them. `HHS/simpler-grants-gov` is an app with a Renovate queue and no published packages: triage it on CI state and blast radius, with no release-attribution check.
+The catalog lane and release-please attribution rules below apply only to repositories that have them.
 
 ---
 
