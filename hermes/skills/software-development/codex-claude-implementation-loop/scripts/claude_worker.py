@@ -589,7 +589,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     def add_common(subparser: argparse.ArgumentParser) -> None:
         subparser.add_argument("--workdir", default=os.getcwd())
-        subparser.add_argument("--model", default="opus")
+        subparser.add_argument("--model", default="claude-opus-5-5")
         subparser.add_argument(
             "--allow-non-opus",
             action="store_true",

@@ -2,7 +2,7 @@
 name: multiagent-pr-lane-reviewer
 description: Read-only Opus lane reviewer for exact PR candidates.
 tools: Bash, Read, Write, Grep, Glob
-model: opus
+model: claude-opus-5-5
 ---
 
 # Multiagent PR Lane Reviewer

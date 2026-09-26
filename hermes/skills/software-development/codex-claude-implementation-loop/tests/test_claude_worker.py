@@ -22,6 +22,15 @@ SPEC.loader.exec_module(claude_worker)
 
 
 class ClaudeWorkerTests(unittest.TestCase):
+    def test_implementation_and_revision_default_to_opus_5_5(self) -> None:
+        parser = claude_worker.build_parser()
+        for args in (
+            ["implement", "--plan", "/path/to/plan.md"],
+            ["revise", "--review", "/path/to/review.md", "--session-id", "session"],
+        ):
+            with self.subTest(mode=args[0]):
+                self.assertEqual(parser.parse_args(args).model, "claude-opus-5-5")
+
     def test_worker_config_directory_uses_isolated_secure_namespace(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             config_dir = Path(temp_dir) / "worker-config"

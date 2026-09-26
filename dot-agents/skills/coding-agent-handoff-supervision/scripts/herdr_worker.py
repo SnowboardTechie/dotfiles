@@ -21,6 +21,7 @@ from typing import Any, Callable
 
 CLAUDE_EFFORTS = ("low", "medium", "high", "xhigh", "max")
 DEFAULT_CLAUDE_EFFORT = "xhigh"
+DEFAULT_CLAUDE_MODEL = "claude-opus-5-5"
 
 
 class HandoffError(RuntimeError):
@@ -511,7 +512,7 @@ class RealHerdr:
         kind: str,
         pane_id: str,
         title: str,
-        claude_model: str = "opus",
+        claude_model: str = DEFAULT_CLAUDE_MODEL,
         claude_effort: str = DEFAULT_CLAUDE_EFFORT,
     ) -> None:
         command = [
@@ -718,7 +719,7 @@ class HandoffController:
         name: str,
         kind: str,
         title: str,
-        claude_model: str = "opus",
+        claude_model: str = DEFAULT_CLAUDE_MODEL,
         claude_effort: str = DEFAULT_CLAUDE_EFFORT,
     ) -> dict[str, Any]:
         if kind not in {"claude", "hermes"}:
@@ -889,7 +890,7 @@ class HandoffController:
         kind: str,
         title: str,
         text: str,
-        claude_model: str = "opus",
+        claude_model: str = DEFAULT_CLAUDE_MODEL,
         claude_effort: str = DEFAULT_CLAUDE_EFFORT,
     ) -> dict[str, Any]:
         """Fire-and-forget: start a worker, deliver one prompt, keep no claim on the result."""
@@ -942,7 +943,7 @@ class HandoffController:
         title: str,
         text: str,
         timeout_ms: int,
-        claude_model: str = "opus",
+        claude_model: str = DEFAULT_CLAUDE_MODEL,
         claude_effort: str = DEFAULT_CLAUDE_EFFORT,
     ) -> dict[str, Any]:
         """Status-only: start, submit exactly one prompt through the wait-capable
@@ -1438,7 +1439,7 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--name", required=True)
     start.add_argument("--kind", choices=("claude", "hermes"), default="claude")
     start.add_argument("--title")
-    start.add_argument("--claude-model", default="opus")
+    start.add_argument("--claude-model", default=DEFAULT_CLAUDE_MODEL)
     start.add_argument(
         "--claude-effort", choices=CLAUDE_EFFORTS, default=DEFAULT_CLAUDE_EFFORT
     )
@@ -1460,7 +1461,7 @@ def build_parser() -> argparse.ArgumentParser:
     handoff.add_argument("--name", required=True)
     handoff.add_argument("--kind", choices=("claude", "hermes"), default="claude")
     handoff.add_argument("--title")
-    handoff.add_argument("--claude-model", default="opus")
+    handoff.add_argument("--claude-model", default=DEFAULT_CLAUDE_MODEL)
     handoff.add_argument(
         "--claude-effort", choices=CLAUDE_EFFORTS, default=DEFAULT_CLAUDE_EFFORT
     )
@@ -1475,7 +1476,7 @@ def build_parser() -> argparse.ArgumentParser:
     handoff_status.add_argument("--name", required=True)
     handoff_status.add_argument("--kind", choices=("claude", "hermes"), default="claude")
     handoff_status.add_argument("--title")
-    handoff_status.add_argument("--claude-model", default="opus")
+    handoff_status.add_argument("--claude-model", default=DEFAULT_CLAUDE_MODEL)
     handoff_status.add_argument(
         "--claude-effort", choices=CLAUDE_EFFORTS, default=DEFAULT_CLAUDE_EFFORT
     )

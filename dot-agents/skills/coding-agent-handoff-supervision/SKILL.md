@@ -108,8 +108,8 @@ Visible workers are approval-gated, not sandbox-confined. Claude uses
 `HERMES_YOLO_MODE`, and no `--yolo`. Stop when hard confinement is required but
 cannot be proved.
 
-Claude effort defaults to `xhigh` for every handoff, including simple or
-documentation-only work; do not downgrade those tasks. Escalate to
+Claude uses `claude-opus-5-5` and `xhigh` effort by default for every handoff,
+including simple or documentation-only work; do not downgrade those tasks. Escalate to
 `--claude-effort max` only when the work is simultaneously narrowly scoped,
 security-critical, and expensive enough that another correction cycle would be
 especially costly. Broad or decision-incomplete work does not qualify for
