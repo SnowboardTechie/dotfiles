@@ -126,7 +126,7 @@ Colors are centralized but defined in two places that MUST stay in sync:
 
 ## GIT IDENTITY
 
-- **Default**: snowboardtechie (personal Forgejo + Gitea credential helper), pulled in via unconditional `[include]` of `~/.gitconfig.snowboardtechie` + `~/.gitconfig.local`
+- **Default**: snowboardtechie (personal Forgejo + Gitea credential helper), with `~/.gitconfig.local` included last to override host-local identity/signing settings
 - GPG signing on by default (`commit.gpgsign = true`)
 - To scope a different identity to a directory, add an `includeIf "gitdir:..."` block pointing at a new identity file
 - Global pre-commit hook in `dot-git-hooks/pre-commit` blocks commits without `user.email`

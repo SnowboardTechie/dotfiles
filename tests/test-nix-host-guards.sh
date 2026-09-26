@@ -271,6 +271,32 @@ done <<'EOF'
 mbp|Bryans-MacBook-Pro|darwin-rebuild
 a6mbp|A6-MacBook-Pro|darwin-rebuild
 studio|Bryans-Mac-Studio|darwin-rebuild
+gnarbox|gnarbox|nixos-rebuild
 EOF
 
 echo "ok   update-system maps every recognized machine to its own flake target"
+
+: > "$COMMAND_LOG"
+output="$(
+    printf 'yes\n' | \
+        HOME="$TMP_ROOT/home" \
+        PATH="$TMP_ROOT/bin:/usr/bin:/bin" \
+        COMMAND_LOG="$COMMAND_LOG" \
+        STUB_LOCAL_HOSTNAME="gnarbox" \
+        FUNCTIONS="$FUNCTIONS" \
+        ALIASES="$ALIASES" \
+        /bin/zsh -f -c 'source "$FUNCTIONS"; source "$ALIASES"; upgrade-system' 2>&1
+)"
+status=$?
+expected=$(printf '%s\n%s' \
+    "nix flake update --flake $TMP_ROOT/home/code/nix-configs" \
+    "sudo nixos-rebuild switch --flake $TMP_ROOT/home/code/nix-configs/#gnarbox")
+actual="$(<"$COMMAND_LOG")"
+if [[ $status -ne 0 || "$actual" != "$expected" ]]; then
+    echo "FAIL: Gnarbox upgrade-system did not update the flake and use nixos-rebuild" >&2
+    printf '  want: %s\n  got: %s\n' "$expected" "$actual" >&2
+    printf '%s\n' "$output" >&2
+    exit 1
+fi
+
+echo "ok   Gnarbox upgrade-system uses the NixOS rebuild path"

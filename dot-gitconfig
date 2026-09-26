@@ -3,7 +3,6 @@
 
 [include]
 	path = ~/.gitconfig.snowboardtechie
-	path = ~/.gitconfig.local
 
 [commit]
 	gpgsign = true
@@ -28,3 +27,7 @@
 [credential "https://git.snowboardtechie.com"]
 	helper =
 	helper = !tea login helper
+
+# Host-local identity and signing policy override the shared defaults.
+[include]
+	path = ~/.gitconfig.local

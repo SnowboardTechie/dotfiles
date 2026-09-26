@@ -99,13 +99,25 @@ stow . --dotfiles --target $HOME
 
 This symlinks the dotfiles, configures platform-specific Alacritty settings, removes retired tmux links, and sets up the secrets directory.
 
+On the freshly reinstalled Gnarbox, switch to the `gnarbox` NixOS flake first
+so Git, Stow, Zsh and the CLI tools exist. Clone this repository into
+`~/code/dotfiles`, run `stow -n -v . --dotfiles --target "$HOME"` and resolve
+any reported collisions without `--adopt` or overwriting unrelated files.
+Then run the two commands above. The post-stow script deliberately leaves
+Hermes as a Studio-backed client; it does not start a second gateway or copy
+credentials from Studio. `update-system` and `upgrade-system` detect
+`gnarbox` and use `nixos-rebuild`.
+
 **Additional Manual Step:**
 
-**GPG configuration** - Link GPG agent config:
+**GPG configuration (macOS only)** - Link GPG agent config:
 
 ```bash
 ln -s ~/code/dotfiles/dot-gnupg/gpg-agent.conf ~/.gnupg/gpg-agent.conf
 ```
+
+That tracked file uses `pinentry-mac`; do not link it on Gnarbox. Use a
+machine-local `pinentry-gnome3` configuration if GPG signing is enabled there.
 
 ### Omarchy Installation (Additive Only)
 
@@ -247,6 +259,10 @@ dotfiles/
 - GPG signing enabled
 - Global gitignore for `.envrc` and `.direnv/`
 - Signing key stored in `~/.gitconfig.local` (not tracked in git)
+- On a fresh machine without the existing GPG signing key, put the personal
+  email and `commit.gpgsign = false` in `~/.gitconfig.local` until the key is
+  restored. The host-local include comes last so it overrides the default;
+  do not copy private keys through Git or commit this file.
 
 ### GPG
 
@@ -264,6 +280,8 @@ dotfiles/
 - The default local model provider connects directly to Studio Ollama over Tailscale at `http://100.121.238.48:11434/v1`
 - The Ollama endpoint is available only inside the tailnet and does not require an API key
 - `plugins/ollama-models.js` refreshes the provider's model inventory from Studio whenever OpenCode starts
+- Zed's Ollama URL and edit-prediction URL also point to Studio over Tailscale;
+  verify the live `/api/tags` response on Gnarbox after joining the tailnet.
 - For repo-specific tweaks (extra docs, different permissions, etc.), create `.opencode/project.json` inside the repo
 
 ### AI / Hermes
