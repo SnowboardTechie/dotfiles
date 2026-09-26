@@ -37,7 +37,8 @@ fi
 alias herdr-studio="ssh -t bryan@bryans-mac-studio herdr"
 alias herdr-studio-remote="herdr --remote bryan@bryans-mac-studio"
 alias herdr-mbp="herdr --remote bryan@bryans-mbp"
-alias herdr-gnarchy="herdr --remote bryan@gnarchy"
+alias herdr-gnarbox="herdr --remote bryan@gnarbox"
+alias herdr-gnarchy="herdr --remote bryan@gnarbox"
 alias herdr-imachy="herdr --remote bryan@imachy"
 
 # Studio-only Claude agent view for Hermes-managed background sessions.
