@@ -16,6 +16,11 @@ fi
 
 echo "Detected platform: $PLATFORM"
 
+GNARBOX_PROFILE=false
+if [[ "$PLATFORM" == "linux" && "$(hostname -s)" == "gnarbox" ]]; then
+    GNARBOX_PROFILE=true
+fi
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 resolve_path() {
@@ -100,28 +105,31 @@ fi
 # OpenCode AGENTS.md (stow can't selectively ignore root vs nested AGENTS.md)
 echo ""
 echo "Setting up OpenCode AGENTS.md..."
-
-OPENCODE_AGENTS_SRC="$REPO_ROOT/dot-config/opencode/AGENTS.md"
-OPENCODE_AGENTS_DEST="$HOME/.config/opencode/AGENTS.md"
-
-if [[ -e "$OPENCODE_AGENTS_DEST" ]] &&
-    [[ "$(resolve_path "$OPENCODE_AGENTS_DEST")" == "$(resolve_path "$OPENCODE_AGENTS_SRC")" ]]; then
-    echo "  $OPENCODE_AGENTS_DEST already resolves to the repository source"
-elif [[ -L "$OPENCODE_AGENTS_DEST" ]]; then
-    echo "  WARNING: $OPENCODE_AGENTS_DEST is a foreign or broken symlink, skipping"
-elif [[ -f "$OPENCODE_AGENTS_DEST" ]]; then
-    if cmp -s "$OPENCODE_AGENTS_SRC" "$OPENCODE_AGENTS_DEST"; then
-        rm "$OPENCODE_AGENTS_DEST"
-        ln -s "$OPENCODE_AGENTS_SRC" "$OPENCODE_AGENTS_DEST"
-        echo "  Replaced identical regular file with link to $OPENCODE_AGENTS_SRC"
-    else
-        echo "  WARNING: $OPENCODE_AGENTS_DEST differs from the source, skipping"
-    fi
-elif [[ -e "$OPENCODE_AGENTS_DEST" ]]; then
-    echo "  WARNING: $OPENCODE_AGENTS_DEST is not a regular file, skipping"
+if [[ "$GNARBOX_PROFILE" == true ]]; then
+    echo "  Skipped (Gnarbox uses Pi instead of OpenCode)"
 else
-    ln -s "$OPENCODE_AGENTS_SRC" "$OPENCODE_AGENTS_DEST"
-    echo "  Linked $OPENCODE_AGENTS_DEST -> $OPENCODE_AGENTS_SRC"
+    OPENCODE_AGENTS_SRC="$REPO_ROOT/dot-config/opencode/AGENTS.md"
+    OPENCODE_AGENTS_DEST="$HOME/.config/opencode/AGENTS.md"
+
+    if [[ -e "$OPENCODE_AGENTS_DEST" ]] &&
+        [[ "$(resolve_path "$OPENCODE_AGENTS_DEST")" == "$(resolve_path "$OPENCODE_AGENTS_SRC")" ]]; then
+        echo "  $OPENCODE_AGENTS_DEST already resolves to the repository source"
+    elif [[ -L "$OPENCODE_AGENTS_DEST" ]]; then
+        echo "  WARNING: $OPENCODE_AGENTS_DEST is a foreign or broken symlink, skipping"
+    elif [[ -f "$OPENCODE_AGENTS_DEST" ]]; then
+        if cmp -s "$OPENCODE_AGENTS_SRC" "$OPENCODE_AGENTS_DEST"; then
+            rm "$OPENCODE_AGENTS_DEST"
+            ln -s "$OPENCODE_AGENTS_SRC" "$OPENCODE_AGENTS_DEST"
+            echo "  Replaced identical regular file with link to $OPENCODE_AGENTS_SRC"
+        else
+            echo "  WARNING: $OPENCODE_AGENTS_DEST differs from the source, skipping"
+        fi
+    elif [[ -e "$OPENCODE_AGENTS_DEST" ]]; then
+        echo "  WARNING: $OPENCODE_AGENTS_DEST is not a regular file, skipping"
+    else
+        ln -s "$OPENCODE_AGENTS_SRC" "$OPENCODE_AGENTS_DEST"
+        echo "  Linked $OPENCODE_AGENTS_DEST -> $OPENCODE_AGENTS_SRC"
+    fi
 fi
 
 # Agent skills — shared pool in dot-agents/skills, curated per tool.
@@ -129,7 +137,11 @@ fi
 echo ""
 echo "Setting up agent skills..."
 
-"$REPO_ROOT/scripts/reconcile-agent-skills.sh" --apply
+if [[ "$GNARBOX_PROFILE" == true ]]; then
+    RECONCILE_OPENCODE_SKILLS=0 "$REPO_ROOT/scripts/reconcile-agent-skills.sh" --apply
+else
+    "$REPO_ROOT/scripts/reconcile-agent-skills.sh" --apply
+fi
 
 # Native Apple Notes helper (macOS only). Build/sign/install the one process
 # allowed to send Apple Events to Notes. No-op off macOS; stops (non-fatally

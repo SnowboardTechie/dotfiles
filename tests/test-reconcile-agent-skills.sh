@@ -219,6 +219,22 @@ out="$(HOME="$H4" "$RECONCILER" --check --apply 2>&1)"; rc=$?
 check "t10: conflicting modes fail"              test "$rc" -ne 0
 check "t10: failed invocations did not mutate"   test -z "$(find "$H4" -mindepth 1)"
 
+# --- Test 12: a host retiring OpenCode prunes only its pool-owned links ------
+H12="$(new_home)"
+TMP_HOMES+=("$H12")
+HOME="$H12" "$RECONCILER" --apply >/dev/null 2>&1
+ln -s "$H12/foreign-skill" "$H12/.config/opencode/skills/foreign"
+before12="$(snapshot "$H12")"
+out="$(HOME="$H12" RECONCILE_OPENCODE_SKILLS=0 "$RECONCILER" --check 2>&1)"; rc=$?
+check "t12: disabled OpenCode check exits 0" test "$rc" -eq 0
+check "t12: disabled OpenCode check plans prune" bash -c 'grep -q "would prune stale pool link: ship" <<<"$1"' _ "$out"
+check "t12: disabled OpenCode check does not mutate" test "$before12" = "$(snapshot "$H12")"
+out="$(HOME="$H12" RECONCILE_OPENCODE_SKILLS=0 "$RECONCILER" --apply 2>&1)"; rc=$?
+check "t12: disabled OpenCode apply exits 0" test "$rc" -eq 0
+check "t12: OpenCode pool links are removed" test "$(links_into_pool "$H12/.config/opencode/skills")" -eq 0
+check "t12: foreign OpenCode link survives" test -L "$H12/.config/opencode/skills/foreign"
+check "t12: Pi links are retained" test "$(links_into_pool "$H12/.pi/agent/skills")" -eq 11
+
 echo ""
 echo "$TESTS tests, $FAILURES failures"
 if [[ $FAILURES -gt 0 ]]; then

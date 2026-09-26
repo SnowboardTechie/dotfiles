@@ -27,6 +27,9 @@ Usage: reconcile-agent-skills.sh (--check | --apply)
   --apply   Create/refresh curated skill links and prune stale pool-owned
             links. Never touches real files, real directories, or symlinks
             that do not resolve into this repository's skill pool.
+
+  RECONCILE_OPENCODE_SKILLS=0 retires only pool-owned OpenCode skill links
+            on hosts that no longer run OpenCode; other tools are unchanged.
 EOF
 }
 
@@ -183,7 +186,7 @@ reconcile_tool() {
             fi
             name="$(basename "$existing")"
             keep=0
-            for w in "${wanted[@]}"; do
+            for w in "${wanted[@]+"${wanted[@]}"}"; do
                 if [[ "$w" == "$name" ]]; then keep=1; break; fi
             done
             if [[ -L "$existing" ]]; then
@@ -227,7 +230,7 @@ reconcile_tool() {
     fi
 
     # Link pass: create or refresh curated links owned by the pool.
-    for name in "${wanted[@]}"; do
+    for name in "${wanted[@]+"${wanted[@]}"}"; do
         if [[ ! -d "$SKILLS_SRC/$name" ]]; then
             echo "  WARNING: skill '$name' not in pool, skipping"
             n_missing=$((n_missing + 1))
@@ -278,7 +281,11 @@ reconcile_tool() {
 echo "Reconciling agent skills ($MODE) from $SKILLS_SRC"
 
 reconcile_tool "Claude"   "$HOME/.claude/skills"          "$REPO_ROOT/dot-claude/skills"          "${CLAUDE_SKILLS[@]}"
-reconcile_tool "OpenCode" "$HOME/.config/opencode/skills" "$REPO_ROOT/dot-config/opencode/skills" "${OPENCODE_SKILLS[@]}"
+if [[ "${RECONCILE_OPENCODE_SKILLS:-1}" == "0" ]]; then
+    reconcile_tool "OpenCode" "$HOME/.config/opencode/skills" "$REPO_ROOT/dot-config/opencode/skills"
+else
+    reconcile_tool "OpenCode" "$HOME/.config/opencode/skills" "$REPO_ROOT/dot-config/opencode/skills" "${OPENCODE_SKILLS[@]}"
+fi
 reconcile_tool "Pi"       "$HOME/.pi/agent/skills"        ""                                      "${PI_SKILLS[@]}"
 reconcile_tool "Hermes"   "$HOME/.hermes/skills/personal" ""                                      "${HERMES_SKILLS[@]}"
 
