@@ -1,7 +1,7 @@
 ---
 name: homelab-change-management
 description: "Plan and execute homelab host changes, service migrations, package installs, storage-sensitive automation, and stateful agent cutovers using declarative architecture as the source of truth."
-version: 1.9.0
+version: 1.10.0
 author: Hermes Agent
 license: MIT
 platforms: [macos, linux]
@@ -231,6 +231,15 @@ When Bryan will lose access to the agent during a cutover, do not stop at a conc
 7. Syntax-check every fenced shell block without executing it. Use `scripts/verify-shell-runbook.py <runbook.md>` for the mechanical pass, then test configuration-editing snippets against an isolated temporary home/state directory.
 
 The runbook must remain usable after Hermes/chat/browser access disappears; never rely on “ask me if this fails” as the only recovery path.
+
+## Fresh NixOS desktop recovery
+
+- Inspect the newly installed host's generated hardware file, live disk UUIDs, and initial `system.stateVersion` before reviving an archived flake. A reinstallation can invalidate old LUKS, root, EFI, swap, and resume identifiers. Build on the target, then activate only a clean, pushed-main checkout and read back `/run/current-system`.
+- A fresh `nixos-rebuild` may reject `--extra-experimental-features` even though `nix` accepts it. Test a dry run with `env NIX_CONFIG='experimental-features = nix-command flakes' nixos-rebuild dry-run --flake '.#host'`, then use `sudo env NIX_CONFIG='experimental-features = nix-command flakes' nixos-rebuild switch --flake '.#host'` for the first activation. Subsequent rebuilds can use the host-guarded `update-system` when the Nix module enables flakes.
+- Preflight Stow against the target home before applying it. On a NixOS desktop, exclude macOS-only GPG/Claude config and any retired client; GNU Stow's `--ignore` may match the entry basename (`opencode$`) rather than a repository-relative path. Remove only repo-owned symlinks and preserve app-owned manifests, sessions, and foreign files.
+- When `getent passwd` shows zsh but Alacritty still opens bash after a NixOS switch, compare GNOME's inherited `SHELL` and the terminal child process. The live desktop session may predate the shell change; renew that session or pin the Linux Alacritty shell and `SHELL` environment rather than changing unrelated dotfiles.
+- Do not treat `tea login add --ssh-agent-key` as a working Git HTTPS credential helper without verifying an actual token: it can create a tokenless login whose helper fails with `user not set`. Use a registered SSH public key and the actual Forgejo port, then prove key-only SSH and `git push --dry-run` from the target. Transfer a pre-existing GPG private key only with explicit approval over an encrypted stream that never prints or stages secret bytes; verify a disposable signed commit and import only that key's ownertrust if local verification reports unknown trust.
+- For Pi with tailnet-only Ollama, use a pinned source-built package and `~/.pi/agent/models.json` with `openai-completions`, a dummy Ollama API key, and compatibility flags for unsupported roles/reasoning fields. Verify model discovery and one real target-origin completion; installed binaries and `/api/tags` alone do not prove agent inference.
 
 ## Common mistakes
 
