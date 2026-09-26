@@ -6,3 +6,11 @@ working_directory = "/home/bryan"
 [window]
 decorations = "None"  # No title bar, clean look (use Super+drag to move)
 
+# A GNOME session started before a NixOS shell switch can retain SHELL=bash.
+# Pin both the spawned shell and its advertised login shell for this profile.
+[env]
+SHELL = "/run/current-system/sw/bin/zsh"
+
+[terminal.shell]
+program = "/run/current-system/sw/bin/zsh"
+
