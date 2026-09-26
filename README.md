@@ -108,8 +108,8 @@ without `--adopt`, then apply the same selection:
 
 ```bash
 cd ~/code/dotfiles
-stow -n -v --ignore='dot-gnupg$' --ignore='dot-claude$' --ignore='dot-config/opencode$' . --dotfiles --target "$HOME"
-stow --ignore='dot-gnupg$' --ignore='dot-claude$' --ignore='dot-config/opencode$' . --dotfiles --target "$HOME"
+stow -n -v --ignore='dot-gnupg$' --ignore='dot-claude$' --ignore='opencode$' . --dotfiles --target "$HOME"
+stow --ignore='dot-gnupg$' --ignore='dot-claude$' --ignore='opencode$' . --dotfiles --target "$HOME"
 ./setup-platform-configs.sh
 ```
 

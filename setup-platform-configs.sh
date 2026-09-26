@@ -106,6 +106,24 @@ fi
 echo ""
 echo "Setting up OpenCode AGENTS.md..."
 if [[ "$GNARBOX_PROFILE" == true ]]; then
+    # Unlink only paths this repository previously stowed. App-owned files,
+    # sessions, and foreign links stay untouched for an explicit migration.
+    OPENCODE_DIR="$HOME/.config/opencode"
+    OPENCODE_REPO_DIR="$(resolve_path "$REPO_ROOT/dot-config/opencode")"
+    if [[ -L "$OPENCODE_DIR" ]]; then
+        if [[ "$(resolve_path "$OPENCODE_DIR")" == "$OPENCODE_REPO_DIR" ]]; then
+            rm "$OPENCODE_DIR"
+            echo "  Removed repository-owned OpenCode directory link"
+        fi
+    elif [[ -d "$OPENCODE_DIR" ]]; then
+        for name in AGENTS.md agents opencode.json plugins; do
+            link="$OPENCODE_DIR/$name"
+            if [[ -L "$link" && "$(resolve_path "$link")" == "$OPENCODE_REPO_DIR/$name" ]]; then
+                rm "$link"
+                echo "  Removed repository-owned OpenCode link: $name"
+            fi
+        done
+    fi
     echo "  Skipped (Gnarbox uses Pi instead of OpenCode)"
 else
     OPENCODE_AGENTS_SRC="$REPO_ROOT/dot-config/opencode/AGENTS.md"
