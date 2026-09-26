@@ -297,7 +297,8 @@ dotfiles/
 ### AI / Pi and Zed on Gnarbox
 
 - The NixOS CLI feature installs `pi-coding-agent` from the pinned Nixpkgs source build rather than OpenCode. Shared Pi model definitions in `dot-pi/agent/models.json` expose Studio Ollama's current models over the tailnet. The `apiKey` value is a dummy because Ollama ignores authentication; no credential is committed.
-- Gnarbox's app-owned `~/.pi/agent/settings.json` selects `ollama/qwen3.8:27b-mlx` as its startup model. It is not stowed, so this shared model catalog does not change Pi defaults on other hosts; use Pi's `/model` to change the selection.
+- Gnarbox's app-owned `~/.pi/agent/settings.json` selects its startup model. It is not stowed, so this shared model catalog does not change Pi defaults on other hosts; use Pi's `/model` to change the selection.
+- Pi also supports the ChatGPT Codex subscription directly: run `/login` and choose ChatGPT Plus/Pro (Codex), then select an `openai-codex` model with `/model`. The OAuth credential is machine-local in `~/.pi/agent/auth.json` (mode 0600), not tracked or shared with Hermes; no standalone Codex CLI is required. Verify with `pi auth check --provider openai-codex --json` and one small real request through that provider.
 - Zed's Ollama and edit-prediction URLs also point to Studio over Tailscale. Verify the live `/api/tags` response and one real completion from Gnarbox rather than inferring connectivity from configuration.
 
 ### AI / Hermes
