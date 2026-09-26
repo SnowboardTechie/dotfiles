@@ -297,6 +297,7 @@ dotfiles/
 ### AI / Pi and Zed on Gnarbox
 
 - The NixOS CLI feature installs `pi-coding-agent` from the pinned Nixpkgs source build rather than OpenCode. Shared Pi model definitions in `dot-pi/agent/models.json` expose Studio Ollama's current models over the tailnet. The `apiKey` value is a dummy because Ollama ignores authentication; no credential is committed.
+- Gnarbox's app-owned `~/.pi/agent/settings.json` selects `ollama/gemma4:31b-mlx` as its startup model. It is not stowed, so this shared model catalog does not change Pi defaults on other hosts; use Pi's `/model` to change the selection.
 - Zed's Ollama and edit-prediction URLs also point to Studio over Tailscale. Verify the live `/api/tags` response and one real completion from Gnarbox rather than inferring connectivity from configuration.
 
 ### AI / Hermes
