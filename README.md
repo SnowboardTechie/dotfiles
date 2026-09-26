@@ -101,12 +101,22 @@ This symlinks the dotfiles, configures platform-specific Alacritty settings, rem
 
 On the freshly reinstalled Gnarbox, switch to the `gnarbox` NixOS flake first
 so Git, Stow, Zsh and the CLI tools exist. Clone this repository into
-`~/code/dotfiles`, run `stow -n -v . --dotfiles --target "$HOME"` and resolve
-any reported collisions without `--adopt` or overwriting unrelated files.
-Then run the two commands above. The post-stow script deliberately leaves
-Hermes as a Studio-backed client; it does not start a second gateway or copy
-credentials from Studio. `update-system` and `upgrade-system` detect
-`gnarbox` and use `nixos-rebuild`.
+`~/code/dotfiles`. Do not use the generic Stow command above on Gnarbox:
+its macOS GPG pinentry and Claude hooks are not portable. OpenCode also owns
+its generated `package.json` and lockfile. Review this preflight, resolve any
+other collisions without `--adopt`, then apply the same selection:
+
+```bash
+cd ~/code/dotfiles
+stow -n -v --ignore='dot-gnupg$' --ignore='dot-claude$' --ignore='opencode/package(-lock)?.json$' . --dotfiles --target "$HOME"
+stow --ignore='dot-gnupg$' --ignore='dot-claude$' --ignore='opencode/package(-lock)?.json$' . --dotfiles --target "$HOME"
+./setup-platform-configs.sh
+```
+
+The setup script still links curated Claude/Hermes skills; it does not deploy
+Studio's Mac-only Claude settings, start a second Hermes gateway, or copy
+credentials. `update-system` and `upgrade-system` detect `gnarbox` and use
+`nixos-rebuild`.
 
 **Additional Manual Step:**
 
