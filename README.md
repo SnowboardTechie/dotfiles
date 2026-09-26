@@ -102,18 +102,19 @@ This symlinks the dotfiles, configures platform-specific Alacritty settings, rem
 On the freshly reinstalled Gnarbox, switch to the `gnarbox` NixOS flake first
 so Git, Stow, Zsh and the CLI tools exist. Clone this repository into
 `~/code/dotfiles`. Do not use the generic Stow command above on Gnarbox:
-its macOS GPG pinentry and Claude hooks are not portable. OpenCode also owns
-its generated `package.json` and lockfile. Review this preflight, resolve any
-other collisions without `--adopt`, then apply the same selection:
+its macOS GPG pinentry and Claude hooks are not portable, and Gnarbox uses Pi
+instead of OpenCode. Review the preflight and resolve any other collisions
+without `--adopt`, then apply the same selection:
 
 ```bash
 cd ~/code/dotfiles
-stow -n -v --ignore='dot-gnupg$' --ignore='dot-claude$' --ignore='opencode/package(-lock)?.json$' . --dotfiles --target "$HOME"
-stow --ignore='dot-gnupg$' --ignore='dot-claude$' --ignore='opencode/package(-lock)?.json$' . --dotfiles --target "$HOME"
+stow -n -v --ignore='dot-gnupg$' --ignore='dot-claude$' --ignore='dot-config/opencode$' . --dotfiles --target "$HOME"
+stow --ignore='dot-gnupg$' --ignore='dot-claude$' --ignore='dot-config/opencode$' . --dotfiles --target "$HOME"
 ./setup-platform-configs.sh
 ```
 
-The setup script still links curated Claude/Hermes skills; it does not deploy
+The setup script still links curated Claude/Hermes/Pi skills and retires
+pool-owned OpenCode skill links on Gnarbox; it does not deploy
 Studio's Mac-only Claude settings, start a second Hermes gateway, or copy
 credentials. `update-system` and `upgrade-system` detect `gnarbox` and use
 `nixos-rebuild`.
@@ -286,13 +287,17 @@ dotfiles/
 
 ### AI / OpenCode
 
+- OpenCode remains configured on hosts that install it; Gnarbox uses Pi instead.
 - Config lives in `dot-config/opencode/opencode.json` (tracked, stowed to `~/.config/opencode/`)
 - The default local model provider connects directly to Studio Ollama over Tailscale at `http://100.121.238.48:11434/v1`
 - The Ollama endpoint is available only inside the tailnet and does not require an API key
 - `plugins/ollama-models.js` refreshes the provider's model inventory from Studio whenever OpenCode starts
-- Zed's Ollama URL and edit-prediction URL also point to Studio over Tailscale;
-  verify the live `/api/tags` response on Gnarbox after joining the tailnet.
 - For repo-specific tweaks (extra docs, different permissions, etc.), create `.opencode/project.json` inside the repo
+
+### AI / Pi and Zed on Gnarbox
+
+- The NixOS CLI feature installs `pi-coding-agent` from the pinned Nixpkgs source build rather than OpenCode. Shared Pi model definitions in `dot-pi/agent/models.json` expose Studio Ollama's current models over the tailnet. The `apiKey` value is a dummy because Ollama ignores authentication; no credential is committed.
+- Zed's Ollama and edit-prediction URLs also point to Studio over Tailscale. Verify the live `/api/tags` response and one real completion from Gnarbox rather than inferring connectivity from configuration.
 
 ### AI / Hermes
 
