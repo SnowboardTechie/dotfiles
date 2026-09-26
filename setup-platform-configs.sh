@@ -162,7 +162,11 @@ fi
 echo ""
 echo "Platform-specific configuration complete!"
 echo ""
-echo "Note: Run this script after 'stow . --dotfiles --target \$HOME'"
+echo "Note: Run this script after the platform-appropriate Stow selection in README.md"
 echo ""
-echo "Additional manual steps:"
-echo "  - GPG: ln -s ~/code/dotfiles/dot-gnupg/gpg-agent.conf ~/.gnupg/gpg-agent.conf"
+if [[ "$PLATFORM" == "macos" ]]; then
+    echo "Additional manual step:"
+    echo "  - GPG: ln -s ~/code/dotfiles/dot-gnupg/gpg-agent.conf ~/.gnupg/gpg-agent.conf"
+else
+    echo "GPG: use a host-local Linux pinentry config if enabling commit signing; do not link pinentry-mac."
+fi
