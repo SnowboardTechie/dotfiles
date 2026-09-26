@@ -63,7 +63,7 @@ class FakeHerdr:
         kind: str,
         pane_id: str,
         title: str,
-        claude_model: str = "opus",
+        claude_model: str = "claude-opus-5-5",
         claude_effort: str = "xhigh",
     ) -> None:
         self.agents[name] = {
@@ -478,13 +478,23 @@ class HerdrWorkerTests(unittest.TestCase):
         self.assertNotIn("opus", sent[0])
 
         herdr.start_agent(
+            name="default-worker",
+            kind="claude",
+            pane_id="default-pane",
+            title="Default worker",
+        )
+        self.assertEqual(
+            sent[1][sent[1].index("--model") + 1], "claude-opus-5-5"
+        )
+
+        herdr.start_agent(
             name="critical-worker",
             kind="claude",
             pane_id="critical-pane",
             title="Critical worker",
             claude_effort="max",
         )
-        self.assertEqual(sent[1][sent[1].index("--effort") + 1], "max")
+        self.assertEqual(sent[2][sent[2].index("--effort") + 1], "max")
 
     def test_startup_failure_includes_readable_output_before_cleanup(self) -> None:
         module = self.module
@@ -1138,8 +1148,21 @@ class HerdrWorkerTests(unittest.TestCase):
         )
         self.assertEqual(arguments.command, "handoff")
         self.assertEqual(arguments.kind, "claude")
-        self.assertEqual(arguments.claude_model, "opus")
+        self.assertEqual(arguments.claude_model, "claude-opus-5-5")
         self.assertEqual(arguments.claude_effort, "xhigh")
+        for command in ("start", "handoff-status"):
+            with self.subTest(command=command):
+                required = [
+                    command,
+                    "--worktree", str(self.repo),
+                    "--identity-file", str(self.root / "identity.json"),
+                    "--name", "worker",
+                ]
+                if command == "handoff-status":
+                    required.extend(["--prompt-file", str(self.root / "handoff-prompt.md")])
+                self.assertEqual(
+                    parser.parse_args(required).claude_model, "claude-opus-5-5"
+                )
         selected = parser.parse_args(
             [
                 "handoff",

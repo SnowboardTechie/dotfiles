@@ -56,7 +56,7 @@ Do not use for:
 5. **Preserve user work.** Snapshot the initial status and never overwrite, discard, stage, or clean unrelated changes.
 6. **Bounded loop.** Allow at most two revision passes after the initial implementation unless the user explicitly extends it.
 7. **Fail closed.** Authentication failure, invalid JSON, missing session ID, unexplained file changes, or unverified tests blocks completion.
-8. **Opus primary selection.** Claude implementation and revision passes select Opus. A non-Opus primary model requires the user's explicit confirmation and the wrapper's `--allow-non-opus` acknowledgement; overload never authorizes a silent downgrade. When the user requires literal model purity, load `coding-agent-model-purity`: `--model opus` alone does not prove that internal helpers used only Opus.
+8. **Opus 5.5 primary selection.** Claude implementation and revision passes select `claude-opus-5-5`. A different primary model requires the user's explicit confirmation; a non-Opus model also requires the wrapper's `--allow-non-opus` acknowledgement. Overload never authorizes a silent switch. When the user requires literal model purity, load `coding-agent-model-purity`: the model flag alone does not prove that internal helpers used only Opus 5.5.
 9. **Separate contract and engineering reviews.** Acceptance-criteria traceability and passing tests do not establish code quality. Codex must complete a distinct engineering review for quality, security, simplicity, maintainability, and test quality before calling a diff approval-ready.
 10. **Usage-aware handoffs.** Run Claude's zero-turn `/usage` preflight before every check, implementation, and revision invocation. Warn when any reported window is over 75% used. Above 85%, or when usage cannot be verified, stop unless Bryan explicitly overrides that invocation with `--allow-high-usage`.
 
@@ -131,14 +131,14 @@ Run the worker from the repository root:
 python3 <skill-dir>/scripts/claude_worker.py implement \
   --workdir "$PWD" \
   --plan /absolute/path/to/plan.md \
-  --model opus
+  --model claude-opus-5-5
 ```
 
 If and only if Bryan explicitly overrides a reported high-usage or unavailable-usage block for this invocation, append `--allow-high-usage`. Do not persist the override or infer it from earlier approval of the implementation plan. Revisions rerun the usage check and require a fresh explicit override whenever they remain above the block threshold.
 
-Always use `--model opus` for implementation and revision. Do not fall back or downgrade to Sonnet, Haiku, or another primary model after overload, throttling, or model unavailability. Stop and ask the user first. After explicit confirmation, a non-Opus invocation must also include `--allow-non-opus`.
+Always use `--model claude-opus-5-5` for implementation and revision. Do not fall back or switch to another primary model after overload, throttling, or model unavailability. Stop and ask the user first. After explicit confirmation, a non-Opus invocation must also include `--allow-non-opus`.
 
-`--model opus` proves primary-model selection only. Under a literal-purity requirement, preserve and inspect the most detailed available model-usage metadata for internal helpers, delegated agents, summarizers, or routing. Do not report compliance from the command flag or normalized worker result alone.
+`--model claude-opus-5-5` proves primary-model selection only. Under a literal-purity requirement, preserve and inspect the most detailed available model-usage metadata for internal helpers, delegated agents, summarizers, or routing. Do not report compliance from the command flag or normalized worker result alone.
 
 The worker starts Claude Code in print mode with editing tools, structured output, a bounded turn count, and explicit prohibitions against Git publication/history changes. It loads project/local Claude settings while excluding user-level plugins and hooks so personal Claude extensions do not create repository artifacts or consume worker turns. It returns a normalized JSON envelope containing `session_id` and `worker_result`.
 
@@ -221,7 +221,7 @@ python3 <skill-dir>/scripts/claude_worker.py revise \
   --workdir "$PWD" \
   --session-id <session-id> \
   --review /absolute/path/to/codex-review.md \
-  --model opus
+  --model claude-opus-5-5
 ```
 
 After each revision, repeat the entire Codex review and independent test gate. Do not review only the files Claude says it changed.
@@ -255,7 +255,7 @@ The worker prints one JSON object. Important fields:
 {
   "ok": true,
   "mode": "implement",
-  "model": "opus",
+  "model": "claude-opus-5-5",
   "session_id": "...",
   "worker_result": {
     "status": "completed",
@@ -285,7 +285,7 @@ A shell exit code of zero means Claude ran and produced schema-valid output. It 
 10. **Loading user-level Claude plugins.** Personal hooks can consume turns or write helper artifacts into the repository. The wrapper intentionally disables user plugins, uses only project/local settings, redirects runtime caches outside the repository, and disables slash-command skills; do not remove that isolation without testing it.
 11. **Treating overload as an implementation failure.** Claude may return HTTP 429/529 before doing work. The wrapper retries the same Opus request once by default; if both attempts fail, preserve repository state and report the provider outage. Never downgrade models without explicit user confirmation.
 12. **Equating acceptance with approval.** A diff can meet every requirement and still be insecure, brittle, confusing, or over-engineered. Run and report the separate engineering-review pass before approval.
-13. **Equating `--model opus` with literal purity.** The flag selects the primary model but does not rule out internal helper models. Load `coding-agent-model-purity`, inspect raw metadata, and fail closed when purity is an acceptance criterion.
+13. **Equating `--model claude-opus-5-5` with literal purity.** The flag selects the primary model but does not rule out internal helper models. Load `coding-agent-model-purity`, inspect raw metadata, and fail closed when purity is an acceptance criterion.
 14. **Treating plan approval as a usage override.** Approval to implement does not authorize spending above the 85% usage gate. Surface the current windows and ask explicitly before adding `--allow-high-usage` to that one invocation.
 
 ## Verification Checklist
