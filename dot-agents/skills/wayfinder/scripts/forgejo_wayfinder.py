@@ -13,8 +13,8 @@ Design constraints, each of which is a test in
   metadata version, and map association are revalidated immediately before the
   write — not once at session start, and never inferred from a body marker
   alone.
-* **Private trackers only.** Several of Bryan's repositories on this host are
-  public; exploratory deliberation must never land on one.
+* **Private by default.** Only the owner-approved public `bryan/sgg-workspace`
+  tracker is excepted, with a pinned writer and server-attributed records.
 * **Tokens never surface, and never travel to an unexpected host.** `auto`
   always prefers Tea. Token transport is opt-in, requires an allowlisted host,
   and refuses cross-origin redirects so an `Authorization` header cannot be
@@ -83,6 +83,8 @@ METADATA_VERSION = "v1"
 MAP_LABEL = "wayfinder:map"
 TICKET_LABEL = "wayfinder:ticket"
 TICKET_TYPES = ("grilling", "research", "prototype", "task")
+PUBLIC_TRACKER = ("git.snowboardtechie.com", "bryan", "sgg-workspace")
+PUBLIC_WRITER = "bryan"
 
 # Deterministic label definitions. Creation needs a colour, and a fixed one
 # keeps the tracker's appearance reproducible rather than luck-of-the-draw.
@@ -1322,14 +1324,37 @@ class WayfinderTracker:
         return data
 
     def require_private(self) -> dict:
-        """Refuse a public tracker. Maps hold premature deliberation."""
+        """Allow private trackers or the exact owner-approved public tracker."""
         data = self.repository()
-        if data.get("private") is not True:
+        if data.get("full_name") != self.repo.slug:
             raise WayfinderError(
-                f"{self.repo.slug} is public — Wayfinder maps go only on private "
-                "trackers. Use the private workspace tracker for this effort."
+                f"repository identity mismatch: requested {self.repo.slug}, "
+                f"API returned {data.get('full_name')!r}"
+            )
+        if data.get("private") is True:
+            return data
+        if data.get("private") is not False or not self.public_tracker:
+            raise WayfinderError(
+                f"{self.repo.slug} is public or has unknown visibility — only "
+                "git.snowboardtechie.com/bryan/sgg-workspace has a public exception"
             )
         return data
+
+    @property
+    def public_tracker(self) -> bool:
+        return (self.repo.host, self.repo.owner, self.repo.repo) == PUBLIC_TRACKER
+
+    def require_public_author(self, item: dict, subject: str) -> None:
+        """Only server-attributed owner records can control a public map."""
+        if self.public_tracker and (item.get("user") or {}).get("login") != PUBLIC_WRITER:
+            raise WayfinderError(f"{subject} lacks the trusted public-tracker author")
+
+    def require_writer(self) -> None:
+        """Check the authenticated actor before any public-tracker mutation."""
+        if self.public_tracker:
+            _, actor = self.transport.request("GET", "/user")
+            if not isinstance(actor, dict) or actor.get("login") != PUBLIC_WRITER:
+                raise WayfinderError("public tracker requires authenticated owner bryan")
 
     def get_issue(self, number: int) -> dict:
         _, data = self.transport.request(
@@ -1346,7 +1371,11 @@ class WayfinderTracker:
         return tuple(sorted(int(item["number"]) for item in (data or [])))
 
     def comments(self, number: int) -> list[dict]:
-        """Every comment on one issue, paginated, in server order."""
+        """Trusted comments on one issue, paginated in server order.
+
+        On the public exception, only server-attributed owner comments can
+        supply managed state; other commenters cannot forge releases or index.
+        """
         collected: list[dict] = []
         for page in range(1, MAX_COMMENT_PAGES + 1):
             _, batch = self.transport.request(
@@ -1355,7 +1384,13 @@ class WayfinderTracker:
                 f"?limit={PAGE_SIZE}&page={page}",
             )
             batch = batch or []
-            collected.extend(batch)
+            if self.public_tracker:
+                collected.extend(
+                    comment for comment in batch
+                    if (comment.get("user") or {}).get("login") == PUBLIC_WRITER
+                )
+            else:
+                collected.extend(batch)
             if len(batch) < PAGE_SIZE:
                 return collected
         raise WayfinderError(
@@ -1532,13 +1567,16 @@ class WayfinderTracker:
     def frontier(self, map_number: int) -> list[Ticket]:
         return compute_frontier(self.list_tickets(map_number, state="all"))
 
-    @staticmethod
-    def _belongs_to(issue: dict, map_number: int) -> bool:
+    def _belongs_to(self, issue: dict, map_number: int) -> bool:
         meta = parse_ticket_metadata(issue.get("body") or "")
+        labels = {label.get("name") for label in issue.get("labels", [])}
         return (
             meta.get("version") == METADATA_VERSION
             and meta.get("map") == str(map_number)
             and meta.get("type") in TICKET_TYPES
+            and (not self.public_tracker or TICKET_LABEL in labels)
+            and (not self.public_tracker or f"wayfinder:{meta.get('type')}" in labels)
+            and (not self.public_tracker or (issue.get("user") or {}).get("login") == PUBLIC_WRITER)
         )
 
     # -- identity reads (no privacy check; see `enforce`) -------------------
@@ -1553,6 +1591,7 @@ class WayfinderTracker:
         the adapter cannot tell which text it is supposed to merge into.
         """
         issue = self.get_issue(map_number)
+        self.require_public_author(issue, f"map #{map_number}")
         if int(issue.get("number", -1)) != int(map_number):
             raise WayfinderError(
                 f"asked for map #{map_number} but the API returned #{issue.get('number')}; "
@@ -1585,6 +1624,7 @@ class WayfinderTracker:
         refuses to pick one.
         """
         issue = self.get_issue(number)
+        self.require_public_author(issue, f"ticket #{number}")
         if int(issue["number"]) != int(number):
             raise WayfinderError(
                 f"asked for #{number} but the API returned #{issue['number']}"
@@ -1694,6 +1734,7 @@ class WayfinderTracker:
             blockers = self.blockers(guard.ticket)
 
         # LAST. Nothing may read the network after this and before the write.
+        self.require_writer()
         repository = self.require_private()
         return GuardState(
             repository=repository,
@@ -1845,6 +1886,7 @@ class WayfinderTracker:
             issue
             for issue in issues
             if parse_creation(issue.get("body") or "") == creation
+            and (not self.public_tracker or (issue.get("user") or {}).get("login") == PUBLIC_WRITER)
         ]
         return numbers, matches
 
@@ -1875,6 +1917,7 @@ class WayfinderTracker:
             )
         number = int(matches[0]["number"])
         issue = self.get_issue(number)
+        self.require_public_author(issue, f"created {subject} #{number}")
         actual_labels = {label["name"] for label in issue.get("labels", [])}
         if (
             issue.get("title") != title
@@ -1924,6 +1967,7 @@ class WayfinderTracker:
                 "nothing was created and the tracker is unchanged"
             )
         issue = self.get_issue(number)
+        self.require_public_author(issue, f"created {subject} #{number}")
         if int(issue.get("number", -1)) != number:
             raise WayfinderError(
                 f"creating {subject}: asked for #{number} but the API returned "
@@ -3098,7 +3142,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--tracker",
         required=True,
-        help="owner/repo of the private tracker (explicit, never inferred)",
+        help="owner/repo of the private or expressly approved public tracker (never inferred)",
     )
     parser.add_argument("--transport", choices=("auto", "tea", "token"), default="auto")
     parser.add_argument(
@@ -3108,7 +3152,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("check-private", help="verify the tracker is private")
+    sub.add_parser("check-private", help="verify tracker eligibility (legacy command name)")
 
     for name in ("read-map", "list-tickets", "frontier"):
         p = sub.add_parser(name)
@@ -3199,8 +3243,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         tracker = WayfinderTracker(build_transport(repo, prefer=args.transport), repo)
 
         if args.command == "check-private":
-            tracker.require_private()
-            _emit({"repo": repo.slug, "private": True})
+            state = tracker.require_private()
+            tracker.require_writer()
+            _emit({"repo": repo.slug, "private": state["private"], "eligible": True})
         elif args.command == "read-map":
             _emit(tracker.read_map(args.map))
         elif args.command == "list-tickets":

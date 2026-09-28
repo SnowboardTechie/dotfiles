@@ -12,6 +12,21 @@ version before assuming any endpoint below still behaves this way:
 
 ## What the API does and does not give us
 
+### Owner-approved public exception
+
+`git.snowboardtechie.com/bryan/sgg-workspace` is public by Bryan's explicit
+choice, not merely visible to coworkers. Every map preview is a publication
+preview. Other public repositories remain refused. On this exact tracker the
+adapter requires the API's `full_name` to match, checks the authenticated
+`GET /user` login is `bryan` before writes, and accepts only issue creators
+and comment authors whose server-reported `user.login` is `bryan` as managed
+state. Foreign or missing authors cannot claim, release, index, resolve, or
+enter the ticket frontier. It does not treat a session or operation ID as a
+credential. Human comments from teammates are preserved on Forgejo but not
+replayed by the adapter. Keep private meeting notes and vault content out of
+public issue bodies and comments; link public evidence or summarize only what
+Bryan intends to publish.
+
 | Need | Forgejo support |
 |---|---|
 | Blocking between issues | **Native.** `GET/POST/DELETE /repos/{owner}/{repo}/issues/{index}/dependencies` (what blocks this) and `/blocks` (what this blocks). Renders in the tracker UI, so the frontier is visible without opening the map. |
@@ -256,7 +271,7 @@ ORIGIN=$(git remote get-url origin)
 TEA_CWD=$(mktemp -d)
 trap 'rmdir "$TEA_CWD"' EXIT
 # Then prefix each invocation below with: (cd "$TEA_CWD" && python3 "$S" ...)
-TRACKER=bryan/sgg-workspace     # explicit, never inferred
+TRACKER=bryan/sgg-workspace     # explicit owner-approved public exception
 
 python3 "$S" --origin "$ORIGIN" --tracker "$TRACKER" check-private
 python3 "$S" --origin "$ORIGIN" --tracker "$TRACKER" read-map     --map 42
@@ -422,17 +437,19 @@ remembering its own preflights. In order, every write:
 2. where applicable, requires the exact active claim **identity tuple**;
 3. where applicable, snapshots the dependency set the write will be measured
    against;
-4. re-reads the repository and requires it private — **last**, the final network
-   round trip before the mutation;
+4. for the exact public exception, checks the authenticated writer is `bryan`;
+   then re-reads the repository and requires either private visibility or the
+   exact `git.snowboardtechie.com/bryan/sgg-workspace` identity — **last**, the
+   final network round trip before the mutation;
 5. performs exactly one write, from the state already captured. The write reads
-   nothing: a read there would put a round trip between the privacy check and
+   nothing: a read there would put a round trip between the eligibility check and
    the mutation, which is the window this ordering exists to close;
 6. reads the state back and verifies the **exact** result.
 
-Step 4's position is the point. Checking privacy first and then issuing three
-more reads leaves a window in which the repository is made public while the
-adapter is still deciding, and the write then lands on a tracker it approved a
-round trip ago. So there is no `_patch_issue` helper that does GET-then-PATCH:
+Step 4's position is the point. Checking tracker eligibility first and then
+issuing three more reads leaves a window in which the repository's visibility
+or identity changes while the adapter is still deciding. So there is no
+`_patch_issue` helper that does GET-then-PATCH:
 read preparation and the direct `PATCH`/`POST` are separate, and the staleness
 guard the old helper provided is subsumed by the guard's own read, which is
 strictly fresher.
@@ -483,7 +500,7 @@ Every operation is scoped to one map's ticket set:
   type, not by label alone, so a ticket belonging to another map — or written
   by a future metadata version — is never picked up.
 - **Every mutation preflights.** Immediately before each write, the adapter
-  re-reads and revalidates repository privacy, the issue number the API
+  re-reads and revalidates repository eligibility, the issue number the API
   actually returned, the required label, the metadata version and type, and the
   map association. A body marker alone is not identity: anyone can paste one
   into an unrelated issue.

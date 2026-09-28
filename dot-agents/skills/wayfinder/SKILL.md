@@ -1,6 +1,6 @@
 ---
 name: wayfinder
-description: Chart a body of work too large for one session as a map of decision tickets on a private Forgejo tracker, then resolve them one per session until the route to the destination is clear. Use only when Bryan explicitly asks to wayfind, chart a map, or work an existing map. Plans decisions; it does not implement.
+description: Chart a body of work too large for one session as a map of decision tickets on an approved Forgejo tracker, then resolve them one per session until the route to the destination is clear. Use only when Bryan explicitly asks to wayfind, chart a map, or work an existing map. Plans decisions; it does not implement.
 disable-model-invocation: true
 ---
 
@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 A loose idea has arrived that is too big for one session and wrapped in fog: the
 **destination** is nameable, but the way there is not visible yet. Wayfinding
-finds the way. It charts a **shared map** on a private issue tracker and works
+finds the way. It charts a **shared map** on an approved issue tracker and works
 its **decision tickets** — questions whose resolution is a decision — one at a
 time until the route is clear.
 
@@ -53,19 +53,26 @@ summary is not implementation authority.
 
 ## Where the map lives
 
-**Maps are private. This is not negotiable.**
+**Maps are private by default.** Bryan explicitly approved one public exception:
+`git.snowboardtechie.com/bryan/sgg-workspace`, which is shared with coworkers
+and also readable by anyone on the internet. The adapter accepts this exact
+repository only under the authenticated `bryan` account and replays only
+server-attributed `bryan` issues and comments as managed state. Teammates may
+read and comment as humans but their comments do not claim or resolve tickets.
+Do not generalize the exception to another public repository, and never put
+private meeting text, vault notes, credentials, or internal deliberation on a
+public map. Use public-source links and carefully scoped question summaries;
+keep private source details in the vault. Review every preview as publication.
 
 | Effort | Tracker |
 |---|---|
-| SGG multi-repository | private `sgg-workspace` tracker |
+| SGG multi-repository | owner-approved public `bryan/sgg-workspace` tracker (explicit choice required) |
 | A private single repository | that repository's own tracker |
 | A future public or external multi-repository domain | its private workspace wrapper tracker |
-| Public or upstream source repositories | **never** — they receive only team-ready implementation work |
+| Other public or upstream source repositories | **never** — they receive only team-ready implementation work |
 
-Exploratory deliberation on a public tracker exposes premature thinking, and
-some of Bryan's repositories on the same Forgejo host *are* public. The adapter
-refuses to create a map in a repository the API reports as public; do not work
-around that refusal.
+Exploratory deliberation on any other public tracker remains prohibited. The
+adapter refuses every other public repository; do not work around that refusal.
 
 Resolve the exact repository from the origin remote **plus** an explicit choice
 by Bryan. Never infer the tracker silently.
@@ -165,10 +172,10 @@ adapter rather than hand-rolled API calls, and do not route around a refusal.
 - **Preview first.** Every mutation defaults to dry-run. Bryan sees the exact
   content that would appear on the tracker — including any label the adapter
   would have to create — before anything is written.
-- **Every write preflights.** Privacy, the issue number the API actually
-  returned, the labels, the metadata version and type, the map association, and
-  the active claim are revalidated immediately before *each* write, not once
-  when the operation started. A body marker alone is not identity.
+- **Every write preflights.** Tracker eligibility (private or the exact public
+  exception), authenticated writer on that exception, issue number, labels,
+  metadata version and type, map association, and active claim are revalidated
+  immediately before *each* write. A body marker alone is not identity.
 - **The map body is never written after creation.** Forgejo has no
   compare-and-swap on issue update, so *any* body rewrite could overwrite a
   human edit that landed after the adapter's last read. The decision index is
@@ -254,7 +261,7 @@ and verifying the winner is untouched. `claim-status` lists queued acquisitions
 alongside the holder, each with its verbatim recovery command — recovery cannot
 target what inspection does not show.
 
-If safety and authority ever drift — the tracker flips public, a label
+If safety and authority ever drift — the tracker becomes ineligible, a label
 disappears, the map stops being identifiable, the claim changes hands — the
 adapter **fails closed** before the next write and reports the exact refusal.
 An interrupted resolution is finished by re-running the same resolve; a
@@ -262,12 +269,11 @@ resolution counts as successful only when its resolution comment, an index
 record with its exact key replaying as the ticket's *current* decision, and
 the closed ticket all read back.
 
-**Privacy is the last thing checked before every write.** Identity, metadata,
-ownership, and dependency reads all happen first; `require_private()` is the
-final network round trip before the single mutation, and the write itself reads
-nothing. Checking privacy first and then issuing three more reads would leave a
-window in which the repository goes public while the adapter is still deciding —
-and the write would land on a tracker it had already approved.
+- **Tracker eligibility is the last thing checked before every write.** Identity,
+metadata, ownership, dependencies, and (for the public exception) authenticated
+writer are checked first; `require_private()` rechecks the exact repository and
+visibility as the final network round trip before the mutation. The write itself
+reads nothing. A public exception is not permission for a different public repo.
 
 ## Invocation
 
@@ -286,7 +292,7 @@ Bryan invokes with a loose idea.
    first steps takeable now. **If this surfaces no fog**, stop — you do not need
    a map. Say so and ask how Bryan wants to proceed.
 3. **Resolve the tracker.** Origin remote plus Bryan's explicit choice. Confirm
-   the repository is private.
+   the repository is private or the exact owner-approved public exception.
 4. **Preview, then create the map** with Destination and Notes filled in,
    Decisions-so-far empty, and the fog sketched into Not yet specified.
 5. **Preview, then create the tickets you can specify now**, and wire blocking
@@ -356,7 +362,7 @@ administrative closeout, not a decision pass.
 The adapter currently has no whole-map retirement command. Do not route this
 through `resolve`, because that would publish false decisions. Until retirement
 is automated, Tea/API writes are the narrow administrative exception to the
-adapter-only rule: retain the same private-repository check, exact map/ticket
+adapter-only rule: retain the same tracker-eligibility check, exact map/ticket
 identity checks, preview-before-write behavior, and exact readback after every
 comment and close.
 

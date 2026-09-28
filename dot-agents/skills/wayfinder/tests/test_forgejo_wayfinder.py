@@ -34,6 +34,7 @@ sys.modules["forgejo_wayfinder"] = WF
 SPEC.loader.exec_module(WF)
 
 REPO = WF.RepoRef(host="git.example.test", owner="bryan", repo="workspace")
+PUBLIC_REPO = WF.RepoRef(host="git.snowboardtechie.com", owner="bryan", repo="sgg-workspace")
 T0 = "2026-08-19T09:00:00Z"
 T1 = "2026-08-19T10:00:00Z"
 T2 = "2026-08-19T11:00:00Z"
@@ -67,8 +68,14 @@ def ticket_body(question: str, map_number: int, ticket_type: str = "grilling") -
 class FakeForgejo(WF.Transport):
     """In-memory stand-in for the endpoints the adapter uses."""
 
-    def __init__(self, *, private: bool = True, labels: dict[str, int] | None = None) -> None:
+    def __init__(
+        self, *, private: bool = True, labels: dict[str, int] | None = None,
+        repo: Any = REPO, actor: str = "bryan",
+    ) -> None:
         self.private = private
+        self.repo = repo
+        self.actor = actor
+        self.full_name = repo.slug
         self.issues: dict[int, dict[str, Any]] = {}
         self.dependencies: dict[int, list[int]] = {}
         self.comments: dict[int, list[dict]] = {}
@@ -139,6 +146,7 @@ class FakeForgejo(WF.Transport):
         labels: list[str],
         state: str = "open",
         number: int | None = None,
+        author: str = "bryan",
     ) -> int:
         num = number if number is not None else self._next_number
         self._next_number = max(self._next_number, num + 1)
@@ -150,15 +158,16 @@ class FakeForgejo(WF.Transport):
             "labels": [{"name": name, "id": self.add_label(name)} for name in labels],
             "assignees": [],
             "updated_at": self._stamp(),
-            "html_url": f"https://{REPO.host}/{REPO.slug}/issues/{num}",
+            "html_url": f"https://{self.repo.host}/{self.repo.slug}/issues/{num}",
+            "user": {"login": author},
         }
         return num
 
-    def add_comment(self, number: int, body: str) -> int:
+    def add_comment(self, number: int, body: str, *, author: str = "bryan") -> int:
         cid = self._next_comment_id
         self._next_comment_id += 1
         self.comments.setdefault(number, []).append(
-            {"id": cid, "body": body, "created_at": self._stamp()}
+            {"id": cid, "body": body, "created_at": self._stamp(), "user": {"login": author}}
         )
         return cid
 
@@ -175,10 +184,13 @@ class FakeForgejo(WF.Transport):
     def request(self, method: str, path: str, payload: dict | None = None):
         method = method.upper()
         self.calls.append((method, path))
-        base = REPO.api_base
+        base = self.repo.api_base
+
+        if method == "GET" and path == "/user":
+            return 200, {"login": self.actor}
 
         if method == "GET" and path == base:
-            return 200, {"full_name": REPO.slug, "private": self.private}
+            return 200, {"full_name": self.full_name, "private": self.private}
 
         if path.startswith(f"{base}/labels"):
             if method == "GET":
@@ -236,7 +248,7 @@ class FakeForgejo(WF.Transport):
                 if "comment" in self.swallow:
                     return 201, {"id": -1, "body": payload["body"]}
                 stored_body = payload["body"] + self.mangle_comment_body
-                cid = self.add_comment(number, stored_body)
+                cid = self.add_comment(number, stored_body, author=self.actor)
                 return 201, {"id": cid, "body": payload["body"]}
 
         if path.endswith("/dependencies"):
@@ -263,7 +275,7 @@ class FakeForgejo(WF.Transport):
             for dropped in self.mangle_issue.get("drop_labels", []):
                 names = [n for n in names if n != dropped]
             names = names + list(self.mangle_issue.get("extra_labels", []))
-            number = self.add_issue(title=title, body=body, labels=names)
+            number = self.add_issue(title=title, body=body, labels=names, author=self.actor)
             return 201, dict(self.issues[number])
 
         if method in ("GET", "PATCH") and "/issues/" in path:
@@ -378,7 +390,7 @@ def seeded_tracker(**kwargs) -> tuple[WF.WayfinderTracker, FakeForgejo]:
     )
     api.add_comment(4, WF.render_record("claim", {"session": "hermes/session-a", "operation": op_for("hermes/session-a"), "at": T0}))
     api.dependencies[3] = [2]
-    return WF.WayfinderTracker(api, REPO), api
+    return WF.WayfinderTracker(api, api.repo), api
 
 
 # ==========================================================================
@@ -4647,6 +4659,152 @@ class WireBothEndpointsTest(unittest.TestCase):
         )
         self.assertEqual(sorted(api.dependencies[2]), sorted(blockers))
         self.assertIn(3, blockers)
+
+
+class PublicTrackerExceptionTest(unittest.TestCase):
+    """Only Bryan's server-attributed records govern the sole public tracker."""
+
+    def setup_tracker(self, **kwargs):
+        return seeded_tracker(private=False, repo=PUBLIC_REPO, **kwargs)
+
+    def test_exact_repository_and_server_identity_required(self) -> None:
+        tracker, api = self.setup_tracker()
+        self.assertFalse(tracker.require_private()["private"])
+        tracker.require_writer()
+        for wrong in ("bryan/other", "someone/sgg-workspace", ""):
+            with self.subTest(identity=wrong):
+                api.full_name = wrong
+                with self.assertRaisesRegex(WF.WayfinderError, "identity mismatch"):
+                    tracker.require_private()
+        for repo in (
+            WF.RepoRef(host="other.example", owner="bryan", repo="sgg-workspace"),
+            WF.RepoRef(host="git.snowboardtechie.com", owner="other", repo="sgg-workspace"),
+            WF.RepoRef(host="git.snowboardtechie.com", owner="bryan", repo="other"),
+        ):
+            with self.subTest(repo=repo):
+                foreign = FakeForgejo(private=False, repo=repo)
+                with self.assertRaisesRegex(WF.WayfinderError, "public"):
+                    WF.WayfinderTracker(foreign, repo).require_private()
+
+    def test_foreign_or_missing_actor_cannot_write_any_mutation_family(self) -> None:
+        for actor in ("outsider", ""):
+            for name in PreflightTest().mutations(self.setup_tracker(actor=actor)[0]):
+                tracker, api = self.setup_tracker(actor=actor)
+                before = len([c for c in api.calls if c[0] in ("POST", "PATCH")])
+                actions = PreflightTest().mutations(tracker)
+                actions["create-map"] = lambda: tracker.create_map(
+                    title="Public map", managed="## Destination\n\nPublic.",
+                    creation=op_for("map"), apply=True,
+                )
+                actions["create-ticket"] = lambda: tracker.create_ticket(
+                    map_number=1, title="Public ticket", question="Question?",
+                    ticket_type="grilling", creation=op_for("ticket"), apply=True,
+                )
+                with self.subTest(actor=actor, mutation=name):
+                    with self.assertRaisesRegex(WF.WayfinderError, "authenticated owner"):
+                        actions[name]()
+                    self.assertEqual(
+                        len([c for c in api.calls if c[0] in ("POST", "PATCH")]), before
+                    )
+
+    def test_foreign_comment_cannot_release_claim_or_publish_decision(self) -> None:
+        tracker, api = self.setup_tracker()
+        owner = tracker.current_claim(4)
+        self.assertIsNotNone(owner)
+        identity = WF.acquisition_identity(owner)
+        api.add_comment(4, WF.render_record("release", {
+            "session": identity[1], "operation": identity[0], "at": T1,
+        }), author="outsider")
+        api.add_comment(2, WF.render_record("claim", {
+            "session": "hermes/foreign", "operation": op_for("foreign"), "at": T0,
+        }), author="outsider")
+        api.add_comment(1, WF.render_index_comment({
+            "session": "hermes/foreign", "key": "0123456789abcdef", "map": "1",
+            "ticket": "2", "gist": "Forged answer", "at": T1,
+        }), author="outsider")
+        self.assertEqual(WF.acquisition_identity(tracker.current_claim(4)), identity)
+        self.assertIsNone(tracker.current_claim(2))
+        self.assertEqual(tracker.map_decisions(1), [])
+        key = WF.resolution_key(1, 2, "Answer")
+        api.add_comment(2, "Answer\n\n" + WF.render_record("resolution", {
+            "key": key, "map": "1", "session": "hermes/owner",
+        }), author="outsider")
+        self.assertFalse(WF.find_resolution(
+            tracker.comments(2), key=key, map_number=1, session="hermes/owner"
+        ))
+
+    def test_public_map_ticket_and_discovery_require_trusted_creator(self) -> None:
+        tracker, api = self.setup_tracker()
+        api.issues[1]["user"] = {"login": "outsider"}
+        with self.assertRaisesRegex(WF.WayfinderError, "trusted public-tracker author"):
+            tracker.read_map_issue(1)
+        api.issues[1]["user"] = {"login": "bryan"}
+        api.issues[2]["user"] = {"login": "outsider"}
+        with self.assertRaisesRegex(WF.WayfinderError, "trusted public-tracker author"):
+            tracker.read_ticket_issue(2, 1)
+        self.assertNotIn(2, [ticket.number for ticket in tracker.list_tickets(1)])
+        api.issues[2]["user"] = {"login": "bryan"}
+        api.issues[2]["labels"] = []
+        self.assertNotIn(2, [ticket.number for ticket in tracker.list_tickets(1)])
+
+    def test_missing_comment_author_and_copied_creation_marker_are_not_authority(self) -> None:
+        tracker, api = self.setup_tracker()
+        copied = WF.render_record("claim", {
+            "session": "hermes/other", "operation": op_for("other"), "at": T0,
+        })
+        comment_id = api.add_comment(2, copied)
+        api.comments[2][-1].pop("user")
+        self.assertIsNone(tracker.current_claim(2))
+        self.assertNotIn(comment_id, [c["id"] for c in tracker.comments(2)])
+
+        creation = op_for("public map")
+        api.add_issue(
+            title="Impostor map", body=WF.render_created_marker(creation),
+            labels=[WF.MAP_LABEL], author="outsider",
+        )
+        created = tracker.create_map(
+            title="Public map", managed="## Destination\n\nPublic decision plan.",
+            creation=creation, apply=True,
+        )
+        self.assertEqual(created["title"], "Public map")
+        self.assertEqual(api.issues[created["number"]]["user"]["login"], "bryan")
+
+    def test_public_tracker_rechecks_authenticated_actor_before_every_write(self) -> None:
+        tracker, api = self.setup_tracker()
+        real_request = api.request
+        posted: list[str] = []
+
+        def change_actor(method, path, payload=None):
+            result = real_request(method, path, payload)
+            if method == "POST" and "/comments" in path and not posted:
+                posted.append(path)
+                api.actor = "outsider"
+            return result
+
+        api.request = change_actor
+        with self.assertRaisesRegex(WF.WayfinderError, "authenticated owner"):
+            tracker.claim(
+                map_number=1, number=2, session="hermes/owner", claimed_at=T1,
+                operation=op_for("owner"), assignee="bryan", apply=True,
+            )
+        self.assertEqual(len(posted), 1)
+        self.assertEqual(api.issues[2]["assignees"], [])
+
+    def test_owner_can_create_and_read_back_on_public_tracker(self) -> None:
+        tracker, api = self.setup_tracker()
+        created = tracker.create_map(
+            title="Public map", managed="## Destination\n\nPublic decision plan.",
+            creation=op_for("public map"), apply=True,
+        )
+        self.assertEqual(created["title"], "Public map")
+        self.assertEqual(api.issues[created["number"]]["user"]["login"], "bryan")
+        ticket = tracker.create_ticket(
+            map_number=created["number"], title="Public decision",
+            question="Which shape?", ticket_type="grilling",
+            creation=op_for("public ticket"), apply=True,
+        )
+        self.assertEqual(ticket.title, "Public decision")
+        self.assertIn(ticket.number, [t.number for t in tracker.frontier(created["number"])])
 
 
 if __name__ == "__main__":
