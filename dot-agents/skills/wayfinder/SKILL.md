@@ -292,7 +292,12 @@ Bryan invokes with a loose idea.
 2. **Map the frontier.** Grill again, **breadth-first**: fan out across the whole
    space rather than deep on one thread, surfacing the open decisions and the
    first steps takeable now. **If this surfaces no fog**, stop — you do not need
-   a map. Say so and ask how Bryan wants to proceed.
+   a map. Say so and ask how Bryan wants to proceed. If the issue or a current
+   meeting calls for a concrete artifact before decisions (for example, an ERD
+   before choosing relationship boundaries), make that artifact a blocking
+   `task` or `prototype` ticket with an explicit deliverable. Verify it is the
+   first frontier item; do not bury the prerequisite in Notes or defer it to
+   the implementation plan.
 3. **Resolve the tracker.** Origin remote plus Bryan's explicit choice. Confirm
    the repository is private or the exact owner-approved public exception.
 4. **Preview, then create the map** with Destination and Notes filled in,
