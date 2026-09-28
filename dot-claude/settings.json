@@ -11,7 +11,6 @@
       "Bash(mkdir:*)",
       "Bash(ln:*)",
       "Bash(readlink:*)",
-      "Bash(rm:*)",
       "Bash(echo:*)",
       "Bash(date:*)",
       "Bash(test:*)",
@@ -242,27 +241,27 @@
     "code-review@claude-plugins-official": false,
     "pyright-lsp@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
-    "claude-md-management@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": false,
     "context7@claude-plugins-official": true,
-    "commit-commands@claude-plugins-official": true,
-    "pr-review-toolkit@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": false,
+    "pr-review-toolkit@claude-plugins-official": false,
     "security-guidance@claude-plugins-official": true,
     "playwright@claude-plugins-official": true,
-    "explanatory-output-style@claude-plugins-official": true,
+    "explanatory-output-style@claude-plugins-official": false,
     "learning-output-style@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true,
-    "claude-code-setup@claude-plugins-official": true,
-    "feature-dev@claude-plugins-official": true,
-    "obsidian@obsidian-skills": true,
-    "slack@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": false,
+    "feature-dev@claude-plugins-official": false,
+    "obsidian@obsidian-skills": false,
+    "slack@claude-plugins-official": false,
     "superpowers@claude-plugins-official": true,
-    "lua-lsp@claude-plugins-official": true,
+    "lua-lsp@claude-plugins-official": false,
     "context-mode@context-mode": true,
     "claude-mem@thedotmack": false,
-    "skill-creator@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": false,
     "github@claude-plugins-official": false,
     "ponytail@ponytail": true,
-    "watch@claude-watch": true
+    "watch@claude-watch": false
   },
   "extraKnownMarketplaces": {
     "superwhisper": {
@@ -312,5 +311,15 @@
     }
   },
   "theme": "dark",
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "skillOverrides": {
+    "adr-and-spec-coach": "off",
+    "find-skills": "off",
+    "loop-issue": "off",
+    "obsidian": "off",
+    "skill-retrospective": "off",
+    "sprint-deliverable-update": "off",
+    "sync-hold-branch": "off",
+    "weekly-planning": "off"
+  }
 }
