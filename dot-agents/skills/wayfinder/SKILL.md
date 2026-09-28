@@ -61,8 +61,10 @@ server-attributed `bryan` issues and comments as managed state. Teammates may
 read and comment as humans but their comments do not claim or resolve tickets.
 Do not generalize the exception to another public repository, and never put
 private meeting text, vault notes, credentials, or internal deliberation on a
-public map. Use public-source links and carefully scoped question summaries;
-keep private source details in the vault. Review every preview as publication.
+public map. Use public-source links and carefully scoped question summaries.
+The SGG workspace also tracks its vault in this now-public repository: do not
+assume a vault note is private or store non-public Granola detail there. Review
+every preview and Git-tracked handoff as publication.
 
 | Effort | Tracker |
 |---|---|
@@ -269,7 +271,7 @@ resolution counts as successful only when its resolution comment, an index
 record with its exact key replaying as the ticket's *current* decision, and
 the closed ticket all read back.
 
-- **Tracker eligibility is the last thing checked before every write.** Identity,
+**Tracker eligibility is the last thing checked before every write.** Identity,
 metadata, ownership, dependencies, and (for the public exception) authenticated
 writer are checked first; `require_private()` rechecks the exact repository and
 visibility as the final network round trip before the mutation. The write itself
