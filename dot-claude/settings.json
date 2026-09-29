@@ -195,6 +195,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"/Users/bryan/.claude/scripts/require-worktree.sh\"",
+            "timeout": 10
+          }
+        ]
       }
     ]
   },
