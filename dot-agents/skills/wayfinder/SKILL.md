@@ -171,9 +171,14 @@ step on it.
 Every one of these is enforced by `scripts/forgejo_wayfinder.py`. Use the
 adapter rather than hand-rolled API calls, and do not route around a refusal.
 
-- **Preview first.** Every mutation defaults to dry-run. Bryan sees the exact
-  content that would appear on the tracker — including any label the adapter
-  would have to create — before anything is written.
+- **Preview first.** Every mutation defaults to dry-run, and the session
+  reviews every preview as publication before applying it. Bryan sees the
+  exact content of a map or ticket creation — including any label the adapter
+  would have to create — before it is written. A **resolution** is the
+  exception: when it records exactly what the session settled with him, his
+  answers already approve it, so apply it without a second approval round.
+  Show it and wait only on a discrepancy — an answer that departs from or adds
+  to what he settled, or a question still open.
 - **Every write preflights.** Tracker eligibility (private or the exact public
   exception), authenticated writer on that exception, issue number, labels,
   metadata version and type, map association, and active claim are revalidated
@@ -327,7 +332,8 @@ decision, not him.
 3. Resolve it. Zoom as needed — fetch the full body of any related or closed
    ticket on demand. Load whichever skills the map's Notes name; when in doubt,
    `grilling`.
-4. **Preview, then record the resolution**: post the answer as a resolution
+4. **Preview, then record the resolution** (the preview is yours to review;
+   see *Safety* for when Bryan sees it): post the answer as a resolution
    comment, post one index record on the map — the decision's gist, bound to
    this exact ticket and answer — and close the issue **last**, so the
    decision of record is published before the ticket leaves the frontier. The

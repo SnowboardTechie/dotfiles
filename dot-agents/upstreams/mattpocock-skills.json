@@ -36,7 +36,8 @@
         "Adds a batching test — batch only questions whose answers do not reshape each other — instead of always asking the whole frontier.",
         "Requires genuine options, trade-offs, and a reasoned recommendation per consequential question.",
         "Folds upstream `to-questionnaire` in as a disclosed reference owned by grilling rather than a top-level skill, and forbids sending the questionnaire.",
-        "Routes oversized efforts to `wayfinder` rather than silently charting a map."
+        "Routes oversized efforts to `wayfinder` rather than silently charting a map.",
+        "For a ticket handed over by `wayfinder`, the answer that empties the frontier is the shared-understanding confirmation; the resolution is recorded without a separate confirm round unless the settled tree departs from what Bryan answered."
       ],
       "acceptedUpstreamRules": [
         "Decision tree worked frontier-first in rounds.",
@@ -95,7 +96,8 @@
         "Every external write goes through one guarded helper, and **privacy is the last network read before the single mutation** — identity, metadata, ownership, and dependency reads all complete first, and the write closure reads nothing. Checking privacy first and then issuing three more reads leaves a window in which the repository goes public while the adapter is still deciding. There is consequently no GET-then-PATCH helper: read preparation and the direct PATCH/POST are separate.",
         "Adds `claim-status`, so the exact operation id holding a ticket — and the command to release it — is inspectable rather than guessable.",
         "Value validation is real rather than shape-matching: ticket and map numbers must be positive integers (Forgejo numbers issues from 1, so zero is a missing value dressed as one, and the synthetic `ticket: 0` fallback is gone), and a timestamp must parse to a real UTC instant — `2026-99-99T99:99:99Z` matches every plausible regex. Blank lines inside a managed block are rejected rather than skipped, because padding a reader tolerates is padding a forger can hide behind.",
-        "Map and ticket identity are exact: a map needs exactly one balanced current-version managed region (zero is not a map; two is worse, since a decision would be merged into one while a reader sees the other), and a ticket needs both `wayfinder:ticket` and the `wayfinder:{type}` label agreeing with exact `map`/`type` metadata — a label that contradicts the body is two sources of truth, and this adapter refuses to pick one."
+        "Map and ticket identity are exact: a map needs exactly one balanced current-version managed region (zero is not a map; two is worse, since a decision would be merged into one while a reader sees the other), and a ticket needs both `wayfinder:ticket` and the `wayfinder:{type}` label agreeing with exact `map`/`type` metadata — a label that contradicts the body is two sources of truth, and this adapter refuses to pick one.",
+        "A resolution that records what the session settled with Bryan is applied without showing him the preview; the session still runs and reviews it as publication, and asks only on a discrepancy. Map and ticket creation previews are still shown."
       ],
       "acceptedUpstreamRules": [
         "Destination named first; it fixes the scope.",

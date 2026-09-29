@@ -129,6 +129,12 @@ alternatives and why they lost, verified facts, and anything still open — and
 wait for Bryan to confirm shared understanding. Do not draft a plan, spec, ADR,
 issue, or implementation until he does.
 
+When `wayfinder` handed over the ticket, the answer that empties the frontier
+is that confirmation: return to `wayfinder`, record the resolution, and present
+the settled tree with the link to what was recorded. Stop and ask first only if
+the tree carries something he did not settle — a decision he never answered, or
+a discrepancy with what he said.
+
 If the effort turns out to be too large for one session — the tree keeps growing
 faster than you close it, or resolving one branch plainly needs its own research
 or prototype effort — say so and offer `wayfinder`, which carries a map across
