@@ -101,7 +101,7 @@ PI_SKILLS=("${COMMON_SKILLS[@]}")
 
 CLAUDE_SKILLS=("${COMMON_SKILLS[@]}"
     manual-merge issue-create issue-plan issue-work loop-issue sync-hold-branch
-    adr-and-spec-coach conforming-tech-specs sprint-deliverable-update weekly-planning
+    adr-and-spec-coach dx-target conforming-tech-specs sprint-deliverable-update weekly-planning
     catalog-review dependency-review dependency-triage
     voice-bryan find-skills
     "${ADAPTED_CORES[@]}")
