@@ -16,8 +16,6 @@ SCRIPT = HERE / "scripts" / "check-studio-services.py"
 MANIFEST = HERE / "manifest.json"
 EXPECTED_SERVICES = {
     "Hermes Dashboard",
-    "Hindsight API",
-    "Hindsight Control Plane",
     "Open WebUI",
     "Grafana",
     "Prometheus",
@@ -100,6 +98,18 @@ class WatchdogStateTest(unittest.TestCase):
         self.assertIn("Loki", messages[0])
         self.assertIn("unhealthy", messages[0].lower())
         self.assertIn("recovered", messages[0].lower())
+
+    def test_retired_service_state_is_pruned_without_alerting(self) -> None:
+        state = {
+            "services": {
+                "Hindsight API": {"failures": 5, "alerted": True, "last_error": "down"},
+            }
+        }
+
+        state, messages = self.module.evaluate(state, self.healthy())
+
+        self.assertEqual(messages, [])
+        self.assertNotIn("Hindsight API", state["services"])
 
     def test_state_round_trip_is_atomic_and_private(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

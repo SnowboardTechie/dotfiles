@@ -24,7 +24,7 @@ mechanics.**
 |---|---|---|
 | Bryan's life: decisions, explorations, ideas, vehicles, home, tools, gifts, journal, learning | Apple Notes `Second Brain` (iCloud) | `apple-notes-pkm` |
 | A project or workspace: code, plans, issues, handoffs, architecture, DX artifacts, reviews | that repo's Markdown vault (`vault/`, `~/code/notes/<project>/`) | `vault-pkm` |
-| Agent behaviour corrections, "remember to…" for the agent itself | Hindsight / session memory | none — name it and let that system catch it |
+| Agent behaviour corrections, "remember to…" for the agent itself | the harness's native memory (e.g. Claude auto-memory, Hermes `MEMORY.md`/`USER.md`) | none — name it and let that native system catch it |
 
 `~/second-brain` on disk is a frozen rollback archive. Never write there and
 never treat it as a live source.

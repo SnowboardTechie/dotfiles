@@ -153,8 +153,9 @@ Offer these, and let Bryan pick:
 
 ## Boundaries
 
-- **Never copy the learning zone into Hindsight.** The zone is Bryan's exact,
-  curated knowledge; Hindsight holds learned agent experience. A recalled memory
+- **Never copy the learning zone into agent memory.** The zone is Bryan's exact,
+  curated knowledge; the harness's native agent memory holds learned agent
+  experience. A recalled memory
   about a session is **not evidence** that Bryan learned anything, and must
   never stand in for a record backed by demonstrated understanding.
 - **No scheduling.** No spaced-repetition cron, no reminders, no automation.

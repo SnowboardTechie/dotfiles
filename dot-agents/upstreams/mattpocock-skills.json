@@ -303,7 +303,7 @@
         "Adds a short assessment before selecting new material, and an explicit exposure-versus-demonstrated-understanding rule.",
         "Requires an approved slate before any learning record is written, and mandatory evidence in the record.",
         "Makes real Wayfinder and grilling work the preferred application surface instead of synthetic exercises.",
-        "Forbids copying the zone into Hindsight and forbids treating a recalled memory as proof of learning.",
+        "Forbids copying the zone into agent memory and forbids treating a recalled memory as proof of learning.",
         "Defers to the vault's own AGENTS.md for frontmatter, filenames, linking, and commits."
       ],
       "acceptedUpstreamRules": [

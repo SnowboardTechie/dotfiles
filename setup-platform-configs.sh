@@ -161,6 +161,13 @@ else
     "$REPO_ROOT/scripts/reconcile-agent-skills.sh" --apply
 fi
 
+# Retired third-party agent memory (Hindsight, context-mode, claude-mem):
+# remove only their known entries from machine-local Claude/Pi/OpenCode JSON.
+echo ""
+echo "Removing retired agent-memory wiring..."
+python3 "$REPO_ROOT/scripts/retire-agent-memory.py" --apply || \
+    echo "  (retired agent-memory cleanup incomplete; resolve the reported file and re-run)"
+
 # Native Apple Notes helper (macOS only). Build/sign/install the one process
 # allowed to send Apple Events to Notes. No-op off macOS; stops (non-fatally
 # here) if no stable signing identity is configured — see the script's output.

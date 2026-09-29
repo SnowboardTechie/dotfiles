@@ -156,8 +156,9 @@ loads the portable aliases from `dot-config/shell/aliases.sh`, a separate
 guarded Ble.sh source hook that becomes active when the `blesh` package is
 installed, the Omarchy-specific Herdr configuration and Glyph Rail module
 links, a repository-owned shell service that suspends after 45 minutes while
-honoring Stay Awake and idle inhibitors, and the pinned Hindsight client
-integration. It does not install packages or replace unrelated Omarchy-owned
+honoring Stay Awake and idle inhibitors, and a cleanup that removes only the
+retired Hindsight / context-mode / claude-mem entries from Claude, Pi, and
+OpenCode settings. It does not install packages or replace unrelated Omarchy-owned
 application configuration.
 
 What it intentionally leaves untouched: login shell selection, terminal, Neovim,

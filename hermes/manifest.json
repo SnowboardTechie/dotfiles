@@ -1,8 +1,6 @@
 {
   "schemaVersion": 1,
   "studioLocalHostName": "Bryans-Mac-Studio",
-  "hindsightConfig": "hindsight/config.json",
-  "memoryProvider": "hindsight-scoped",
   "mcpRequirements": {
     "granola": {
       "url": "https://mcp.granola.ai/mcp",
@@ -33,7 +31,6 @@
   "scripts": [
     "sgg-morning-brief.py",
     "sgg-pr-review-reminder.py",
-    "sgg-granola-import.py",
     "sgg-calendar-events.swift",
     "sgg-mail-messages.js",
     "sgg-pr-review-event.py",
@@ -51,10 +48,15 @@
     "sgg-sync-workday-note.py",
     "check-sssf-upstream.py"
   ],
+  "removedCopiedScripts": {
+    "sgg-granola-import.py": "6b0fe304239d04e87ddf088d8ddbc1530ae91f93d526e076de3706377f904988"
+  },
+  "removedLinks": [
+    "hindsight/config.json"
+  ],
   "copiedScripts": [
     "sgg-morning-brief.py",
     "sgg-pr-review-reminder.py",
-    "sgg-granola-import.py",
     "sgg-pr-review-event.py",
     "personal_notes.py",
     "personal-morning-brief.py",
@@ -66,8 +68,7 @@
     "check-hermes-context-threshold.py"
   ],
   "plugins": [
-    "matrix-key-recovery",
-    "hindsight-scoped"
+    "matrix-key-recovery"
   ],
   "skills": [
     "apple/apple-mail",

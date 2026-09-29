@@ -46,7 +46,7 @@ the required signing decision are in `helper/README.md`; build and install with
   folder such as `Journal`, `Decisions`, `Explorations`, `Inbox`.
 
 Not for project or workspace knowledge (`vault/` dirs, `~/code/notes/`) — load
-`vault-pkm` for those. Not for agent-internal memory — that is Hindsight.
+`vault-pkm` for those. Not for agent-internal memory — that is the harness's native memory.
 
 ## Commands (all bounded)
 

@@ -13,5 +13,4 @@ dot-agents
 ^hermes$
 ^/scripts$
 ^/tests$
-^/hindsight$
 ^/omarchy$

@@ -113,23 +113,6 @@
         ]
       },
       {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"/Users/bryan/.claude/hooks/context-mode-cache-heal.mjs\""
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"/Users/bryan/.hindsight/coding-agents/dist/claude-sessionstart-hook.js\"",
-            "timeout": 30
-          }
-        ]
-      },
-      {
         "matcher": "*",
         "hooks": [
           {
@@ -213,28 +196,6 @@
           }
         ]
       }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"/Users/bryan/.hindsight/coding-agents/dist/claude-hook.js\"",
-            "timeout": 30
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"/Users/bryan/.hindsight/coding-agents/dist/claude-stop-hook.js\"",
-            "timeout": 60
-          }
-        ]
-      }
     ]
   },
   "statusLine": {
@@ -260,8 +221,6 @@
     "slack@claude-plugins-official": false,
     "superpowers@claude-plugins-official": true,
     "lua-lsp@claude-plugins-official": false,
-    "context-mode@context-mode": true,
-    "claude-mem@thedotmack": false,
     "skill-creator@claude-plugins-official": false,
     "github@claude-plugins-official": false,
     "ponytail@ponytail": true,
@@ -278,18 +237,6 @@
       "source": {
         "source": "github",
         "repo": "kepano/obsidian-skills"
-      }
-    },
-    "context-mode": {
-      "source": {
-        "source": "github",
-        "repo": "mksglu/context-mode"
-      }
-    },
-    "thedotmack": {
-      "source": {
-        "source": "github",
-        "repo": "thedotmack/claude-mem"
       }
     },
     "ponytail": {

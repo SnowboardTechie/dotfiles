@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Prepare Bryan for SGG work by reconstructing the previous business day's resting point, showing work constraints, and recommending one concrete work outcome. Personal projects, personal reminders, and personal calendar events are handled by the separate Second Brain morning brief. The SGG brief reads work mail, the work calendar, GitHub, the `coding-agent::sgg` Hindsight bank, canonical SGG notes, and project repositories without mutating those sources. Its one approved mutation is deterministic creation of today's one-shot post-meeting Granola import jobs.
+Prepare Bryan for SGG work by reconstructing the previous business day's resting point, showing work constraints, and recommending one concrete work outcome. Personal projects, personal reminders, and personal calendar events are handled by the separate Second Brain morning brief. The SGG brief reads work mail, the work calendar, GitHub, Granola, canonical SGG notes, and project repositories without mutating those sources.
 
 ## Operational contract
 
@@ -13,7 +13,7 @@ Prepare Bryan for SGG work by reconstructing the previous business day's resting
   session so replies retain the brief as context.
 - Retain local cron output for audit/troubleshooting.
 - Use an LLM-driven job with a deterministic bounded pre-run collector.
-- The job may read Hindsight, notes, Calendar, Mail, and GitHub. It never writes notes or mutates those sources. Its collector may create only the idempotently named post-meeting import jobs described below.
+- The job may read notes, Granola, Calendar, Mail, and GitHub. It never writes notes, mutates those sources, or creates scheduled jobs.
 
 ## Notes scope and authority
 
@@ -34,43 +34,20 @@ Read in this order:
 
 Canonical placement does not make every recorded proposal or teammate action Bryan's priority. Prefer the explicit current resting point or accepted next step, preserve assignees exactly, and do not expand a coordination action into solo drafting or implementation. A deadline or detailed onboarding idea is not a priority signal by itself. If no authoritative source explicitly establishes Bryan's primary outcome, report that ambiguity instead of manufacturing one from the most recent or detailed thread.
 
-#### Hindsight and the vault
-
-The collector performs one bounded, read-only recall against
-`coding-agent::sgg`, grounded with current open SGG pull requests and recent
-vault commit subjects. Hindsight supplies durable decisions, commitments, and
-conclusions; it does not establish volatile PR state or today's priority by
-itself. Cross-check those claims against live systems and exact vault/Git
-artifacts. Suppress generated-workday refreshes, routine sync/migration logs,
-generic repository summaries, personal material, and completed initiatives
-without new activity. A Hindsight-only item cannot enter the resting point,
-recommended outcome, or first action without substantive previous-workday
-corroboration or an explicit currently active marker in a canonical surface. A
-A recall failure is a visible source error.
+#### The vault
 
 The vault remains Bryan's curated review interface and exact-artifact layer.
-It is not the sole agent-memory system and must not be bulk-ingested into
-Hindsight by this job.
+The collector reads its previous-workday Git history; canonical surfaces and
+live systems, not any external memory service, ground the brief. The job must
+not bulk-ingest the vault or meeting notes anywhere.
 
-#### Granola meeting review and post-meeting import
+#### Granola meeting review
 
 The morning agent reviews completed SGG meeting notes from the previous-business-day
 boundary through briefing time. It first lists meeting metadata, excludes every
 meeting that is not demonstrably SGG/CommonGrants/P&D work, then fetches details
 for at most ten in one bounded call. It never fetches an ambiguous meeting to
 decide whether that meeting is relevant.
-
-Separately, the deterministic collector creates one one-shot job for each
-eligible timed event on `Bryan @ Agile6`, scheduled exactly 15 minutes after the
-event's end. EventKit's event identifier, original recurring-occurrence date,
-and current scheduled Pacific date give each job an idempotent identity.
-Same-day time changes update one pending job; a cross-day move replaces the old
-pending job or creates a new-day job after the original has completed. Declined,
-all-day, non-meeting, identifier-less, and already-past events are excluded;
-pending imports absent from the eligible set are removed so cancellations and
-declines cannot leave an obsolete job armed.
-Scheduling success and failure are returned under `meetingNoteImports`; every
-failure is visible in the brief.
 
 The cron-facing `granola` MCP alias exposes only `list_meetings` and
 `get_meetings`; MCP resources and prompts are disabled. The separate
@@ -84,31 +61,9 @@ returns one. Meeting notes cannot silently override canonical vault or live
 GitHub state. The morning agent never retrieves transcripts or retains meeting
 content itself; every Granola source failure remains visible.
 
-Each one-shot job omits all calendar prose and matches exactly one completed
-Granola meeting from the validated time window and Granola participant metadata.
-After its first missing or ambiguous Granola result, it rechecks the exact event
-and original calendar identities against the current work calendar before
-retrying. Cancellation is scoped to the original import window: if the event
-moves to another Pacific calendar day, the old job ends silently just like a
-cancelled, removed, or Bryan-declined event. A later morning collector run owns
-scheduling a replacement import on the new day. Same-day time changes remain
-active. Only a confirmed-active event receives up to two more Granola attempts,
-180 seconds apart. The status helper resolves the raw identity from the local
-cron registry by job name, so secret redaction or model transcription cannot
-corrupt the opaque token. An unavailable calendar check stops without retrying.
-All one-shot imports deliver locally and always suppress user-facing output;
-their private local execution transcripts retain the status-helper, Granola,
-and import-helper results for later troubleshooting.
-After retrieving private notes and the AI-generated summary without a transcript,
-the agent writes a complete source snapshot into a randomized mode-0600 file
-under a verified mode-0700 private staging directory. The installed
-`sgg-granola-import.py` helper upserts and reads back
-`granola-meeting::<meeting-uuid>` in `coding-agent::sgg` with a source-artifact
-epistemic label. This makes the recorded context available to future SGG chats
-without promoting it to canonical project state. The helper verifies its exact
-submitted snapshot and Hindsight response; it does not claim a cryptographic
-binding to the prior MCP tool result. Success and failure are both silent to
-Bryan; diagnostics remain in the private local execution transcript.
+The post-meeting Granola-to-Hindsight import jobs were retired on 2026-09-29
+with Hindsight itself. The collector schedules no jobs; Granola stays the source
+of record and is read directly at briefing time.
 
 #### Concluded workday-note pilot
 
@@ -125,7 +80,7 @@ delivery and must not appear as work left off.
 
 The direct Google Calendar API through the authenticated `gws` CLI is canonical for the work calendar. EventKit remains a read-only fallback. The SGG collector includes only `Bryan @ Agile6`; personal and shared calendars belong to the Second Brain morning brief.
 
-- Collect event metadata read-only through `gws calendar`; use EventKit only when the direct source fails. Preserve Google's event ID and `originalStartTime` (or EventKit's event identifier and occurrence date) solely for idempotent post-meeting job identity.
+- Collect event metadata read-only through `gws calendar`; use EventKit only when the direct source fails. Preserve Google's event ID and `originalStartTime` (or EventKit's event identifier and occurrence date) as stable event identity.
 - Separate timed and all-day events; infer focus windows. Collect bounded organizer, current-user attendee, and attendee-count metadata. Assign preparation only when Bryan is the organizer or another authoritative source explicitly assigns it; never infer ownership from an event title or attendee status alone.
 - Mention private events only as scheduling constraints when relevant.
 - Do not collect calendar notes or meeting descriptions into the briefing payload because they can contain join credentials and passcodes.
@@ -165,7 +120,7 @@ Check authored PRs, assigned reviews, actionable comments/requested changes, mea
 7. **Suggested first action** — exactly one concrete next step.
 8. **Unverified / needs judgment** — every source failure plus real disagreements or assumptions.
 
-Aim for under two minutes and about ten or fewer substantive bullets. Distinguish verified live state, durable Hindsight context, canonical recorded state, historical evidence, proposals, and inference.
+Aim for under two minutes and about ten or fewer substantive bullets. Distinguish verified live state, canonical recorded state, historical evidence, proposals, and inference.
 
 When no accepted primary outcome is recorded, do not promote a recently updated
 PR into the first action. Use a neutral orientation/decision step. Likewise, do
@@ -196,8 +151,7 @@ When Hermes cannot restart its own gateway safely, put the exact external-termin
 1. Test every collector read path independently.
 2. Run one integrated brief manually.
 3. Verify the actual Matrix event, privacy, source health, previous-business-day behavior, and output length.
-4. Verify Hindsight recall uses `coding-agent::sgg`, never prints its API token,
-   and fails visibly without blocking the other sources.
-5. Remove noisy recall patterns before broadening the query or adding sources.
+4. Verify every source failure is visible without blocking the other sources.
+5. Remove noisy inputs before broadening a query or adding sources.
 6. Keep CairnOS excluded until Bryan explicitly accepts it as a mature tracking
    source.

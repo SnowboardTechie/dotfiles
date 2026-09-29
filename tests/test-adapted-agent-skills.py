@@ -870,7 +870,7 @@ class GuidedLearningTest(_MatchMixin, unittest.TestCase):
                 )
 
     def test_never_treats_memory_as_proof_of_learning(self) -> None:
-        self.assert_matches(self.body, r"(?i)hindsight", "missing required wording: hindsight")
+        self.assert_matches(self.body, r"(?i)agent memory", "missing required wording: agent memory")
         self.assert_matches(self.body, r"(?i)evidence", "missing required wording: evidence")
 
 

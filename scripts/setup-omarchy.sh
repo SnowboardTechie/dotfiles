@@ -4,7 +4,7 @@
 # Omarchy owns its own environment (shell, terminal, editor, Git, GPG,
 # Zed, and tool settings). This entry point deploys only additive personal
 # assets — curated skills, portable aliases, guarded Bash enhancements,
-# personal shell plugins, and Hindsight client wiring — and never runs Stow,
+# personal shell plugins, and retired agent-memory cleanup — and never runs Stow,
 # installs packages, or uses elevated privileges.
 #
 # Future additive reconcilers get appended to the RECONCILERS list below;
@@ -75,7 +75,7 @@ RECONCILERS=(
     "$SCRIPT_DIR/reconcile-bash-enhancements.sh"
     "$SCRIPT_DIR/reconcile-herdr-omarchy.sh"
     "$SCRIPT_DIR/reconcile-omarchy-auto-suspend.sh"
-    "$SCRIPT_DIR/reconcile-hindsight.sh"
+    "$SCRIPT_DIR/retire-agent-memory.py"
 )
 
 for reconciler in "${RECONCILERS[@]}"; do
@@ -92,9 +92,9 @@ Ownership summary:
   loading portable aliases from dot-config/shell/aliases.sh plus an optional,
   guarded Ble.sh integration for inline suggestions/highlighting, manages the
   Omarchy-specific Herdr configuration and Glyph Rail module links, enables a
-  repository-owned 45-minute auto-suspend shell service, and wires the
-  Hindsight memory client (staged runtime in ~/.hindsight, merged Claude
-  hooks / OpenCode plugin entry, token from ~/.secrets/hindsight) — nothing else.
+  repository-owned 45-minute auto-suspend shell service, and removes only the
+  retired Hindsight / context-mode / claude-mem entries from Claude, Pi, and
+  OpenCode JSON settings (native memory and data untouched) — nothing else.
 
   Intentionally left untouched (Omarchy owns these):
     - login shell selection and Omarchy's bash defaults
@@ -102,7 +102,7 @@ Ownership summary:
     - ~/.config/nvim
     - Git configuration (~/.config/git, ~/.gitconfig)
     - ~/.gnupg
-    - Zed, OpenCode, and Claude settings files
+    - Zed, OpenCode, and Claude settings files (beyond that retired-entry cleanup)
     - anything under /usr/share/omarchy
 
   No Stow operation, package installation, or privileged command was run.

@@ -8,7 +8,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 MANIFEST = ROOT / "manifest.json"
 WORK_PROMPT = ROOT / "automations" / "workday-morning-brief" / "prompt.md"
-HINDSIGHT_CONFIG = ROOT / "hindsight" / "config.json"
 PERSONAL_PROMPT = ROOT / "automations" / "personal-morning-brief" / "prompt.md"
 WEEKLY_ORIENTATION_PROMPT = ROOT / "automations" / "personal-weekly-orientation" / "prompt.md"
 WORK_COLLECTOR = ROOT / "scripts" / "sgg-morning-brief.py"
@@ -143,25 +142,24 @@ class MorningBriefSplitContractTest(unittest.TestCase):
         self.assertIn('        "vault",', collector)
         self.assertNotIn("NOTES_ROOT", collector)
 
-    def test_work_brief_reviews_granola_and_delegates_exact_source_imports(self) -> None:
+    def test_work_brief_reviews_granola_directly_without_hindsight(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         job = next(job for job in manifest["cronJobs"] if job["name"] == "Workday Morning Brief")
         prompt = WORK_PROMPT.read_text(encoding="utf-8")
-        hindsight = json.loads(HINDSIGHT_CONFIG.read_text(encoding="utf-8"))
+        collector = WORK_COLLECTOR.read_text(encoding="utf-8")
 
         self.assertEqual(job["enabledToolsets"], ["file", "terminal", "granola", "no_mcp"])
         self.assertNotIn("memory", job["enabledToolsets"])
         self.assertNotIn("sgg-sync-workday-note.py", manifest["scripts"])
         self.assertIn("sgg-sync-workday-note.py", manifest["removedScripts"])
-        self.assertEqual(manifest["hindsightConfig"], "hindsight/config.json")
-        # A cron privacy restriction must not disable ordinary conversations.
-        self.assertEqual(manifest["memoryProvider"], "hindsight-scoped")
-        self.assertIn("hindsight-scoped", manifest["plugins"])
-        self.assertEqual(hindsight["memory_mode"], "hybrid")
-        self.assertIs(hindsight["auto_recall"], True)
-        self.assertIs(hindsight["auto_retain"], True)
-        self.assertIs(hindsight["recall_sync"], True)
-        self.assertEqual(hindsight["recall_types"], ["observation", "world", "experience"])
+        self.assertEqual(job["schedule"], "0 8 * * 1-5")
+        self.assertEqual(job["script"], "sgg-morning-brief.py")
+        self.assertTrue(job["deliver"].startswith("matrix:"))
+        for text in (prompt, collector):
+            self.assertNotRegex(text, r"(?i)hindsight")
+            self.assertNotIn("sgg-granola-import.py", text)
+            self.assertNotIn("meetingNoteImports", text)
+            self.assertNotIn("Import Granola meeting", text)
         self.assertEqual(
             manifest["mcpRequirements"]["granola"]["tools"]["include"],
             ["list_meetings", "get_meetings"],
@@ -183,9 +181,9 @@ class MorningBriefSplitContractTest(unittest.TestCase):
         self.assertIn("meeting title, date, and meeting ID", prompt)
         self.assertIn("Do not invent a link", prompt)
         self.assertIn("Do not retrieve transcripts", prompt)
-        self.assertIn("This morning run must not retain meeting content to Hindsight", prompt)
-        self.assertIn("one-shot post-meeting jobs may upsert a complete source snapshot", prompt)
-        self.assertIn("sgg-granola-import.py", manifest["scripts"])
+        self.assertIn("Never retain, archive, copy, or mirror Granola meeting content", prompt)
+        self.assertIn("Do not create, update, or remove any scheduled job", prompt)
+        self.assertNotIn("sgg-granola-import.py", manifest["scripts"])
         self.assertIn("A successful empty result", prompt)
         self.assertIn("Report every nonempty `sourceErrors` entry", prompt)
 

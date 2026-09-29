@@ -17,15 +17,15 @@ Hub-installed skills should be recorded by source identifier if any are added la
 Credentials, sessions, memories, databases, logs, Matrix crypto state, cron output,
 locks, caches, and `cron/jobs.json` remain local and untracked.
 
-## Automatic memory
+## Memory
 
-`hindsight/config.json` enables automatic recall and retention for ordinary
-conversations. The manifest selects `hindsight-scoped`, a small adapter around
-Hermes's bundled Hindsight provider. Scheduled jobs and non-primary background
-contexts keep explicit-only memory; a cron privacy restriction must never disable
-memory for the whole interactive profile. Existing curated Granola imports and
-collector recall remain unchanged. See `plugins/hindsight-scoped/README.md` for
-the boundary, security review, lifecycle tests, activation, and rollback.
+Hermes uses only its built-in memory (`MEMORY.md`, `USER.md`, session search,
+and native compaction); no external memory provider is selected or installed.
+The retired Hindsight provider, its `hindsight-scoped` adapter, and the
+Granola-to-Hindsight import jobs were removed on 2026-09-29. The installer
+retires their managed config link and copied importer (`removedLinks`,
+`removedCopiedScripts`) but never deletes native memory. Granola remains the
+source of record for meeting notes; the SGG morning brief reads it directly.
 
 ## Installation
 

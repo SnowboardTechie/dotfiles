@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -29,12 +31,12 @@ class ManagedDestinationTest(unittest.TestCase):
     def test_link_rejects_symlinked_parent_escape(self) -> None:
         outside = self.root / "outside"
         outside.mkdir()
-        (self.home / "hindsight").symlink_to(outside, target_is_directory=True)
+        (self.home / "managed").symlink_to(outside, target_is_directory=True)
 
         with self.assertRaises(MODULE.InstallError):
             MODULE.install_link(
                 self.source,
-                self.home / "hindsight" / "config.json",
+                self.home / "managed" / "config.json",
                 hermes_home=self.home,
                 adopt_identical=False,
                 backup_root=self.backup,
@@ -58,7 +60,7 @@ class ManagedDestinationTest(unittest.TestCase):
         self.assertFalse((outside / "collector.py").exists())
 
     def test_link_is_idempotent_inside_managed_home(self) -> None:
-        destination = self.home / "hindsight" / "config.json"
+        destination = self.home / "managed" / "config.json"
 
         first = MODULE.install_link(
             self.source,
@@ -80,7 +82,7 @@ class ManagedDestinationTest(unittest.TestCase):
         self.assertEqual(destination.resolve(), self.source.resolve())
 
     def test_identical_file_can_be_adopted_safely(self) -> None:
-        destination = self.home / "hindsight" / "config.json"
+        destination = self.home / "managed" / "config.json"
         destination.parent.mkdir(parents=True)
         destination.write_bytes(self.source.read_bytes())
 
@@ -195,27 +197,6 @@ class ManagedDestinationTest(unittest.TestCase):
             (destination / "plugin.yaml").read_text(encoding="utf-8"), "name: reviewed\n"
         )
 
-    def test_memory_provider_selection_uses_profile_scoped_config_cli(self) -> None:
-        interpreter = self.root / "python"
-        interpreter.touch()
-        completed = MODULE.subprocess.CompletedProcess([], 0, "selected\n", "")
-        with patch.dict(MODULE.os.environ, {"HERMES_PYTHON": str(interpreter)}), patch.object(
-            MODULE.subprocess, "run", return_value=completed
-        ) as run:
-            result = MODULE.select_memory_provider(self.home, "hindsight-scoped")
-        self.assertEqual(result, "selected")
-        self.assertEqual(run.call_args.args[0], [
-            str(interpreter), "-m", "hermes_cli.main", "config", "set",
-            "memory.provider", "hindsight-scoped",
-        ])
-        self.assertEqual(run.call_args.kwargs["env"]["HERMES_HOME"], str(self.home))
-
-    def test_memory_provider_selection_failure_is_not_reported_as_success(self) -> None:
-        completed = MODULE.subprocess.CompletedProcess([], 1, "", "selection failed")
-        with patch.object(MODULE.subprocess, "run", return_value=completed):
-            with self.assertRaisesRegex(MODULE.InstallError, "selection failed"):
-                MODULE.select_memory_provider(self.home, "hindsight-scoped")
-
     def test_plugin_tree_copy_rejects_a_foreign_symlink(self) -> None:
         source = self.root / "plugin"
         source.mkdir()
@@ -251,6 +232,110 @@ class ManagedDestinationTest(unittest.TestCase):
             )
 
         self.assertFalse(destination.exists())
+
+
+    def test_retired_link_removes_only_its_managed_source_symlink(self) -> None:
+        assets = self.root / "assets"
+        managed = self.home / "retired" / "config.json"
+        managed.parent.mkdir()
+        managed.symlink_to(assets / "retired" / "config.json")
+        foreign = self.home / "other" / "config.json"
+        foreign.parent.mkdir()
+        foreign.symlink_to(self.source)
+
+        outcome = MODULE.remove_managed_link(
+            Path("retired/config.json"), hermes_home=self.home, asset_root=assets
+        )
+        with self.assertRaises(MODULE.InstallError):
+            MODULE.remove_managed_link(
+                Path("other/config.json"), hermes_home=self.home, asset_root=assets
+            )
+
+        self.assertEqual(outcome, "removed")
+        self.assertFalse(managed.is_symlink())
+        self.assertTrue(foreign.is_symlink())
+        self.assertEqual(
+            MODULE.remove_managed_link(
+                Path("retired/config.json"), hermes_home=self.home, asset_root=assets
+            ),
+            "absent",
+        )
+
+    def test_retired_copy_is_removed_only_while_identical_to_what_shipped(self) -> None:
+        scripts = self.home / "scripts"
+        scripts.mkdir()
+        shipped = b"#!/usr/bin/env python3\n"
+        digest = hashlib.sha256(shipped).hexdigest()
+        (scripts / "retired.py").write_bytes(shipped)
+        (scripts / "edited.py").write_bytes(shipped + b"# local edit\n")
+
+        outcome = MODULE.remove_retired_copy("retired.py", digest, hermes_home=self.home)
+        with self.assertRaises(MODULE.InstallError):
+            MODULE.remove_retired_copy("edited.py", digest, hermes_home=self.home)
+
+        self.assertEqual(outcome, "removed")
+        self.assertFalse((scripts / "retired.py").exists())
+        self.assertTrue((scripts / "edited.py").exists())
+        self.assertEqual(
+            MODULE.remove_retired_copy("retired.py", digest, hermes_home=self.home), "absent"
+        )
+
+
+class RetiredHindsightInstallTest(unittest.TestCase):
+    """The installer must neither reinstall nor select the retired Hindsight provider."""
+
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        self.home = Path(self.temp.name) / "hermes"
+        self.manifest = json.loads(MODULE.MANIFEST_PATH.read_text(encoding="utf-8"))
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def test_manifest_carries_no_hindsight_install_surface(self) -> None:
+        self.assertNotIn("hindsightConfig", self.manifest)
+        self.assertNotIn("memoryProvider", self.manifest)
+        self.assertNotIn("hindsight-scoped", self.manifest["plugins"])
+        self.assertIn("matrix-key-recovery", self.manifest["plugins"])
+        self.assertNotIn("sgg-granola-import.py", self.manifest["scripts"])
+        self.assertIn("sgg-granola-import.py", self.manifest["removedCopiedScripts"])
+        self.assertIn("hindsight/config.json", self.manifest["removedLinks"])
+        self.assertFalse((MODULE.ASSET_ROOT / "hindsight").exists())
+        self.assertFalse((MODULE.ASSET_ROOT / "plugins" / "hindsight-scoped").exists())
+        self.assertFalse(hasattr(MODULE, "select_memory_provider"))
+
+    def test_install_retires_hindsight_and_keeps_other_plugins_and_memory(self) -> None:
+        stale_link = self.home / "hindsight" / "config.json"
+        stale_link.parent.mkdir(parents=True)
+        stale_link.symlink_to(MODULE.ASSET_ROOT / "hindsight" / "config.json")
+        # Native memory and the already-installed plugin tree are not the
+        # installer's to delete; the supported Hermes CLI retires the plugin.
+        native_memory = self.home / "memories" / "MEMORY.md"
+        native_memory.parent.mkdir()
+        native_memory.write_text("native memory\n", encoding="utf-8")
+        old_plugin = self.home / "plugins" / "hindsight-scoped" / "plugin.yaml"
+        old_plugin.parent.mkdir(parents=True)
+        old_plugin.write_text("name: hindsight-scoped\n", encoding="utf-8")
+
+        enabled: list[str] = []
+        argv = ["install.py", "--hermes-home", str(self.home), "--force-host",
+                "--skip-compile", "--skip-cron"]
+        with patch.object(MODULE.sys, "argv", argv), patch.object(
+            MODULE, "local_hostname", return_value="elsewhere"
+        ), patch.object(
+            MODULE, "enable_plugin", side_effect=lambda home, name: enabled.append(name) or "ok"
+        ), patch.object(
+            MODULE.subprocess, "run", side_effect=AssertionError("unexpected subprocess")
+        ), patch("builtins.print"):
+            self.assertEqual(MODULE.main(), 0)
+
+        self.assertEqual(enabled, self.manifest["plugins"])
+        self.assertFalse(stale_link.exists() or stale_link.is_symlink())
+        self.assertFalse((self.home / "scripts" / "sgg-granola-import.py").exists())
+        self.assertTrue((self.home / "scripts" / "sgg-morning-brief.py").is_file())
+        self.assertTrue((self.home / "plugins" / "matrix-key-recovery").is_dir())
+        self.assertEqual(native_memory.read_text(encoding="utf-8"), "native memory\n")
+        self.assertTrue(old_plugin.exists())
 
 
 if __name__ == "__main__":

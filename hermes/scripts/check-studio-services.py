@@ -35,12 +35,6 @@ PROBES = (
         "https://bryans-mac-studio.tail5ba690.ts.net/api/status",
         "hermes",
     ),
-    Probe("Hindsight API", "http://127.0.0.1:8888/health", "hindsight"),
-    Probe(
-        "Hindsight Control Plane",
-        "https://bryans-mac-studio.tail5ba690.ts.net:9444/",
-        "hindsight-ui",
-    ),
     Probe("Open WebUI", "https://ai.thompson.codes/health", "open-webui"),
     Probe("Grafana", "http://100.121.238.48:33000/api/health", "grafana"),
     Probe("Prometheus", "http://127.0.0.1:9090/-/ready", "prometheus"),
@@ -63,11 +57,6 @@ def response_is_valid(check: str, body: bytes) -> bool:
     if check == "hermes":
         value = _json(body)
         return isinstance(value, dict) and value.get("auth_required") is True
-    if check == "hindsight":
-        value = _json(body)
-        return isinstance(value, dict) and value.get("status") == "healthy"
-    if check == "hindsight-ui":
-        return b"Hindsight Control Plane" in body
     if check == "open-webui":
         value = _json(body)
         return isinstance(value, dict) and value.get("status") is True

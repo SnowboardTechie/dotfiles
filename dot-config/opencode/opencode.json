@@ -81,8 +81,6 @@
     "doom_loop": "ask"
   },
   "model": "openai/gpt-5.6-sol",
-  "plugin": [
-    "/Users/bryan/.hindsight/coding-agents"
-  ],
+  "plugin": [],
   "mcp": {}
 }

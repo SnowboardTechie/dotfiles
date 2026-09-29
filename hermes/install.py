@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import filecmp
+import hashlib
 import json
 import os
 import shutil
@@ -220,6 +221,31 @@ def install_tree_copy(
     return "copied"
 
 
+def remove_managed_link(
+    relative: Path,
+    *,
+    hermes_home: Path,
+    asset_root: Path,
+) -> str:
+    """Remove only a symlink inside HERMES_HOME that points at its managed source."""
+    if relative.is_absolute() or ".." in relative.parts:
+        raise InstallError(f"unsafe removed path in manifest: {relative}")
+    destination = hermes_home / relative
+    require_managed_destination(destination, hermes_home)
+    expected_source = (asset_root / relative).resolve(strict=False)
+    if destination.is_symlink():
+        link_target = Path(os.readlink(destination))
+        if not link_target.is_absolute():
+            link_target = destination.parent / link_target
+        if link_target.resolve(strict=False) != expected_source:
+            raise InstallError(f"refusing to remove foreign symlink: {destination}")
+        destination.unlink()
+        return "removed"
+    if destination.exists():
+        raise InstallError(f"refusing to remove non-symlink: {destination}")
+    return "absent"
+
+
 def remove_managed_script(
     name: str,
     *,
@@ -229,20 +255,25 @@ def remove_managed_script(
     """Remove only a managed script symlink inside HERMES_HOME."""
     if Path(name).name != name:
         raise InstallError(f"unsafe removed script name in manifest: {name}")
+    return remove_managed_link(
+        Path("scripts") / name, hermes_home=hermes_home, asset_root=asset_root
+    )
+
+
+def remove_retired_copy(name: str, sha256: str, *, hermes_home: Path) -> str:
+    """Remove a retired copied script only while it is byte-identical to what was shipped."""
+    if Path(name).name != name:
+        raise InstallError(f"unsafe removed copied script name in manifest: {name}")
     destination = hermes_home / "scripts" / name
     require_managed_destination(destination, hermes_home)
-    expected_source = (asset_root / "scripts" / name).resolve(strict=False)
-    if destination.is_symlink():
-        link_target = Path(os.readlink(destination))
-        if not link_target.is_absolute():
-            link_target = destination.parent / link_target
-        if link_target.resolve(strict=False) != expected_source:
-            raise InstallError(f"refusing to remove foreign script symlink: {destination}")
-        destination.unlink()
-        return "removed"
-    if destination.exists():
-        raise InstallError(f"refusing to remove non-symlink script: {destination}")
-    return "absent"
+    if destination.is_symlink() or (destination.exists() and not destination.is_file()):
+        raise InstallError(f"refusing to remove non-file copied script: {destination}")
+    if not destination.exists():
+        return "absent"
+    if hashlib.sha256(destination.read_bytes()).hexdigest() != sha256:
+        raise InstallError(f"refusing to remove modified copied script: {destination}")
+    destination.unlink()
+    return "removed"
 
 
 def compile_calendar(hermes_home: Path) -> str:
@@ -338,31 +369,6 @@ def enable_plugin(hermes_home: Path, name: str) -> str:
     return result.stdout.strip()
 
 
-def select_memory_provider(hermes_home: Path, name: str) -> str:
-    """Select the already-installed provider through Hermes's supported CLI."""
-    candidates = [
-        os.environ.get("HERMES_PYTHON"),
-        str(hermes_home / "hermes-agent" / "venv" / "bin" / "python"),
-        sys.executable,
-    ]
-    interpreter = next((Path(item) for item in candidates if item and Path(item).is_file()), None)
-    if interpreter is None:
-        raise InstallError("could not find a Python interpreter for memory provider selection")
-    environment = os.environ.copy()
-    environment["HERMES_HOME"] = str(hermes_home)
-    result = subprocess.run(
-        [str(interpreter), "-m", "hermes_cli.main", "config", "set", "memory.provider", name],
-        env=environment,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        detail = (result.stderr or result.stdout or "memory provider selection failed").strip()
-        raise InstallError(detail[:2000])
-    return result.stdout.strip()
-
-
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--hermes-home", type=Path, default=Path.home() / ".hermes")
@@ -415,14 +421,18 @@ def main() -> int:
         )
         results.append(f"retired script {name}: {outcome}")
 
-    hindsight_relative = Path(manifest["hindsightConfig"])
-    if hindsight_relative.is_absolute() or ".." in hindsight_relative.parts:
-        raise InstallError(f"unsafe Hindsight config path in manifest: {hindsight_relative}")
-    hindsight_source = ASSET_ROOT / hindsight_relative
-    resolved_asset_root = ASSET_ROOT.resolve(strict=True)
-    resolved_hindsight_source = hindsight_source.resolve(strict=True)
-    if resolved_asset_root not in resolved_hindsight_source.parents:
-        raise InstallError(f"Hindsight config source escapes managed asset root: {hindsight_source}")
+    for name, digest in manifest.get("removedCopiedScripts", {}).items():
+        outcome = remove_retired_copy(name, digest, hermes_home=hermes_home)
+        results.append(f"retired copied script {name}: {outcome}")
+
+    for relative_text in manifest.get("removedLinks", []):
+        outcome = remove_managed_link(
+            Path(relative_text),
+            hermes_home=hermes_home,
+            asset_root=ASSET_ROOT,
+        )
+        results.append(f"retired link {relative_text}: {outcome}")
+
     managed_plugins = manifest.get("plugins", [])
     for name in managed_plugins:
         relative = Path(name)
@@ -436,23 +446,6 @@ def main() -> int:
         )
         results.append(f"plugin {name}: {outcome}")
         results.append(f"plugin {name} activation: {enable_plugin(hermes_home, name)}")
-
-    memory_provider = manifest.get("memoryProvider")
-    if memory_provider:
-        if memory_provider not in managed_plugins:
-            raise InstallError("memoryProvider must name an installed managed plugin")
-        results.append(f"memory provider: {select_memory_provider(hermes_home, memory_provider)}")
-
-    # Select the scoped provider before enabling automatic memory. An old
-    # bundled provider must not pick up interactive settings for a cron run.
-    outcome = install_link(
-        hindsight_source,
-        hermes_home / "hindsight" / "config.json",
-        hermes_home=hermes_home,
-        adopt_identical=args.adopt_identical,
-        backup_root=backup_root,
-    )
-    results.append(f"Hindsight config: {outcome}")
 
     for relative_text in manifest["skills"]:
         relative = Path(relative_text)

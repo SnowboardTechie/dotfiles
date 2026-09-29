@@ -27,10 +27,10 @@ cat > "$TMP_ROOT/bin/nix" <<'EOF'
 printf 'nix %s\n' "$*" >> "$COMMAND_LOG"
 EOF
 
+# Retired updater stub: logs if anything still invokes it.
 cat > "$TMP_ROOT/home/code/nix-configs/scripts/update-hindsight-locks.py" <<'EOF'
 #!/usr/bin/env bash
 printf 'hindsight update\n' >> "$COMMAND_LOG"
-exit "${HINDSIGHT_UPDATE_STATUS:-0}"
 EOF
 
 chmod +x "$TMP_ROOT/bin/scutil" "$TMP_ROOT/bin/sudo" "$TMP_ROOT/bin/nix" \
@@ -138,6 +138,8 @@ fi
 
 echo "ok   upgrade-system previews, upgrades, and rebuilds the detected target"
 
+# A stale nix-configs checkout may still carry the retired Hindsight lock
+# updater; upgrade-system must never run it.
 : > "$COMMAND_LOG"
 output="$(
     printf 'yes\n' | \
@@ -151,13 +153,12 @@ output="$(
 )"
 status=$?
 
-expected=$(printf '%s\n%s\n%s' \
+expected=$(printf '%s\n%s' \
     "nix flake update --flake $TMP_ROOT/home/code/nix-configs" \
-    "hindsight update" \
     "sudo darwin-rebuild switch --flake $TMP_ROOT/home/code/nix-configs/#studio")
 actual="$(<"$COMMAND_LOG")"
 if [[ $status -ne 0 || "$actual" != "$expected" ]]; then
-    echo "FAIL: Studio upgrade-system did not update Hindsight between flake refresh and rebuild" >&2
+    echo "FAIL: Studio upgrade-system did not go straight from flake refresh to rebuild" >&2
     echo "  want:" >&2
     printf '%s\n' "$expected" >&2
     echo "  got:" >&2
@@ -165,35 +166,13 @@ if [[ $status -ne 0 || "$actual" != "$expected" ]]; then
     printf '%s\n' "$output" >&2
     exit 1
 fi
-if [[ "$output" != *"Action: update flake inputs and Hindsight, then rebuild"* ]]; then
-    echo "FAIL: Studio upgrade-system preview did not include Hindsight" >&2
+if [[ "$output" != *"Action: update flake inputs, then rebuild"* || "$output" == *Hindsight* ]]; then
+    echo "FAIL: Studio upgrade-system preview still mentions Hindsight" >&2
     printf '%s\n' "$output" >&2
     exit 1
 fi
 
-echo "ok   Studio upgrade-system refreshes coordinated Hindsight locks"
-
-: > "$COMMAND_LOG"
-printf 'yes\n' | \
-    HOME="$TMP_ROOT/home" \
-    PATH="$TMP_ROOT/bin:/usr/bin:/bin" \
-    COMMAND_LOG="$COMMAND_LOG" \
-    STUB_LOCAL_HOSTNAME="Bryans-Mac-Studio" \
-    HINDSIGHT_UPDATE_STATUS=9 \
-    FUNCTIONS="$FUNCTIONS" \
-    ALIASES="$ALIASES" \
-    /bin/zsh -f -c 'source "$FUNCTIONS"; source "$ALIASES"; upgrade-system' \
-    >/dev/null 2>&1
-status=$?
-
-actual="$(<"$COMMAND_LOG")"
-if [[ $status -eq 0 || "$actual" == *"sudo darwin-rebuild"* ]]; then
-    echo "FAIL: Studio upgrade-system rebuilt after the Hindsight lock refresh failed" >&2
-    printf '%s\n' "${actual:-<no command>}" >&2
-    exit 1
-fi
-
-echo "ok   Studio upgrade-system stops before rebuild when Hindsight refresh fails"
+echo "ok   Studio upgrade-system no longer runs the retired Hindsight lock updater"
 
 output="$(
     FUNCTIONS="$FUNCTIONS" /bin/zsh -f -c '

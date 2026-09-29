@@ -65,6 +65,6 @@ session; where it disagrees with anything here, it wins.
 ## The zone stays in the vault
 
 The workspace is Bryan's exact, curated knowledge. It is never bulk-copied into
-Hindsight, never summarized into an agent memory as a substitute for the
-records, and never published anywhere. Hindsight may hold a *reference* to the
-zone; it never holds the zone.
+agent memory, never summarized into an agent memory as a substitute for the
+records, and never published anywhere. Agent memory may hold a *reference* to
+the zone; it never holds the zone.
