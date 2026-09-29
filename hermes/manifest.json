@@ -43,13 +43,13 @@
     "personal-alignment-brief.py",
     "personal-mail-messages.js",
     "check-mattpocock-skill-updates.py",
-    "check-sssf-upstream.py",
     "check-herdr-homebrew-atuin-fix.py",
     "check-studio-services.py",
     "check-hermes-context-threshold.py"
   ],
   "removedScripts": [
-    "sgg-sync-workday-note.py"
+    "sgg-sync-workday-note.py",
+    "check-sssf-upstream.py"
   ],
   "copiedScripts": [
     "sgg-morning-brief.py",
@@ -61,7 +61,6 @@
     "personal-weekly-orientation.py",
     "personal-alignment-brief.py",
     "check-mattpocock-skill-updates.py",
-    "check-sssf-upstream.py",
     "check-herdr-homebrew-atuin-fix.py",
     "check-studio-services.py",
     "check-hermes-context-threshold.py"
@@ -349,29 +348,6 @@
       ],
       "workdir": "/Users/bryan/code/dotfiles",
       "attachToSession": false
-    },
-    {
-      "name": "Watch SSSF upstream updates",
-      "deliveryIntent": "briefing",
-      "schedule": "15 9 * * 1",
-      "model": "gpt-5.6-terra",
-      "provider": "openai-codex",
-      "promptFile": "automations/sssf-upstream-watch/prompt.md",
-      "deliver": "matrix:!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU",
-      "skills": [
-        "cross-agent-skill-migration"
-      ],
-      "script": "check-sssf-upstream.py",
-      "noAgent": false,
-      "enabledToolsets": [
-        "no_mcp"
-      ],
-      "workdir": "/Users/bryan/code/sgg",
-      "attachToSession": true,
-      "continuation": {
-        "chatName": "SGG",
-        "userEnv": "MATRIX_ALLOWED_USERS"
-      }
     }
   ]
 }
