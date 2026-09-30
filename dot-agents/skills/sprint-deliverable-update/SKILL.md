@@ -44,6 +44,12 @@ is a separate skill: `sprint-status-update`.
    follow the repo gets rewritten. See **The narrative pass** below.
 6. **Final means final.** A draft called complete, post-ready, or review-ready contains
    no editorial instructions, TODOs, placeholders, or suggestions to add evidence later.
+   Do not add a sentence announcing that no deliverable acceptance criteria or metrics
+   closed unless the audience needs that fact; rollover already names unfinished work.
+   Only classify work as rollover when it was actually committed for that sprint. A
+   ticket's existence or the prior update's tentative "Next sprint" list is not proof.
+   In stakeholder-facing risks, explain the consequence rather than assuming readers
+   know the team's internal checkpoint labels.
 7. **Embed or omit.** If the artifact mentions a screenshot, the screenshot must appear
    immediately as an embedded image — either `![alt](target)` or the `<img>` tag GitHub's
    comment composer produces for a pasted file; both are accepted. Never write “add,”
