@@ -55,6 +55,23 @@
           }
         }
       }
+    },
+    "ds4": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Studio DwarfStar (Tailscale)",
+      "options": {
+        "baseURL": "http://100.121.238.48:8000/v1",
+        "apiKey": "dsv41-local"
+      },
+      "models": {
+        "deepseek-v4.1-flash": {
+          "name": "DeepSeek V4.1 Flash Q2",
+          "limit": {
+            "context": 65536,
+            "output": 8192
+          }
+        }
+      }
     }
   },
   "instructions": [

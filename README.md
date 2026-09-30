@@ -292,12 +292,14 @@ dotfiles/
 - Config lives in `dot-config/opencode/opencode.json` (tracked, stowed to `~/.config/opencode/`)
 - The default local model provider connects directly to Studio Ollama over Tailscale at `http://100.121.238.48:11434/v1`
 - The Ollama endpoint is available only inside the tailnet and does not require an API key
+- `ds4/deepseek-v4.1-flash` is an opt-in DwarfStar Q2 route at Studio's tailnet-only port 8000; it does not replace OpenCode's default model. The API key is a non-secret placeholder because tailnet membership, not DwarfStar, controls access.
 - `plugins/ollama-models.js` refreshes the provider's model inventory from Studio whenever OpenCode starts
 - For repo-specific tweaks (extra docs, different permissions, etc.), create `.opencode/project.json` inside the repo
 
 ### AI / Pi and Zed on Gnarbox
 
-- The NixOS CLI feature installs `pi-coding-agent` from the pinned Nixpkgs source build rather than OpenCode. Shared Pi model definitions in `dot-pi/agent/models.json` expose Studio Ollama's current models over the tailnet. The `apiKey` value is a dummy because Ollama ignores authentication; no credential is committed.
+- The NixOS CLI feature installs `pi-coding-agent` from the pinned Nixpkgs source build rather than OpenCode. Shared Pi model definitions in `dot-pi/agent/models.json` expose Studio Ollama and DwarfStar over the tailnet. Both `apiKey` values are non-secret placeholders for trusted tailnet-only services.
+- On Studio, `~/.pi/agent/models.json` also links to this shared catalog; choose `ds4/deepseek-v4.1-flash` for the Q2 experiment. The default Codex model stays unchanged.
 - Gnarbox's app-owned `~/.pi/agent/settings.json` selects its startup model. It is not stowed, so this shared model catalog does not change Pi defaults on other hosts; use Pi's `/model` to change the selection.
 - Pi also supports the ChatGPT Codex subscription directly: run `/login` and choose ChatGPT Plus/Pro (Codex), then select an `openai-codex` model with `/model`. The OAuth credential is machine-local in `~/.pi/agent/auth.json` (mode 0600), not tracked or shared with Hermes; no standalone Codex CLI is required. Verify with `pi auth check --provider openai-codex --json` and one small real request through that provider.
 - Zed's Ollama and edit-prediction URLs also point to Studio over Tailscale. Verify the live `/api/tags` response and one real completion from Gnarbox rather than inferring connectivity from configuration.
@@ -307,6 +309,8 @@ dotfiles/
 - `hermes/` preserves authored local skills, automation scripts, and declarative cron definitions.
 - `~/.hermes` remains a real local runtime directory; it is intentionally not stowed because it contains credentials, databases, sessions, logs, caches, and Matrix encryption state.
 - `setup-platform-configs.sh` installs only manifest-listed assets on Studio, compiles native helpers locally, and reconciles named cron jobs through Hermes's API.
+- Hermes's machine-local `custom_providers` contains the opt-in `local-deepseek-v41-flash` route; select `/model custom:local-deepseek-v41-flash:deepseek-v4.1-flash`. The default Codex provider is unchanged.
+- `dot-local/bin/claude-deepseek` is an opt-in Claude Code launcher for the same DwarfStar server. Run `claude-deepseek` instead of `claude`; the normal Claude Code subscription route is unchanged.
 - Built-in Hermes skills come from the Hermes installation rather than being copied into dotfiles.
 - See [`hermes/README.md`](hermes/README.md) for the managed boundary and restore process.
 
