@@ -23,7 +23,9 @@ is a separate skill: `sprint-status-update`.
 
 ## Key Rules
 
-1. **Always tag Julius.** Open every comment with `@juchang111`. Every time, no exceptions.
+1. **Always tag Julius, not Lucas.** Open every comment with `@juchang111`. Do not tag
+   `@lucasmbrown-usds` in future HHS deliverable updates; Lucas is no longer part of
+   this HHS work. Recheck copied precedents for stale mentions.
 2. **ACs and metrics are different things.** Use the bolded name from the deliverable as
    the sub-heading (e.g., "### Custom Fields Catalog", "### SGG Adoption"). Never use
    numbered labels like "Criteria 1", "Criteria 2".
