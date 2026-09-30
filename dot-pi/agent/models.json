@@ -28,32 +28,6 @@
           "maxTokens": 16384
         }
       ]
-    },
-    "ds4": {
-      "baseUrl": "http://100.121.238.48:8000/v1",
-      "api": "openai-completions",
-      "apiKey": "dsv41-local",
-      "compat": {
-        "supportsStore": false,
-        "supportsDeveloperRole": false,
-        "supportsReasoningEffort": true,
-        "supportsUsageInStreaming": true,
-        "maxTokensField": "max_tokens",
-        "supportsStrictMode": false,
-        "thinkingFormat": "deepseek",
-        "requiresReasoningContentOnAssistantMessages": true
-      },
-      "models": [
-        {
-          "id": "deepseek-v4.1-flash",
-          "name": "Studio DeepSeek V4.1 Flash Q2",
-          "reasoning": true,
-          "input": ["text"],
-          "contextWindow": 65536,
-          "maxTokens": 8192,
-          "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
-        }
-      ]
     }
   }
 }
