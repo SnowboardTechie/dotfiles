@@ -1,7 +1,7 @@
 ---
 name: code-review
 description: Use when reviewing an exact code candidate.
-version: 2.1.0
+version: 2.1.1
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
@@ -191,6 +191,11 @@ the replacement is known and verified. Keep its selected range exact. Separate
 publishable review text from private reviewer provenance and test logs. Inspect
 the saved artifact so links, anchors, and complete code fences remain usable.
 
+Write the overall review body in Bryan's voice, leading with the judgment.
+Keep routine test counts, execution details, and repeated change or inline-
+comment summaries in the private audit. Include technical detail in the
+publishable body only when it affects the review decision.
+
 ### Finding gate
 
 Zero findings is a valid successful review. Report only concrete defects: the
@@ -199,6 +204,14 @@ consequence matters, and the proposed correction materially improves the
 candidate. Do not turn an acknowledged limitation, accepted trade-off,
 imprecise-but-accurate wording, or improvement opportunity into a finding merely
 to produce a comment.
+
+For test-quality comments, a surviving mutation establishes a coverage gap,
+not a current implementation defect. Check legitimate inputs and the stated
+assertion or requirement, then explain the meaningful consequence. Distinguish
+a mis-scoped existing assertion from a request for extra assertions; withdraw
+marginal coverage requests that fail the finding gate. Do not imply that an
+artificially broken variant is the current code or that a future regression
+will occur if the suggestion is left unaddressed.
 
 When the acceptance owner challenges a finding, stop drafting alternative
 wording and revalidate it from the exact claim and evidence. If it survives,

@@ -225,7 +225,7 @@
         "Pins review artifacts to immutable base, head, merge-base, and binary-diff identities, and distributes `code-review` anywhere `pr-self-review` is curated, including Pi, so no host can receive the orchestrator without its mandatory Ponytail contract.",
         "Runs Standards, Spec, conditional Risk, and Ponytail sequentially inside one independent review context while retaining separate artifacts; a second reviewer is reserved for targeted high-risk boundaries after the ordinary candidate stabilizes.",
         "Allows a pre-PR reviewer to write only inside the exact cross-repository ticket state directory after rerunning the issue-work context validator and matching its persisted artifact.",
-        "Adds a human-facing review contract: clickable PR and exact-head source anchors, evidence-based proposed review events, verified inline suggestions, and private audit material separated from publishable text."
+        "Adds a human-facing review contract: clickable PR and exact-head source anchors, evidence-based proposed review events, verified inline suggestions, concise approval prose, and private audit material separated from publishable text. Test-coverage comments must identify a meaningful consequence; a surviving artificial mutation alone is not a runtime finding."
       ],
       "acceptedUpstreamRules": [
         "Pin the fixed point and confirm it resolves with a non-empty diff before dispatching reviewers.",
