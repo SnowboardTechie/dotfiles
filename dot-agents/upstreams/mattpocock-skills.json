@@ -224,7 +224,8 @@
         "Keeps Standards, Spec, and conditional Risk as the primary lane architecture, then runs a mandatory host-independent Ponytail over-engineering quality gate last against every exact candidate. The shared contract is deliberately narrow (delete/YAGNI/stdlib/native/shrink only), requires `review-ponytail.md`, and does not depend on a Claude plugin or slash command.",
         "Pins review artifacts to immutable base, head, merge-base, and binary-diff identities, and distributes `code-review` anywhere `pr-self-review` is curated, including Pi, so no host can receive the orchestrator without its mandatory Ponytail contract.",
         "Runs Standards, Spec, conditional Risk, and Ponytail sequentially inside one independent review context while retaining separate artifacts; a second reviewer is reserved for targeted high-risk boundaries after the ordinary candidate stabilizes.",
-        "Allows a pre-PR reviewer to write only inside the exact cross-repository ticket state directory after rerunning the issue-work context validator and matching its persisted artifact."
+        "Allows a pre-PR reviewer to write only inside the exact cross-repository ticket state directory after rerunning the issue-work context validator and matching its persisted artifact.",
+        "Adds a human-facing review contract: clickable PR and exact-head source anchors, evidence-based proposed review events, verified inline suggestions, and private audit material separated from publishable text."
       ],
       "acceptedUpstreamRules": [
         "Pin the fixed point and confirm it resolves with a non-empty diff before dispatching reviewers.",

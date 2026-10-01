@@ -1,7 +1,7 @@
 ---
 name: skill-retrospective
-description: Use after chats with repeated workflow friction.
-version: 1.1.0
+description: Use for a user-corrected mistake that needs durable prevention, or an audit of recurring workflow friction.
+version: 1.2.0
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
@@ -26,6 +26,36 @@ and a way to verify that change.
 The foreground audit does not call mutation tools until the user approves named
 candidates.
 
+## Direct mistake correction
+
+Bryan has given a standing instruction: when the agent makes a meaningful
+mistake, correct the result and incorporate the necessary reusable lesson into
+the instructions, memory, or skill that prevents recurrence.
+
+Use this bounded route for a specific correction; use the full audit below for
+open-ended retrospective discovery.
+
+1. Fix and verify the current result. Establish the correction from the user's
+   instruction and observed evidence; do not invent a root cause.
+2. Choose the smallest canonical owner: stable user preferences belong in native
+   memory or global instructions; procedures in their existing skill; project
+   rules in project instructions. Read the current content first. If the rule
+   already exists, improve its trigger or verification instead of duplicating it.
+3. Save the scoped change under the user's existing authorization. The standing
+   instruction covers the necessary correction, not unrelated candidates,
+   external publication, or permission/configuration changes. If the host needs
+   further approval or lacks durable storage, report the exact blocker.
+4. Read back the saved content and exercise the corrected behavior in a fresh
+   context or representative case. Check that the intended runtime can discover
+   the owner; file presence alone does not prove future loading.
+5. Report the saved target and verification. Distinguish a saved lesson from a
+   proposed or blocked one, and state its retrieval scope. An acknowledgment or
+   current-chat promise is not a durable update.
+
+Do not create a new skill for every typo, transient failure, or one-off fact.
+Exclude secrets, task residue, and unverified explanations. The slate-and-
+approval gate below still applies to unrelated findings from a broad audit.
+
 ## When to Use
 
 Use at a natural stopping point when the user asks what the agent should learn
@@ -34,9 +64,9 @@ candidates for new or existing skills.
 
 Also use for a supplied transcript or prior-session reference.
 
-Do not use when:
+Do not use the full audit when:
 
-- The user already identified one proven procedure and only wants it authored.
+- The user already identified a specific correction; use the direct route above.
 - The main result belongs in a knowledge store. Use `knowledge-capture` (project vault or Apple Notes).
 - The task is still in progress and more evidence is likely.
 - A loaded skill is already known to be stale or wrong and host policy requires

@@ -1,7 +1,7 @@
 ---
 name: code-review
 description: Use when reviewing an exact code candidate.
-version: 2.0.0
+version: 2.1.0
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
@@ -172,6 +172,25 @@ multi-dimension workflow in several model contexts.
 - Minor: non-blocking quality issue worth addressing.
 - Nit: optional wording, naming, or local simplification.
 
+### Human-facing review draft
+
+Include a clickable PR link and a source permalink for every file/line finding,
+pinned to the reviewed head. Verify the path and line or range against that
+candidate. Keep exact inline posting metadata alongside the link so the reader
+can both inspect the code and place the comment.
+
+Choose the proposed review event from the evidence: `APPROVE` for a completed
+review with no validated blockers; `REQUEST_CHANGES` for validated blocking
+findings; `COMMENT` for unresolved discussion or incomplete review coverage.
+Optional suggestions do not require withholding approval. Preparing a draft
+and submitting that review are separate actions; preserve the user's submission
+authorization boundary.
+
+Make actionable inline corrections concrete with a small suggestion block when
+the replacement is known and verified. Keep its selected range exact. Separate
+publishable review text from private reviewer provenance and test logs. Inspect
+the saved artifact so links, anchors, and complete code fences remain usable.
+
 ### Finding gate
 
 Zero findings is a valid successful review. Report only concrete defects: the
@@ -215,3 +234,6 @@ prescriptions before correction.
 - [ ] Every challenged finding was defended with evidence or withdrawn
 - [ ] Every blocking finding was independently validated
 - [ ] Artifacts still match the candidate at disposition
+- [ ] Human-facing draft has clickable PR and exact-head file/line links
+- [ ] Proposed event matches blocker status and review coverage
+- [ ] Suggestions have verified replacements and valid inline ranges
