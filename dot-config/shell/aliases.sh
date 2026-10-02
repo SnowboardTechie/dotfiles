@@ -25,6 +25,17 @@ fi
 
 # Utility aliases
 alias clr="clear"
+# Hermes's isolated Python launcher is not recognized by Herdr's process
+# detector. Hint only the launched command, never the parent shell or other tools.
+if command -v hermes >/dev/null 2>&1; then
+  hermes() {
+    if [[ "${HERDR_ENV:-}" == "1" ]]; then
+      HERDR_AGENT=hermes command hermes "$@"
+    else
+      command hermes "$@"
+    fi
+  }
+fi
 if command -v podman >/dev/null 2>&1; then
   alias docker="podman"
 fi
