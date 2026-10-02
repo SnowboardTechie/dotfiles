@@ -125,8 +125,12 @@ Global hooks that run for all repos:
 
 ```toml
 [post-create]
-direnv = "[ -f .envrc ] && direnv allow"
+direnv = "if [ -f .envrc ]; then direnv allow; fi"
 ```
+
+Optional-file hooks must succeed when the file is absent while preserving
+failures of the actual command. Use an `if` guard, not `[ -f .envrc ] && ...`
+(which fails when absent) or `|| true` (which hides real failures).
 
 ### Project Config (`.config/wt.toml` in repo root)
 

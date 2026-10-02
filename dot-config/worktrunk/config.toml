@@ -21,7 +21,7 @@ summary = true     # LLM branch summaries in wt list --full
 copy-ignored = "wt step copy-ignored"
 
 [[pre-start]]
-direnv = "[ -f .envrc ] && direnv allow"
+direnv = "if [ -f .envrc ]; then direnv allow; fi"
 
 # Link agent context instead of letting copy-ignored snapshot it.
 # copy-ignored duplicates the trunk's untracked AGENTS.md into each new

@@ -100,6 +100,32 @@ class WorktrunkContextTests(unittest.TestCase):
         self.assertFalse((self.worktree / "AGENTS.md").is_symlink())
         self.assertFalse((self.worktree / "CLAUDE.md").is_symlink())
 
+    def test_direnv_hook_skips_absent_envrc_and_propagates_failures(self):
+        config = tomllib.loads(CONFIG.read_text())
+        command = next(step["direnv"] for step in config["pre-start"] if "direnv" in step)
+        for exists, direnv_status, expected in ((False, 0, 0), (True, 0, 0), (True, 7, 7)):
+            with self.subTest(envrc_exists=exists, direnv_status=direnv_status):
+                if exists:
+                    (self.worktree / ".envrc").write_text("# Test fixture\n")
+                script = f'direnv() {{ printf "called:%s\\n" "$*"; return {direnv_status}; }}; {command}'
+                result = subprocess.run(["sh", "-c", script], cwd=self.worktree,
+                                        env=self.env, capture_output=True, text=True)
+                self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+                self.assertEqual(result.stdout, "called:allow\n" if exists else "")
+
+    def test_full_worktree_launch_without_envrc_runs_later_context_hook(self):
+        self.remove_worktree()
+        (self.trunk / ".git/info/exclude").write_text("AGENTS.md\nCLAUDE.md\n")
+        (self.trunk / "AGENTS.md").write_text("Shared instructions\n")
+        self.env["WORKTRUNK_CONFIG_PATH"] = str(CONFIG)
+        self.run_command("wt", "--config", str(CONFIG), "-y", "switch", "--create",
+                         "context-test", "--base", "main", "--no-cd", cwd=self.trunk)
+        self.assertFalse((self.worktree / ".envrc").exists())
+        self.assertTrue((self.worktree / "AGENTS.md").is_symlink())
+        self.assertEqual((self.worktree / "AGENTS.md").resolve(), self.trunk / "AGENTS.md")
+        self.assertFalse((self.worktree / "CLAUDE.md").exists())
+        self.assertFalse((self.worktree / "CLAUDE.md").is_symlink())
+
 
 if __name__ == "__main__":
     unittest.main()
