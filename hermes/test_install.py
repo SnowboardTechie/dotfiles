@@ -319,7 +319,7 @@ class RetiredHindsightInstallTest(unittest.TestCase):
 
         enabled: list[str] = []
         argv = ["install.py", "--hermes-home", str(self.home), "--force-host",
-                "--skip-compile", "--skip-cron"]
+                "--skip-compile", "--skip-cron", "--skip-native-matrix"]
         with patch.object(MODULE.sys, "argv", argv), patch.object(
             MODULE, "local_hostname", return_value="elsewhere"
         ), patch.object(
@@ -336,6 +336,37 @@ class RetiredHindsightInstallTest(unittest.TestCase):
         self.assertTrue((self.home / "plugins" / "matrix-key-recovery").is_dir())
         self.assertEqual(native_memory.read_text(encoding="utf-8"), "native memory\n")
         self.assertTrue(old_plugin.exists())
+
+
+class NativeMatrixIntegrationTest(unittest.TestCase):
+    def test_normal_install_invokes_native_reconciler(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest = root / "manifest.json"
+            manifest.write_text(json.dumps({"studioLocalHostName": "Studio", "nativeMatrix": True,
+                                            "scripts": [], "skills": [], "plugins": []}))
+            argv = ["install.py", "--hermes-home", str(root / "home"), "--skip-compile", "--skip-cron"]
+            with patch.object(MODULE, "MANIFEST_PATH", manifest), patch.object(
+                MODULE, "local_hostname", return_value="Studio"
+            ), patch.object(MODULE.sys, "argv", argv), patch.object(
+                MODULE, "reconcile_native_matrix", return_value="verified"
+            ) as reconcile, patch("builtins.print"):
+                self.assertEqual(MODULE.main(), 0)
+            reconcile.assert_called_once_with((root / "home").resolve())
+
+    def test_installer_declares_native_matrix(self):
+        manifest = json.loads(MODULE.MANIFEST_PATH.read_text())
+        self.assertTrue(manifest["nativeMatrix"])
+
+    def test_installer_uses_tracked_reconciler(self):
+        import subprocess
+        result = subprocess.CompletedProcess([], 0, "verified", "")
+        with patch.object(MODULE.subprocess, "run", return_value=result) as execute:
+            self.assertEqual(MODULE.reconcile_native_matrix(Path("/home/test/.hermes")), "verified")
+        command = execute.call_args.args[0]
+        self.assertEqual(command[1], str(MODULE.ASSET_ROOT / "reconcile_matrix_native.py"))
+        self.assertIn("--apply", command)
+        self.assertIn("--hermes-home", command)
 
 
 if __name__ == "__main__":

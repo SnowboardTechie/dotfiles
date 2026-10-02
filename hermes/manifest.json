@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "studioLocalHostName": "Bryans-Mac-Studio",
+  "nativeMatrix": true,
   "mcpRequirements": {
     "granola": {
       "url": "https://mcp.granola.ai/mcp",

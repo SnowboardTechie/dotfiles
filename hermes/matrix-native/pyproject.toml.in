@@ -1,0 +1,18 @@
+[project]
+name = "hermes-matrix-native-deps"
+version = "1.0.0"
+requires-python = "@PYTHON_RANGE@"
+dependencies = [
+  "mautrix[encryption]==0.21.1",
+  "asyncpg==0.31.0",
+  "aiosqlite==0.22.1",
+  "aiohttp-socks==0.11.0",
+  "Markdown>=3.4,<4",
+  "python-olm==3.2.16",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+python-olm = { path = @WHEEL_PATH@ }

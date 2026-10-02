@@ -1,0 +1,3 @@
+name: matrix-native-deps
+version: "1.0.0"
+description: Retain Studio-native Matrix encryption dependencies in Hermes managed environments

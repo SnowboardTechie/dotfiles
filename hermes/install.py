@@ -369,6 +369,19 @@ def enable_plugin(hermes_home: Path, name: str) -> str:
     return result.stdout.strip()
 
 
+def reconcile_native_matrix(hermes_home: Path) -> str:
+    """Keep the Studio-native dependency build owned by tracked source."""
+    source_root = Path(os.environ.get("HERMES_SOURCE_ROOT", hermes_home / "hermes-agent"))
+    result = subprocess.run(
+        [sys.executable, str(ASSET_ROOT / "reconcile_matrix_native.py"), "--apply",
+         "--hermes-home", str(hermes_home), "--source-root", str(source_root)],
+        capture_output=True, text=True, check=False,
+    )
+    if result.returncode:
+        raise InstallError((result.stderr or result.stdout or "native Matrix reconciliation failed")[-4000:])
+    return result.stdout.strip()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--hermes-home", type=Path, default=Path.home() / ".hermes")
@@ -376,6 +389,8 @@ def main() -> int:
     parser.add_argument("--force-host", action="store_true", help="install even when this is not Studio")
     parser.add_argument("--skip-compile", action="store_true")
     parser.add_argument("--skip-cron", action="store_true")
+    parser.add_argument("--skip-native-matrix", action="store_true", help="skip native dependency builds in isolated tests")
+    parser.add_argument("--skip-plugin-activation", action="store_true", help="copy plugins without launching Hermes in isolated tests")
     args = parser.parse_args()
 
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
@@ -390,6 +405,8 @@ def main() -> int:
     backup_root = hermes_home / ".dotfiles-adopt-backup" / datetime.now().strftime("%Y%m%dT%H%M%S")
 
     results: list[str] = []
+    if manifest.get("nativeMatrix") and not args.skip_native_matrix:
+        results.append(f"native Matrix: {reconcile_native_matrix(hermes_home)}")
     copied_scripts = set(manifest.get("copiedScripts", []))
     if not copied_scripts.issubset(manifest["scripts"]):
         raise InstallError("copiedScripts must be a subset of scripts")
@@ -445,7 +462,8 @@ def main() -> int:
             backup_root=backup_root,
         )
         results.append(f"plugin {name}: {outcome}")
-        results.append(f"plugin {name} activation: {enable_plugin(hermes_home, name)}")
+        if not args.skip_plugin_activation:
+            results.append(f"plugin {name} activation: {enable_plugin(hermes_home, name)}")
 
     for relative_text in manifest["skills"]:
         relative = Path(relative_text)

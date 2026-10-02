@@ -486,6 +486,8 @@ class SchedulerContainmentTest(unittest.TestCase):
                     "--force-host",
                     "--skip-cron",
                     "--skip-compile",
+                    "--skip-native-matrix",
+                    "--skip-plugin-activation",
                     "--hermes-home",
                     str(home),
                 ],

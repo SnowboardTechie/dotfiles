@@ -1,0 +1,8 @@
+{
+  "version": "3.2.16",
+  "url": "https://files.pythonhosted.org/packages/source/p/python-olm/python-olm-3.2.16.tar.gz",
+  "sha256": "a1c47fce2505b7a16841e17694cbed4ed484519646ede96ee9e89545a49643c9",
+  "patchFile": "libolm/include/olm/list.hh",
+  "patchBefore": "T * const other_pos = other._data;",
+  "patchAfter": "T * other_pos = other._data;"
+}
