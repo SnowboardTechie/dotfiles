@@ -6,12 +6,7 @@ worktree="${1:-$PWD}"
 worktree=$(cd "$worktree" && pwd)
 git -C "$worktree" rev-parse --is-inside-work-tree >/dev/null
 
-trunk=$(git -C "$worktree" worktree list --porcelain \
-    | while IFS= read -r line; do
-        case "$line" in
-            "worktree "*) printf '%s\n' "${line#worktree }"; break ;;
-        esac
-    done)
+trunk=$(dirname "$(git -C "$worktree" rev-parse --path-format=absolute --git-common-dir)")
 
 if [[ -z "$trunk" || "$trunk" == "$worktree" ]]; then
     printf 'linked=0\n'
@@ -43,8 +38,11 @@ done < <(find "$trunk" -name AGENTS.md \
     -not -path '*/.worktrees/*' \
     -not -path '*/.claude/worktrees/*' 2>/dev/null)
 
-# CLAUDE.md remains a symlink to AGENTS.md when the trunk uses that convention.
+# Share genuine Claude-specific files, never the retired AGENTS.md bridge.
 while IFS= read -r source; do
+    if [[ -L "$source" && "$source" -ef "$(dirname "$source")/AGENTS.md" ]]; then
+        continue
+    fi
     relative="${source#"$trunk"/}"
     link_if_absent "$source" "$worktree/$relative"
 done < <(find "$trunk" -name CLAUDE.md \

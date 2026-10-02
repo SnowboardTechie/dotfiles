@@ -161,11 +161,19 @@ Hooks support **template variables**: `{{ branch }}`, `{{ branch | sanitize }}`,
 
 ### Shared agent context
 
-Personal `AGENTS.md`, its `CLAUDE.md` symlink, and vault links may be globally
-ignored and therefore absent from a new worktree. After creation, run the linked
+Personal `AGENTS.md` and vault links may be globally ignored and therefore
+absent from a new worktree. After creation, run the linked
 `scripts/link-shared-context.sh` helper against the new worktree. It links only
 missing context files/directories from the trunk and never replaces existing
 paths.
+
+Do not create or propagate `CLAUDE.md` symlinks that alias `AGENTS.md`: Claude
+Code reads project `AGENTS.md` natively, and the bridge is retired. The helper
+skips those bridges while retaining support for genuine Claude-specific files.
+Preserve existing real `CLAUDE.md` files and unrelated symlinks; the user-level
+`~/.claude/CLAUDE.md` is separate and must remain untouched. When auditing this
+behavior, check the live global Worktrunk `pre-start` hooks as well as this
+helper: fixing only one creation path leaves the other able to recreate links.
 
 This can be called manually after `wt switch --create`, or from a trusted
 `post-create` hook. Verify its reported links before starting an agent in the
