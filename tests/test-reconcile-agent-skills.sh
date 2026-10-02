@@ -73,12 +73,18 @@ link_resolves_to() { # <link> <expected-target>
     [[ -L "$1" && "$(readlink -f "$1")" == "$(readlink -f "$2")" ]]
 }
 
-# --- Test 1: expected curated links are created for all four tools -----------
+# --- Test 1: expected curated links are created for all five tools -----------
 H="$(new_home)"
 TMP_HOMES+=("$H")
 out="$(HOME="$H" "$RECONCILER" --apply 2>&1)"; rc=$?
 check "t1: apply exits 0 on a fresh home" test "$rc" -eq 0
-check "t1: Claude receives 31 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 31
+check "t1: Codex receives 27 pool links" test "$(links_into_pool "$H/.agents/skills")" -eq 27
+check "t1: Codex gets ADR coaching" link_resolves_to "$H/.agents/skills/adr-and-spec-coach" "$POOL/adr-and-spec-coach"
+check "t1: Codex gets conforming specs" link_resolves_to "$H/.agents/skills/conforming-tech-specs" "$POOL/conforming-tech-specs"
+check "t1: Codex gets shared handoff" link_resolves_to "$H/.agents/skills/session-handoff" "$POOL/session-handoff"
+check "t1: Codex gets review contract" link_resolves_to "$H/.agents/skills/code-review" "$POOL/code-review"
+check "t1: Codex excludes Hermes orchestration" test ! -e "$H/.agents/skills/coding-agent-handoff-supervision"
+check "t1: Claude receives 32 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 32
 check "t1: OpenCode receives 25 pool links" test "$(links_into_pool "$H/.config/opencode/skills")" -eq 25
 check "t1: Pi receives 11 pool links"       test "$(links_into_pool "$H/.pi/agent/skills")" -eq 11
 check "t1: Hermes receives 31 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 31
@@ -99,8 +105,8 @@ check "t1: OpenCode gets gamedev"           link_resolves_to "$H/.config/opencod
 check "t1: Pi does not get manual-merge"    test ! -e "$H/.pi/agent/skills/manual-merge"
 check "t1: Hermes excludes obsidian"        test ! -e "$H/.hermes/skills/personal/obsidian"
 check "t1: Hermes excludes vault-pkm"       test ! -e "$H/.hermes/skills/personal/vault-pkm"
-check "t1: every tool gets apple-notes-pkm" bash -c 'for d in "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ -L "$d/apple-notes-pkm" && -L "$d/knowledge-capture" ]] || exit 1; done' _ "$H"
-check "t1: no tool gets retired vault-capture" bash -c 'for d in "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ ! -e "$d/vault-capture" ]] || exit 1; done' _ "$H"
+check "t1: every tool gets apple-notes-pkm" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ -L "$d/apple-notes-pkm" && -L "$d/knowledge-capture" ]] || exit 1; done' _ "$H"
+check "t1: no tool gets retired vault-capture" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ ! -e "$d/vault-capture" ]] || exit 1; done' _ "$H"
 
 # --- Test 8: re-running --apply is idempotent --------------------------------
 before="$(snapshot "$H")"
@@ -135,6 +141,24 @@ check "t3: colliding real directory is preserved" test -f "$H2/.claude/skills/sh
 check "t3: collision is warned about"           bash -c 'grep -q "Claude/ship exists and is not a symlink" <<<"$1"' _ "$out"
 check "t4: colliding regular file is preserved" test -f "$H2/.claude/skills/worktrunk" -a ! -L "$H2/.claude/skills/worktrunk"
 check "t4: non-colliding regular file is preserved" test -f "$H2/.pi/agent/skills/notes.txt"
+
+# Codex preserves its existing user skills and bundled system directory.
+# Remove only fixture-owned links before constructing collisions.
+rm "$H2/.agents/skills/adr-and-spec-coach" "$H2/.agents/skills/conforming-tech-specs"
+mkdir -p "$H2/.agents/skills/adr-and-spec-coach" "$H2/.codex/skills/.system"
+printf 'local ADR skill\n' > "$H2/.agents/skills/adr-and-spec-coach/marker"
+printf 'bundled\n' > "$H2/.codex/skills/.system/marker"
+ln -s "$H2/missing-foreign" "$H2/.agents/skills/conforming-tech-specs"
+ln -s "$POOL/gamedev" "$H2/.agents/skills/gamedev"
+before_codex="$(snapshot "$H2")"
+out="$(HOME="$H2" "$RECONCILER" --check 2>&1)"
+check "Codex: dry run preserves all entries" test "$before_codex" = "$(snapshot "$H2")"
+out="$(HOME="$H2" "$RECONCILER" --apply 2>&1)"
+check "Codex: real skill conflict preserved" test -f "$H2/.agents/skills/adr-and-spec-coach/marker"
+check "Codex: broken foreign conflict preserved" test "$(readlink "$H2/.agents/skills/conforming-tech-specs")" = "$H2/missing-foreign"
+check "Codex: conflict warning emitted" bash -c 'grep -q "Codex/conforming-tech-specs is a foreign symlink" <<<"$1"' _ "$out"
+check "Codex: stale pool link pruned" test ! -L "$H2/.agents/skills/gamedev"
+check "Codex: bundled skills untouched" test -f "$H2/.codex/skills/.system/marker"
 
 # --- Tests 5/6/7: stale pool links prune under apply, not check ---------------
 # gamedev is in the pool but not curated for Pi, so a Pi link to it is stale.

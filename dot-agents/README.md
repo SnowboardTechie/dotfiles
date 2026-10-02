@@ -1,7 +1,7 @@
 # dot-agents
 
 Single source of truth for Bryan's **personal agent skills**, shared across the
-four coding agents he runs: **Claude Code**, **Pi**, **OpenCode**, and **Hermes**.
+five coding agents he runs: **Claude Code**, **Pi**, **OpenCode**, **Hermes**, and **Codex**.
 
 ## How it works
 
@@ -10,6 +10,7 @@ gets a *curated subset* via per-skill symlinks created by
 [`../scripts/reconcile-agent-skills.sh`](../scripts/reconcile-agent-skills.sh):
 
 ```
+~/.agents/skills/<name>         -> dot-agents/skills/<name>  # Codex
 ~/.claude/skills/<name>          -> dot-agents/skills/<name>
 ~/.config/opencode/skills/<name> -> dot-agents/skills/<name>
 ~/.pi/agent/skills/<name>        -> dot-agents/skills/<name>
@@ -43,17 +44,31 @@ prunes its stale links.
 
 The **single authoritative curation source** is the set of `*_SKILLS` Bash arrays
 in [`../scripts/reconcile-agent-skills.sh`](../scripts/reconcile-agent-skills.sh):
-`COMMON_SKILLS` (the core shared by Claude, OpenCode, and Pi) plus per-tool
+`COMMON_SKILLS` (the core shared by Claude, OpenCode, Pi, and Codex) plus per-tool
 additions, and Hermes's independent list. A skill existing in the pool does not
 mean every tool receives it. This README intentionally does not mirror the
 membership lists or counts — read the arrays.
+
+Codex receives the portable coding, issue delivery, review, knowledge, and
+planning workflows. Its user links use `~/.agents/skills`, the supported local
+[Codex discovery path](https://developers.openai.com/codex/skills); Codex follows
+symlinked skill folders. Existing `~/.codex/skills` contents (including bundled
+`.system` skills) stay untouched. These local links do not install skills into
+native/cloud catalogs or prove that a running desktop task has refreshed them.
+
+Hermes-specific `coding-agent-handoff-supervision` and `multiagent-pr-review`
+are excluded from Codex. Specialist `dx-target`, `dx-preview`, `gamedev`,
+`guided-learning`, `weekly-planning`, `sprint-deliverable-update`,
+`sync-hold-branch`, and `find-skills` remain outside its initial curation.
+Capability-dependent operations still require the tools and authorization
+specified by each skill; installing a skill does not grant those capabilities.
 
 ## Adding or re-curating a skill
 
 1. Create `skills/<name>/SKILL.md` (plus optional `references/`, `templates/`).
 2. Add `<name>` to the relevant `*_SKILLS` array(s) in
    `scripts/reconcile-agent-skills.sh` — or to `COMMON_SKILLS` to give it to
-   Claude, OpenCode, and Pi at once.
+   Claude, OpenCode, Pi, and Codex at once.
 3. Run `./scripts/reconcile-agent-skills.sh --check`, review the plan, then
    re-run with `--apply` to (re)build the symlinks.
 
