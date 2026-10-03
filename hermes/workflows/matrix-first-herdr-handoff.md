@@ -56,9 +56,19 @@ The implementation turn returned done/ok. Parent independently ran the installed
 Hermes Python suites: 135 tests passed, zero skipped; the two shared-skill routing
 text-contract tests passed; doctor/validate and diff check passed. The settled
 worker has been closed through the identity-checking helper and is non-resumable.
-Parent integrated inspection found no implementation blocker; targeted exact
-candidate Risk review is pending. Version 0.5.0 is not yet activated, and no
-successful natural Matrix worker dispatch has been established.
+Parent integrated inspection and targeted exact-candidate Risk review found no
+implementation blocker. Reviewed staged digest:
+`6a1f171c1b852066815161eecbf67ab6765dc5c2f7812e945528609ffa8eef22`.
+The ten-path candidate was committed/pushed at `1a5e1d2`; origin/main readback
+confirmed that exact commit. Version 0.5.0 is now deployed through the existing
+canonical plugin symlink. Within the existing scoped repair/restart approval,
+parent confirmed no active gateway agents, used `hermes gateway restart`, and
+verified old PID 83414 absent, fresh native runtime PID 64864 and fresh Matrix
+connected state written by that same process. Runtime source and credentials,
+crypto state, room/principal/project scope and approval defaults are unchanged.
+The existing conversation was not reset. No fresh user-origin worker request
+has occurred since this activation: Matrix-to-pane acceptance is still pending,
+and neither the test suite nor restart establishes that final dispatch result.
 
 CURRENT LIVE CHECKPOINT (2026-10-03; supersedes code-only checkpoints below):
 Bryan explicitly approved bounded live deployment and verification through the
