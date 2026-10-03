@@ -1237,7 +1237,7 @@ class HandoffController:
                 raise HandoffError("recorded worker already has an active turn")
             if status == "blocked":
                 raise HandoffError("recorded worker is blocked; use answer-blocked")
-            if status != "idle":
+            if status not in {"idle", "done"}:
                 raise HandoffError(f"recorded worker cannot accept a prompt from {status}")
             self.herdr.prompt(name=name, text=text, timeout_ms=timeout_ms)
             after = validate_identity(record, self.herdr.get_agent(name))

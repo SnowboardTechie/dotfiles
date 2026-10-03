@@ -227,6 +227,40 @@ class HerdrWorkerTests(unittest.TestCase):
         self.assertTrue(json.loads(identity_path.read_text(encoding="utf-8"))["closed"])
         self.assertTrue(controller.close(identity_path=identity_path)["closed"])
 
+    def test_done_worker_accepts_same_session_correction(self) -> None:
+        controller, fake = self.controller()
+        identity_path = self.root / "identity.json"
+        controller.start(
+            caller_pane="caller", worktree=self.repo,
+            identity_path=identity_path, name="worker", kind="claude",
+            title="Test worker",
+        )
+        identity_before = identity_path.read_bytes()
+        fake.prompt_status_after = "done"
+        controller.prompt(identity_path=identity_path, text="Implement", timeout_ms=60_000)
+        result = controller.prompt(
+            identity_path=identity_path, text="Correct the candidate", timeout_ms=60_000,
+        )
+        self.assertEqual(result["agent_status"], "done")
+        self.assertEqual(fake.prompt_count, 2)
+        self.assertEqual(identity_path.read_bytes(), identity_before)
+        self.assertEqual(fake.agents["worker"]["agent_session"]["value"], "runtime-session")
+
+    def test_nonready_worker_states_never_receive_prompt(self) -> None:
+        for status in ("working", "blocked", "failed", "starting", "unknown"):
+            with self.subTest(status=status):
+                controller, fake = self.controller()
+                identity_path = self.root / f"identity-{status}.json"
+                controller.start(
+                    caller_pane="caller", worktree=self.repo,
+                    identity_path=identity_path, name="worker", kind="claude",
+                    title="Test worker",
+                )
+                fake.agents["worker"]["agent_status"] = status
+                with self.assertRaises(self.module.HandoffError):
+                    controller.prompt(identity_path=identity_path, text="Do not send", timeout_ms=60_000)
+                self.assertEqual(fake.prompt_count, 0)
+
     def test_exhausted_capacity_prevents_prompt(self) -> None:
         controller, fake = self.controller()
         identity_path = self.root / "identity.json"

@@ -83,6 +83,12 @@ Before input is sent, the command rejects:
   branch; and
 - a worker already in `working` state.
 
+Both `idle` and `done` are prompt-ready states for the same verified session.
+Completed implementation turns may settle as `done`; permit the bounded
+same-session correction without replacing the worker or changing its identity.
+All other states fail closed, including `blocked`, which requires
+`answer-blocked` rather than a new prompt.
+
 It calls Herdr `agent prompt --wait`, verifies the same identity after the turn,
 and returns compact JSON containing settled status plus start/end capacity. A
 failed end probe records `provider_capacity_end_verified: false`; it does not
