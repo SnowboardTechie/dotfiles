@@ -1,7 +1,7 @@
 ---
 name: coding-agent-handoff-supervision
 description: Use for visible, ticket-backed coding-agent handoffs.
-version: 2.1.0
+version: 2.1.1
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
@@ -194,6 +194,16 @@ python3 scripts/herdr_worker.py prompt \
 6. revalidates identity after settlement; and
 7. returns compact start/end capacity and status data.
 
+A tracked process handle proves only that the helper started, not that Herdr
+accepted the prompt. Until acknowledgement is observed, report delivery as
+unconfirmed. A nonzero exit or rejected submission requires immediate inspection
+and authorized recovery; do not end with a delivery claim or an apology. Inspect
+the exact worker and the helper's documented recovery path before declaring a
+blocker. A verified `done` worker can accept its same-session correction through
+`prompt`; do not replace it merely because its previous turn completed. Never
+retry an uncertain submission until its delivery state is resolved, bypass
+identity/capacity/lease checks, or expand permissions to make recovery succeed.
+
 At most one Claude turn may be in flight **within each worker runtime session**.
 Independent sessions may run concurrently in their own worktrees, including
 when they share a subscription. Another agent working on another task is not a
@@ -204,8 +214,12 @@ sessions do not own a lease. Process exit releases it, so no stale PID cleanup
 or bypass is allowed.
 
 If the worker blocks on a question or approval, use the helper's identity-checked
-`read` operation, then ask Bryan. Never submit suggested input automatically.
-Send only Bryan's approved input through `answer-blocked`, not `prompt`; it
+`read` operation and compare the request with the governing plan. Answer an
+already-settled question from that approved authority; ask Bryan only for a new
+decision or permission. Never treat worker-suggested input as approval, infer a
+new security approval from general task authorization, or weaken an explicit
+gate. Send only input covered by Bryan's approval through `answer-blocked`, not
+`prompt`; it
 requires recorded `blocked` state, acquires the same lease, reruns capacity,
 requires recorded `blocked` state, captures `state_change_seq`, retains the
 lease until a newer idle/done/blocked state exists, and revalidates all identity
@@ -288,6 +302,8 @@ resume a Herdr identity.
 - [ ] Helper atomically persisted all six identity fields
 - [ ] Claude capacity passed and the worker runtime session's turn lease was held
 - [ ] No overlapping turn targeted the same session; unrelated sessions were not blocked
+- [ ] Delivery claims have acknowledgement evidence, not merely a background process handle
+- [ ] Rejected or uncertain submissions were inspected and recovered without bypass or duplicate delivery
 - [ ] Parent inspected and tested the actual candidate
 - [ ] One integrated parent review and AC sweep completed
 - [ ] Corrections stayed within the one-plus-one bound
