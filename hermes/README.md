@@ -14,9 +14,11 @@ This directory preserves Bryan-authored Hermes assets without treating the mutab
   integration being prepared for Matrix-first work. See
   [the workflow contract](workflows/matrix-first-herdr.md) and
   [the plugin's setup and security boundaries](plugins/herdr-gateway/README.md).
-  This candidate is not installed or active; live acceptance is still pending.
-  It is deliberately absent from the automatic deployment manifest until the
-  reviewed pilot is authorized. It adds no standing coordinator or network bridge.
+  The reviewed pilot is installed and enabled on Studio's default profile, scoped
+  to the approved private Matrix room and this repository. Native runtime/status
+  verification passed; the final user-origin Matrix workflow test is pending.
+  It remains outside the automatic deployment manifest during this pilot.
+  It adds no standing coordinator or network bridge.
 - `matrix-native/` + `reconcile_matrix_native.py`: reproducible macOS-native
   Matrix dependencies, including the pinned encryption source and compiler fix.
 - `manifest.json`: the explicit allowlist installed on Studio.

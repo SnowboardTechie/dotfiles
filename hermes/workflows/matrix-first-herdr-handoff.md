@@ -19,6 +19,37 @@ superseded by the explicit guarded-admission approval recorded below and in
 
 ## Current coordinator checkpoint after implementation (2026-10-02)
 
+CURRENT LIVE CHECKPOINT (2026-10-03; supersedes code-only checkpoints below):
+Bryan explicitly approved bounded live deployment and verification through the
+approval prompt after code publication. Reviewed code is published at 125d90d;
+the final targeted risk rereview admitted fingerprint
+49b4ea72db50d933408ee8bf54a3d8f9a770eb52faee6854894d951615702b45 with no blockers.
+The exact one-line native patch is applied with the manifest's postimage hash.
+Original runtime file and config are backed up privately beneath
+`~/.local/state/herdr-gateway/deployment/125d90d/`; the deployment receipt lives
+there. Plugin installation is a verified symlink to canonical repository source.
+Supported `hermes config set` configured only this plugin's scoped settings;
+unrelated parsed config values were compared with the backup and are unchanged.
+Plugin enable grants no built-in tool override. Defaults remain smart approvals
+and gpt-6.1-sol/openai-codex; Claude workers use the scoped Opus/xhigh preset.
+
+The gateway was idle and gracefully restarted through `hermes gateway restart`;
+the prior service process is absent. Current supervisor PID 83410 / runtime PID
+83414 and fresh Matrix connected/cross-signing evidence were verified. Existing
+crypto state and credentials were preserved; no new dependencies were installed.
+The restart reported permission denied for an unrelated orphan PID 372; it did
+not prevent the verified service restart and was not bypassed or force-killed.
+
+A fresh owned no-model-turn CLI probe proved canonical real process identity,
+default-profile route, unique echoed query fencing and actual status transitions
+smart -> session YOLO -> smart, all in session 20261003_140147_34756c with tokens 0.
+Its exact pane and agent were closed and verified absent. This is real native
+runtime proof, NOT Matrix dispatch proof. Final acceptance still requires Bryan
+to initiate one read-only worker from the existing Matrix room and verify its
+reply plus `/herdr-yolo <worker-id> on|off|status` through the user-origin command
+path. Do not manufacture that user event or reset the conversation. Installation
+is active and user-testable; end-to-end Matrix acceptance remains pending.
+
 CURRENT CODE CHECKPOINT (supersedes the historical checkpoints below): the
 rolling-history correction is complete. Parent independently ran both suites
 with the installed Hermes Python: 120 tests passed, zero skipped. Doctor and
