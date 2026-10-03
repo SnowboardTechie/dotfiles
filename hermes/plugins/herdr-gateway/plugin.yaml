@@ -1,0 +1,30 @@
+name: herdr-gateway
+version: 0.4.0
+manifest_version: 2
+api_version: 1
+description: >-
+  Request-bound, origin-scoped visible coding workers under a local Herdr
+  server. Disabled until the operator configures origins, projects and presets;
+  workers belong to the exact room, thread and user that started them. Hermes
+  workers start with smart approvals; the native /herdr-yolo command lets that
+  person switch one owned worker's session YOLO bypass, verified from its status.
+author: Steven Terrana (upstream hermes-herdr-plugin); hardened adaptation by Bryan Thompson
+license: MIT
+homepage: https://github.com/steven-terrana/hermes-herdr-plugin
+tags: [herdr, coding-agents, matrix, workers, terminal]
+provides_tools:
+  - herdr_start
+  - herdr_prompt
+  - herdr_wait
+  - herdr_read
+  - herdr_status
+  - herdr_close
+config_schema:
+  herdr_bin: {type: str, description: "Absolute path to the herdr CLI. Empty keeps the gateway disabled."}
+  socket_path: {type: str, description: "Absolute path of the Herdr server socket to use (explicit endpoint; no auto-detection or bridge)."}
+  origins: {type: list, description: "Authorized conversations: [{platform, chat_id, user_ids: [...], projects: [absolute dirs]}]. Empty keeps the gateway disabled."}
+  presets: {type: dict, description: "Operator launch presets: name -> {kind: claude, model, effort, permission_mode} or {kind: hermes, launcher, home, provider, model, effort, approvals: smart} (classic CLI, default profile; admitted from native /status after startup, before any brief)."}
+  default_preset: {type: str, description: "Preset used when herdr_start names none."}
+  claude_capacity_command: {type: str, description: "Absolute path of an executable run with --check-capacity before every Claude start/turn; exit 0 means capacity is available. Required for Claude presets."}
+  max_workers: {type: int, default: 4, description: "Maximum open workers across all conversations."}
+  max_wait_seconds: {type: int, default: 1800, description: "Upper bound for one synchronous wait."}

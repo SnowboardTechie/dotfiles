@@ -10,6 +10,13 @@ This directory preserves Bryan-authored Hermes assets without treating the mutab
 - `automations/`: declarative prompts and schedules for named cron jobs.
 - `orchestrators/`: reusable durable-goal contract templates and validation.
 - `webhooks/`: bounded event-trigger pilot contracts and activation gates.
+- `plugins/herdr-gateway/`: the origin-scoped, request-bound visible-worker
+  integration being prepared for Matrix-first work. See
+  [the workflow contract](workflows/matrix-first-herdr.md) and
+  [the plugin's setup and security boundaries](plugins/herdr-gateway/README.md).
+  This candidate is not installed or active; live acceptance is still pending.
+  It is deliberately absent from the automatic deployment manifest until the
+  reviewed pilot is authorized. It adds no standing coordinator or network bridge.
 - `matrix-native/` + `reconcile_matrix_native.py`: reproducible macOS-native
   Matrix dependencies, including the pinned encryption source and compiler fix.
 - `manifest.json`: the explicit allowlist installed on Studio.
