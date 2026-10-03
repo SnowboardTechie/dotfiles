@@ -9,6 +9,15 @@ The conversation (for example a Matrix room) owns the work: its context,
 decisions, authorization and final synthesis. A worker is a visible, task-specific
 helper for one authorized request, not a second owner of the conversation.
 
+In Matrix these tools are the visible-worker transport. No injected caller pane is
+expected there: missing `HERDR_ENV`/`HERDR_PANE_ID` is normal and is not a blocker.
+Never substitute `delegate_task`, a background task or the CLI handoff helper for a
+requested visible worker. For a bounded read-only request, the person's request is the
+brief: take the project directory and preset from the gateway's routing note (the
+default preset unless the person expressly selects another) instead of asking for
+internals or a new ticket. If the herdr tools are missing from this request, or one of
+them refuses, report that exact blocker. The routing note guides; it never authorizes.
+
 1. **Start only for authorized work.** Use `herdr_start` once the conversation has
    agreed what to do. Give the worker a bounded brief: goal, permitted directory,
    constraints, stopping point and what to report back. Never forward an open-ended

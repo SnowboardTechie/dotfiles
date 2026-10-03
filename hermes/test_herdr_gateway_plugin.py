@@ -11,6 +11,7 @@ same public API. Under Hermes's managed Python the real module is used.
 from __future__ import annotations
 
 import contextvars
+import copy
 import importlib.util
 import json
 import os
@@ -18,8 +19,10 @@ import stat
 import sys
 import tempfile
 import threading
+import types
 import unittest
 from pathlib import Path
+from unittest import mock
 
 PLUGIN_DIR = Path(__file__).with_name("plugins") / "herdr-gateway"
 PKG = "herdr_gateway_under_test"
@@ -576,6 +579,7 @@ class RecordingContext:
         self.schemas: dict = {}
         self.skills: dict = {}
         self.commands: dict = {}
+        self.middleware: dict = {}
         self.state = FakeState(data_dir)
 
     def get_config(self, key, default=None):
@@ -590,6 +594,9 @@ class RecordingContext:
 
     def register_command(self, name, handler, description="", args_hint="", argument_mode=None):
         self.commands[name] = handler
+
+    def register_middleware(self, kind, callback):
+        self.middleware.setdefault(kind, []).append(callback)
 
 
 class GatewayCase(unittest.TestCase):
@@ -2407,6 +2414,357 @@ class HermesLedgerTests(HermesCase):
                     self.assertEqual(self.call(tool, args).get("error_code"), "state_unsafe", tool)
                 self.assertEqual(ledger.read_bytes(), before)
                 self.assertEqual(len(self.herdr_calls()), calls)
+
+
+# ---------- llm_request routing: synthetic provider requests, not model or Matrix evidence ----------
+
+try:  # Hermes managed Python: the real LLM request-middleware chain and callback dispatcher.
+    import hermes_cli.middleware as MIDDLEWARE
+    from hermes_cli.plugins_dispatch import PluginDispatchMixin
+
+    class _Registry(PluginDispatchMixin):
+        """Exactly the registered callbacks behind the real dispatcher. It stands in only for
+        plugin discovery: ``hermes_cli.plugins`` loads the profile's config when imported."""
+
+        def __init__(self, middleware: dict) -> None:
+            self._middleware = middleware
+            self._hook_failures_reported: set = set()
+except ImportError:  # host Python: callbacks are invoked as that dispatcher invokes them
+    MIDDLEWARE = None
+
+FRAME_START, FRAME_END = "<herdr-gateway-routing>", "</herdr-gateway-routing>"
+CHAIN_CONTEXT = {"task_id": "task-1", "turn_id": "turn-1", "api_request_id": "req-1",
+                 "platform": "matrix", "model": "gpt-example", "provider": "openai-codex",
+                 "base_url": "https://chatgpt.example/backend-api/codex", "api_call_count": 1}
+# A Matrix prompt persisted before the repair: it advertises the CLI handoff skill and nothing of
+# the native gateway, whose plugin skill is never listed in <available_skills>.
+OLD_PROMPT = ("You are Hermes Agent.\n<available_skills>\n  coding-agent-handoff-supervision: "
+              "Use for visible, ticket-backed coding-agent handoffs.\n</available_skills>")
+ASK = "Have a worker take a look at the dotfiles README"
+STALE_REFUSAL = ("I can't start a visible worker from Matrix: HERDR_ENV and HERDR_PANE_ID are not "
+                 "set, so there is no caller pane. I can run a background review with delegate_task.")
+OTHER_TOOLS = [
+    {"name": "delegate_task", "description": "Run a subagent.", "parameters": {"type": "object", "properties": {}}},
+    {"name": "skill_view", "description": "Load a skill.",
+     "parameters": {"type": "object", "properties": {"name": {"type": "string"}}}},
+]
+
+
+def apply_llm_request(ctx, request: dict, api_mode="codex_responses", session_id="") -> dict:
+    """The provider request after ``ctx``'s ``llm_request`` middleware, applied the way
+    ``agent/turn_api_request.build_api_request`` applies it after Codex preflight."""
+    callbacks = list(ctx.middleware.get("llm_request", []))
+    context = dict(CHAIN_CONTEXT, session_id=session_id, api_mode=api_mode)
+    if MIDDLEWARE is None:
+        effective = request
+        for callback in callbacks:  # the caller's own object, so any mutation would show
+            result = callback(request=request, original_request=request,
+                              telemetry_schema_version="hermes.observer.v1",
+                              middleware_schema_version="hermes.middleware.v1", **context)
+            if isinstance(result, dict) and isinstance(result.get("request"), dict):
+                effective = result["request"]
+        return effective
+    registry = _Registry({"llm_request": callbacks})
+    facade = types.ModuleType("hermes_cli.plugins")
+    facade.has_middleware, facade.invoke_middleware = registry.has_middleware, registry.invoke_middleware
+    with mock.patch.dict(sys.modules, {"hermes_cli.plugins": facade}):
+        payload = MIDDLEWARE.apply_llm_request_middleware(request, **context).payload
+    if registry._hook_failures_reported:  # the real dispatcher logs and skips a raising callback
+        raise AssertionError(f"middleware raised: {registry._hook_failures_reported}")
+    return payload
+
+
+def responses_tools(schemas) -> list:
+    """Tool schemas as Hermes's ``_responses_tools`` converts them for the Responses API."""
+    return [{"type": "function", "name": s["name"], "description": s["description"], "strict": False,
+             "parameters": s["parameters"]} for s in schemas]
+
+
+def responses_request(schemas, *, history=True) -> dict:
+    """A Codex Responses request as the transport builds it and preflight normalizes it: the
+    system prompt is ``instructions``; history and tool results are ``input`` items."""
+    earlier = [
+        {"type": "message", "role": "user", "content": [{"type": "input_text", "text": ASK}]},
+        {"type": "function_call", "call_id": "call_1", "name": "skill_view",
+         "arguments": '{"name": "coding-agent-handoff-supervision"}'},
+        {"type": "function_call_output", "call_id": "call_1", "output": "Requires HERDR_PANE_ID."},
+        {"type": "message", "role": "assistant", "status": "completed",
+         "content": [{"type": "output_text", "text": STALE_REFUSAL}]},
+    ]
+    turn = [{"type": "message", "role": "user", "content": [{"type": "input_text", "text": ASK}]}]
+    return {"model": "gpt-example", "instructions": OLD_PROMPT, "input": (earlier if history else []) + turn,
+            "tools": responses_tools([*schemas, *OTHER_TOOLS]), "tool_choice": "auto",
+            "parallel_tool_calls": True, "store": False, "prompt_cache_key": "pck_0123456789abcdef01234567",
+            "reasoning": {"effort": "high", "summary": "auto"}, "include": ["reasoning.encrypted_content"],
+            "extra_headers": {"session_id": "20260908_094034_4edb54a3"}}
+
+
+def chat_request(schemas, content=OLD_PROMPT) -> dict:
+    """An OpenAI Chat Completions request whose history holds a tool call and the stale refusal."""
+    call = {"id": "call_1", "type": "function",
+            "function": {"name": "skill_view", "arguments": '{"name": "coding-agent-handoff-supervision"}'}}
+    return {"model": "gpt-example", "messages": [
+        {"role": "system", "content": content},
+        {"role": "user", "content": ASK},
+        {"role": "assistant", "content": None, "tool_calls": [call]},
+        {"role": "tool", "tool_call_id": "call_1", "content": "Requires HERDR_PANE_ID."},
+        {"role": "assistant", "content": STALE_REFUSAL},
+        {"role": "user", "content": ASK},
+    ], "tools": [{"type": "function", "function": s} for s in [*schemas, *OTHER_TOOLS]],
+        "tool_choice": "auto", "temperature": 0.2, "extra_body": {"prompt_cache_key": "pck_chat"}}
+
+
+def without(request: dict, key: str) -> dict:
+    return {k: v for k, v in request.items() if k != key}
+
+
+class RoutingCase(GatewayCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.configure()
+        self.schemas = list(self.ctx.schemas.values())
+
+    def route(self, request, *, api_mode="codex_responses", dispatch_session="", **origin) -> dict:
+        before = copy.deepcopy(request)
+        out = bound(lambda: apply_llm_request(self.ctx, request, api_mode, dispatch_session), **origin)
+        self.assertEqual(request, before, "the caller's request must not be mutated")
+        return out
+
+    def assert_unrouted(self, request, **kwargs) -> None:
+        self.assertEqual(self.route(request, **kwargs), request)
+
+    @staticmethod
+    def note_of(text: str) -> str:
+        start = text.rindex(FRAME_START)
+        return text[start:text.index(FRAME_END, start) + len(FRAME_END)]
+
+
+class RoutingRegistrationTests(RoutingCase):
+    def test_registers_request_routing_and_keeps_the_workflow_skill_resolvable(self) -> None:
+        self.assertEqual({k: len(v) for k, v in self.ctx.middleware.items()}, {"llm_request": 1})
+        manifest = (PLUGIN_DIR / "plugin.yaml").read_text()
+        self.assertIn("\nprovides_middleware:\n  - llm_request\n", manifest)
+        # Plugin skills resolve as <manifest name>:<registered name>; the note names exactly that.
+        self.assertTrue(manifest.startswith("name: herdr-gateway\n"))
+        self.assertIn("\nname: workflow\n", self.ctx.skills["workflow"].read_text())
+        note = self.note_of(self.route(responses_request(self.schemas))["instructions"])
+        self.assertIn("skill herdr-gateway:workflow", note)
+
+
+class RoutingRequestTests(RoutingCase):
+    def test_cached_conversation_with_a_stale_refusal_gets_live_native_routing(self) -> None:
+        request = responses_request(self.schemas)
+        # The pre-repair plugin registered no middleware: nothing reached the cached conversation.
+        before = bound(lambda: apply_llm_request(RecordingContext(self.config, self.data_dir), request))
+        self.assertEqual(before, request)
+        self.assertNotIn("herdr_start", before["instructions"])
+        routed = self.route(request)
+        self.assertEqual(without(routed, "instructions"), without(request, "instructions"))
+        self.assertTrue(routed["instructions"].startswith(OLD_PROMPT + "\n\n" + FRAME_START + "\n"))
+        self.assertTrue(routed["instructions"].endswith("\n" + FRAME_END))
+        note = self.note_of(routed["instructions"])
+        for text in ("herdr_start", "skill herdr-gateway:workflow", "HERDR_PANE_ID", "delegate_task",
+                     "read-only", "disregard", json.dumps(str(self.project)),
+                     "claude-xhigh (claude, default)", "not authorization"):
+            self.assertIn(text, note)
+
+    def test_initial_and_existing_sessions_are_routed_on_every_request(self) -> None:
+        for history in (False, True):
+            with self.subTest(history=history):
+                request = responses_request(self.schemas, history=history)
+                routed = self.route(request)
+                self.assertEqual(routed["input"], request["input"])
+                self.assertEqual(routed["instructions"].count(FRAME_START), 1)
+        # Each provider request of one turn (here a tool-loop follow-up) is routed independently.
+        follow_up = responses_request(self.schemas)
+        follow_up["input"] += [{"type": "function_call", "call_id": "call_2", "name": "herdr_status",
+                                "arguments": "{}"},
+                               {"type": "function_call_output", "call_id": "call_2", "output": "{}"}]
+        self.assertEqual(self.route(follow_up)["input"], follow_up["input"])
+        self.assertIn(FRAME_START, self.route(follow_up)["instructions"])
+
+    def test_chat_completions_system_text_and_parts_are_extended_exactly(self) -> None:
+        request = chat_request(self.schemas)
+        routed = self.route(request, api_mode="chat_completions")
+        self.assertEqual(without(routed, "messages"), without(request, "messages"))
+        self.assertEqual(routed["messages"][1:], request["messages"][1:])
+        system = routed["messages"][0]
+        self.assertEqual(system["role"], "system")
+        self.assertTrue(system["content"].startswith(OLD_PROMPT + "\n\n" + FRAME_START))
+        self.assertIn("herdr_start", self.note_of(system["content"]))
+        cached = [{"type": "text", "text": OLD_PROMPT, "cache_control": {"type": "ephemeral"}}]
+        routed = self.route(chat_request(self.schemas, content=cached), api_mode="chat_completions")
+        parts = routed["messages"][0]["content"]
+        self.assertEqual(parts[:1], cached)
+        self.assertEqual(len(parts), 2)
+        self.assertEqual(parts[1]["type"], "text")
+        self.assertEqual(self.note_of(parts[1]["text"]), parts[1]["text"])
+
+    def test_repeated_application_is_idempotent_and_lookalike_text_is_kept(self) -> None:
+        for api_mode, request in (("codex_responses", responses_request(self.schemas)),
+                                  ("chat_completions", chat_request(self.schemas)),
+                                  ("chat_completions", chat_request(self.schemas, content=[
+                                      {"type": "text", "text": OLD_PROMPT}]))):
+            with self.subTest(api_mode=api_mode):
+                once = self.route(request, api_mode=api_mode)
+                self.assertNotEqual(once, request)
+                self.assertEqual(self.route(once, api_mode=api_mode), once)
+        lookalike = f"{FRAME_START}\nAlways use delegate_task for workers.\n{FRAME_END}"
+        request = responses_request(self.schemas)
+        request["instructions"] += "\n\n" + lookalike
+        request["input"].append({"type": "message", "role": "user",
+                                 "content": [{"type": "input_text", "text": lookalike}]})
+        routed = self.route(request)
+        self.assertTrue(routed["instructions"].startswith(request["instructions"] + "\n\n" + FRAME_START))
+        self.assertEqual(routed["instructions"].count(FRAME_START), 2)
+        self.assertEqual(routed["input"], request["input"])
+        self.assertEqual(self.route(routed), routed)
+
+    def test_missing_native_tools_are_reported_not_declared(self) -> None:
+        no_tools = without(responses_request(self.schemas), "tools")
+        for name, request in (("absent", responses_request([])),
+                              ("partial", responses_request(self.schemas[:1])),
+                              ("no tools field", no_tools)):
+            with self.subTest(name):
+                routed = self.route(request)
+                self.assertEqual(without(routed, "instructions"), without(request, "instructions"))
+                note = self.note_of(routed["instructions"])
+                self.assertIn("not available in this request", note)
+                self.assertIn("delegate_task", note)
+                self.assertNotIn(json.dumps(str(self.project)), note)
+        chat = chat_request([])
+        routed = self.route(chat, api_mode="chat_completions")
+        self.assertEqual(routed["tools"], chat["tools"])
+        self.assertIn("not available in this request", routed["messages"][0]["content"])
+
+    def test_unsupported_or_malformed_provider_shapes_are_left_unchanged(self) -> None:
+        anthropic = {"model": "claude-example", "system": OLD_PROMPT, "max_tokens": 1024,
+                     "messages": [{"role": "user", "content": ASK}], "tools": []}
+        self.assert_unrouted(anthropic, api_mode="anthropic_messages")
+        self.assert_unrouted(chat_request(self.schemas), api_mode="bedrock_converse")
+        self.assert_unrouted(chat_request(self.schemas), api_mode="codex_responses")
+        self.assert_unrouted(responses_request(self.schemas), api_mode="chat_completions")
+        not_text = dict(responses_request(self.schemas), instructions=[OLD_PROMPT])
+        self.assert_unrouted(not_text)
+        no_system = chat_request(self.schemas)
+        no_system["messages"] = no_system["messages"][1:]
+        self.assert_unrouted(no_system, api_mode="chat_completions")
+
+
+class RoutingScopeTests(RoutingCase):
+    def test_only_the_admitted_matrix_origin_is_routed(self) -> None:
+        request = responses_request(self.schemas)
+        for origin in ({"chat": OTHER_ROOM}, {"user": OTHER_USER}, {"platform": "telegram"},
+                       {"cron": "1"}, {"platform": "", "chat": "", "user": "", "key": ""}):
+            with self.subTest(origin):
+                self.assert_unrouted(request, **origin)
+        self.assertIn(FRAME_START, self.route(request, thread="$thread")["instructions"])
+
+    def test_admitted_non_matrix_origin_is_not_routed(self) -> None:
+        self.configure(origins=[{"platform": "telegram", "chat_id": ROOM, "user_ids": [USER],
+                                 "projects": [str(self.project)]}])
+        self.assert_unrouted(responses_request(self.schemas), platform="telegram")
+
+    def test_unbound_ambiguous_and_stale_contexts_are_not_routed(self) -> None:
+        request = responses_request(self.schemas)
+        env = {"HERMES_SESSION_PLATFORM": "matrix", "HERMES_SESSION_CHAT_ID": ROOM,
+               "HERMES_SESSION_USER_ID": USER, "HERMES_SESSION_KEY": "k"}
+        with mock.patch.dict(os.environ, env):  # process environment never stands in for a binding
+            self.assertEqual(contextvars.Context().run(lambda: apply_llm_request(self.ctx, request)),
+                             request)
+        shadow = contextvars.ContextVar("HERMES_SESSION_USER_ID")
+
+        def ambiguous():
+            shadow.set(USER)
+            return apply_llm_request(self.ctx, request)
+
+        self.assertEqual(bound(ambiguous), request)
+        self.assert_unrouted(request, dispatch_session="sess-now", session_id="sess-old")
+        self.assertIn(FRAME_START, self.route(request, dispatch_session="sess-now",
+                                              session_id="sess-now")["instructions"])
+
+    def test_delegated_children_are_not_routed(self) -> None:
+        request = responses_request(self.schemas)
+
+        def child():
+            with DELEGATION.delegated_child_context():
+                return apply_llm_request(self.ctx, request)
+
+        self.assertEqual(bound(child), request)
+        with mock.patch.dict(os.environ, {"HERMES_DELEGATED_CHILD_CONTEXT": "1"}):
+            self.assert_unrouted(request)
+        self.assertIn(FRAME_START, self.route(request)["instructions"])  # the parent turn still is
+
+    def test_unconfigured_or_invalid_settings_add_nothing(self) -> None:
+        request = responses_request(self.schemas)
+        self.config.clear()
+        self.assert_unrouted(request)
+        self.configure(presets={"bad": {"kind": "claude", "model": "example", "effort": "high",
+                                        "permission_mode": "bypassPermissions"}}, default_preset="")
+        self.assert_unrouted(request)
+        self.configure(herdr_bin=str(self.root / "missing-herdr"))
+        self.assert_unrouted(request)
+
+    def test_note_names_only_this_origins_projects_and_preset_names(self) -> None:
+        other = self.root / "other-project"
+        other.mkdir()
+        hermes = {"kind": "hermes", "launcher": "/opt/example/bin/hermes", "home": "/opt/example/.hermes",
+                  "provider": "example-provider", "model": "example-model", "effort": "high",
+                  "approvals": "smart"}
+        self.configure(origins=[
+            {"platform": "matrix", "chat_id": ROOM, "user_ids": [USER], "projects": [str(self.project)]},
+            {"platform": "matrix", "chat_id": OTHER_ROOM, "user_ids": [OTHER_USER], "projects": [str(other)]},
+        ], presets={**self.config["presets"], "hermes-high": hermes})
+        note = self.note_of(self.route(responses_request(self.schemas))["instructions"])
+        self.assertIn(json.dumps(str(self.project)), note)
+        self.assertIn("claude-xhigh (claude, default); hermes-high (hermes)", note)
+        for private in (str(other), str(self.herdr), str(self.socket), str(self.capacity), ROOM,
+                        OTHER_ROOM, USER, "claude-opus-5-5", "example-model", "example-provider",
+                        "/opt/example", "permission_mode"):
+            self.assertNotIn(private, note)
+        other_note = self.note_of(self.route(responses_request(self.schemas), chat=OTHER_ROOM,
+                                             user=OTHER_USER)["instructions"])
+        self.assertIn(json.dumps(str(other)), other_note)
+        self.assertNotIn(str(self.project), other_note)
+
+    def test_note_stays_bounded_for_large_configurations(self) -> None:
+        projects = [f"/srv/example/project-{i:02d}" for i in range(40)]
+        self.configure(origins=[{"platform": "matrix", "chat_id": ROOM, "user_ids": [USER],
+                                 "projects": projects}])
+        note = self.note_of(self.route(responses_request(self.schemas))["instructions"])
+        self.assertIn(json.dumps(projects[15]), note)
+        self.assertNotIn(projects[16], note)
+        self.assertIn("and 24 more", note)
+        self.assertLess(len(note), 4000)
+
+
+@unittest.skipIf(SESSION_CONTEXT is None or MIDDLEWARE is None, "needs Hermes's managed Python")
+class InstalledRoutingContextTests(RoutingCase):
+    """The real request chain under the installed runtime's own turn binding
+    (``gateway.session_context.set_session_vars``), as the gateway binds a Matrix message."""
+
+    def apply_bound(self, request, dispatch_session="", **source) -> dict:
+        binding = dict(platform="matrix", chat_id=ROOM, thread_id="", user_id=USER,
+                       session_key="agent:main:matrix:room", cron_session="")
+        binding.update(source)
+
+        def turn():
+            tokens = SESSION_CONTEXT.set_session_vars(**binding)
+            try:
+                return apply_llm_request(self.ctx, request, session_id=dispatch_session)
+            finally:
+                SESSION_CONTEXT.clear_session_vars(tokens)
+
+        return contextvars.Context().run(turn)
+
+    def test_real_chain_routes_only_the_admitted_runtime_binding(self) -> None:
+        request = responses_request(self.schemas)
+        self.assertIn(FRAME_START, self.apply_bound(request)["instructions"])
+        self.assertIn(FRAME_START, self.apply_bound(request, "s1", session_id="s1")["instructions"])
+        for source in ({"user_id": OTHER_USER}, {"chat_id": OTHER_ROOM}, {"platform": "telegram"},
+                       {"cron_session": "1"}, {"user_id": ""}, {"session_id": "s0"}):
+            with self.subTest(source):
+                self.assertEqual(self.apply_bound(request, "s1", **source), request)
 
 
 if __name__ == "__main__":

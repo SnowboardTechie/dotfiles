@@ -1,5 +1,5 @@
 name: herdr-gateway
-version: 0.4.0
+version: 0.5.0
 manifest_version: 2
 api_version: 1
 description: >-
@@ -8,6 +8,8 @@ description: >-
   workers belong to the exact room, thread and user that started them. Hermes
   workers start with smart approvals; the native /herdr-yolo command lets that
   person switch one owned worker's session YOLO bypass, verified from its status.
+  An llm_request middleware adds a bounded routing note to an admitted Matrix
+  origin's provider requests so explicit worker requests use the native tools.
 author: Steven Terrana (upstream hermes-herdr-plugin); hardened adaptation by Bryan Thompson
 license: MIT
 homepage: https://github.com/steven-terrana/hermes-herdr-plugin
@@ -19,6 +21,8 @@ provides_tools:
   - herdr_read
   - herdr_status
   - herdr_close
+provides_middleware:
+  - llm_request
 config_schema:
   herdr_bin: {type: str, description: "Absolute path to the herdr CLI. Empty keeps the gateway disabled."}
   socket_path: {type: str, description: "Absolute path of the Herdr server socket to use (explicit endpoint; no auto-detection or bridge)."}

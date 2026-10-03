@@ -30,6 +30,37 @@ duplicate prompt.
 The bundled skill `herdr-gateway:workflow` holds the supervision guidance the
 model should follow.
 
+## Request routing in Matrix
+
+Hermes lists no plugin skill in the system prompt's `<available_skills>`, and an existing
+conversation keeps its persisted prompt. So a Matrix room could follow the CLI handoff skill,
+find no injected `HERDR_ENV`/`HERDR_PANE_ID`, refuse visible workers, and keep repeating that
+refusal or substitute a background `delegate_task` review. The plugin therefore registers
+`llm_request` middleware (`routing.py`). It runs on every provider request, existing
+conversations included, and appends one delimited `<herdr-gateway-routing>` note to the
+request's instructions when, and only when, the request comes from a non-delegated, trusted
+Matrix origin that the current settings admit. The note:
+
+- selects the native `herdr_*` tools and skill `herdr-gateway:workflow` for an explicit
+  worker request;
+- says a missing caller pane is normal in Matrix, forbids substituting `delegate_task`, a
+  background task or the CLI helper, and tells the model to disregard earlier refusals made
+  for that reason;
+- lets a bounded read-only request start from that origin's permitted project directories and
+  the configured presets (names, kinds, default), without asking for internals or a new ticket.
+  The default preset stays the default, and another preset is used only when expressly
+  selected;
+- when the request does not declare all six `herdr_*` tools, instead says they are not
+  available in this request. It never adds tool schemas.
+
+It is instructions, not authorization: every `herdr_*` call is still authorized by the
+handlers, and refusals remain blockers. No history, tool, model or cache-key field changes.
+Supported request shapes are Codex Responses (`instructions`) and Chat Completions (a leading
+system or developer message). Other shapes, such as native Anthropic `system`, are left
+unchanged. A model can still ignore an instruction, and the first routed request after
+activation or a settings change misses the provider's cached prompt prefix once (see
+`SECURITY.md`).
+
 ## Native command: `/herdr-yolo`
 
 | Command | Purpose |
@@ -247,6 +278,7 @@ diverges as follows.
 | Any model-supplied `kind` (Hermes included) launched with no runtime check | Only operator presets. Hermes workers pass preflight, then native `/status` admission before any brief, with the session and process bound and re-proven before later input |
 | No approval-mode control | Smart by default. A person's native `/herdr-yolo` command changes one owned Hermes worker's session YOLO, verified from its own `/status`. No model tool can do it |
 | No close | `herdr_close`: identity-verified, owned-only, absence read back, idempotent |
+| No request routing | `llm_request` middleware adds a bounded native-routing note to an admitted Matrix origin's provider requests |
 
 Upstream was not contacted and has not reviewed this adaptation.
 
@@ -263,7 +295,10 @@ The tests drive the registered public handlers with real filesystem state, a fak
 `herdr` executable, a fake Hermes launcher, and gateway-named ContextVars standing in
 for Hermes's turn binding. Under Hermes's managed Python they use the real `agent.delegation_context`
 and also run `/herdr-yolo` through the installed `gateway.session_context` binding. On host
-Python they use a stand-in with the same API. The fake `herdr` honors `--lines` and echoes
+Python they use a stand-in with the same API. The routing tests send synthetic Codex Responses
+and Chat Completions requests through the registered middleware. Under managed Python that is
+the real `hermes_cli.middleware` request chain and dispatcher, with only plugin discovery
+replaced. The fake `herdr` honors `--lines` and echoes
 slash commands as the CLI does. `hermes/test_hermes_cli_status.py` compiles only the real
 `_show_session_status`, read statically, and checks the runtime patch's exact preimage and
 postimage. It also compiles the real idle submit path (`_tui_run_slash_input`,

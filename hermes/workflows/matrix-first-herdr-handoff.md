@@ -2,10 +2,10 @@
 
 ## Purpose and responsibility
 
-This is a same-machine, LOCAL-ONLY coordinator handoff, not a remotely portable
-or published implementation brief. Nothing in this task has been committed or
-pushed. The previous parent did not finish delivery. Existing source and scope
-remain in the working tree; preserve them and independently inspect them.
+This same-machine coordinator handoff records both current state and historical
+checkpoints. Reviewed plugin code and scoped pilot activation are published;
+actual natural Matrix worker delivery remains unfinished. Preserve current
+source, scope, unrelated work and conversation history, and inspect live state.
 
 The next agent owns finishing investigation, obtaining any genuine material
 scope decision, supervising implementation when decision-complete, independently
@@ -18,6 +18,47 @@ superseded by the explicit guarded-admission approval recorded below and in
 `matrix-first-herdr-admission.md`; do not ask for that same decision again.
 
 ## Current coordinator checkpoint after implementation (2026-10-02)
+
+CURRENT ROUTING FAILURE (2026-10-03; supersedes the live-test invitation below):
+Two real user-origin attempts failed the visible-worker contract. The first
+loaded the CLI helper skill, looked for injected caller-pane environment and
+refused Matrix workers. Parent added Matrix-first shared-skill guidance and
+passed its two text-contract tests. The repeated natural request nevertheless
+used `delegate_task` and returned a background review: no `herdr_start` call and
+no related pane existed. Do not claim that the skill edit fixed chat execution.
+
+Installed native runtime inspection established two discovery/cache facts:
+plugin `register_skill` does not advertise its skill in `<available_skills>`,
+and persisted prompts restore frozen system-prompt sections. The actual saved
+Matrix prompt advertised the CLI supervision skill but not the gateway workflow.
+A changed skill or a new frozen prompt section alone is insufficient to repair
+the existing conversation, whose history still contains the obsolete refusal.
+
+Bryan explicitly directed repair again. A bounded visible Opus/xhigh worker,
+`matrix-herdr-routing`, former pane `w15:pF`, runtime
+`73c5f962-9f62-49a8-b023-6a0acde75bff`, implemented scoped native
+`llm_request` middleware: current trusted Matrix origin must pass the existing
+policy, then a stable native-routing note reaches every provider request without
+resetting history or expanding tools/room/project/principal/approval authority.
+Missing native tools remain an honest blocker, not a background substitute.
+Governing authority and brief are in
+`~/.hermes/cache/scratch/matrix-herdr-routing/{authority,prompt}.md`; exact identity
+is `identity.json`; tracked implementation turn is `proc_d3641ea0658d`. The first
+helper invocation rejected obsolete `prompt-turn` before delivery; parent used
+the current native `prompt` operation on the same idle identity. Parent owns
+independent acceptance, targeted Risk review, exact publication and controlled
+gateway restart within the existing scoped approval. Worker cannot install,
+activate, restart, send messages, run live model turns, or commit/stage/push.
+This newly exposed routing seam has one bundled correction and one narrowly
+conditional second correction; prior feature/admission budgets remain consumed.
+Synthetic provider-request tests are not actual Matrix-to-pane acceptance.
+The implementation turn returned done/ok. Parent independently ran the installed
+Hermes Python suites: 135 tests passed, zero skipped; the two shared-skill routing
+text-contract tests passed; doctor/validate and diff check passed. The settled
+worker has been closed through the identity-checking helper and is non-resumable.
+Parent integrated inspection found no implementation blocker; targeted exact
+candidate Risk review is pending. Version 0.5.0 is not yet activated, and no
+successful natural Matrix worker dispatch has been established.
 
 CURRENT LIVE CHECKPOINT (2026-10-03; supersedes code-only checkpoints below):
 Bryan explicitly approved bounded live deployment and verification through the

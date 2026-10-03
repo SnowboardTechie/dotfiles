@@ -2,8 +2,9 @@
 
 Scope: this plugin directory as a candidate for one Hermes profile and one local
 Herdr server on the same machine, reviewed against Hermes `f42f579`, with the Hermes
-worker admission and `/herdr-yolo` command re-inspected against Hermes `4ed093c` plus
-the repository's `hermes/runtime-patches/cli-status-session.patch`, and Herdr 0.9.3
+worker admission, `/herdr-yolo` command and `llm_request` routing note re-inspected
+against Hermes `4ed093c` plus the repository's
+`hermes/runtime-patches/cli-status-session.patch`, and Herdr 0.9.3
 (protocol 22). This is the implementer's assessment, not the independent review that
 activation requires.
 
@@ -55,6 +56,41 @@ Python with no dependencies, installers, listeners, daemons or update paths.
   acts only on the exact owned pane after identity checks, returns no pane output,
   and sends no input. Removing the whole origin entry refuses every tool, close
   included.
+
+## Request routing note
+
+`routing.py` is `llm_request` middleware registered through the supported
+`PluginContext.register_middleware`. It exists because nothing else reaches a conversation
+that already learned to refuse. `register_skill` does not list plugin skills in the system
+prompt's `<available_skills>`, and an existing session restores its persisted prompt, frozen
+plugin prompt sections included (`agent/system_prompt.py`). Hermes applies request middleware
+to every provider request of a turn, after Codex Responses preflight
+(`agent/turn_api_request.py::build_api_request`). Each callback receives a copy of the request
+and may return a replacement.
+
+- **Scope.** On every request the middleware applies the handlers' own checks in their order:
+  valid settings, not a delegated child, a trusted bound origin (ContextVars only; missing,
+  cleared, ambiguous, stale and cron bindings fail), an admitting origin entry, then platform
+  `matrix`. Anything else adds nothing, and no refusal text or configuration reaches the
+  request. The middleware's own `platform`, `model` and `provider` metadata never stands in for
+  an origin. `api_mode` only selects the request shape.
+- **Content.** One frame, `<herdr-gateway-routing>` … `</herdr-gateway-routing>`, rendered from
+  validated settings. It holds that entry's permitted project directories (JSON-quoted) and the
+  preset names with their kind and the default marker, at most 16 of each. It never holds
+  `herdr_bin`, the socket, the capacity command, room or user ids, models, other origins'
+  projects, credentials or conversation content. It is instructions, not authorization. The
+  handlers still authorize every `herdr_*` call, and their refusals stay blockers.
+- **Honest tool state.** The note points at the native tools only when the request declares
+  all six. Otherwise it says they are not available in this request, and still forbids the
+  `delegate_task`, background and CLI-helper substitutes. It never adds a tool schema.
+- **Shapes.** `codex_responses` gets the frame appended to its `instructions` string.
+  `chat_completions` gets it appended to a leading `system` or `developer` message: to string
+  content, or as a new text part after the existing parts, whose `cache_control` stays. Any
+  other `api_mode` (`anthropic_messages`, whose OAuth wire renames tools; `bedrock_converse`;
+  others) or a malformed shape is left unchanged. A new request object is returned. The
+  caller's request, history, tool results, tools, model, credentials and cache keys are
+  untouched. If the exact frame is already present, nothing changes, so a repeated pass is
+  idempotent. Look-alike text is neither matched nor removed.
 
 ## Launch integrity
 
@@ -334,6 +370,21 @@ person adds to a worker's workspace survive.
   ordinary. A Hermes update that adds a sanitizer needs this rule re-inspected.
 - **Admission costs a startup.** A refused Hermes worker has already been started in its
   own unfocused pane before it is closed. No brief or model turn reaches it.
+- **A routing note is not model behavior.** The note puts the native route next to a cached
+  refusal on every request. The model can still ignore it. Only an actual Matrix turn shows
+  which tool it calls and whether a pane appears.
+- **Forks share the note.** Hermes's background-review and `/btw` forks share the parent's
+  session id, bound context and tool list, so their requests carry the same note (which also
+  keeps their prompt-cache parity). Their dispatch whitelist excludes the herdr tools.
+- **Prompt cache.** The note changes the instruction text. The first routed request after
+  activation, and after any change to the listed settings, misses the provider's cached prefix
+  once. `prompt_cache_key` is computed before middleware and is kept.
+- **Last replacement wins.** Hermes `4ed093c` gives every `llm_request` callback the same
+  request and keeps the last replacement. Another plugin's request middleware registered later
+  would drop this note. No other installed plugin registers one.
+- **Unlisted manifest field.** `plugins validate` compares registrations with
+  `provides_middleware`, so the manifest declares it. The `4ed093c` loader's known-field list
+  lacks it, so loading may log an "unknown manifest field" warning.
 
 ## Evidence and remaining acceptance gates
 
@@ -354,8 +405,15 @@ bypass, while the unrepaired one misses the session toggle. It also compiles the
 `cli.py` and `cli_tui_runtime_mixin.py`: `/status <token>` reaches `_show_session_status`
 with no argument and no model turn, its whole line is echoed first, and the gateway's
 fence parser takes exactly the report after that echo. The plugin tests' fake `herdr`
-honors `--lines` and fills a 400-line read with identical reports. None of this is Matrix,
-gateway, live-Herdr, live-runtime or model evidence.
+honors `--lines` and fills a 400-line read with identical reports. The routing tests feed
+Codex Responses and Chat Completions requests, shaped after the installed transport source
+(`build_kwargs`, `_responses_tools`, `_preflight_codex_api_kwargs`), through the registered
+middleware: a persisted prompt, a stale caller-pane refusal and the repeated request. Under
+managed Python they run the real `hermes_cli.middleware.apply_llm_request_middleware` chain
+and `PluginDispatchMixin.invoke_middleware`. Only plugin discovery (`hermes_cli.plugins`,
+which loads the profile's configuration on import) is replaced by a registry holding exactly
+the registered callback, and the installed `gateway.session_context.set_session_vars` binds
+the origin. None of this is Matrix, gateway, live-Herdr, live-runtime or model evidence.
 
 **Directly checked, read-only.** Against the running Herdr 0.9.3 server: the `status`,
 `agent get`, `pane get`, `workspace list`, `pane list` and `pane process-info` shapes,
@@ -367,13 +425,22 @@ delegation-context source. Against installed Hermes `4ed093c`: the installed lau
 managed launcher script, `hermes_bootstrap` relaunch, top-level `--cli`/`--provider`/
 `--model`/`--reasoning` routing to the classic chat, `cli_session_mixin._show_session_status`,
 `hermes_cli/status_report.py`, the English `/status` labels, `tools.approval`'s bypass
-predicate, and sticky `active_profile` resolution under a pinned `HERMES_HOME`. Hermes
-`plugins doctor --ci` (6 tools) and `plugins validate` (capability probe, security scan
-"safe", no core override) pass for this version.
+predicate, and sticky `active_profile` resolution under a pinned `HERMES_HOME`. Also
+against `4ed093c`, read statically: `PluginContext.register_middleware`/`register_skill`,
+`hermes_cli/middleware.py`, `plugins_dispatch.invoke_middleware`,
+`agent/turn_api_request.py`, the Codex Responses transport and preflight, the Anthropic
+adapter's `system` and OAuth tool naming, `gateway/session_context.py`, and the
+background-review fork. Hermes `plugins doctor --ci` (6 tools) and `plugins validate`
+(capability probe, declared middleware, security scan "safe", no core override) pass for
+version 0.5.0.
 
 **Remaining live acceptance gates (pending):**
 
 - the independent security review;
+- after a gateway reload, an actual user-origin Matrix request for a worker in the existing
+  conversation, read back as an `herdr_start` call and its visible pane rather than a
+  `delegate_task` or background substitute. The note's presence in a request is not that
+  evidence;
 - applying the reviewed runtime patch to the exact preimage, with a backup, and observing
   live native `/status` before and after a user-authorized `/herdr-yolo` mode change of
   an owned worker;

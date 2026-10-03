@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from . import schemas
+from . import routing, schemas
 from .tools import Handlers
 
 
@@ -21,6 +21,8 @@ def register(ctx):
                           handler=getattr(handlers, method))
     ctx.register_skill("workflow", Path(__file__).parent / "skills" / "workflow" / "SKILL.md",
                        description="Supervising request-bound Herdr workers from a conversation")
+    # Plugin skills are not in <available_skills>; this routes an admitted Matrix origin's requests.
+    ctx.register_middleware("llm_request", routing.middleware(ctx))
     # A person's native command, dispatched before any agent turn; deliberately not a tool.
     ctx.register_command("herdr-yolo", handlers.yolo_command,
                          description="Show or change one owned Hermes worker's YOLO approval bypass",

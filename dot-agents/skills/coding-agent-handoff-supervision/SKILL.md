@@ -1,6 +1,6 @@
 ---
 name: coding-agent-handoff-supervision
-description: Use for visible, ticket-backed coding-agent handoffs.
+description: Use for visible CLI or Matrix coding-agent handoffs.
 version: 2.1.1
 author: Bryan Thompson + Hermes Agent
 license: MIT
@@ -22,6 +22,36 @@ candidate; Sol independently accepts it.
 The workflow optimizes for one useful implementation turn and one bundled
 correction, not a prolonged conversation. Herdr mechanics are owned by
 `scripts/herdr_worker.py`; do not reconstruct its command choreography in chat.
+
+## Select the execution surface first
+
+The helper procedure below is the CLI transport, not a universal prerequisite
+for visible workers. Select the transport before checking its environment.
+
+In a Matrix conversation with the native `herdr` toolset available, load
+`herdr-gateway:workflow` and use `herdr_start`, `herdr_wait`, `herdr_read`,
+`herdr_prompt`, `herdr_status` and `herdr_close` for the request-bound worker.
+No injected caller pane is expected in Matrix. Do not run the CLI helper's
+`HERDR_ENV`/`HERDR_PANE_ID` gate there and do not offer a background fallback
+because those values are absent. Do not fabricate context bindings, caller-pane
+variables or authorization to make either transport work. The native gateway
+enforces the actual room/user/thread, permitted project and runtime policy.
+
+For a natural request such as "Have a worker take a look at the dotfiles README",
+resolve the project directory and configured preset from established context and
+the authorized gateway configuration; do not ask the user to supply internal
+task IDs, preset names or paths already known. For a bounded read-only review,
+the user's request is the brief authority: narrow the brief to inspection and
+reporting, prohibit edits/publication, and start the worker. Ask a question only
+when that changes the work or a required project/permission is genuinely unknown.
+Substantial implementation still needs the governing ticket/approved plan and
+the role, acceptance, correction, capacity and cleanup rules below. Claude
+Opus/xhigh remains the default; Hermes requires Bryan's explicit selection.
+
+If native tools are unavailable or return a refusal, report that exact transport
+or policy blocker. Do not substitute a CLI caller-pane requirement or silently
+change execution surfaces. In an interactive CLI, continue with the deterministic
+helper procedure below and retain its injected-pane prerequisites.
 
 ## When to Use
 
