@@ -8,6 +8,16 @@ SKILL = ROOT / "dot-agents/skills/coding-agent-handoff-supervision/SKILL.md"
 
 
 class MatrixRoutingContract(unittest.TestCase):
+    def test_shared_and_native_guidance_agree_on_right_sizing(self):
+        for path in (SKILL, ROOT / "hermes/plugins/herdr-gateway/skills/workflow/SKILL.md"):
+            with self.subTest(path=path):
+                text = " ".join(path.read_text().split())
+                self.assertIn("Simple questions stay with", text)
+                self.assertIn("lightweight", text)
+                self.assertIn("explicit runtime selection overrides", text)
+                self.assertIn("Do not expand a simple question into an audit", text)
+                self.assertNotIn("Hermes requires Bryan's explicit selection", text)
+
     def test_matrix_transport_is_selected_before_cli_prerequisites(self):
         text = SKILL.read_text()
         section = text.split("## Select the execution surface first", 1)[1].split("## When to Use", 1)[0]

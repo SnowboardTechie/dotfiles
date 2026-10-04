@@ -2580,6 +2580,23 @@ class RoutingRegistrationTests(RoutingCase):
 
 
 class RoutingRequestTests(RoutingCase):
+    def test_lightweight_workers_use_hermes_without_expanding_the_question(self) -> None:
+        hermes = {"kind": "hermes", "launcher": "/opt/example/bin/hermes", "home": "/opt/example/.hermes",
+                  "provider": "example-provider", "model": "example-model", "effort": "high",
+                  "approvals": "smart"}
+        self.configure(presets={**self.config["presets"], "hermes-high": hermes},
+                       default_preset="hermes-high")
+        for schemas in (self.schemas, BRIDGE_TOOLS):
+            with self.subTest(deferred=schemas == BRIDGE_TOOLS):
+                note = self.note_of(self.route(responses_request(schemas))["instructions"])
+                self.assertIn("hermes-high (hermes, default)", note)
+                self.assertIn("lightweight questions or read-only inspection", note)
+                self.assertIn("substantial implementation", note)
+                self.assertIn("explicit runtime selection overrides", note)
+                self.assertIn("Simple questions stay with the coordinator", note)
+                self.assertIn("Do not expand a simple question into an audit", note)
+                self.assertNotIn("use another preset only when", note)
+
     def test_cached_conversation_with_a_stale_refusal_gets_live_native_routing(self) -> None:
         request = responses_request(self.schemas)
         # The pre-repair plugin registered no middleware: nothing reached the cached conversation.

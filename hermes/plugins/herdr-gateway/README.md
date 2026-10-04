@@ -32,6 +32,18 @@ model should follow.
 
 ## Request routing in Matrix
 
+### Right-sized runtime selection (v0.5.2)
+
+Simple questions stay with the coordinator unless the person asks for a worker.
+Requested lightweight questions and read-only inspection use a configured Hermes
+preset; substantial implementation uses a configured Claude preset. Explicit
+runtime selection overrides these defaults. Keep the brief and verification
+proportional: a simple question is not permission to commission an exhaustive
+audit. Bryan's pilot uses `hermes-sol` as the omitted-preset default, with
+`claude-opus` selected for substantial implementation. Neither preset's effort,
+model nor approval mode changes. This is routing guidance, not a latency guarantee
+or additional authorization.
+
 Hermes lists no plugin skill in the system prompt's `<available_skills>`, and an existing
 conversation keeps its persisted prompt. So a Matrix room could follow the CLI handoff skill,
 find no injected `HERDR_ENV`/`HERDR_PANE_ID`, refuse visible workers, and keep repeating that

@@ -1,7 +1,7 @@
 ---
 name: coding-agent-handoff-supervision
 description: Use for visible CLI or Matrix coding-agent handoffs.
-version: 2.1.2
+version: 2.2.0
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
@@ -14,8 +14,10 @@ metadata:
 
 ## Overview
 
-Hand decision-complete implementation to one visible Claude worker, or to a
-visible Hermes worker when Bryan explicitly selects it. Sol remains the pairing,
+Hand decision-complete substantial implementation to one visible Claude worker.
+Use a visible Hermes worker for requested lightweight questions and read-only
+inspection; Bryan's explicit runtime selection overrides those defaults.
+Simple questions stay with Sol unless Bryan asks for a worker. Sol remains the pairing,
 acceptance, publication, and live-verification authority. The worker produces a
 candidate; Sol independently accepts it.
 
@@ -54,7 +56,10 @@ reporting, prohibit edits/publication, and start the worker. Ask a question only
 when that changes the work or a required project/permission is genuinely unknown.
 Substantial implementation still needs the governing ticket/approved plan and
 the role, acceptance, correction, capacity and cleanup rules below. Claude
-Opus/xhigh remains the default; Hermes requires Bryan's explicit selection.
+Opus/xhigh is the substantial-implementation default; Hermes/high is the
+lightweight-worker default. Bryan's explicit runtime selection overrides this
+policy. Do not expand a simple question into an audit: keep the brief and
+verification proportional to the requested answer.
 
 If native tools are unavailable or return a refusal, report that exact transport
 or policy blocker. Do not substitute a CLI caller-pane requirement or silently
@@ -146,8 +151,9 @@ Visible workers are approval-gated, not sandbox-confined. Claude uses
 `HERMES_YOLO_MODE`, and no `--yolo`. Stop when hard confinement is required but
 cannot be proved.
 
-Claude uses `claude-opus-5-5` and `xhigh` effort by default for every handoff,
-including simple or documentation-only work; do not downgrade those tasks. Escalate to
+When Claude is selected, use `claude-opus-5-5` and `xhigh` effort; do not
+downgrade effort for simple or documentation-only work. Route lightweight work
+to Hermes instead unless Bryan explicitly selects Claude. Escalate to
 `--claude-effort max` only when the work is simultaneously narrowly scoped,
 security-critical, and expensive enough that another correction cycle would be
 especially costly. Broad or decision-incomplete work does not qualify for
@@ -183,7 +189,7 @@ python3 scripts/herdr_worker.py start \
 `--claude-effort` defaults to `xhigh`. Add `--claude-effort max` only when all
 three escalation conditions above hold.
 
-For explicit Hermes selection, use `--kind hermes` after independently checking
+For lightweight work or explicit Hermes selection, use `--kind hermes` after independently checking
 its smart-approval prerequisites.
 
 The helper checks Herdr compatibility, targets the injected caller pane, splits

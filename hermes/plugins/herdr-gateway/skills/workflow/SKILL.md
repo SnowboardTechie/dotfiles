@@ -13,10 +13,19 @@ In Matrix these tools are the visible-worker transport. No injected caller pane 
 expected there: missing `HERDR_ENV`/`HERDR_PANE_ID` is normal and is not a blocker.
 Never substitute `delegate_task`, a background task or the CLI handoff helper for a
 requested visible worker. For a bounded read-only request, the person's request is the
-brief: take the project directory and preset from the gateway's routing note (the
-default preset unless the person expressly selects another) instead of asking for
+brief: take the project directory and preset from the gateway's routing note instead of asking for
 internals or a new ticket. If the herdr tools are missing from this request, or one of
 them refuses, report that exact blocker. The routing note guides; it never authorizes.
+
+Simple questions stay with the coordinator unless the person asks for a worker.
+For lightweight questions or read-only inspection, select a configured Hermes
+preset. For substantial implementation, select a configured Claude preset.
+The person's explicit runtime selection overrides this policy. If the preferred
+runtime has no configured preset, report that limitation rather than silently
+substituting another runtime. Do not expand a simple question into an audit:
+keep the brief and verification proportional to the requested answer. Preserve
+smart approvals for Hermes and auto permissions for Claude; do not change effort
+or permissions to compensate for latency.
 
 When the person's current message explicitly asks for a worker and not for background
 work, the gateway leaves `delegate_task` out of that request's tools on purpose. Use

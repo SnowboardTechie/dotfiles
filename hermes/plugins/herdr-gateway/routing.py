@@ -100,6 +100,10 @@ def note(settings: dict, entry: dict, surface: str) -> str:
     choice = (f"Omit preset to use the default ({default}); use another preset only when the "
               "person expressly selects it." if default else
               "No default preset is configured: use the preset the person selects.")
+    if {preset["kind"] for preset in settings["presets"].values()} >= {"hermes", "claude"}:
+        choice = ("For lightweight questions or read-only inspection use a configured Hermes preset; "
+                  "for substantial implementation use a configured Claude preset. The person's "
+                  "explicit runtime selection overrides this policy.")
     ask = ("- When the person asks for a worker, coding agent or visible pane to do work, load skill "
            "herdr-gateway:workflow with skill_view")
     if surface == "direct":
@@ -124,6 +128,8 @@ def note(settings: dict, entry: dict, surface: str) -> str:
         "authorization.",
         f"- {choice} Never start a worker nobody asked for; YOLO stays the person's own "
         "/herdr-yolo choice.",
+        "- Simple questions stay with the coordinator unless the person asks for a worker. "
+        "Do not expand a simple question into an audit; keep the brief and verification proportional.",
         f"- Permitted project directories: {_listed([json.dumps(p) for p in entry['projects']])}",
         f"- Presets: {_listed(presets)}",
         "- A project outside these directories, or any herdr_* refusal, is a blocker to report, "
