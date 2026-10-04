@@ -20,6 +20,28 @@ superseded by the explicit guarded-admission approval recorded below and in
 ## Current coordinator checkpoint after implementation (2026-10-02)
 
 CURRENT LIVE FAILURE / FIRST ROUTING CORRECTION (supersedes checkpoints below):
+CURRENT ACTIVATION (v0.5.1; supersedes the candidate checkpoint below):
+Exact candidate `71faf51e52166f861712c3222199f55e81b18c8b` is pushed to
+`origin/main`. Risk review `deleg_9bca45e5` independently admitted all nine file
+hashes/index/export and digest
+`0d79ecbff8b1cba47abd518a6ce57cef23860ed055a755c1ab407cfce8073db7`
+twice, found no blocking issue, and ran 32 managed routing tests with zero skips.
+Parent re-admitted the exact identity before publication. Parent's exact-index
+export also passed all 147 managed tests and two guidance tests. Its trailing
+Git check mistakenly ran outside a Git repo; the canonical staged check was
+rerun separately and passed. No failed product test was concealed.
+
+The idle gateway was restarted under the existing bounded activation authority:
+fresh native PID `55090` replaces `64864`, with fresh Matrix-connected evidence.
+The supervised launch definition matches the current install. Canonical plugin
+symlink/version are unchanged/0.5.1; complete parsed config equals the pre-repair
+snapshot. No scope, preset, permission, credential, crypto or conversation reset.
+The restart printed an inability to kill unrelated orphan PID 372; no authority
+was expanded to kill it. Current owned gateway startup succeeded.
+Actual user-origin nested `tool_call` / `herdr_start` plus owned pane/session,
+result and cleanup are STILL UNESTABLISHED. Injection permission remains false;
+do not grant it or fabricate a sender/context to manufacture acceptance.
+
 CURRENT CANDIDATE (v0.5.1, both routing corrections complete; not yet activated):
 Parent independently ran the actual managed plugin suite: 147 tests, zero skips.
 Host plugin/status suite: 152 tests, four managed-only skips. Two guidance tests
