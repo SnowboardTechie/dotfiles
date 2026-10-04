@@ -2,7 +2,7 @@
 
 Scope: this plugin directory as a candidate for one Hermes profile and one local
 Herdr server on the same machine, reviewed against Hermes `f42f579`, with the Hermes
-worker admission, `/herdr-yolo` command and `llm_request` routing note re-inspected
+worker admission, `/herdr-yolo` command and `llm_request` routing note and transport selection re-inspected
 against Hermes `4ed093c` plus the repository's
 `hermes/runtime-patches/cli-status-session.patch`, and Herdr 0.9.3
 (protocol 22). This is the implementer's assessment, not the independent review that
@@ -80,17 +80,66 @@ and may return a replacement.
   `herdr_bin`, the socket, the capacity command, room or user ids, models, other origins'
   projects, credentials or conversation content. It is instructions, not authorization. The
   handlers still authorize every `herdr_*` call, and their refusals stay blockers.
-- **Honest tool state.** The note points at the native tools only when the request declares
-  all six. Otherwise it says they are not available in this request, and still forbids the
-  `delegate_task`, background and CLI-helper substitutes. It never adds a tool schema.
+- **Honest tool state: three entrypoints.** Only the request's own `type: function` entries
+  count (Responses `name`, Chat Completions `function.name`):
+  - **direct:** all six `herdr_*` schemas are declared, and the note names them.
+  - **deferred:** not all six, but both Hermes progressive-disclosure bridge functions are
+    declared, `tool_describe` with a `names` parameter and `tool_call` with a `calls`
+    parameter. The note keeps the same bounded origin, project, preset, default and YOLO
+    guidance. It requires `tool_describe(names=[the six exact names])`, then
+    `tool_call(calls=[{"name": "herdr_start", "arguments": {...}}])`, with supervision
+    through `tool_call`.
+  - **unavailable:** anything else. The note says the tools are not available in this request.
+
+  Hermes `4ed093c`'s `tools/tool_search.py` defers every plugin tool once any is deferrable,
+  and describing never promotes a schema to first-class. So a profile whose toolsets select
+  `herdr` can still send no direct `herdr_*` schema, and the v0.5.0 note falsely called them
+  unavailable. A partial direct surface plus the full bridge is deferred, and the full direct
+  surface wins. A name inside a description, a non-function entry, `tool_search` alone, a
+  partial or misshapen bridge, and cached assistant or tool text never count. The bridge is a
+  discovery route, not proof that the herdr tools are enabled or authorized. The session's
+  toolset scope still decides what `tool_describe` finds: it answers only names in the
+  session-scoped catalog, so a disabled tool comes back as `not_found`. `tool_call` is
+  scope-gated and schema-validated, then re-dispatched with the normal policy, hooks and
+  approvals, so the handlers' own authorization still decides. The note tells the model to
+  report an absent, disabled or refused herdr tool exactly, with no background substitute and
+  no claim that a worker started. Every entrypoint forbids the `delegate_task`, background and
+  CLI-helper substitutes. The note never adds a tool schema, and it changes no tool-search
+  setting, registry entry, toolset or cached prompt.
+- **Transport selection (0.5.1).** A live v0.5.0 Matrix request carried the note's route yet
+  still chose `delegate_task`, so for the same admitted origin the middleware narrows the
+  outgoing request too. This happens only when the request's most recent user message leads
+  with an explicit worker request. That message is the last `role: user` message item: a
+  Responses `input_text` part, or Chat Completions string content or `text` parts. Assistant
+  items, function calls and tool output are never read. The request form must match a short
+  pattern at the start of the first 400 characters, after case, whitespace and curly
+  apostrophes are normalized. If those characters mention `background` without negating it or
+  saying `visible`, delegation stays. Only then are the `type: function` entries named
+  `delegate_task` dropped from that request's `tools`, and a named `delegate_task`
+  `tool_choice` is reconciled to `auto`. Every other entry is kept in order, and unknown or
+  non-function entries stay byte-identical. Other `tool_choice` values, history, model,
+  credentials and cache keys stay as they were. Hermes's tool registry, cached tool grants,
+  persisted prompt, permissions, approvals and config are never touched, so this is one
+  request's transport choice, not a capability ban. A generic `pre_tool_call` guard would not
+  enforce it: native `delegate_task` is dispatched by the agent loop, and the generic
+  `model_tools.handle_function_call` returns `delegate_task must be handled by the agent loop`
+  before its pre-dispatch (`pre_tool_call`) guards and registry dispatch. So the choice is
+  made where the model chooses, at the provider request. Selection runs on every tool-loop request of the turn (the current user message is
+  the same), on every entrypoint, and even when neither the six tools nor the bridge is
+  declared, so a visible request never falls
+  back to background. A false positive removes only `delegate_task` from that one request. A
+  false negative (unlisted phrasing, a worker request sent as a Matrix reply whose
+  `[Replying to …]` prefix leads, text past the prefix) keeps the v0.5.0 note-only behavior.
 - **Shapes.** `codex_responses` gets the frame appended to its `instructions` string.
   `chat_completions` gets it appended to a leading `system` or `developer` message: to string
   content, or as a new text part after the existing parts, whose `cache_control` stays. Any
   other `api_mode` (`anthropic_messages`, whose OAuth wire renames tools; `bedrock_converse`;
-  others) or a malformed shape is left unchanged. A new request object is returned. The
-  caller's request, history, tool results, tools, model, credentials and cache keys are
-  untouched. If the exact frame is already present, nothing changes, so a repeated pass is
-  idempotent. Look-alike text is neither matched nor removed.
+  others) or a malformed shape is left unchanged, with no transport selection either. A new
+  request object is returned. The caller's request, history, tool results, model, credentials
+  and cache keys are untouched, and tools change only as the transport selection above
+  describes. If the exact frame is already present, the note is not added again, but transport
+  selection still runs, so a repeated pass is idempotent. Look-alike text is neither matched
+  nor removed.
 
 ## Launch integrity
 
@@ -371,14 +420,28 @@ person adds to a worker's workspace survive.
 - **Admission costs a startup.** A refused Hermes worker has already been started in its
   own unfocused pane before it is closed. No brief or model turn reaches it.
 - **A routing note is not model behavior.** The note puts the native route next to a cached
-  refusal on every request. The model can still ignore it. Only an actual Matrix turn shows
-  which tool it calls and whether a pane appears.
+  refusal on every request, and an explicit worker request no longer offers `delegate_task`.
+  The model can still ignore the note, answer in text, or call another tool. Only an actual
+  Matrix turn shows which tool it calls and whether a pane appears. On the deferred
+  entrypoint that is an outer `tool_call` whose nested `herdr_start` returns an owned worker,
+  so acceptance correlates the nested name and its returned pane and session, not the outer
+  tool name, and not a first-class `herdr_start` row.
+- **Deferred costs a round trip.** On the bridge, the model spends one `tool_describe` call
+  before `herdr_start`, and every herdr call goes through `tool_call`. The note can't make a
+  described schema first-class, and it does not switch progressive disclosure off.
+- **Selection is a pattern, not understanding.** It recognizes the documented request forms
+  only. It is no classifier and no general English parser, and no model is consulted.
 - **Forks share the note.** Hermes's background-review and `/btw` forks share the parent's
   session id, bound context and tool list, so their requests carry the same note (which also
-  keeps their prompt-cache parity). Their dispatch whitelist excludes the herdr tools.
+  keeps their prompt-cache parity). Transport selection follows each fork request's own
+  current user message. Their dispatch whitelist excludes the herdr tools.
 - **Prompt cache.** The note changes the instruction text. The first routed request after
   activation, and after any change to the listed settings, misses the provider's cached prefix
-  once. `prompt_cache_key` is computed before middleware and is kept.
+  once. An explicit worker request also sends a narrower tool list than the request before
+  it, so it misses the cached prefix once (as can a fork whose tool list then differs from its
+  parent's). That miss is accepted rather than leaving the wrong transport available. The
+  schema and instructions stay stable across the turn's tool-loop follow-ups.
+  `prompt_cache_key` is computed before middleware and is kept.
 - **Last replacement wins.** Hermes `4ed093c` gives every `llm_request` callback the same
   request and keeps the last replacement. Another plugin's request middleware registered later
   would drop this note. No other installed plugin registers one.
@@ -413,7 +476,38 @@ managed Python they run the real `hermes_cli.middleware.apply_llm_request_middle
 and `PluginDispatchMixin.invoke_middleware`. Only plugin discovery (`hermes_cli.plugins`,
 which loads the profile's configuration on import) is replaced by a registry holding exactly
 the registered callback, and the installed `gateway.session_context.set_session_vars` binds
-the origin. None of this is Matrix, gateway, live-Herdr, live-runtime or model evidence.
+the origin. For 0.5.1 the transport-selection tests cover both shapes; current versus stale
+user, assistant and tool text; explicit, negated and incidental background; framework
+messages; missing native tools; forced and other `tool_choice` values; opaque entries;
+out-of-scope origins; and idempotence with the note already present. Ordinary and background
+requests are checked for exactly unchanged tools. Under managed Python one test also builds
+the requests with the installed `ResponsesApiTransport.build_kwargs`/`preflight_kwargs` and
+`ChatCompletionsTransport.build_kwargs`, using the real `tools.delegate_tool.DELEGATE_TASK_SCHEMA`.
+The suite runs under the supervised gateway's own launcher
+(`~/.hermes/hermes-agent/.hermes/bin/hermes --run-module unittest discover`), not a sibling
+venv. Against the 0.5.0 plugin that test fails with `delegate_task` still offered; against
+0.5.1 it passes. The entrypoint tests cover direct, deferred and unavailable in both shapes,
+partial direct plus the full bridge, a partial or misshapen bridge, lookalike and
+description-only names, non-function entries and assistant or tool text. They also cover
+deferred guidance, worker, ordinary and background requests, forced choices, opaque entries
+and idempotence on the bridge. Under managed Python one test registers the six handlers in
+an isolated `tools.registry.ToolRegistry` (patched in as `tools.registry.registry`, holding
+only this fixture's fake-settings handlers) with default tool-search settings. It runs the
+real `tools.tool_search.assemble_tool_defs`, which activates the bridge and defers all six.
+It then builds Codex Responses (after preflight) and Chat Completions requests and routes
+them through the real chain: deferred guidance, `delegate_task` omitted for the worker
+request, ordinary and background tools unchanged. It then drives the bridge itself:
+`dispatch_tool_describe` returns the six registered schemas from an enabled scope and
+`not_found` for all six from a scope without them. `resolve_underlying_call`,
+`scoped_deferrable_names` and `validate_deferred_call_args` resolve, scope-gate and
+validate a nested `herdr_start`/`herdr_status`. `ToolRegistry.dispatch` under the installed
+`set_session_vars` binding then reaches the plugin's own gates: status succeeds for the
+admitted origin, a stale dispatch session is `origin_stale`, and a start from another room is
+`origin_not_authorized` with no `herdr` contact. `model_tools` (whose import runs live plugin
+discovery) is not imported. Its `_dispatch_bridge_tool` composition, `handle_function_call`
+re-dispatch, hooks and approvals were read, not executed. That test fails on the first 0.5.1
+candidate at "not available in this request" and passes now. None of this is Matrix,
+gateway, live-Herdr, live-runtime or model evidence.
 
 **Directly checked, read-only.** Against the running Herdr 0.9.3 server: the `status`,
 `agent get`, `pane get`, `workspace list`, `pane list` and `pane process-info` shapes,
@@ -432,15 +526,23 @@ against `4ed093c`, read statically: `PluginContext.register_middleware`/`registe
 adapter's `system` and OAuth tool naming, `gateway/session_context.py`, and the
 background-review fork. Hermes `plugins doctor --ci` (6 tools) and `plugins validate`
 (capability probe, declared middleware, security scan "safe", no core override) pass for
-version 0.5.0.
+version 0.5.0. They have not been re-run for 0.5.1. Also read statically for 0.5.1: the
+Responses user-message conversion (`agent/codex_responses_adapter.py`), the async completion
+texts (`tools/process_registry_notifications.py`), the `[Replying to …]` prefix
+(`gateway/run_inbound.py`) and `model_tools.handle_function_call`'s agent-loop tools. Also
+`tools/tool_search.py` (assembly, bridge schemas, describe, call resolution, scope gate),
+`tools/tool_search_validation.py`, `tools/registry.py` and
+`model_tools._dispatch_bridge_tool`.
 
 **Remaining live acceptance gates (pending):**
 
 - the independent security review;
 - after a gateway reload, an actual user-origin Matrix request for a worker in the existing
   conversation, read back as an `herdr_start` call and its visible pane rather than a
-  `delegate_task` or background substitute. The note's presence in a request is not that
-  evidence;
+  `delegate_task` or background substitute. On the deferred entrypoint that means an outer
+  `tool_call` whose nested `herdr_start` returned an owned worker, correlated by the nested
+  name and the returned pane, session and result, then cleaned up. The note's presence, or
+  `delegate_task`'s absence, in a request is not that evidence;
 - applying the reviewed runtime patch to the exact preimage, with a backup, and observing
   live native `/status` before and after a user-authorized `/herdr-yolo` mode change of
   an owned worker;

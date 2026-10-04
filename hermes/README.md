@@ -16,9 +16,11 @@ This directory preserves Bryan-authored Hermes assets without treating the mutab
   [the plugin's setup and security boundaries](plugins/herdr-gateway/README.md).
   The reviewed pilot is installed and enabled on Studio's default profile, scoped
   to the approved private Matrix room and this repository. Native runtime/status
-  verification passed. Two natural worker requests failed routing; the reviewed
-  v0.5.0 request-level native-routing repair is now deployed without resetting
-  the conversation. A fresh user-origin Matrix-to-pane result remains unverified;
+  verification passed. The deployed v0.5.0 routing repair also failed a natural
+  worker request: enabled native tools are progressively deferred, not unavailable.
+  The v0.5.1 correction now selects the visible transport and supports the native
+  describe/call bridge. Actual-managed-runtime tests pass; publication, activation
+  and a fresh user-origin Matrix-to-pane result remain pending;
   see [the current coordinator checkpoint](workflows/matrix-first-herdr-handoff.md).
   It remains outside the automatic deployment manifest during this pilot.
   It adds no standing coordinator or network bridge.

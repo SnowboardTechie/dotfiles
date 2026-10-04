@@ -19,6 +19,60 @@ superseded by the explicit guarded-admission approval recorded below and in
 
 ## Current coordinator checkpoint after implementation (2026-10-02)
 
+CURRENT LIVE FAILURE / FIRST ROUTING CORRECTION (supersedes checkpoints below):
+CURRENT CANDIDATE (v0.5.1, both routing corrections complete; not yet activated):
+Parent independently ran the actual managed plugin suite: 147 tests, zero skips.
+Host plugin/status suite: 152 tests, four managed-only skips. Two guidance tests
+and diff checks passed. The real configured-manager deferred-frame reproduction
+is GREEN. This proves the deferral and transport-selection boundary, not a real
+Matrix launch. The worker is closed/non-resumable; no further correction budget
+remains. Exact-candidate review, publication and a bounded restart are pending.
+No dependency, credential, source patch, scope, default model or approval change.
+
+NEWLY EXPOSED NATIVE DEFERRAL BLOCKER / CONDITIONAL SECOND CORRECTION:
+The first replacement turn settled `done/ok` and its selection fixture passed,
+but the parent reproduced a real progressive-disclosure blocker on that candidate.
+The actual Matrix `tool_names` snapshot is hash-backed JSON `{version, tools}`:
+25 baseline schemas include the describe/call bridge, but not first-class Herdr
+names. The current native Matrix resolver already selects `herdr` and all six
+registered tools. Actual native `assemble_tool_defs` defers those six behind
+`tool_describe`/`tool_call`; describing does not turn them into direct API tools.
+The old routing note falsely equates that absence with unavailable tools. Parent's
+actual-managed deferred-frame probe is RED at that false refusal; it does not
+execute a model, Matrix event or native resource. No configuration or toolset
+enabling change is necessary. Same identity is now implementing the conditional
+SECOND and LAST correction under adjacent `deferred-correction.md`, tracked turn
+`proc_e4cdbe77e6cd`: preserve selection and teach the supported describe/call
+bridge with the full bounded project/preset guidance and real refusal handling.
+Acceptance must correlate a nested `tool_call`/`herdr_start` result, not demand
+that the outer tool name be first-class `herdr_start`. No third correction.
+
+The post-v0.5.0 natural Matrix request again selected `delegate_task`; no native
+worker/pane existed. Parent's fast actual-managed-runtime fixture exercises the
+real configured PluginManager, PluginContext, Responses request builder/preflight
+and middleware under synthetic native bindings. It confirms the note is applied
+but the wrong invisible transport is still offered; its outgoing-schema assertion
+is RED in about half a second. It does NOT prove the real failing turn contained
+the note. Native delegation is handled specially by the agent loop, so a generic
+registry/pre-tool guard is not a sufficient correction.
+
+Bryan explicitly directed repair again. First bundled routing correction is now
+implementing narrow per-request tool selection: for an explicit worker request
+in the existing admitted Matrix scope, omit only the background `delegate_task`
+schema from the provider request; preserve explicit background requests, normal
+conversation, other scopes and all native authorization/approval boundaries.
+No registry/persisted tool grant is changed. This accepts a bounded cached-prefix
+change for the worker request rather than retaining the unwanted transport.
+Authority: `~/.hermes/cache/scratch/matrix-herdr-selection/correction.md`.
+Visible replacement `matrix-herdr-selection`, pane `w15:pG`, runtime
+`8546f374-8b07-4c58-a322-369ae8d786db`; identity is the adjacent `identity.json`;
+tracked turn `proc_dde017cef5aa`. The previous worker is closed/non-resumable;
+this replacement does not reset the correction budget. Installed runtime/config
+are read-only to it, and it cannot activate, restart, send messages, run live
+model turns or commit/stage/push. Parent must use the actual managed generation
+for acceptance, not label the legacy venv as the supervised gateway runtime.
+No new successful Matrix-to-pane result has been established.
+
 CURRENT ROUTING FAILURE (2026-10-03; supersedes the live-test invitation below):
 Two real user-origin attempts failed the visible-worker contract. The first
 loaded the CLI helper skill, looked for injected caller-pane environment and

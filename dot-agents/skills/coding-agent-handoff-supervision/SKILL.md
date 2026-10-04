@@ -1,7 +1,7 @@
 ---
 name: coding-agent-handoff-supervision
 description: Use for visible CLI or Matrix coding-agent handoffs.
-version: 2.1.1
+version: 2.1.2
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
@@ -31,6 +31,14 @@ for visible workers. Select the transport before checking its environment.
 In a Matrix conversation with the native `herdr` toolset available, load
 `herdr-gateway:workflow` and use `herdr_start`, `herdr_wait`, `herdr_read`,
 `herdr_prompt`, `herdr_status` and `herdr_close` for the request-bound worker.
+These plugin tools may be progressively deferred rather than directly declared:
+when `tool_describe` and `tool_call` are available, describe the six exact names,
+then invoke them through `tool_call(calls=[{name, arguments}])`. Describing does
+not make them first-class provider tools. Absence from the initial schema array
+is not proof of unavailability; an actual discovery or native-policy refusal is.
+Keep the same authorization, approval, identity and cleanup checks through the
+bridge. Correlate a nested `tool_call` / `herdr_start` result with its owned pane,
+not merely the outer recorded tool name.
 No injected caller pane is expected in Matrix. Do not run the CLI helper's
 `HERDR_ENV`/`HERDR_PANE_ID` gate there and do not offer a background fallback
 because those values are absent. Do not fabricate context bindings, caller-pane

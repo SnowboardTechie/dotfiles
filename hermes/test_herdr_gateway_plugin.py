@@ -2448,6 +2448,21 @@ OTHER_TOOLS = [
     {"name": "skill_view", "description": "Load a skill.",
      "parameters": {"type": "object", "properties": {"name": {"type": "string"}}}},
 ]
+# The progressive-disclosure bridge that replaces deferred plugin tools in the model-visible
+# array, shaped as tools/tool_search.py ``bridge_tool_schemas`` builds it (Codex wires
+# tool_search as hermes_tool_search).
+BRIDGE_TOOLS = [
+    {"name": "hermes_tool_search", "description": "Search deferred tools.",
+     "parameters": {"type": "object", "properties": {"queries": {"type": "array", "items": {"type": "string"}}},
+                    "required": ["queries"]}},
+    {"name": "tool_describe", "description": "Load the full JSON schemas for tools returned by `tool_search`.",
+     "parameters": {"type": "object", "properties": {"names": {"type": "array", "items": {"type": "string"}}},
+                    "required": ["names"]}},
+    {"name": "tool_call", "description": "Invoke deferred tools. Takes `calls`, an array of {name, arguments}.",
+     "parameters": {"type": "object", "properties": {"calls": {"type": "array", "items": {"type": "object"}}},
+                    "required": ["calls"]}},
+]
+SEARCH, DESCRIBE, CALL = BRIDGE_TOOLS
 
 
 def apply_llm_request(ctx, request: dict, api_mode="codex_responses", session_id="") -> dict:
@@ -2480,7 +2495,7 @@ def responses_tools(schemas) -> list:
              "parameters": s["parameters"]} for s in schemas]
 
 
-def responses_request(schemas, *, history=True) -> dict:
+def responses_request(schemas, *, history=True, ask=ASK) -> dict:
     """A Codex Responses request as the transport builds it and preflight normalizes it: the
     system prompt is ``instructions``; history and tool results are ``input`` items."""
     earlier = [
@@ -2491,7 +2506,7 @@ def responses_request(schemas, *, history=True) -> dict:
         {"type": "message", "role": "assistant", "status": "completed",
          "content": [{"type": "output_text", "text": STALE_REFUSAL}]},
     ]
-    turn = [{"type": "message", "role": "user", "content": [{"type": "input_text", "text": ASK}]}]
+    turn = [{"type": "message", "role": "user", "content": [{"type": "input_text", "text": ask}]}]
     return {"model": "gpt-example", "instructions": OLD_PROMPT, "input": (earlier if history else []) + turn,
             "tools": responses_tools([*schemas, *OTHER_TOOLS]), "tool_choice": "auto",
             "parallel_tool_calls": True, "store": False, "prompt_cache_key": "pck_0123456789abcdef01234567",
@@ -2499,7 +2514,7 @@ def responses_request(schemas, *, history=True) -> dict:
             "extra_headers": {"session_id": "20260908_094034_4edb54a3"}}
 
 
-def chat_request(schemas, content=OLD_PROMPT) -> dict:
+def chat_request(schemas, content=OLD_PROMPT, ask=ASK) -> dict:
     """An OpenAI Chat Completions request whose history holds a tool call and the stale refusal."""
     call = {"id": "call_1", "type": "function",
             "function": {"name": "skill_view", "arguments": '{"name": "coding-agent-handoff-supervision"}'}}
@@ -2509,13 +2524,26 @@ def chat_request(schemas, content=OLD_PROMPT) -> dict:
         {"role": "assistant", "content": None, "tool_calls": [call]},
         {"role": "tool", "tool_call_id": "call_1", "content": "Requires HERDR_PANE_ID."},
         {"role": "assistant", "content": STALE_REFUSAL},
-        {"role": "user", "content": ASK},
+        {"role": "user", "content": ask},
     ], "tools": [{"type": "function", "function": s} for s in [*schemas, *OTHER_TOOLS]],
         "tool_choice": "auto", "temperature": 0.2, "extra_body": {"prompt_cache_key": "pck_chat"}}
 
 
 def without(request: dict, key: str) -> dict:
     return {k: v for k, v in request.items() if k != key}
+
+
+def tool_name(tool):
+    """The function name a Responses (``name``) or Chat Completions (``function.name``) entry declares."""
+    fn = tool.get("function")
+    return (fn if isinstance(fn, dict) else tool).get("name")
+
+
+def visible(request: dict) -> dict:
+    """``request`` with only its ``delegate_task`` function schema omitted: the visible transport."""
+    return dict(request, tools=[t for t in request["tools"]
+                                if not (isinstance(t, dict) and t.get("type") == "function"
+                                        and tool_name(t) == "delegate_task")])
 
 
 class RoutingCase(GatewayCase):
@@ -2559,7 +2587,8 @@ class RoutingRequestTests(RoutingCase):
         self.assertEqual(before, request)
         self.assertNotIn("herdr_start", before["instructions"])
         routed = self.route(request)
-        self.assertEqual(without(routed, "instructions"), without(request, "instructions"))
+        # ASK is an explicit worker request: only its delegate_task schema is omitted.
+        self.assertEqual(without(routed, "instructions"), without(visible(request), "instructions"))
         self.assertTrue(routed["instructions"].startswith(OLD_PROMPT + "\n\n" + FRAME_START + "\n"))
         self.assertTrue(routed["instructions"].endswith("\n" + FRAME_END))
         note = self.note_of(routed["instructions"])
@@ -2586,7 +2615,7 @@ class RoutingRequestTests(RoutingCase):
     def test_chat_completions_system_text_and_parts_are_extended_exactly(self) -> None:
         request = chat_request(self.schemas)
         routed = self.route(request, api_mode="chat_completions")
-        self.assertEqual(without(routed, "messages"), without(request, "messages"))
+        self.assertEqual(without(routed, "messages"), without(visible(request), "messages"))
         self.assertEqual(routed["messages"][1:], request["messages"][1:])
         system = routed["messages"][0]
         self.assertEqual(system["role"], "system")
@@ -2627,14 +2656,16 @@ class RoutingRequestTests(RoutingCase):
                               ("no tools field", no_tools)):
             with self.subTest(name):
                 routed = self.route(request)
-                self.assertEqual(without(routed, "instructions"), without(request, "instructions"))
+                # Without the native tools the visible request still gets no background substitute.
+                expected = visible(request) if "tools" in request else request
+                self.assertEqual(without(routed, "instructions"), without(expected, "instructions"))
                 note = self.note_of(routed["instructions"])
                 self.assertIn("not available in this request", note)
                 self.assertIn("delegate_task", note)
                 self.assertNotIn(json.dumps(str(self.project)), note)
         chat = chat_request([])
         routed = self.route(chat, api_mode="chat_completions")
-        self.assertEqual(routed["tools"], chat["tools"])
+        self.assertEqual(routed["tools"], visible(chat)["tools"])
         self.assertIn("not available in this request", routed["messages"][0]["content"])
 
     def test_unsupported_or_malformed_provider_shapes_are_left_unchanged(self) -> None:
@@ -2736,6 +2767,298 @@ class RoutingScopeTests(RoutingCase):
         self.assertNotIn(projects[16], note)
         self.assertIn("and 24 more", note)
         self.assertLess(len(note), 4000)
+        deferred = self.note_of(self.route(responses_request(BRIDGE_TOOLS))["instructions"])
+        self.assertIn("tool_describe(names=", deferred)
+        self.assertLess(len(deferred), 4000)
+
+
+ORDINARY = "Summarize the dotfiles README."
+
+
+class RoutingSelectionTests(RoutingCase):
+    """Per-request transport selection: an explicit visible-worker request omits only the
+    ``delegate_task`` function schema. Synthetic requests, not Matrix-to-pane evidence."""
+
+    @staticmethod
+    def surface(api_mode) -> str:
+        return "instructions" if api_mode == "codex_responses" else "messages"
+
+    def assert_selected(self, request, api_mode="codex_responses") -> dict:
+        routed = self.route(request, api_mode=api_mode)
+        surface = self.surface(api_mode)
+        self.assertIn(FRAME_START, str(routed[surface]))
+        self.assertIn("delegate_task", [tool_name(t) for t in request["tools"]])
+        self.assertEqual(without(routed, surface), without(visible(request), surface))
+        return routed
+
+    def assert_tools_kept(self, request, api_mode="codex_responses") -> dict:
+        routed = self.route(request, api_mode=api_mode)
+        surface = self.surface(api_mode)
+        self.assertIn(FRAME_START, str(routed[surface]))  # the routing note still applies
+        self.assertEqual(without(routed, surface), without(request, surface))
+        return routed
+
+    def both(self, ask):
+        return (("codex_responses", responses_request(self.schemas, ask=ask)),
+                ("chat_completions", chat_request(self.schemas, ask=ask)))
+
+    def test_visible_worker_request_omits_only_delegate_in_both_shapes(self) -> None:
+        for api_mode, request in self.both(ASK):
+            with self.subTest(api_mode):
+                routed = self.assert_selected(request, api_mode)
+                self.assertEqual(len(routed["tools"]), len(request["tools"]) - 1)
+                self.assertNotIn("delegate_task", [tool_name(t) for t in routed["tools"]])
+
+    def test_natural_request_forms_select_the_visible_transport(self) -> None:
+        for ask in ("Have a worker take a look at the dotfiles README.",
+                    "  have   a WORKER take a look\nat the dotfiles readme  ",
+                    "Have a worker take a look at the dotfiles README!!",
+                    "Get a worker to review the README",
+                    "Ask a coding agent to check the install steps.",
+                    "Start a worker on the README review",
+                    "Launch a visible Claude worker for this",
+                    "Spawn a new worker to read the README",
+                    "Use a worker to check the README.",
+                    "Can you have a worker take a look at the README?",
+                    "Could you please get a worker on this?",
+                    "Would you start a Hermes worker to review it",
+                    "Please have a worker look at the README",
+                    "I want a worker to look at the README",
+                    "I\u2019d like a worker to review this.",
+                    "Hey Hermes, have a worker take a look at the README",
+                    "Open a visible pane and review the README"):
+            for api_mode, request in self.both(ask):
+                with self.subTest(ask=ask, api_mode=api_mode):
+                    self.assert_selected(request, api_mode)
+
+    def test_ordinary_or_incidental_text_keeps_exact_tools(self) -> None:
+        for ask in (ORDINARY,
+                    "Summarize the README section about workers.",
+                    "What does a worker do here?",
+                    "The worker said the README is stale.",
+                    '"Have a worker take a look" is what the README says to type.',
+                    "README excerpt:\n> Have a worker take a look at the install steps.",
+                    "Don't have a worker do it; answer directly.",
+                    "Use the agent's summary to answer.",
+                    "Thanks! What did you find in the README?"):
+            for api_mode, request in self.both(ask):
+                with self.subTest(ask=ask, api_mode=api_mode):
+                    self.assert_tools_kept(request, api_mode)
+        partial = responses_request(self.schemas[:1], ask=ORDINARY)
+        self.assert_tools_kept(partial)
+        image_only = chat_request(self.schemas)
+        image_only["messages"][-1] = {"role": "user", "content": [
+            {"type": "image_url", "image_url": {"url": "data:image/png;base64,AAAA"}}]}
+        self.assert_tools_kept(image_only, "chat_completions")
+
+    def test_only_the_current_user_message_selects(self) -> None:
+        # The earlier user request, the stale assistant fallback and tool output never select.
+        later = responses_request(self.schemas, ask="Thanks, what did it find?")
+        later["input"] += [
+            {"type": "function_call", "call_id": "call_2", "name": "skill_view", "arguments": "{}"},
+            {"type": "function_call_output", "call_id": "call_2", "output": ASK},
+            {"type": "message", "role": "assistant", "status": "completed",
+             "content": [{"type": "output_text", "text": ASK}]}]
+        self.assert_tools_kept(later)
+        chat = chat_request(self.schemas, ask="Thanks, what did it find?")
+        chat["messages"] += [{"role": "assistant", "content": ASK},
+                             {"role": "tool", "tool_call_id": "call_1", "content": ASK}]
+        self.assert_tools_kept(chat, "chat_completions")
+        # Every tool-loop request of the worker turn carries the same choice, after herdr_start too.
+        loop = responses_request(self.schemas)
+        loop["input"] += [
+            {"type": "function_call", "call_id": "call_2", "name": "herdr_start", "arguments": "{}"},
+            {"type": "function_call_output", "call_id": "call_2", "output": '{"worker": "w1"}'},
+            {"type": "message", "role": "assistant", "status": "completed",
+             "content": [{"type": "output_text", "text": STALE_REFUSAL}]}]
+        self.assert_selected(loop)
+        chat_loop = chat_request(self.schemas)
+        chat_loop["messages"] += [
+            {"role": "assistant", "content": None, "tool_calls": [
+                {"id": "call_2", "type": "function", "function": {"name": "herdr_start", "arguments": "{}"}}]},
+            {"role": "tool", "tool_call_id": "call_2", "content": '{"worker": "w1"}'}]
+        self.assert_selected(chat_loop, "chat_completions")
+
+    def test_explicit_background_keeps_the_delegate_transport(self) -> None:
+        for ask in ("Have a worker review the README in the background",
+                    "Get a worker to do a background-only review",
+                    "Have a worker do a background review of the README.",
+                    "Can you have a worker run this as a BACKGROUND task?",
+                    "Have a background worker review the README"):
+            for api_mode, request in self.both(ask):
+                with self.subTest(ask=ask, api_mode=api_mode):
+                    self.assert_tools_kept(request, api_mode)
+
+    def test_negated_background_or_visible_keeps_the_visible_route(self) -> None:
+        for ask in ("Have a worker take a look at the README, not in the background",
+                    "Have a visible worker review it, not a background review",
+                    "Get a worker on this (no background)",
+                    "Have a worker check the README; don't use a background task",
+                    "Have a visible worker look at the background job docs"):
+            for api_mode, request in self.both(ask):
+                with self.subTest(ask=ask, api_mode=api_mode):
+                    self.assert_selected(request, api_mode)
+
+    def test_framework_messages_are_not_requests(self) -> None:
+        for ask in (f"[ASYNC DELEGATION COMPLETE \u2014 deleg_f140aa41]\n{ASK}",
+                    f"[IMPORTANT: Background process proc_1 completed (exit code 0).]\n{ASK}",
+                    f"[SYSTEM: {ASK}]",
+                    f'[Replying to: "{ASK}"]\n\nThanks'):
+            for api_mode, request in self.both(ask):
+                with self.subTest(ask=ask, api_mode=api_mode):
+                    self.assert_tools_kept(request, api_mode)
+
+    def test_named_delegate_choice_is_reconciled_and_other_choices_kept(self) -> None:
+        for api_mode, request, named, other in (
+                ("codex_responses", responses_request(self.schemas),
+                 {"type": "function", "name": "delegate_task"}, {"type": "function", "name": "herdr_start"}),
+                ("chat_completions", chat_request(self.schemas),
+                 {"type": "function", "function": {"name": "delegate_task"}},
+                 {"type": "function", "function": {"name": "herdr_start"}})):
+            with self.subTest(api_mode):
+                forced = dict(request, tool_choice=named)
+                routed = self.route(forced, api_mode=api_mode)
+                self.assertEqual(routed["tool_choice"], "auto")
+                self.assertEqual(routed["tools"], visible(forced)["tools"])
+                for choice in ("auto", "required", "none", other):
+                    kept = self.route(dict(request, tool_choice=choice), api_mode=api_mode)
+                    self.assertEqual(kept["tool_choice"], choice)
+                ordinary = dict(dict(self.both(ORDINARY))[api_mode], tool_choice=named)
+                self.assertEqual(self.route(ordinary, api_mode=api_mode)["tool_choice"], named)
+
+    def test_unknown_and_non_function_entries_stay_byte_identical(self) -> None:
+        request = responses_request(self.schemas)
+        delegate = responses_tools(OTHER_TOOLS[:1])[0]
+        opaque = [{"type": "web_search"}, {"type": "custom", "name": "delegate_task"}, "opaque-entry",
+                  {"type": "function", "name": "delegate_task_v2", "parameters": {}}, {"type": "function"}]
+        request["tools"] = [*opaque[:2], *request["tools"], *opaque[2:]]
+        routed = self.route(request)
+        self.assertEqual(json.dumps(routed["tools"]),
+                         json.dumps([t for t in request["tools"] if t != delegate]))
+        for entry in opaque:
+            self.assertIn(entry, routed["tools"])
+
+    def test_selection_runs_when_the_note_is_present_and_is_idempotent(self) -> None:
+        for api_mode, request in (*self.both(ASK),
+                                  ("chat_completions", chat_request(self.schemas, content=[
+                                      {"type": "text", "text": OLD_PROMPT}]))):
+            with self.subTest(api_mode=api_mode):
+                once = self.route(request, api_mode=api_mode)
+                self.assertEqual(self.route(once, api_mode=api_mode), once)
+                # The note already present (it dedupes) still gets the visible transport selected.
+                self.assertEqual(self.route(dict(once, tools=request["tools"]), api_mode=api_mode), once)
+
+    def test_outside_scope_or_unsupported_shapes_keep_delegate(self) -> None:
+        request = responses_request(self.schemas)
+        for origin in ({"chat": OTHER_ROOM}, {"platform": "telegram"}, {"cron": "1"}):
+            with self.subTest(origin):
+                self.assert_unrouted(request, **origin)
+        anthropic = {"model": "claude-example", "system": OLD_PROMPT, "max_tokens": 1024,
+                     "messages": [{"role": "user", "content": ASK}], "tools": OTHER_TOOLS}
+        self.assert_unrouted(anthropic, api_mode="anthropic_messages")
+
+
+MARKERS = (("direct", "then use herdr_start"), ("deferred", "tool_describe(names="),
+           ("unavailable", "not available in this request"))
+
+
+class RoutingSurfaceTests(RoutingCase):
+    """Which native entrypoint the note names: all six direct schemas, the progressive-disclosure
+    bridge (tool_describe plus tool_call), or neither. Synthetic requests, not dispatch evidence."""
+
+    def build(self, schemas, api_mode="codex_responses", ask=ORDINARY) -> dict:
+        return (responses_request(schemas, ask=ask) if api_mode == "codex_responses"
+                else chat_request(schemas, ask=ask))
+
+    def surface_of(self, routed, api_mode="codex_responses") -> tuple:
+        note = self.note_of(routed["instructions"] if api_mode == "codex_responses"
+                            else routed["messages"][0]["content"])
+        modes = [mode for mode, marker in MARKERS if marker in note]
+        self.assertEqual(len(modes), 1, note)
+        return modes[0], note
+
+    def surface(self, request, api_mode="codex_responses") -> str:
+        return self.surface_of(self.route(request, api_mode=api_mode), api_mode)[0]
+
+    def test_direct_deferred_and_unavailable_in_both_shapes(self) -> None:
+        direct = self.schemas
+        cases = {
+            "direct": [direct, [*direct, *BRIDGE_TOOLS]],
+            "deferred": [BRIDGE_TOOLS, [DESCRIBE, CALL], [direct[0], *BRIDGE_TOOLS], [*direct[:5], DESCRIBE, CALL]],
+            "unavailable": [[], direct[:5], [SEARCH], [DESCRIBE], [CALL], [SEARCH, DESCRIBE],
+                            [SEARCH, CALL], [*direct[:5], SEARCH, CALL]],
+        }
+        for expected, lists in cases.items():
+            for schemas in lists:
+                for api_mode in ("codex_responses", "chat_completions"):
+                    with self.subTest(expected, names=[s["name"] for s in schemas], api_mode=api_mode):
+                        self.assertEqual(self.surface(self.build(schemas, api_mode), api_mode), expected)
+
+    def test_deferred_bridge_gets_full_guidance_through_describe_and_call(self) -> None:
+        names = json.dumps([s["name"] for s in self.schemas])
+        for api_mode in ("codex_responses", "chat_completions"):
+            with self.subTest(api_mode):
+                request = self.build(BRIDGE_TOOLS, api_mode, ask=ASK)
+                routed = self.route(request, api_mode=api_mode)
+                mode, note = self.surface_of(routed, api_mode)
+                self.assertEqual(mode, "deferred")
+                for text in (f"tool_describe(names={names})",
+                             'tool_call(calls=[{"name": "herdr_start", "arguments": {...}}])',
+                             "skill herdr-gateway:workflow", "HERDR_PANE_ID", "delegate_task", "read-only",
+                             "discovery route", "report exactly", json.dumps(str(self.project)),
+                             "claude-xhigh (claude, default)", "not authorization", "/herdr-yolo"):
+                    self.assertIn(text, note)
+                surface = "instructions" if api_mode == "codex_responses" else "messages"
+                # The worker request still omits only delegate_task; the bridge stays.
+                self.assertEqual(without(routed, surface), without(visible(request), surface))
+                for ask in (ORDINARY, "Have a worker review the README in the background"):
+                    plain = self.build(BRIDGE_TOOLS, api_mode, ask=ask)
+                    kept = self.route(plain, api_mode=api_mode)
+                    self.assertEqual(without(kept, surface), without(plain, surface))
+                    self.assertEqual(self.surface_of(kept, api_mode)[0], "deferred")
+
+    def test_lookalike_entries_and_text_never_count_as_native_or_bridge(self) -> None:
+        def params(**properties):
+            return {"type": "object", "properties": properties}
+
+        mention = {"name": "skill_view", "description": "Use tool_describe and tool_call for herdr_start, "
+                   "herdr_prompt, herdr_wait, herdr_read, herdr_status and herdr_close.",
+                   "parameters": params(name={"type": "string"})}
+        for name, schemas in (
+                ("renamed", [dict(DESCRIBE, name="tool_describe_v2"), dict(CALL, name="tool_call_v2")]),
+                ("one renamed", [DESCRIBE, dict(CALL, name="Tool_Call")]),
+                ("call without calls", [DESCRIBE, dict(CALL, parameters=params(names={"type": "array"}))]),
+                ("describe without names", [dict(DESCRIBE, parameters={"type": "object"}), CALL]),
+                ("names only in a description", [mention])):
+            for api_mode in ("codex_responses", "chat_completions"):
+                with self.subTest(name, api_mode=api_mode):
+                    self.assertEqual(self.surface(self.build(schemas, api_mode), api_mode), "unavailable")
+        request = responses_request([mention])
+        request["tools"] += [{"type": "custom", "name": "tool_describe"}, {"type": "custom", "name": "tool_call"},
+                             *[{"type": "custom", "name": s["name"]} for s in self.schemas]]
+        request["instructions"] += "\nCall tool_describe, then tool_call(calls=[...]) for herdr_start."
+        request["input"][1:1] = [
+            {"type": "message", "role": "assistant", "status": "completed",
+             "content": [{"type": "output_text", "text": "Use tool_describe then tool_call for herdr_start."}]},
+            {"type": "function_call_output", "call_id": "call_0",
+             "output": json.dumps({"tools": {s["name"]: {} for s in self.schemas}})}]
+        self.assertEqual(self.surface(request), "unavailable")
+
+    def test_selection_controls_hold_on_the_deferred_surface(self) -> None:
+        request = responses_request(BRIDGE_TOOLS)
+        forced = dict(request, tool_choice={"type": "function", "name": "delegate_task"})
+        routed = self.route(forced)
+        self.assertEqual(routed["tool_choice"], "auto")
+        self.assertEqual(routed["tools"], visible(forced)["tools"])
+        self.assertEqual(self.route(routed), routed)
+        self.assertEqual(self.route(dict(routed, tools=forced["tools"], tool_choice="auto")), routed)
+        bridge_choice = {"type": "function", "name": "tool_call"}
+        self.assertEqual(self.route(dict(request, tool_choice=bridge_choice))["tool_choice"], bridge_choice)
+        opaque = [{"type": "web_search"}, "opaque-entry", {"type": "custom", "name": "delegate_task"}]
+        request["tools"] = [*opaque[:1], *request["tools"], *opaque[1:]]
+        routed = self.route(request)
+        self.assertEqual(json.dumps(routed["tools"]), json.dumps(visible(request)["tools"]))
+        self.assertEqual(self.surface_of(routed)[0], "deferred")
 
 
 @unittest.skipIf(SESSION_CONTEXT is None or MIDDLEWARE is None, "needs Hermes's managed Python")
@@ -2743,7 +3066,7 @@ class InstalledRoutingContextTests(RoutingCase):
     """The real request chain under the installed runtime's own turn binding
     (``gateway.session_context.set_session_vars``), as the gateway binds a Matrix message."""
 
-    def apply_bound(self, request, dispatch_session="", **source) -> dict:
+    def apply_bound(self, request, dispatch_session="", api_mode="codex_responses", **source) -> dict:
         binding = dict(platform="matrix", chat_id=ROOM, thread_id="", user_id=USER,
                        session_key="agent:main:matrix:room", cron_session="")
         binding.update(source)
@@ -2751,11 +3074,162 @@ class InstalledRoutingContextTests(RoutingCase):
         def turn():
             tokens = SESSION_CONTEXT.set_session_vars(**binding)
             try:
-                return apply_llm_request(self.ctx, request, session_id=dispatch_session)
+                return apply_llm_request(self.ctx, request, api_mode, session_id=dispatch_session)
             finally:
                 SESSION_CONTEXT.clear_session_vars(tokens)
 
         return contextvars.Context().run(turn)
+
+    def test_real_transport_requests_select_the_visible_transport(self) -> None:
+        """Provider requests built by the installed transports (Codex Responses after preflight,
+        Chat Completions) with the real ``delegate_task`` schema. Still not Matrix-to-pane proof."""
+        from agent.transports.chat_completions import ChatCompletionsTransport
+        from agent.transports.codex import ResponsesApiTransport
+        from tools.delegate_tool import DELEGATE_TASK_SCHEMA
+
+        tools = [{"type": "function", "function": s} for s in [*self.schemas, DELEGATE_TASK_SCHEMA]]
+        codex = ResponsesApiTransport()
+
+        def messages(ask):
+            return [{"role": "system", "content": OLD_PROMPT}, {"role": "user", "content": ask}]
+
+        def responses(ask):
+            return codex.preflight_kwargs(codex.build_kwargs(
+                "gpt-example", messages(ask), tools, provider="openai-codex", is_codex_backend=True,
+                base_url="https://chatgpt.com/backend-api/codex"))
+
+        def chat(ask):
+            return ChatCompletionsTransport().build_kwargs("gpt-example", messages(ask), tools)
+
+        native = {s["name"] for s in self.schemas}
+        for api_mode, build in (("codex_responses", responses), ("chat_completions", chat)):
+            with self.subTest(api_mode):
+                request = build(ASK + ".")
+                before = copy.deepcopy(request)
+                self.assertIn("delegate_task", [tool_name(t) for t in request["tools"]])
+                routed = self.apply_bound(request, api_mode=api_mode)
+                self.assertEqual(request, before)
+                names = [tool_name(t) for t in routed["tools"]]
+                self.assertNotIn("delegate_task", names,
+                                 "Visible worker request still offers the invisible delegate transport.")
+                self.assertLessEqual(native, set(names))
+                self.assertEqual(without(routed, "tools").keys(), without(request, "tools").keys())
+                surface = routed.get("instructions") or routed["messages"][0]["content"]
+                self.assertIn("then use herdr_start", surface)
+                self.assertEqual(self.apply_bound(routed, api_mode=api_mode), routed)
+                ordinary = build(ORDINARY)
+                self.assertEqual(self.apply_bound(ordinary, api_mode=api_mode)["tools"], ordinary["tools"])
+                self.assertEqual(self.apply_bound(request, api_mode=api_mode, user_id=OTHER_USER), request)
+
+    def dispatch_bound(self, registry, name, args, dispatch_session="", **source) -> dict:
+        """``registry.dispatch`` (the call a validated tool_call is re-dispatched to) inside the
+        installed runtime's turn binding."""
+        binding = dict(platform="matrix", chat_id=ROOM, thread_id="", user_id=USER,
+                       session_key="agent:main:matrix:room", cron_session="")
+        binding.update(source)
+
+        def turn():
+            tokens = SESSION_CONTEXT.set_session_vars(**binding)
+            try:
+                return registry.dispatch(name, dict(args), session_id=dispatch_session)
+            finally:
+                SESSION_CONTEXT.clear_session_vars(tokens)
+
+        return json.loads(contextvars.Context().run(turn))
+
+    def test_real_progressive_disclosure_routes_through_describe_and_call(self) -> None:
+        """Registry -> progressive assembly -> Codex Responses (after preflight) and Chat
+        Completions -> middleware, then the bridge's own describe and tool_call resolution into the
+        registered handlers. An isolated ``ToolRegistry`` holds only this fixture's handlers (fake
+        settings, fake herdr) and tool search uses its defaults. ``model_tools`` is not imported,
+        since importing it runs live plugin discovery. The resolve, scope and validate steps are
+        the ones ``model_tools._dispatch_bridge_tool`` composes (read statically). Synthetic: no
+        model, Matrix event, live Herdr or worker."""
+        import tools.registry as registry_module
+        import tools.tool_search as ts
+        from agent.transports.chat_completions import ChatCompletionsTransport
+        from agent.transports.codex import ResponsesApiTransport
+        from tools.delegate_tool import DELEGATE_TASK_SCHEMA
+
+        isolated = registry_module.ToolRegistry()
+        defaults = ts.ToolSearchConfig.from_raw(None)
+        names = [s["name"] for s in self.schemas]
+        delegate = {"type": "function", "function": DELEGATE_TASK_SCHEMA}
+        codex = ResponsesApiTransport()
+
+        def messages(ask):
+            return [{"role": "system", "content": OLD_PROMPT}, {"role": "user", "content": ask}]
+
+        with mock.patch.object(registry_module, "registry", isolated), \
+                mock.patch.object(ts, "load_config", lambda: defaults), \
+                mock.patch.object(ts, "load_config_readonly", lambda: defaults):
+            for name in names:
+                isolated.register(name=name, toolset="herdr", schema=self.ctx.schemas[name],
+                                  handler=self.ctx.tools[name])
+            scope = [*isolated.get_definitions(set(names), quiet=True), delegate]
+            assembly = ts.assemble_tool_defs(scope, context_length=900_000, config=defaults)
+            self.assertTrue(assembly.activated)
+            self.assertEqual(assembly.deferred_count, 6)
+            self.assertEqual(sorted(tool_name(t) for t in assembly.tool_defs),
+                             ["delegate_task", "tool_call", "tool_describe", "tool_search"])
+
+            def responses(ask):
+                return codex.preflight_kwargs(codex.build_kwargs(
+                    "gpt-example", messages(ask), assembly.tool_defs, provider="openai-codex",
+                    is_codex_backend=True, base_url="https://chatgpt.com/backend-api/codex"))
+
+            def chat(ask):
+                return ChatCompletionsTransport().build_kwargs("gpt-example", messages(ask), assembly.tool_defs)
+
+            for api_mode, build in (("codex_responses", responses), ("chat_completions", chat)):
+                with self.subTest(api_mode):
+                    request = build(ASK + ".")
+                    wire = {tool_name(t) for t in request["tools"]}
+                    self.assertLessEqual({"delegate_task", "tool_describe", "tool_call"}, wire)
+                    self.assertFalse(set(names) & wire)
+                    before = copy.deepcopy(request)
+                    routed = self.apply_bound(request, api_mode=api_mode)
+                    self.assertEqual(request, before)
+                    surface = routed.get("instructions") or routed["messages"][0]["content"]
+                    self.assertNotIn("not available in this request", surface)
+                    self.assertIn(f"tool_describe(names={json.dumps(names)})", surface)
+                    self.assertIn('tool_call(calls=[{"name": "herdr_start"', surface)
+                    self.assertEqual({tool_name(t) for t in routed["tools"]}, wire - {"delegate_task"})
+                    self.assertEqual(self.apply_bound(routed, api_mode=api_mode), routed)
+                    for ask in (ORDINARY, "Have a worker review the README in the background"):
+                        plain = build(ask)
+                        self.assertEqual(self.apply_bound(plain, api_mode=api_mode)["tools"], plain["tools"])
+
+            # tool_describe answers the six registered schemas, and only from an enabled scope.
+            described = json.loads(ts.dispatch_tool_describe({"names": names}, current_tool_defs=scope,
+                                                             config=defaults))
+            self.assertEqual(sorted(described["tools"]), sorted(names))
+            self.assertNotIn("not_found", described)
+            for name in names:
+                self.assertEqual(described["tools"][name]["parameters"], self.ctx.schemas[name]["parameters"])
+            denied = json.loads(ts.dispatch_tool_describe({"names": names}, current_tool_defs=[delegate],
+                                                          config=defaults))
+            self.assertEqual((denied["tools"], denied["not_found"]), ({}, names))
+
+            # tool_call resolves to the native tool, is scope-gated and schema-validated, and its
+            # re-dispatch reaches the plugin's own origin gate.
+            start = {"task": "readme", "cwd": str(self.project), "prompt": "Review the README."}
+            self.assertEqual(ts.resolve_underlying_call({"calls": [{"name": "herdr_start", "arguments": start}]}),
+                             ("herdr_start", start, None))
+            self.assertIn("herdr_start", ts.scoped_deferrable_names(scope))
+            self.assertNotIn("herdr_start", ts.scoped_deferrable_names([delegate]))
+            self.assertIsNone(ts.validate_deferred_call_args("herdr_start", start))
+            self.assertIsNotNone(ts.validate_deferred_call_args("herdr_start", {"task": 1}))
+            self.assertEqual(ts.resolve_underlying_call({"calls": [{"name": "herdr_status", "arguments": {}}]}),
+                             ("herdr_status", {}, None))
+            self.assertEqual(self.dispatch_bound(isolated, "herdr_status", {}, "s1", session_id="s1"),
+                             {"ok": True, "workers": []})
+            self.assertEqual(self.dispatch_bound(isolated, "herdr_status", {}, "s1", session_id="s0")
+                             .get("error_code"), "origin_stale")
+            calls = len(self.herdr_calls())
+            self.assertEqual(self.dispatch_bound(isolated, "herdr_start", start, chat_id=OTHER_ROOM)
+                             .get("error_code"), "origin_not_authorized")
+            self.assertEqual(len(self.herdr_calls()), calls)
 
     def test_real_chain_routes_only_the_admitted_runtime_binding(self) -> None:
         request = responses_request(self.schemas)

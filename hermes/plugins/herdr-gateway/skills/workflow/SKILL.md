@@ -18,6 +18,21 @@ default preset unless the person expressly selects another) instead of asking fo
 internals or a new ticket. If the herdr tools are missing from this request, or one of
 them refuses, report that exact blocker. The routing note guides; it never authorizes.
 
+When the person's current message explicitly asks for a worker and not for background
+work, the gateway leaves `delegate_task` out of that request's tools on purpose. Use
+`herdr_start`, or report the herdr blocker. Never treat the missing background tool as a
+reason to refuse. An explicit background request, or ordinary conversation, keeps it.
+
+The herdr tools may be listed directly, or deferred behind Hermes's tool bridge, in which
+case `herdr_*` schemas are absent but `tool_describe` and `tool_call` are present. Deferred
+is not missing. Describe all six first:
+`tool_describe(names=["herdr_start", "herdr_prompt", "herdr_wait", "herdr_read", "herdr_status", "herdr_close"])`.
+Then make every herdr call through `tool_call`, for example
+`tool_call(calls=[{"name": "herdr_start", "arguments": {...}}])`, with the described
+arguments. Every step below works the same way through `tool_call`. If describe or call
+reports a herdr tool absent, disabled or refused, report exactly that. Don't fall back, and
+don't say a worker started unless `herdr_start` returned one.
+
 1. **Start only for authorized work.** Use `herdr_start` once the conversation has
    agreed what to do. Give the worker a bounded brief: goal, permitted directory,
    constraints, stopping point and what to report back. Never forward an open-ended

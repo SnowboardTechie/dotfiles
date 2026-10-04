@@ -1,5 +1,5 @@
 name: herdr-gateway
-version: 0.5.0
+version: 0.5.1
 manifest_version: 2
 api_version: 1
 description: >-
@@ -9,7 +9,10 @@ description: >-
   workers start with smart approvals; the native /herdr-yolo command lets that
   person switch one owned worker's session YOLO bypass, verified from its status.
   An llm_request middleware adds a bounded routing note to an admitted Matrix
-  origin's provider requests so explicit worker requests use the native tools.
+  origin's provider requests, and omits delegate_task from a request whose
+  current user message explicitly asks for a (non-background) worker, so
+  explicit worker requests use the native tools, directly or through
+  Hermes's tool_describe/tool_call bridge when they are deferred.
 author: Steven Terrana (upstream hermes-herdr-plugin); hardened adaptation by Bryan Thompson
 license: MIT
 homepage: https://github.com/steven-terrana/hermes-herdr-plugin

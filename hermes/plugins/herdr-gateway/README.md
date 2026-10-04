@@ -42,7 +42,7 @@ request's instructions when, and only when, the request comes from a non-delegat
 Matrix origin that the current settings admit. The note:
 
 - selects the native `herdr_*` tools and skill `herdr-gateway:workflow` for an explicit
-  worker request;
+  worker request, through whichever entrypoint the request actually offers (see below);
 - says a missing caller pane is normal in Matrix, forbids substituting `delegate_task`, a
   background task or the CLI helper, and tells the model to disregard earlier refusals made
   for that reason;
@@ -50,15 +50,63 @@ Matrix origin that the current settings admit. The note:
   the configured presets (names, kinds, default), without asking for internals or a new ticket.
   The default preset stays the default, and another preset is used only when expressly
   selected;
-- when the request does not declare all six `herdr_*` tools, instead says they are not
-  available in this request. It never adds tool schemas.
+- names one of three native entrypoints, decided from the request's own function schemas.
+  It never adds tool schemas.
 
-It is instructions, not authorization: every `herdr_*` call is still authorized by the
-handlers, and refusals remain blockers. No history, tool, model or cache-key field changes.
-Supported request shapes are Codex Responses (`instructions`) and Chat Completions (a leading
-system or developer message). Other shapes, such as native Anthropic `system`, are left
-unchanged. A model can still ignore an instruction, and the first routed request after
-activation or a settings change misses the provider's cached prompt prefix once (see
+| Entrypoint | When | Note says |
+|---|---|---|
+| direct | all six `herdr_*` function schemas are declared | use `herdr_start`, then `herdr_wait`/`herdr_read`/`herdr_status`/`herdr_prompt`/`herdr_close` |
+| deferred | not all six, but both bridge functions are declared: `tool_describe` (taking `names`) and `tool_call` (taking `calls`) | `tool_describe(names=[all six herdr_* names])`, then `tool_call(calls=[{"name": "herdr_start", "arguments": {...}}])`, and supervise through `tool_call` |
+| unavailable | neither | the herdr tools are not available in this request (the existing blocker) |
+
+Hermes's progressive tool disclosure (`tools/tool_search.py`) defers every plugin tool. It
+replaces them in the model-visible array with `tool_search`, `tool_describe` and `tool_call`
+(Codex wires `tool_search` as `hermes_tool_search`). The configured toolsets can select
+`herdr` while a request still declares no direct `herdr_*` schema. Describing a tool doesn't
+make it first-class: it stays callable only through `tool_call`, whose dispatch runs the
+normal policy, hooks and approvals. The bridge is a discovery route, not proof that the
+herdr tools are enabled. If `tool_describe` or `tool_call` reports one absent, disabled or
+refused, the note says to report exactly that, with no background substitute. Only declared
+`type: function` entries count. A name inside a description, a non-function entry, a partial
+bridge, `tool_search` alone, or cached assistant and tool text is never treated as
+availability. A partial direct surface plus the full bridge is deferred, and all six direct
+schemas win. In the deferred case, the gateway's real launch is the outer `tool_call` whose
+nested `herdr_start` returns an owned worker. Acceptance correlates that nested name and its
+pane and session, not a first-class `herdr_start` row.
+
+The note alone did not stop a live v0.5.0 request from choosing `delegate_task`. So for the
+same admitted origin the middleware also chooses the transport, per request. When that
+request's most recent user message (a Responses `input_text` message, or Chat Completions
+string or `text` parts) leads with an explicit worker request, it omits only the
+`delegate_task` function schema from that outgoing request. A named `delegate_task`
+`tool_choice` becomes `auto`. Recognized forms are a short, documented pattern rather than a
+classifier: an optional greeting, an optional "can/could/would you" or "please", or "I want /
+need / I'd like", then have, get, ask, start, launch, spawn, use, send, open, spin up or fire
+up, then a worker, coding agent or pane. Case, whitespace and curly apostrophes don't matter.
+Only the first 400 characters are inspected:
+
+- a request that mentions `background` there (a background worker, background-only, a
+  background review) keeps `delegate_task`, unless it negates background or says `visible`;
+- ordinary conversation, research, quoted README text, assistant history, tool output and
+  framework messages that start with `[` (async-delegation and process completions,
+  `[Replying to …]` quotes) never select. So a worker request sent as a Matrix reply keeps
+  the note-only behavior;
+- every tool-loop request carrying that same user message gets the same choice, including
+  after `herdr_start`;
+- a visible request gets no `delegate_task` on any entrypoint. With the bridge it gets the
+  deferred route; with neither the six tools nor the bridge, the note reports the blocker.
+
+Everything else stays as it was: all other schemas (unknown and non-function entries
+byte-identical), other `tool_choice` values, history, model and cache keys. Hermes's tool
+registry, cached tool grants, persisted prompt, permissions and config are never changed.
+
+It is instructions and transport selection, not authorization. Every `herdr_*` call is still
+authorized by the handlers, and refusals remain blockers. Supported request shapes are Codex
+Responses (`instructions`) and Chat Completions (a leading system or developer message).
+Other shapes, such as native Anthropic `system`, are left unchanged. A model can still
+ignore an instruction or decline to call a tool. The first routed request after activation or
+a settings change misses the provider's cached prompt prefix once, and so does an explicit
+worker request whose narrower tool list differs from the previous request's (see
 `SECURITY.md`).
 
 ## Native command: `/herdr-yolo`
@@ -278,7 +326,7 @@ diverges as follows.
 | Any model-supplied `kind` (Hermes included) launched with no runtime check | Only operator presets. Hermes workers pass preflight, then native `/status` admission before any brief, with the session and process bound and re-proven before later input |
 | No approval-mode control | Smart by default. A person's native `/herdr-yolo` command changes one owned Hermes worker's session YOLO, verified from its own `/status`. No model tool can do it |
 | No close | `herdr_close`: identity-verified, owned-only, absence read back, idempotent |
-| No request routing | `llm_request` middleware adds a bounded native-routing note to an admitted Matrix origin's provider requests |
+| No request routing | `llm_request` middleware adds a bounded native-routing note to an admitted Matrix origin's provider requests and omits `delegate_task` from an explicit visible-worker request |
 
 Upstream was not contacted and has not reviewed this adaptation.
 
@@ -286,7 +334,8 @@ Upstream was not contacted and has not reviewed this adaptation.
 
 ```bash
 python3 -m unittest hermes.test_herdr_gateway_plugin hermes.test_hermes_cli_status   # host Python
-~/.hermes/hermes-agent/venv/bin/python -m unittest hermes.test_herdr_gateway_plugin
+# The supervised gateway's managed generation (not a sibling venv):
+~/.hermes/hermes-agent/.hermes/bin/hermes --run-module unittest discover -s hermes -p test_herdr_gateway_plugin.py
 hermes plugins doctor --ci hermes/plugins/herdr-gateway
 hermes plugins validate hermes/plugins/herdr-gateway
 ```
@@ -298,7 +347,14 @@ and also run `/herdr-yolo` through the installed `gateway.session_context` bindi
 Python they use a stand-in with the same API. The routing tests send synthetic Codex Responses
 and Chat Completions requests through the registered middleware. Under managed Python that is
 the real `hermes_cli.middleware` request chain and dispatcher, with only plugin discovery
-replaced. The fake `herdr` honors `--lines` and echoes
+replaced. There, one test also builds both requests with the installed transports (Codex
+`build_kwargs` plus preflight, and Chat Completions `build_kwargs`) and the real
+`delegate_task` schema. Another registers the six handlers in an isolated `ToolRegistry`,
+runs the real progressive assembly and both transports, and routes the result. It then
+drives the bridge's own `dispatch_tool_describe`, `resolve_underlying_call`,
+`scoped_deferrable_names` and `validate_deferred_call_args`, and re-dispatches into the
+plugin's origin gate. `model_tools` is never imported, because importing it runs live plugin
+discovery. The fake `herdr` honors `--lines` and echoes
 slash commands as the CLI does. `hermes/test_hermes_cli_status.py` compiles only the real
 `_show_session_status`, read statically, and checks the runtime patch's exact preimage and
 postimage. It also compiles the real idle submit path (`_tui_run_slash_input`,
