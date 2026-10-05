@@ -150,6 +150,20 @@ The prior-art table is the input to Phase 2, not an afterthought.
 
 ## Phase 2 — Draft
 
+### Consumer-first relationship and collection decisions
+
+Before drafting the selected shape, apply these checks learned from Billy's relationship-model feedback:
+
+- Show a minimal payload near the opening and concrete examples for serious alternatives. Describe structures directly rather than introducing shorthand such as “kind-keyed arrays.” Use actual TypeSpec for the selected representation and reconcile its optional/null types with the prose.
+- Separate category/direction from subtype, and entity identity from connection metadata. Demonstrate what an entry communicates without its subtype before deciding that subtype is required.
+- Walk a realistic mixed-label example. Ask how often consumers read or update one kind before giving per-kind access or patch isolation deciding weight; reassess the trade-off when category grouping narrows the update boundary. Unknown usage frequency remains unknown, not an invented requirement.
+- Distinguish optional representational capability from provider obligations. Reverse fields do not inherently require mirrored storage, synchronization, complete lists, target lookup, or graph maintenance. Preserve established protocol-wide rules without adding implementation mandates.
+- Separate optionality, defaults, and inference. Dates do not automatically determine status; omitted fields do not silently select defaults.
+- Distinguish adopter requests, supplied examples, documented product behavior, and illustrative scenarios. Verify external analogies field by field. Custom values preserve flexibility without requiring a speculative standard taxonomy; overlapping subtype labels are not automatically defects.
+- Scope traversal claims to supplied entries. Uniform iteration does not guarantee complete graph discovery or containment when the selected relationship kinds include sponsorship.
+
+For source and example methods, load `review-feedback-management` and its `references/decision-document-review.md`. After detailed deliberation, implementation handoffs must pass `coding-agent-handoff-governance`'s independent decision-preservation gate; a design summary alone is not enough. Billy-feedback work uses explain-and-incorporate mode rather than an unsolicited recommendation loop.
+
 **Input:** the prior-art table from Phase 1.
 
 **Lead with Decision Drivers.** Before drafting shapes, open the spec
