@@ -107,6 +107,26 @@ by default; the Sol parent is already the independent acceptance context.
 
 ## Procedure
 
+### Continuation and decision boundaries
+
+When Bryan selects a worker, settles the plan, and says to proceed, execute the
+handoff rather than returning a prompt for him to carry. Verify worker delivery;
+only a real transport/capacity blocker or an explicit prompt-only request
+justifies stopping at text. A planning artifact's earlier execution-disabled
+status must not erase a later explicit implementation instruction.
+
+A scope boundary stops applying an unapproved change, not ordinary investigation
+of its remedies. Before escalating a blocked candidate, inspect upstream fixes,
+compatibility requirements and the actual affected call paths; perform isolated
+probes when already authorized. Preserve the candidate and return a concrete,
+evidence-backed decision only where implementation would cross the boundary.
+Do not ask permission merely to investigate the next recovery step.
+
+When Bryan interrupts with a direct question about the work or agent behavior,
+answer that question before further tools. Frustration is not authorization to
+cross an explicit scope boundary, and additional activity is not a substitute
+for answering.
+
 ### 1. Bind one governing ticket
 
 Reuse the ticket supplied by `issue-work`. Outside that umbrella, search the
