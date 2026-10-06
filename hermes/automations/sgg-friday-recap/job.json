@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "management": "cronjob_manage; standalone finite pilot, not the fleet reconciler",
+  "name": "SGG Friday Recap",
+  "schedule": "0 11 * * 5",
+  "timezoneRequirement": "America/Los_Angeles",
+  "promptFile": "prompt.md",
+  "repeat": 5,
+  "pilotFridayRuns": 4,
+  "verificationRuns": 1,
+  "deliver": "matrix:!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU",
+  "skills": ["vault-pkm", "voice-bryan"],
+  "enabled_toolsets": ["file", "terminal", "granola", "skills", "no_mcp"],
+  "workdir": "/Users/bryan/code/sgg",
+  "attach_to_session": true,
+  "continuity": false,
+  "inferencePolicy": "Unpinned; follow the configured Hermes cron default. No new model pin authorized.",
+  "initiallyPaused": true,
+  "continuationOrigin": {
+    "platform": "matrix",
+    "chat_id": "!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU",
+    "chat_name": "SGG",
+    "user_id": "@bryan:snowboardtechie.com",
+    "thread_id": null
+  }
+}
