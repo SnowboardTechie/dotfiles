@@ -155,7 +155,9 @@ existing `~/.bashrc` (Omarchy's designated personal-additions section) that
 loads the portable aliases from `dot-config/shell/aliases.sh`, a separate
 guarded Ble.sh source hook that becomes active when the `blesh` package is
 installed, the Omarchy-specific Herdr configuration and Glyph Rail module
-links, a repository-owned shell service that suspends after 45 minutes while
+links (account usage is read from Studio over bounded, key-only SSH without
+copying provider credentials; host identity remains local), a repository-owned
+shell service that suspends after 45 minutes while
 honoring Stay Awake and idle inhibitors, and a cleanup that removes only the
 retired Hindsight / context-mode / claude-mem entries from Claude, Pi, and
 OpenCode settings. It does not install packages or replace unrelated Omarchy-owned

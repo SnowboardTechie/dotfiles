@@ -137,7 +137,7 @@ codex_command = 'command = "~/.config/herdr/codex-usage.py"'
 check("config.toml includes Codex usage", codex_command in config_text)
 check(
     "config-omarchy.toml includes Codex usage",
-    codex_command in omarchy_config_text,
+    "~/.config/herdr/codex-usage.py" in omarchy_config_text,
 )
 check(
     "Codex usage leads with the U+EC81 OpenAI glyph",

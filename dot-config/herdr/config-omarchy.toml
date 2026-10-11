@@ -89,10 +89,11 @@ prompt_new_tab_name = false
 mouse_capture = true
 
 # Glyph Rail: status modules inherit the active terminal palette.
+# Account usage is collected on Studio; clients never need copied credentials.
 tab_bar_right = [
-  { type = "command", command = "~/.config/herdr/claude-usage.sh", interval_seconds = 60, timeout_seconds = 5 },
-  { type = "command", command = "~/.config/herdr/codex-usage.py", interval_seconds = 60, timeout_seconds = 5 },
-  { type = "command", command = "~/.config/herdr/openrouter-spend.py", interval_seconds = 60, timeout_seconds = 5 },
+  { type = "command", command = "ssh -o BatchMode=yes -o ConnectTimeout=3 bryan@bryans-mac-studio '~/.config/herdr/claude-usage.sh'", interval_seconds = 60, timeout_seconds = 10 },
+  { type = "command", command = "ssh -o BatchMode=yes -o ConnectTimeout=3 bryan@bryans-mac-studio '~/.config/herdr/codex-usage.py'", interval_seconds = 60, timeout_seconds = 10 },
+  { type = "command", command = "ssh -o BatchMode=yes -o ConnectTimeout=3 bryan@bryans-mac-studio '~/.config/herdr/openrouter-spend.py'", interval_seconds = 60, timeout_seconds = 10 },
   { type = "command", command = "~/.config/herdr/host-label.sh", interval_seconds = 3600, timeout_seconds = 2 },
   { type = "datetime", format = "󰥔 %H:%M" },
 ]
