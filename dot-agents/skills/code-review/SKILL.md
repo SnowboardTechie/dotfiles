@@ -186,6 +186,11 @@ Optional suggestions do not require withholding approval. When a blocker's fix
 lands outside the candidate (prerequisite PRs, a follow-up PR the reviewer
 will open), the author has nothing to change: propose a conditional `APPROVE`,
 not `REQUEST_CHANGES`, and re-choose the event whenever the fix moves.
+When an open choice would change the candidate itself (an overlapping PR
+carries a newer copy of the same work, or the merge order decides what this
+head contains), the head is not what will merge. Propose `COMMENT` that asks
+the question and recommends the order when the evidence points to one. Do not
+approve it, and do not request changes just to hold a question.
 Preparing a draft
 and submitting that review are separate actions; preserve the user's submission
 authorization boundary.
@@ -202,7 +207,9 @@ the saved artifact so links, anchors, and complete code fences remain usable.
 Write the overall review body in Bryan's voice, leading with the judgment.
 Keep routine test counts, execution details, and repeated change or inline-
 comment summaries in the private audit. Include technical detail in the
-publishable body only when it affects the review decision. Any condition on
+publishable body only when it affects the review decision. Planning or tracker
+gaps that do not decide this PR's merge (an unfiled upstream issue, a ticket's
+stale assumption) stay in the private audit. Any condition on
 the event belongs in the body, never only in an inline: list the PRs that must
 merge first as linked, numbered items in merge order. Inlines carry the code
 defect and point back to that list.
@@ -211,13 +218,17 @@ Self-review the publishable text against `voice-bryan` before presenting it:
 body length, no restating the author's own claims back, no opener reused from
 the same author's other reviews that day. The chat handoff opens with the
 drafts themselves, with no narrative or commentary ahead of them: a `Proposed
-event:` line, the review body in a fenced block, then every inline (optional or
-not-recommended ones included) as its exact-head permalink, side, and line
-range, followed by its full text with any suggestion block in a four-backtick
-fence. The saved-draft link comes after. Never summarize an inline or point to
-the note instead of showing it: if the user has to ask where the draft is, the
-handoff failed. Considered-not-posted items, evidence, and explanations stay in
-the saved draft.
+event:` line, the review body as a rendered `>` blockquote, then every inline
+(optional or not-recommended ones included) as its exact-head permalink, side,
+and line range, followed by its full text as a blockquote with any suggestion
+code nested inside the quote. Never put chat drafts in fenced blocks: the
+terminal shows them as raw markdown. Raw copy-paste text lives in the saved
+draft. The saved-draft link comes after. Every later turn that changes or
+discusses the drafts repeats the whole current set the same way, never only
+the changed part. Never summarize an inline or point to the note instead of
+showing it: if the user has to ask to see the drafts, the handoff failed.
+Considered-not-posted items, evidence, and explanations stay in the saved
+draft.
 
 ### Finding gate
 
@@ -226,7 +237,9 @@ candidate violates an authority or causes an observable failure or risk, the
 consequence matters, and the proposed correction materially improves the
 candidate. Do not turn an acknowledged limitation, accepted trade-off,
 imprecise-but-accurate wording, or improvement opportunity into a finding merely
-to produce a comment.
+to produce a comment. Drop an inline whose fix already arrives through a
+decision the body asks for (the newer copy on an overlapping PR, a suggestion
+already pending there).
 
 For test-quality comments, a surviving mutation establishes a coverage gap,
 not a current implementation defect. Check legitimate inputs and the stated
