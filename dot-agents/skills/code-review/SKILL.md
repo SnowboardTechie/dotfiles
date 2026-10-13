@@ -202,9 +202,15 @@ publishable body only when it affects the review decision.
 
 Self-review the publishable text against `voice-bryan` before presenting it:
 body length, no restating the author's own claims back, no opener reused from
-the same author's other reviews that day. The chat handoff is short: proposed
-event, the publishable text, and the saved-draft link. Considered-not-posted
-items, evidence, and explanations stay in the saved draft.
+the same author's other reviews that day. The chat handoff opens with the
+drafts themselves, with no narrative or commentary ahead of them: a `Proposed
+event:` line, the review body in a fenced block, then every inline (optional or
+not-recommended ones included) as its exact-head permalink, side, and line
+range, followed by its full text with any suggestion block in a four-backtick
+fence. The saved-draft link comes after. Never summarize an inline or point to
+the note instead of showing it: if the user has to ask where the draft is, the
+handoff failed. Considered-not-posted items, evidence, and explanations stay in
+the saved draft.
 
 ### Finding gate
 
