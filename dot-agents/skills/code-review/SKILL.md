@@ -182,7 +182,11 @@ can both inspect the code and place the comment.
 Choose the proposed review event from the evidence: `APPROVE` for a completed
 review with no validated blockers; `REQUEST_CHANGES` for validated blocking
 findings; `COMMENT` for unresolved discussion or incomplete review coverage.
-Optional suggestions do not require withholding approval. Preparing a draft
+Optional suggestions do not require withholding approval. When a blocker's fix
+lands outside the candidate (prerequisite PRs, a follow-up PR the reviewer
+will open), the author has nothing to change: propose a conditional `APPROVE`,
+not `REQUEST_CHANGES`, and re-choose the event whenever the fix moves.
+Preparing a draft
 and submitting that review are separate actions; preserve the user's submission
 authorization boundary.
 
@@ -198,7 +202,10 @@ the saved artifact so links, anchors, and complete code fences remain usable.
 Write the overall review body in Bryan's voice, leading with the judgment.
 Keep routine test counts, execution details, and repeated change or inline-
 comment summaries in the private audit. Include technical detail in the
-publishable body only when it affects the review decision.
+publishable body only when it affects the review decision. Any condition on
+the event belongs in the body, never only in an inline: list the PRs that must
+merge first as linked, numbered items in merge order. Inlines carry the code
+defect and point back to that list.
 
 Self-review the publishable text against `voice-bryan` before presenting it:
 body length, no restating the author's own claims back, no opener reused from
