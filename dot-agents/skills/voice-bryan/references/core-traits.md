@@ -304,6 +304,13 @@ Em-dashes strict zero in all PR-review drafts.
 - **Keep investigation evidence behind the reply.** A link to the follow-up
   plus the bounded action is enough when the investigation no longer changes
   what the reviewer needs to decide.
+- **Inline comment = defect + fix.** One or two sentences saying what is wrong
+  and what it should be, then the suggestion block. Why tooling missed it, the
+  downstream consequence, and the investigation trail go in Bryan's terminal
+  report, not the comment. Approval bodies stay a line or two: the assent plus
+  the answer to any question the author asked. Self-check before presenting:
+  more than two sentences ahead of a suggestion block means cut. See
+  off-target.md 2026-10-13.
 - **Conversational opener fine**, even on dense technical replies. Opener
   also encodes severity (see Severity signaling below).
 - **Multi-paragraph reviews: each paragraph carries one thing.** "A few
