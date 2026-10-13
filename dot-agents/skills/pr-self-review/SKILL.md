@@ -71,6 +71,11 @@ ordinary candidate inputs. The delegate invokes that absolute validator before
 admitting a plan or output path beneath that exact validated ticket state
 directory; it never resolves the helper from the implementation checkout.
 
+When the delegate is a Claude Code subagent, tell it to run long verification
+in the foreground. A subagent that backgrounds a job and goes idle doesn't
+resume on its own. A subagent can't write report files, so the parent writes
+`summary.md` from the delegate's final message.
+
 Complete when one acceptance owner is independent of the candidate author and
 all repository roles are verified.
 
