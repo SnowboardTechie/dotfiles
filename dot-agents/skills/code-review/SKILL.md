@@ -183,9 +183,12 @@ Choose the proposed review event from the evidence: `APPROVE` for a completed
 review with no validated blockers; `REQUEST_CHANGES` for validated blocking
 findings; `COMMENT` for unresolved discussion or incomplete review coverage.
 Optional suggestions do not require withholding approval. When a blocker's fix
-lands outside the candidate (prerequisite PRs, a follow-up PR the reviewer
-will open), the author has nothing to change: propose a conditional `APPROVE`,
-not `REQUEST_CHANGES`, and re-choose the event whenever the fix moves.
+already exists outside the candidate, as prerequisite PRs that are open now,
+the author has nothing to change: propose a conditional `APPROVE`, not
+`REQUEST_CHANGES`, and re-choose the event whenever the fix moves. Never
+promise future work in a review ("I'll put up a PR"): either make the fix now,
+before the review is posted, or make it the author's ask, which rules out
+`APPROVE`.
 When an open choice would change the candidate itself (an overlapping PR
 carries a newer copy of the same work, or the merge order decides what this
 head contains), the head is not what will merge. Propose `COMMENT` that asks
