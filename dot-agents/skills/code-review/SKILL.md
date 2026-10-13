@@ -200,6 +200,12 @@ Keep routine test counts, execution details, and repeated change or inline-
 comment summaries in the private audit. Include technical detail in the
 publishable body only when it affects the review decision.
 
+Self-review the publishable text against `voice-bryan` before presenting it:
+body length, no restating the author's own claims back, no opener reused from
+the same author's other reviews that day. The chat handoff is short: proposed
+event, the publishable text, and the saved-draft link. Considered-not-posted
+items, evidence, and explanations stay in the saved draft.
+
 ### Finding gate
 
 Zero findings is a valid successful review. Report only concrete defects: the
