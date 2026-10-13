@@ -187,7 +187,11 @@ and submitting that review are separate actions; preserve the user's submission
 authorization boundary.
 
 Make actionable inline corrections concrete with a small suggestion block when
-the replacement is known and verified. Keep its selected range exact. Separate
+the replacement is known and verified. Keep its selected range exact. An
+inline's anchor, ask, and evidence cover the same lines: when the concrete
+defect is one assertion, ask for that assertion, not the test or file around
+it. A Ponytail whole-file deletion stays in the private audit unless its
+evidence covers the whole file. Separate
 publishable review text from private reviewer provenance and test logs. Inspect
 the saved artifact so links, anchors, and complete code fences remain usable.
 
