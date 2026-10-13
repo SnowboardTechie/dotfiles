@@ -2,6 +2,10 @@
   "schemaVersion": 1,
   "studioLocalHostName": "Bryans-Mac-Studio",
   "nativeMatrix": true,
+  "cronPolicy": {
+    "catchUpMissed": false,
+    "workdayStartPacific": "08:00"
+  },
   "mcpRequirements": {
     "granola": {
       "url": "https://mcp.granola.ai/mcp",
@@ -119,7 +123,7 @@
     {
       "name": "SGG PR Review Reminder",
       "deliveryIntent": "briefing",
-      "schedule": "45 5 * * 2,4",
+      "schedule": "0 8 * * 2,4",
       "model": "gpt-5.6-terra",
       "provider": "openai-codex",
       "promptFile": "automations/sgg-pr-review-reminder/prompt.md",

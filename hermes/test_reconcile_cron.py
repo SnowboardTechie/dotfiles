@@ -15,6 +15,43 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 
+class CronPolicyTest(unittest.TestCase):
+    def manifest(self):
+        return {"cronPolicy": {"catchUpMissed": False, "workdayStartPacific": "08:00"},
+                "cronJobs": [{"name": "Work brief", "schedule": "0 8 * * 1-5",
+                              "continuation": {"chatName": "SGG"}}]}
+
+    def test_healthy_policy_is_read_only(self):
+        with patch.object(MODULE.subprocess, "run") as run:
+            run.return_value.stdout = "false\n"
+            MODULE.reconcile_cron_policy(self.manifest())
+            self.assertEqual(run.call_count, 1)
+
+    def test_repairs_and_reads_back_catchup_policy(self):
+        from types import SimpleNamespace
+        with patch.object(MODULE.subprocess, "run") as run:
+            run.side_effect = [SimpleNamespace(stdout="true\n"),
+                               SimpleNamespace(stdout=""), SimpleNamespace(stdout="false\n")]
+            MODULE.reconcile_cron_policy(self.manifest())
+            self.assertEqual(run.call_args_list[1].args[0],
+                             ["hermes", "config", "set", "cron.catch_up_missed", "false"])
+            self.assertEqual(run.call_count, 3)
+
+    def test_rejects_prework_schedules_before_config_write(self):
+        manifest = self.manifest()
+        manifest["cronJobs"][0]["schedule"] = "45 5 * * 2,4"
+        with patch.object(MODULE.subprocess, "run") as run:
+            with self.assertRaises(SystemExit):
+                MODULE.reconcile_cron_policy(manifest)
+            run.assert_not_called()
+
+    def test_tracked_work_schedules_obey_policy(self):
+        manifest = json.loads(SCRIPT.with_name("manifest.json").read_text())
+        with patch.object(MODULE.subprocess, "run") as run:
+            run.return_value.stdout = "false\n"
+            MODULE.reconcile_cron_policy(manifest)
+
+
 class ValueComparisonTest(unittest.TestCase):
     def test_workdir_symlink_and_resolved_path_match(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

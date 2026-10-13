@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import NoReturn
@@ -175,6 +176,40 @@ def verify_mcp_requirements(manifest: dict) -> None:
                 )
 
 
+def reconcile_cron_policy(manifest: dict) -> None:
+    """Skip stale recurring reports rather than replaying them on wake/resume.
+
+    The scheduler reads this setting on each due scan; no gateway restart is
+    needed. Use the supported config writer instead of editing private YAML.
+    """
+    policy = manifest.get("cronPolicy")
+    if policy is None:
+        return
+    if policy.get("catchUpMissed") is not False:
+        fail("managed cron policy must disable catch-up of missed recurring jobs")
+    if policy.get("workdayStartPacific") != "08:00":
+        fail("managed workday start must be 08:00 Pacific")
+    for definition in manifest.get("cronJobs", []):
+        if (definition.get("continuation") or {}).get("chatName") != "SGG":
+            continue
+        fields = definition["schedule"].split()
+        if (len(fields) != 5 or not fields[0].isdigit()
+                or not fields[1].isdigit() or not 8 <= int(fields[1]) < 17
+                or fields[2:4] != ["*", "*"]
+                or fields[4] not in {"1-5", "2,4", "5"}):
+            fail(f"{definition['name']!r} must run during weekday work hours (08:00–17:00 Pacific)")
+    command = ["hermes", "config", "get", "cron.catch_up_missed"]
+    result = subprocess.run(command, capture_output=True, text=True, check=True)
+    if result.stdout.strip().lower() != "false":
+        subprocess.run(
+            ["hermes", "config", "set", "cron.catch_up_missed", "false"],
+            capture_output=True, text=True, check=True,
+        )
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
+    if result.stdout.strip().lower() != "false":
+        fail("cron.catch_up_missed did not persist as false")
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         fail("usage: reconcile_cron.py MANIFEST")
@@ -190,6 +225,7 @@ def main() -> int:
     from tools.cronjob_tools import cronjob  # pyright: ignore[reportMissingImports]  # noqa: PLC0415
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    reconcile_cron_policy(manifest)
     verify_mcp_requirements(manifest)
     summaries: list[dict[str, str]] = []
     for definition in manifest["cronJobs"]:
