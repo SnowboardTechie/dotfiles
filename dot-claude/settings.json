@@ -81,6 +81,17 @@
     ],
     "defaultMode": "auto"
   },
+  "model": "opus[1m]",
+  "skillOverrides": {
+    "adr-and-spec-coach": "off",
+    "find-skills": "off",
+    "loop-issue": "off",
+    "obsidian": "off",
+    "skill-retrospective": "off",
+    "sprint-deliverable-update": "off",
+    "sync-hold-branch": "off",
+    "weekly-planning": "off"
+  },
   "hooks": {
     "SessionStart": [
       {
@@ -263,6 +274,8 @@
     }
   },
   "effortLevel": "high",
+  "theme": "dark",
+  "skipAutoPermissionPrompt": true,
   "modelSettings": {
     "claude-opus-5-5": {
       "effortLevel": "xhigh"
@@ -270,17 +283,5 @@
     "claude-fable-5-1": {
       "effortLevel": "xhigh"
     }
-  },
-  "theme": "dark",
-  "skipAutoPermissionPrompt": true,
-  "skillOverrides": {
-    "adr-and-spec-coach": "off",
-    "find-skills": "off",
-    "loop-issue": "off",
-    "obsidian": "off",
-    "skill-retrospective": "off",
-    "sprint-deliverable-update": "off",
-    "sync-hold-branch": "off",
-    "weekly-planning": "off"
   }
 }
