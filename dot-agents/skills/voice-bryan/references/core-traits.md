@@ -247,6 +247,13 @@ Three distinct shapes by message type:
   opener. Implicit ask wrapped in substantive context, not "PTAL".
 - **Multi-audience reply (e.g., ETL investigation):** split by @ mention,
   each paragraph addressed to one audience.
+- **Non-engineer reader (PM, product owner):** answer in outcomes: what
+  ships, what it includes, whether the plan or order changes. Give one
+  plain-language reason per claim. No file paths, scripts, workflow names, or
+  build-versus-release mechanics; PR/issue links stay as handles. The
+  technical evidence goes in the report to Bryan, not the draft. Corrected
+  2026-10-13: a release-sequencing reply to the product owner carried a
+  directory path and packaging mechanics.
 
 ### Pushback shape (Slack-specific)
 
