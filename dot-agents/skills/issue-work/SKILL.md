@@ -43,6 +43,17 @@ A request to plan, inspect, review, or advise is not implementation authority.
 Questions and corrections are not authorization. Record the authority mode in
 `progress.md` so resume does not invent or discard it.
 
+Track the user's complete requested delivery shape, not only the current phase.
+When Bryan explicitly requires a draft PR followed by a fresh Claude final
+PR self-review, a pushed branch and Sol-parent review are intermediate states,
+not completion. Publish the authorized draft, verify exact body/base/head/draft,
+then launch the requested read-only Claude review on that exact candidate and
+validate its findings before closeout. The default rule against a redundant
+Claude reviewer does not override this explicit request. Preserve the existing
+correction count across the extra final review; do not reset it or infer merge,
+release, ready-state, or live-comment permission. Do not present an earlier
+plan-only boundary as grounds to ignore a later explicit delivery instruction.
+
 ## State and repository roles
 
 Ticket state:
