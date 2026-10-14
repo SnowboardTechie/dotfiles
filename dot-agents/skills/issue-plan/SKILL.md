@@ -171,7 +171,21 @@ choices inside a polished plan. Cheap, established defaults may be stated and
 confirmed briefly.
 
 If the issue and prior decisions already settle everything important, skip
-manufactured Q&A and proceed to drafting.
+manufactured Q&A and proceed to drafting. Before asking a behavior question,
+check whether the ticket's outcome/acceptance criteria, canonical contract, or
+explicitly named reference implementation already answers it. An alignment
+requirement is not permission to offer retention of the incompatible behavior as
+an equally open option; derive the required behavior and explain compatibility
+impact. Ask only when authoritative sources conflict or leave a material choice.
+
+Separate product decisions from engineering discovery before presenting a plan
+as handoff-ready. Resolve cheap mechanism feasibility, suspected helper defects,
+and concrete consumer-harness commands during planning through bounded read-only
+inspection or scratch/in-memory probes. Do not bury these as "if needed", "choose
+a command", or "verify feasibility" implementation tasks and then ask Bryan to
+settle them. Record what the probe actually established and leave full candidate
+verification to implementation. Classify each apparent open question before
+requesting plan approval.
 
 **Complete when:** every load-bearing decision is either user-settled or explicitly
 recorded as an implementation blocker. A blocker stops the workflow; it may not
