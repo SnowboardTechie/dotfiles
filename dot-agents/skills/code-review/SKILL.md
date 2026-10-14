@@ -274,6 +274,11 @@ prescriptions before correction.
 5. Letting Ponytail smuggle in correctness or security findings.
 6. Re-running every dimension when only a final targeted Risk boundary remains.
 7. Passing a form (comment, doc paragraph, wrapper) because the spec named it.
+8. Measuring a whole slice against the approved plan instead of the ticket's
+   acceptance criteria. When the ticket owner has already declared one side
+   done and that side's production code is unchanged, its added tests and docs
+   are a Ponytail `yagni` candidate as a unit, not file by file (PR 1308: TS
+   tests and README after #1290 had landed the TS side; dropped, 2026-10-14).
 
 ## Verification Checklist
 
