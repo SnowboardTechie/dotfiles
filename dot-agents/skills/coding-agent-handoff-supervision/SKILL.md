@@ -362,7 +362,8 @@ resume a Herdr identity.
 6. Letting a worker-discovered adjacent defect expand the ticket or candidate without a new user decision.
 7. Using "all call sites" as permission for an exhaustive domain audit rather than bounded application of the selected mechanism.
 8. Starting a fresh worker for corrections instead of resuming the recorded one.
-9. Running a generic fresh Claude reviewer after Sol already reviewed the work.
+9. Duplicating Sol's pre-publication acceptance through a generic fresh reviewer.
+   Bryan's required post-draft-PR SGG Claude final review is not this pitfall.
 10. Leaving a settled pane open as a status marker.
 11. Confusing correction allowance with provider capacity.
 

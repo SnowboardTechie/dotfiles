@@ -509,7 +509,8 @@ weaker review, or fabricated completion claim.
    exists.
 2. Handing a single-loop edit to Claude automatically.
 3. Treating independent Claude issue sessions as a global concurrency conflict.
-4. Reviewing once before commit and again through a fresh Claude reviewer.
+4. Duplicating pre-publication acceptance through another generic reviewer.
+   This warning does not apply to the required post-draft-PR SGG Claude final review.
 5. Running full CI after every correction.
 6. Asking for plan or PR permission already carried by an imperative work command.
 7. Treating a worker report or green focused test as final acceptance.
