@@ -177,6 +177,22 @@ manufactured Q&A and proceed to drafting.
 recorded as an implementation blocker. A blocker stops the workflow; it may not
 be deferred into an "approved" plan.
 
+## Recommendation and Dependency Checks
+
+When Bryan asks why an order, design, or dependency is recommended, answer the question before editing the plan. A curiosity question is not approval of a different order. Change a recommendation only after naming the new evidence, changed constraint, explicit preference, or error in its original reasoning; distinguish the corrected fact from any newly proposed choice.
+
+For multi-ticket sequencing, classify each edge before drawing the review stack:
+
+- **Implementation prerequisite:** the child needs a model, API, or behavior supplied by the parent. Cite the inspected symbol, contract, or acceptance criterion.
+- **Integration coordination:** independently buildable changes need a combined regression check. Record the joining point without making every branch inherit both changes.
+- **Scheduling preference:** doing one ticket first may reduce rework. State the expected benefit and uncertainty; do not turn it into a branch dependency or release gate.
+
+Keep the work-order list, PR-base graph, and release boundary separate. A shared-library fix can be worth doing first without requiring every PR to branch from its unmerged head. Conversely, do not reverse the work order merely because the graph needs correction.
+
+Before changing canonical notes, identify whether the source is a verified fact, an explicit user decision, or an agent recommendation. Preserve the existing recommendation during explanatory Q&A unless evidence warrants revision; do not record a question as a user decision.
+
+**Complete when:** every stack edge has a source-backed prerequisite or is explicitly labeled a review convenience, and any changed recommendation names its reason without implying user acceptance.
+
 ## Phase 3: Draft the Canonical Vault Plan
 
 ### 1. Choose the note before writing
