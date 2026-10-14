@@ -194,6 +194,9 @@ carries a newer copy of the same work, or the merge order decides what this
 head contains), the head is not what will merge. Propose `COMMENT` that asks
 the question and recommends the order when the evidence points to one. Do not
 approve it, and do not request changes just to hold a question.
+On a re-review where the author settled every earlier ask and no new finding
+passes the gate, propose `APPROVE` with an empty body: the approval closes the
+loop, and a line that recaps the fixes adds nothing (PR 1299, 2026-10-14).
 Preparing a draft
 and submitting that review are separate actions; preserve the user's submission
 authorization boundary.
