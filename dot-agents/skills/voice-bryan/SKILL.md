@@ -49,6 +49,14 @@ standups remain placeholders pending samples in those channels.
    feels ambiguous. The corpus is the source of truth; `core-traits.md` is the
    distilled summary.
 
+## Complete drafts and revision diffs
+
+When drafting or revising text for Bryan, show the complete, paste-ready draft in the response. A request to change one sentence still requires the entire revised message, application answer, bio, or other drafting unit, not only the replacement sentence. Preserve unchanged wording unless another change is needed or requested. A saved file or a summary of edits does not substitute for showing the draft.
+
+For every revision, also show a separate, concise diff against the immediately preceding draft: exact removed and added wording for each changed passage. Keep the diff outside the clean copy so Bryan can paste the complete draft without editing out annotations. Use plain-text `-` and `+` lines when Markdown does not render. First drafts have no previous version and need no diff. Only provide fragments or omit the diff when Bryan explicitly requests that exception in the current task.
+
+Before sending, verify both outputs are present: (1) the entire updated drafting unit with no placeholders or omitted unchanged paragraphs, and (2) the actual changes, with no unrelated rewrites hidden in the full draft. This applies even when the requested edit is tiny or the surrounding text appeared in the previous response.
+
 ## When uncertain
 
 Present 2 drafts at different registers and ask Bryan to pick. Capture the
