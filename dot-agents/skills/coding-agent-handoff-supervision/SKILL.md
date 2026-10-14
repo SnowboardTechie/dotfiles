@@ -103,7 +103,11 @@ The worker owns:
 
 Do not spend a second Sol implementation session before handoff and then use
 Claude only as reviewer. Do not use a second Claude session to review the first
-by default; the Sol parent is already the independent acceptance context.
+by default outside Bryan's SGG closeout; the Sol parent is already the independent
+pre-publication acceptance context. For SGG issue implementation, `issue-work`
+owns the required sequence: parent acceptance, verified draft PR, fresh Claude
+final PR self-review, parent disposition, and cleanup. That post-publication final
+gate is required, not an optional redundant pre-publication reviewer.
 
 ## Procedure
 
@@ -114,6 +118,12 @@ handoff rather than returning a prompt for him to carry. Verify worker delivery;
 only a real transport/capacity blocker or an explicit prompt-only request
 justifies stopping at text. A planning artifact's earlier execution-disabled
 status must not erase a later explicit implementation instruction.
+
+For Bryan's SGG issue-implementation handoffs, "proceed" executes the established
+complete closeout through the draft PR and fresh Claude final self-review, unless
+he explicitly sets an earlier stopping boundary. Record that delivery authority
+and continue under `issue-work`; do not return "done" at worker settlement or a
+pushed branch. Plan-only and prompt-only requests remain non-execution requests.
 
 A scope boundary stops applying an unapproved change, not ordinary investigation
 of its remedies. Before escalating a blocked candidate, inspect upstream fixes,

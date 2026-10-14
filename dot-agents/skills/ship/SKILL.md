@@ -49,8 +49,11 @@ Completion criteria:
 Record one authority mode:
 
 - `generic`: preserve this skill's explicit publication-approval gate; or
-- `issue-work-authorized`: require `issue-work`'s recorded imperative-work
-  authority plus explicit `labels_authorized` (`false` by default).
+- `issue-work-authorized`: require `issue-work`'s recorded implementation/delivery
+  authority plus explicit `labels_authorized` (`false` by default). This includes
+  Bryan's authorized execution of an approved SGG issue handoff under its
+  established draft-PR closeout, not only a literal `work <URL>` command. Explicit
+  no-publication or earlier stopping boundaries still override that workflow.
 
 ### 2. Verify the branch and exact-candidate review
 
@@ -112,10 +115,13 @@ Ask for approval immediately before the push/API calls unless the user already
 explicitly approved publishing this exact PR in the current task.
 
 A generic request to implement or review code is not approval to publish it. In
-`issue-work-authorized` mode, the recorded imperative `work <issue URL>`
-authority satisfies this gate for ordinary push and one draft PR create/update,
-including title/body synchronization. It does not authorize labels, draft/ready
-transitions on an existing PR, comments, merge, or any other forge mutation.
+`issue-work-authorized` mode, recorded issue-work delivery authority satisfies
+this gate for ordinary push and one draft PR create/update, including title/body
+synchronization. For Bryan's SGG issue work, executing an approved implementation
+handoff carries the established draft-PR closeout unless explicitly withheld;
+do not demand that he repeat the exact `work <issue URL>` wording. It does not
+authorize labels, draft/ready transitions on an existing PR, comments, merge, or
+any other forge mutation.
 
 ### 5. Push
 

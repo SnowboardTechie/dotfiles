@@ -19,9 +19,10 @@ PR through Intake → Plan → Implement → Accept → Publish. Keep durable st
 the ticket workspace and code in an isolated implementation worktree.
 
 The lean path is deliberate: investigate only unresolved questions, use one
-implementation context, run one independent acceptance review, batch corrections,
-run full verification once when stable, and publish under the original work
-authorization.
+implementation context, run independent parent acceptance, batch corrections,
+and run full verification once when stable. For Bryan's SGG issue implementation,
+closeout then includes a verified draft PR and a fresh Claude final PR self-review;
+that required final gate is not a redundant pre-publication reviewer fan-out.
 
 ## Inputs and authority
 
@@ -43,16 +44,18 @@ A request to plan, inspect, review, or advise is not implementation authority.
 Questions and corrections are not authorization. Record the authority mode in
 `progress.md` so resume does not invent or discard it.
 
-Track the user's complete requested delivery shape, not only the current phase.
-When Bryan explicitly requires a draft PR followed by a fresh Claude final
-PR self-review, a pushed branch and Sol-parent review are intermediate states,
-not completion. Publish the authorized draft, verify exact body/base/head/draft,
-then launch the requested read-only Claude review on that exact candidate and
-validate its findings before closeout. The default rule against a redundant
-Claude reviewer does not override this explicit request. Preserve the existing
-correction count across the extra final review; do not reset it or infer merge,
-release, ready-state, or live-comment permission. Do not present an earlier
-plan-only boundary as grounds to ignore a later explicit delivery instruction.
+Track the complete delivery shape, not only the current phase. Bryan's established
+SGG issue-implementation closeout is parent review → verified draft PR → fresh
+Claude final PR self-review → parent validation of findings → resource cleanup.
+Apply it when Bryan authorizes working the issue or executing its approved
+implementation handoff; he need not restate the closeout steps each time. Record
+that workflow and its draft-PR authority at intake. A pushed branch, a completed
+worker turn, and Sol-parent review are intermediate states, not completion.
+Explicit plan-only, prompt-only, no-publication, or other stopping instructions
+override this workflow; outside SGG preserve the ordinary publication gate.
+Preserve the global correction count through final review and do not infer merge,
+release, ready-state, issue mutation, or live-review/comment permission. Do not
+carry an earlier plan-only boundary past later implementation authorization.
 
 ## State and repository roles
 
@@ -326,7 +329,8 @@ Load `pr-self-review` in `pre-pr` mode and pass
 must continue from this value rather than initializing a new allowance. When a
 delegated worker authored the candidate and Sol did not edit it, review directly.
 The Sol parent is the independent acceptance context. Do not launch a generic
-fresh Claude reviewer.
+fresh Claude reviewer in this pre-publication phase. Bryan's SGG final Claude
+review occurs after draft PR publication in Phase 5 and remains required.
 
 The parent runs one integrated review through Standards, Spec, conditional Risk,
 and Ponytail, then performs the independent acceptance-criteria sweep. The
@@ -369,13 +373,35 @@ ticket URL, host, repository, title, vault path, or ticket-state path.
 
 Complete when the publication boundary is explicit and non-duplicative.
 
-## Phase 5 — Publish and close resources
+## Phase 5 — Publish, final-review, and close resources
 
 Load `ship` in `issue-work-authorized` mode; pass the recorded imperative-work
 authority and `labels_authorized: false`. Use the current review summary and
 repository template. Push the exact reviewed branch, create or update one
 reviewable PR, synchronize title/body, skip labels, and read back URL, base,
 head, SHA, state, and intended closing syntax. Do not merge.
+
+For Bryan's authorized SGG implementation handoff, use its recorded complete
+delivery authority rather than demanding an exact `work <URL>` command token.
+Publish one draft PR under `ship`; draft publication is part of that established
+handoff workflow unless Bryan explicitly withheld it.
+
+After verifying the draft PR, start one fresh visible Claude Opus/xhigh session
+for final `pr-self-review` in `pr-url` mode. Its authority is read-only review,
+not edits or live GitHub review submission. Pass the exact PR/base/head/diff
+identity, accepted outcomes, existing verification artifacts, and consumed global
+correction count. Require Standards, Spec, conditional Risk, Ponytail, and an
+independent acceptance sweep. Use existing verified full-gate evidence instead
+of rerunning it unnecessarily. Capacity/transport failure is an incomplete final
+gate: report the blocker, never silently substitute another provider or declare
+the delivery complete.
+
+Sol reads and validates the final artifacts. Route only concrete in-scope blockers
+through the remaining bounded correction allowance; a candidate change requires
+fresh exact-candidate review/verification and PR-body synchronization. Preserve
+draft state. Close the reviewer promptly after collection when it has no concrete
+next turn, and verify resource absence. Verify hosted checks for the current head;
+report pending/failed checks honestly rather than labeling them green.
 
 After readback, close the visible implementation pane with `herdr_worker.py
 close` as soon as it has no concrete next turn. Publication, merge, and live
@@ -385,8 +411,10 @@ only when repository policy permits and unrelated work is safe.
 Send the terminal-completion notification from
 `references/matrix-attention-notifications.md` when that workflow was armed.
 
-Complete when the reviewable PR is remotely verifiable, the candidate SHA
-matches, and handoff-owned resources are closed.
+Complete when the draft PR is remotely verifiable, the candidate SHA matches,
+Bryan's required final Claude review is collected and dispositioned, current
+verification is accurately recorded, and handoff-owned resources are closed.
+Update and synchronize the canonical vault status/index/handoff at that boundary.
 
 ## Compact efficiency record
 
@@ -504,6 +532,7 @@ weaker review, or fabricated completion claim.
 - [ ] Full verification ran once on the stable candidate
 - [ ] Review artifacts match exact candidate identity
 - [ ] Reviewable PR pushed and read back without a redundant approval
+- [ ] SGG closeout includes collected, parent-dispositioned fresh Claude final PR self-review
 - [ ] No merge or unapproved issue/deployment mutation occurred
 - [ ] Worker pane and watcher were released
 - [ ] Compact efficiency record contains factual totals
