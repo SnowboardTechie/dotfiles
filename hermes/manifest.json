@@ -34,6 +34,7 @@
     }
   },
   "scripts": [
+    "check-hermes-status-fix.py",
     "sgg-morning-brief.py",
     "sgg-pr-review-reminder.py",
     "sgg-calendar-events.swift",
@@ -60,6 +61,7 @@
     "hindsight/config.json"
   ],
   "copiedScripts": [
+    "check-hermes-status-fix.py",
     "sgg-morning-brief.py",
     "sgg-pr-review-reminder.py",
     "sgg-pr-review-event.py",
@@ -94,6 +96,21 @@
     "software-development/upstream-contribution-assessment"
   ],
   "cronJobs": [
+    {
+      "name": "Watch Hermes status fix for nightly updates",
+      "deliveryIntent": "alert",
+      "schedule": "20 9 * * *",
+      "model": null,
+      "provider": null,
+      "promptFile": "automations/hermes-status-fix-watch/prompt.md",
+      "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
+      "skills": [],
+      "script": "check-hermes-status-fix.py",
+      "noAgent": true,
+      "enabledToolsets": [],
+      "workdir": "/Users/bryan",
+      "attachToSession": false
+    },
     {
       "name": "Workday Morning Brief",
       "deliveryIntent": "briefing",

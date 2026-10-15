@@ -1,0 +1,1 @@
+Run the model-free upstream Hermes /status fix watcher. Empty stdout means pending or already alerted; deliver non-empty stdout verbatim. Never update Hermes, remove patches, restart services or re-enable nightly updates automatically.
