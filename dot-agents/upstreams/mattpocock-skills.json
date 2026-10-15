@@ -33,7 +33,7 @@
         "Requires explicit invocation in both frontmatter and body; upstream leaves grilling model-invocable.",
         "Adds a verified/inferred/proposed/accepted epistemic-status table, matching Bryan's existing planning discipline.",
         "Adds an explicit reopening rule: a correction invalidates the decision's basis, not just its wording.",
-        "Adds a batching test — batch only questions whose answers do not reshape each other — instead of always asking the whole frontier.",
+        "Asks exactly one question per round, always, instead of the whole frontier; independence orders the questions, it never batches them.",
         "Requires genuine options, trade-offs, and a reasoned recommendation per consequential question.",
         "Folds upstream `to-questionnaire` in as a disclosed reference owned by grilling rather than a top-level skill, and forbids sending the questionnaire.",
         "Routes oversized efforts to `wayfinder` rather than silently charting a map.",
@@ -48,7 +48,7 @@
         "Questionnaire document structure and most-important-first ordering."
       ],
       "rejectedUpstreamRules": [
-        "Unconditionally asking the entire frontier every round — batching an unsettled foundation produces answers the user must retract.",
+        "Asking more than one question per round — Bryan requires one at a time, and batching even independent questions is refused.",
         "Writing the questionnaire to a fixed filename in the current directory; the path is chosen explicitly and may be vault-native."
       ],
       "watchedFiles": [

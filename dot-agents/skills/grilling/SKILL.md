@@ -30,7 +30,7 @@ Work in rounds:
 
 1. Recompute the frontier.
 2. Research every fact the frontier needs (see *Facts are your job*).
-3. Ask the frontier.
+3. Ask the first frontier question. One.
 4. Bryan's answers settle decisions, push the frontier outward, and unblock what
    depended on them. Return to 1.
 
@@ -38,20 +38,16 @@ A question whose answer depends on another question still open in this round
 belongs to a *later* round. Putting it now invites an answer Bryan will have to
 retract.
 
-### How many questions per round
+### One question per round
 
-Two shapes, and picking the wrong one is the most common way this goes bad:
+**Ask exactly one question per round. Always.** Bryan has said this every time
+a session batched, and "they are independent" is not an exception he accepts.
+A round is one `❓` block with its options and one recommendation, then stop
+and wait for his answer.
 
-- **One at a time** when a single answer would reshape every other open
-  question — scope, the governing model, build-versus-buy, which system owns the
-  data. Asking five questions around an unsettled foundation produces five
-  answers you throw away.
-- **A full round** when the frontier questions are *genuinely independent*: any
-  answer to one leaves the others unchanged. Then batching saves Bryan's time
-  and reads as respect for it.
-
-Test before batching: *if Bryan answered Q1 the other way, would Q3 still make
-sense as written?* If not, they belong in different rounds.
+Independence changes the *order* you ask in, never the count. Put the question
+whose answer would reshape the most others first. Hold the rest, re-check their
+facts if his answer changes them, and ask the next one on its own.
 
 ### Question format
 
