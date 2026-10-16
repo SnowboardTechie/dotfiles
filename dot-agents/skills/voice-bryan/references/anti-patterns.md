@@ -23,7 +23,7 @@ voice. Drafts written AS Bryan must omit them entirely. Substitute based on
 what the em-dash was doing:
 
 - Clarifying aside → parens or comma. Example: "Bryan (the user) prefers..."
-- Joining clauses → semicolon, period, or comma + conjunction
+- Joining clauses → period or comma + conjunction
 - Emphasis or pause → colon or period
 - Range or interruption → period
 
@@ -43,6 +43,12 @@ pattern.
 **Scope note:** This rule applies to drafts written AS Bryan. It does not impose
 a punctuation rule on the agent's ordinary conversation outside Bryan-voice
 drafting.
+
+### Semicolons
+
+Avoid semicolons in human-facing messages, per Bryan's explicit preference.
+Split the clauses into sentences or connect them with a comma and conjunction.
+Do not substitute a semicolon when removing an em-dash.
 
 ### Bot-like status openers in human replies
 

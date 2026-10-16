@@ -62,10 +62,12 @@ Channel-specific phrasings live in the per-channel sections below.
 
 - **No em-dashes. Strict zero.** Bryan does not use em-dashes in his voice.
   Drafts written AS Bryan must omit them entirely. Substitute with commas,
-  periods, parens, colons, or semicolons depending on what the em-dash was
+  periods, parens, or colons depending on what the em-dash was
   doing. Confirmed by Bryan 2026-05-28; occasional em-dashes preserved in his
   posted PR-body samples are slips, not endorsements. See `anti-patterns.md`
   for substitution mapping.
+- Avoid semicolons in messages to other people. Use a period or a comma with
+  a conjunction instead. Bryan explicitly prefers this across human-facing communication.
 - Contractions OK across all channels ("don't" / "doesn't" / "we'll").
 - Slack DM register goes lower than Slack channel register: "Ya"
   specifically, not "Yeah" / "Yep" / "Yes."

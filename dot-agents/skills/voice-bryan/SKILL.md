@@ -49,6 +49,29 @@ standups remain placeholders pending samples in those channels.
    feels ambiguous. The corpus is the source of truth; `core-traits.md` is the
    distilled summary.
 
+## Personal posts: develop the idea, deliver the post
+
+For an X post or other short personal reflection, treat Bryan's rough wording
+as a brief, not as the finished argument. Develop a clear, specific thought in
+his voice rather than repeating his sentences with synonyms. Before presenting,
+identify what the draft contributes beyond the brief (a concrete implication,
+useful distinction, or sharper expression). If the only contribution is word
+substitution or a generic motivational closing, redraft. Do not invent life
+history, personality claims, or attitudes to make it sound personal.
+
+A scope correction must change the framing, not merely delete a keyword. If
+Bryan says a point concerns his whole life rather than his career, reassess the
+whole post against that scope. Preserve the underlying point without replacing
+it with a new thesis Bryan did not supply.
+
+When Bryan rejects a draft as repetitive or off-task, keep repair anchored to
+the requested artifact. Briefly answer any direct question, then supply the
+substantively improved complete draft. Do not substitute an essay explaining
+his idea, an account of the agent's process, or promises of a stronger post.
+If he ends the drafting task, stop drafting. Rejected drafts are failure
+evidence, not approved voice samples; do not record a successful recovery when
+none was accepted.
+
 ## Complete drafts and revision diffs
 
 When drafting or revising text for Bryan, show the complete, paste-ready draft in the response. A request to change one sentence still requires the entire revised message, application answer, bio, or other drafting unit, not only the replacement sentence. Preserve unchanged wording unless another change is needed or requested. A saved file or a summary of edits does not substitute for showing the draft.
