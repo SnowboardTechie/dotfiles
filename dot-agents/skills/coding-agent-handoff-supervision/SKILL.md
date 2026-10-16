@@ -351,6 +351,14 @@ lease until a newer idle/done/blocked state exists, and revalidates all identity
 fields. Use `--text` for a literal answer or `--keys` for an interactive choice
 such as `down enter`.
 
+An `answer-blocked` process handle is not a confirmed approval. Report delivery
+only after its result verifies accepted input. If it returns `recorded worker
+is not blocked`, inspect the live state before any retry: the user may have
+answered in the visible pane or the prompt may have timed out. Do not invent
+which actor resolved it. For a worker still running after a lost answer race,
+reattach a read-only identity-checked wait to the existing state-change sequence;
+never send a duplicate prompt merely to regain completion notification.
+
 Complete when the original worker settles and the helper returns a verified
 status.
 
