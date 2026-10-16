@@ -57,6 +57,18 @@ Preserve the global correction count through final review and do not infer merge
 release, ready-state, issue mutation, or live-review/comment permission. Do not
 carry an earlier plan-only boundary past later implementation authorization.
 
+**Resume after an answered gate.** When Bryan answers the question that paused
+an authorized run (such as approving a focused follow-up tracker), perform and
+verify that action, then continue the recorded delivery workflow in the same
+run. The gate action is not a replacement deliverable. Answer a readiness
+question first, then resume any unfinished authorized work instead of ending
+with an inventory of steps still owed. Before a terminal response, compare live
+evidence with the recorded terminal delivery shape: handoff, worker settlement,
+tracker creation, passing test subset and pushed branch are not substitutes for
+a required draft PR and final review. A necessary async yield retains its
+completion consumer and states that execution continues, not a handback or a
+request to proceed.
+
 ## State and repository roles
 
 Ticket state:
