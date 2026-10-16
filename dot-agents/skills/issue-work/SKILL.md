@@ -159,6 +159,13 @@ roles, worktree, branch, base SHA, plan source, checkpoints, and start time.
 Initialize one global `correction_passes` counter to `0`; it spans Phases 3 and
 4 and is never reset at a phase boundary.
 
+Write machine-readable frontmatter from the start, not prose-only state. Inspect
+`scripts/validate_cross_repo_context.py` for its current required fields and
+populate them from verified identities before launching the worker. Run the
+validator once at intake and require `ok: true`; do not defer discovering a
+malformed progress record until review admission. Keep later status updates
+consistent with that frontmatter.
+
 Complete when the isolated worktree matches the fetched base and its identity is
 recorded.
 
@@ -427,6 +434,27 @@ Complete when the draft PR is remotely verifiable, the candidate SHA matches,
 Bryan's required final Claude review is collected and dispositioned, current
 verification is accurately recorded, and handoff-owned resources are closed.
 Update and synchronize the canonical vault status/index/handoff at that boundary.
+
+### Continue after readiness authorization
+
+A draft-delivery boundary does not erase Bryan's later instruction to move to
+human review. After the required final review is accepted, a contextual directive
+such as "if this is ready for review, you know what's next" authorizes marking
+that PR ready, requesting the established reviewer, and preparing the Slack
+review-request draft. Do not demand a command token or make him repeat those
+steps. A question asking whether it is ready, without that directive, is still a
+question rather than mutation authority.
+
+Before acting, read back the exact live head, base, draft state and hosted checks
+and compare them with accepted review evidence. Reuse completed review and full
+verification when the candidate is unchanged; new evidence or candidate drift,
+not the transition itself, determines whether review must be refreshed. Resolve
+the reviewer from current project routing and recent review activity, not a
+hardcoded roster. Perform and verify the ready transition and reviewer request,
+then save/synchronize and show the complete PR-first Slack draft using
+`voice-bryan`. Slack posting, live review submission, merge and release remain
+separate permissions. An interruption pauses execution; report which actions
+actually occurred rather than treating a successful preflight as completion.
 
 ## Compact efficiency record
 
