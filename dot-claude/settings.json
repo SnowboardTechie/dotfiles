@@ -82,16 +82,6 @@
     "defaultMode": "auto"
   },
   "model": "opus[1m]",
-  "skillOverrides": {
-    "adr-and-spec-coach": "off",
-    "find-skills": "off",
-    "loop-issue": "off",
-    "obsidian": "off",
-    "skill-retrospective": "off",
-    "sprint-deliverable-update": "off",
-    "sync-hold-branch": "off",
-    "weekly-planning": "off"
-  },
   "hooks": {
     "SessionStart": [
       {

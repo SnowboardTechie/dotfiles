@@ -83,12 +83,15 @@ if [[ -z "$SKILLS_SRC" || ! -d "$SKILLS_SRC" ]]; then
     exit 1
 fi
 
-# Common core shared by Claude, OpenCode, Pi, and Codex: dev/PR, PKM, and workflow learning.
+# Common core shared by Claude, OpenCode, Pi, and Codex: dev/PR and PKM.
 # PKM is split by backend: vault-pkm (project/workspace Markdown vaults),
 # apple-notes-pkm (personal second brain in Apple Notes), knowledge-capture
 # (the router that decides which of the two a capture belongs to).
 COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review code-review
-    vault-pkm apple-notes-pkm knowledge-capture skill-retrospective obsidian session-handoff)
+    vault-pkm apple-notes-pkm knowledge-capture session-handoff)
+
+# Claude dropped these on 2026-09-28 (no recorded use); OpenCode, Pi, and Codex keep them.
+NON_CLAUDE_COMMON=(skill-retrospective obsidian)
 
 # Planning and delivery cores adapted from an upstream suite (see
 # dot-agents/upstreams/mattpocock-skills.json). Curated for the implementation runtimes
@@ -97,25 +100,25 @@ COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review code-review
 # through COMMON_SKILLS because its shared `pr-self-review` workflow requires it.
 ADAPTED_CORES=(grilling wayfinder tdd diagnosing-bugs codebase-architecture)
 
-PI_SKILLS=("${COMMON_SKILLS[@]}")
+PI_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}")
 
 # Codex uses the supported user scope (~/.agents/skills), not its bundled
 # ~/.codex/skills/.system directory. Share the portable coding/planning core;
 # leave Hermes-specific orchestration and specialist workflows opt-in.
-CODEX_SKILLS=("${COMMON_SKILLS[@]}"
+CODEX_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
     manual-merge issue-create issue-plan issue-work loop-issue
     adr-and-spec-coach conforming-tech-specs voice-bryan
     catalog-review dependency-review dependency-triage
     "${ADAPTED_CORES[@]}")
 
 CLAUDE_SKILLS=("${COMMON_SKILLS[@]}"
-    manual-merge issue-create issue-plan issue-work loop-issue sync-hold-branch
-    adr-and-spec-coach dx-target conforming-tech-specs sprint-deliverable-update weekly-planning
+    manual-merge issue-create issue-plan issue-work
+    adr-and-spec-coach dx-target conforming-tech-specs
     catalog-review dependency-review dependency-triage
-    voice-bryan find-skills
+    voice-bryan
     "${ADAPTED_CORES[@]}")
 
-OPENCODE_SKILLS=("${COMMON_SKILLS[@]}"
+OPENCODE_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
     manual-merge issue-create issue-plan issue-work loop-issue
     adr-and-spec-coach conforming-tech-specs
     voice-bryan gamedev
