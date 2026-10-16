@@ -20,7 +20,7 @@ gets a *curated subset* via per-skill symlinks created by
 The reconciler is idempotent and has two modes: `--check` reports the plan
 without touching anything; `--apply` links the curated skills, prunes symlinks
 that are no longer curated, and **never touches** anything that isn't a symlink
-into this pool — so Claude's plugin skills (`gsd-*`, `superpowers`, etc.) and
+into this pool — so Claude's own skill entries (such as the claude.ai-synced `synced/` directory) and
 Omarchy's packaged skill links (`omarchy`, `diagnose-crash`) are left alone.
 The legacy `setup-platform-configs.sh` delegates its agent-skill step to this
 reconciler, and `scripts/setup-omarchy.sh` invokes it as one payload in the
