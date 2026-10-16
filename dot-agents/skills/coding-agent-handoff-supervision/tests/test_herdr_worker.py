@@ -65,7 +65,9 @@ class FakeHerdr:
         title: str,
         claude_model: str = "claude-opus-5-5",
         claude_effort: str = "xhigh",
+        claude_settings: str | None = None,
     ) -> None:
+        self.claude_settings = claude_settings
         self.agents[name] = {
             "agent": kind,
             "agent_session": {"value": self.runtime_session},
@@ -529,6 +531,71 @@ class HerdrWorkerTests(unittest.TestCase):
             claude_effort="max",
         )
         self.assertEqual(sent[2][sent[2].index("--effort") + 1], "max")
+
+    def test_scoped_auto_rules_are_passed_inline_without_changing_auto_mode(self) -> None:
+        module = self.module
+        sent = []
+
+        class StartHerdr(module.RealHerdr):
+            def _run(inner, args, *, timeout_seconds=60, allow_failure=False):
+                sent.append(args)
+                return subprocess.CompletedProcess(args, 0, "", "")
+
+        settings = json.dumps({"autoMode": {"allow": ["Only the approved pinned trial"]}})
+        StartHerdr(SCRIPT, self.repo).start_agent(
+            name="worker", kind="claude", pane_id="worker-pane", title="Trial",
+            claude_settings=settings,
+        )
+        command = sent[0]
+        self.assertEqual(settings, command[command.index("--settings") + 1])
+        self.assertEqual("auto", command[command.index("--permission-mode") + 1])
+        self.assertNotIn("--dangerously-skip-permissions", command)
+        controller, fake = self.controller()
+        result = controller.start(
+            caller_pane="caller", worktree=self.repo, identity_path=self.root / "scoped.json",
+            name="worker", kind="claude", title="Trial", claude_settings=settings,
+        )
+        assert isinstance(fake.claude_settings, str)
+        self.assertEqual(json.loads(settings), json.loads(fake.claude_settings))
+        import hashlib
+        self.assertEqual(hashlib.sha256(fake.claude_settings.encode()).hexdigest(),
+                         result["worker_claude_settings_sha256"])
+
+    def test_invalid_launch_settings_are_refused_before_pane_creation(self) -> None:
+        for settings in ('{', '{}', '{"permissions":{"defaultMode":"bypassPermissions"}}',
+                         '{"autoMode":{"hard_deny":[]}}', '{"autoMode":{"allow":[]}}'):
+            with self.subTest(settings=settings):
+                controller, fake = self.controller()
+                with self.assertRaises(self.module.HandoffError):
+                    controller.start(
+                        caller_pane="caller", worktree=self.repo,
+                        identity_path=self.root / "invalid.json", name="worker",
+                        kind="claude", title="Trial", claude_settings=settings,
+                    )
+                self.assertEqual(0, fake.split_count)
+
+    def test_interrupted_scoped_start_preserves_settings_hash_during_recovery(self) -> None:
+        class InterruptedHerdr(FakeHerdr):
+            def start_agent(inner, **kwargs):
+                super().start_agent(**kwargs)
+                raise KeyboardInterrupt("interrupt after launch")
+
+        controller, _ = self.controller()
+        fake = InterruptedHerdr(self.repo)
+        controller.herdr = fake
+        identity_path = self.root / "interrupted-scoped.json"
+        settings = json.dumps({"autoMode": {"allow": ["Approved trial only"]}})
+        with self.assertRaises(KeyboardInterrupt):
+            controller.start(
+                caller_pane="caller", worktree=self.repo, identity_path=identity_path,
+                name="worker", kind="claude", title="Trial", claude_settings=settings,
+            )
+        reservation = json.loads(identity_path.read_text())
+        self.assertIn("worker_claude_settings_sha256", reservation)
+        recovered = controller.recover_start(identity_path=identity_path)
+        self.assertEqual(reservation["worker_claude_settings_sha256"],
+                         recovered["worker_claude_settings_sha256"])
+        self.assertEqual(recovered, json.loads(identity_path.read_text()))
 
     def test_startup_failure_includes_readable_output_before_cleanup(self) -> None:
         module = self.module

@@ -514,6 +514,7 @@ class RealHerdr:
         title: str,
         claude_model: str = DEFAULT_CLAUDE_MODEL,
         claude_effort: str = DEFAULT_CLAUDE_EFFORT,
+        claude_settings: str | None = None,
     ) -> None:
         command = [
             "agent",
@@ -538,6 +539,8 @@ class RealHerdr:
                 "--name",
                 title,
             ]
+            if claude_settings is not None:
+                command += ["--settings", claude_settings]
         result = self._run(command, timeout_seconds=330, allow_failure=True)
         if result.returncode != 0:
             detail = (result.stderr or result.stdout).strip()
@@ -721,9 +724,28 @@ class HandoffController:
         title: str,
         claude_model: str = DEFAULT_CLAUDE_MODEL,
         claude_effort: str = DEFAULT_CLAUDE_EFFORT,
+        claude_settings: str | None = None,
     ) -> dict[str, Any]:
         if kind not in {"claude", "hermes"}:
             raise HandoffError(f"unsupported visible worker kind: {kind}")
+        if claude_settings is not None:
+            try:
+                settings = json.loads(claude_settings)
+            except ValueError as exc:
+                raise HandoffError("Claude launch settings must be valid JSON") from exc
+            if (
+                kind != "claude"
+                or not isinstance(settings, dict)
+                or set(settings) != {"autoMode"}
+                or not isinstance(settings["autoMode"], dict)
+                or set(settings["autoMode"]) != {"allow"}
+                or not isinstance(settings["autoMode"]["allow"], list)
+                or not settings["autoMode"]["allow"]
+                or any(not isinstance(rule, str) or not rule.strip()
+                       for rule in settings["autoMode"]["allow"])
+            ):
+                raise HandoffError("Claude launch settings may contain only nonempty autoMode.allow rules")
+            claude_settings = json.dumps(settings, sort_keys=True)
         if not re.fullmatch(r"[a-z][a-z0-9_-]{0,31}", name):
             raise HandoffError("agent name must match [a-z][a-z0-9_-]{0,31}")
         worktree_identity = git_worktree_identity(worktree)
@@ -736,6 +758,10 @@ class HandoffController:
             worktree_identity=worktree_identity,
             worker_pane_id=None,
         )
+        if claude_settings is not None:
+            start_record["worker_claude_settings_sha256"] = hashlib.sha256(
+                claude_settings.encode("utf-8")
+            ).hexdigest()
         pane_id: str | None = None
         with StartLease(identity_path):
             _reserve_identity(identity_path, start_record)
@@ -791,11 +817,14 @@ class HandoffController:
                     title=title,
                     claude_model=claude_model,
                     claude_effort=claude_effort,
+                    **({"claude_settings": claude_settings} if claude_settings is not None else {}),
                 )
                 record = make_identity(
                     agent=_extract_agent(self.herdr.get_agent(name)),
                     worktree_identity=worktree_identity,
                 )
+                if claude_settings is not None:
+                    record["worker_claude_settings_sha256"] = start_record["worker_claude_settings_sha256"]
                 if record["worker_pane_id"] != pane_id or record["worker_kind"] != kind:
                     raise HandoffError("started worker does not match requested pane or kind")
                 _atomic_write_json(identity_path, record)
@@ -1167,6 +1196,8 @@ class HandoffController:
                     agent=agent,
                     worktree_identity=worktree_identity,
                 )
+                if "worker_claude_settings_sha256" in record:
+                    recovered["worker_claude_settings_sha256"] = record["worker_claude_settings_sha256"]
                 _atomic_write_json(identity_path, recovered)
                 return recovered
 
@@ -1440,6 +1471,8 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--kind", choices=("claude", "hermes"), default="claude")
     start.add_argument("--title")
     start.add_argument("--claude-model", default=DEFAULT_CLAUDE_MODEL)
+    start.add_argument("--claude-settings", type=Path,
+                       help="parent-reviewed JSON containing only autoMode.allow; passed inline for this worker")
     start.add_argument(
         "--claude-effort", choices=CLAUDE_EFFORTS, default=DEFAULT_CLAUDE_EFFORT
     )
@@ -1540,6 +1573,8 @@ def main() -> int:
                 title=args.title or args.name,
                 claude_model=args.claude_model,
                 claude_effort=args.claude_effort,
+                claude_settings=(args.claude_settings.read_text(encoding="utf-8")
+                                 if args.claude_settings is not None else None),
             )
         elif args.command == "handoff":
             prompt_path = _validated_prompt_path(args.prompt_file, args.identity_file)

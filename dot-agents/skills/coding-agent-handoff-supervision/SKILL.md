@@ -252,6 +252,24 @@ python3 scripts/herdr_worker.py start \
 `--claude-effort` defaults to `xhigh`. Add `--claude-effort max` only when all
 three escalation conditions above hold.
 
+When an explicitly approved installation is misclassified, distinguish missing
+authorization from missing runtime configuration. Never retry a refused action
+through another tool or infer permission from frustration. Investigate the
+supported consent/configuration path. Claude ignores `autoMode` in project-local
+settings; standalone `auto-mode config --settings FILE` can read a file that the
+interactive runtime ignores. Do not claim that test proves runtime activation.
+For a parent-reviewed, user-authorized source/action-scoped exception, `start
+--claude-settings FILE` accepts only `{"autoMode":{"allow":[...]}}` and passes
+its contents as inline CLI JSON for that worker, retaining auto mode and recording
+the config hash. Preserve the existing effective allow rules; change no hard or
+soft deny rules, global settings, or unrelated permission controls. Keep the
+exception in scratch, never in tracked instructions or the worker's own edits.
+If the existing runtime cannot consume CLI overrides, collect its substantive
+handback, close it normally, and launch the continuation with the same approved
+model/effort and governing artifact. Verify startup arguments/hash and the next
+normal permission gate before claiming recovery. A still-refused action remains
+blocked; do not escalate to a broader mode or another execution route.
+
 For lightweight work or explicit Hermes selection, use `--kind hermes` after independently checking
 its smart-approval prerequisites.
 
