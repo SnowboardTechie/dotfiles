@@ -171,7 +171,15 @@ choices inside a polished plan. Cheap, established defaults may be stated and
 confirmed briefly.
 
 If the issue and prior decisions already settle everything important, skip
-manufactured Q&A and proceed to drafting. Before asking a behavior question,
+manufactured Q&A and proceed to drafting. When Bryan accepts a surfaced trade-off
+or relaxes a criterion, record that exact decision and resume the already
+assigned planning work in the same turn; recording the clarification is not the
+deliverable. Do not end with another invitation to continue or a choice of
+coaching method when the actual decision is already settled. Before stopping,
+verify that the complete draft is presented for its real approval boundary, or
+name the specific unresolved material decision that prevents it.
+
+Before asking a behavior question,
 check whether the ticket's outcome/acceptance criteria, canonical contract, or
 explicitly named reference implementation already answers it. An alignment
 requirement is not permission to offer retention of the incompatible behavior as
