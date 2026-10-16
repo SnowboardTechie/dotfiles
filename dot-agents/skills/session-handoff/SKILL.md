@@ -7,21 +7,24 @@ description: >
   "write the prompt for the next session", "can this be split across agents",
   "spin up a fresh context for this". Reconciles the vault record, decides
   whether the frontier is one separable slice or several, and emits a handoff
-  prompt per slice. Needs no ticket. Decides slicing and agent topology. A
-  default launch is status-tracked: it keeps one bounded terminal-status watch
-  that notifies Bryan when the worker settles, blocks, or fails, and nothing
-  else; review and acceptance stay a separate future invocation.
+  prompt per slice. Needs no ticket. Decides slicing and agent topology.
+  Ordinary implementation handoffs retain supervised delivery; status-only or
+  separate acceptance requires Bryan's explicit choice and a durable handback.
 ---
 
 # Session Handoff
 
 Slice untracked implementation work out of this session's head and into fresh
-contexts. By default this session keeps exactly one thing: a status-only watch
-that tells Bryan when the delegated turn settled, blocked, or failed. It keeps
-no review, correction, or acceptance duty.
+contexts. First select the delivery boundary: ordinary requests to implement or
+hand work to Claude route to `coding-agent-handoff-supervision`, retaining parent
+review, correction and authorized publication. Use the handoff-only procedure
+below only when Bryan explicitly chooses separate acceptance, status-only
+notification, or fire-and-forget. Do not infer that stopping boundary from
+"hand it off".
 
-Every other route to a fresh agent starts from a ticket. This one starts from a
-vault record and a judgment about where the frontier actually is.
+The governing authority may be a ticket or a decision-complete approved plan.
+This handoff-only route starts from a durable record and a judgment about where
+the frontier actually is; do not create a ticket solely for transport.
 
 ## When to use
 
@@ -30,8 +33,8 @@ All of these:
 - the work is **implementation**, not an open architecture question;
 - it is **untracked** — no issue exists and creating one is not the point;
 - this session holds context the record does not yet;
-- nobody is going to supervise the result in this session (a status-only
-  watch is notification, not supervision).
+- Bryan explicitly chose a handoff-only boundary with acceptance owned by a
+  separate invocation (a status-only watch is notification, not supervision).
 
 Do not use it for open questions. If the work is not decision-complete, handing
 it off produces a confident wrong implementation. Say so and stop — route to
@@ -44,29 +47,31 @@ problem rather than handing off anyway.
 
 ## The boundary this skill exists to hold
 
-> **Tripwire: if you are about to call `prompt`, `inspect`, `read`,
-> `answer-blocked`, or `close`, or to review, correct, or accept the worker's
-> output, you are in the wrong skill. The one thing you may keep is the
-> status-only tracked wait that `handoff-status` performs.**
+> **Tripwire: this handoff-only route cannot call the helper's `prompt`,
+> `inspect`, `read`, `answer-blocked`, or `close`, or review, correct, or accept
+> the candidate. Retain only the status watch and read its durable handback
+> artifact to communicate the result; neither grants acceptance authority.**
 
 Three engagement modes exist, and they never mix:
 
-- **status-only** (default): delegate, keep one bounded terminal-status watch,
+- **status-only** (explicit handoff-only boundary): delegate, keep one bounded terminal-status watch,
   notify Bryan once on done/idle, blocked, failed, timed out, disappeared, or
   identity mismatch. No review or acceptance duty.
 - **fire-and-forget** (explicit only — Bryan says "fire and forget", "do not
   monitor", or equivalent): delegate and retain no watcher at all.
-- **supervised** (explicit): `coding-agent-handoff-supervision`, with its
+- **supervised** (ordinary implementation default): `coding-agent-handoff-supervision`, with its
   inspection, review, correction, acceptance, and cleanup responsibilities.
 
-In status-only and fire-and-forget modes this session does not read the
-worker's output, answer its questions, judge its diff, or close its pane.
-Acceptance is a **future invocation**, not a retained duty — a separate context
-gets invoked for it, the same way any PR gets reviewed. A "blocked" notification
-names the pane and identity locator; it never scrapes the question from the
-worker's output. A "done/idle" notification means only that the delegated turn
-settled and a candidate may be ready — not that tests passed, a commit exists,
-or the candidate is correct.
+In explicit status-only and fire-and-forget modes this session does not read the
+worker pane, answer questions, judge the diff, or close the pane. Require a
+durable handback path in the governing artifact: candidate identity, actual
+checks/results, unfinished work, blockers, approval requests in dependency order,
+and next acceptance owner. After a status-only turn settles, read that handback
+(not the pane) and report its substantive outcome, labeling worker claims as
+unverified. A missing handback means result unavailable, not completion.
+Acceptance remains a **future invocation** only because Bryan chose that boundary.
+A "done/idle" state proves turn settlement, never task completion. A blocked
+notification names the pane and identity without scraping its prompt.
 
 If Bryan wants a supervised worker whose output he accepts in this session, that
 is `coding-agent-handoff-supervision` — use it instead of this one, and never
@@ -158,7 +163,7 @@ Do **not** restate steps, files, tests, requirements, or safeguards that the
 reachable note already carries, and do not tell the agent to read `AGENTS.md` —
 it autoloads. A second copy of the specification is the copy that goes stale.
 
-### On explicit request: launch it (status-only by default)
+### On explicit handoff-only launch: status watch
 
 Only when Bryan asks for the worker to be started, **and** this runtime is
 sitting in a Herdr pane. Check first: `HERDR_ENV=1`, a non-empty `HERDR_PANE_ID`,
@@ -203,8 +208,10 @@ worker and pane are left intact for a future independent acceptance.
 
 **Run it as your runtime's tracked background process with completion
 notification** — the turn can outlast any foreground time budget. End your
-conversational turn; when the completion event arrives, report the compact
-status once, with the locators, and stop. Do not poll. If this runtime cannot
+conversational turn; when the completion event arrives, read the durable handback
+and report its remaining gates in order, distinguishing worker claims from
+independent verification. Include locators and stop at Bryan's chosen boundary.
+Do not poll. If this runtime cannot
 arrange a completion event, either keep the wait attached until it settles or
 emit the pointer prompt and say plainly that automatic notification is
 unavailable — never claim a watch that does not exist.
@@ -250,5 +257,6 @@ Three distinct states; never collapse them:
 3. **Candidate independently accepted** — a separate, later invocation reviewed
    and accepted it. This skill never reaches this state.
 
-After state 1 (fire-and-forget) or state 2 (status-only), this session carries
-no further responsibility for any slice.
+For fire-and-forget, responsibility ends after state 1's delivery report. For
+status-only, it ends only after state 2 AND reading and communicating the durable
+handback (or explicitly reporting it missing). Neither authorizes acceptance.

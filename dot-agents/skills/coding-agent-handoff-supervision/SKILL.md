@@ -1,7 +1,7 @@
 ---
 name: coding-agent-handoff-supervision
 description: Use for visible CLI or Matrix coding-agent handoffs.
-version: 2.2.0
+version: 2.3.0
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
@@ -85,6 +85,37 @@ overrides this right-sizing rule. Use `issue-work`'s router for ticket work.
 Do not use this workflow for open architecture, live incident diagnosis,
 voice-heavy writing, or exploratory research. Resolve those with Sol first.
 
+## Delivery boundary and substantive handback
+
+Default ordinary implementation handoffs to supervised delivery. "Hand it to
+Claude" does not authorize dropping parent acceptance/publication or inventing
+a separate future review invocation. Use `session-handoff` status-only or
+fire-and-forget only when Bryan explicitly chooses that boundary. Preserve
+installation, download, activation and other real safety gates without turning
+every mechanical prerequisite into a separate user decision.
+
+Require a durable handback path in the governing plan/ticket. Before settling,
+the worker writes candidate identity, changes, actual checks/results, unfinished
+criteria, blockers, exact approval requests in dependency order, and next owner.
+Read the report and the real candidate before reporting completion or answering
+what Claude said. A lifecycle `done` event is not a handback. If the report is
+absent, retrieve the final message using the supervised helper's identity-checked
+`read`, or request the missing report from the same worker within its capacity
+and turn boundary. Never substitute a runbook for an unread final message while
+implying that message was read.
+
+Disposition remaining items as parent verification/publication, worker
+correction, genuinely new user permission, or later optional scope. Finish
+parent-owned prerequisites before requesting a downstream approval, and bundle
+independent permissions. An unmet assigned criterion cannot become complete
+merely because the worker stopped.
+
+For bounded semantic omission checks, TypeSafe/Jev may compare criteria,
+handback and evidence through separate typed questions. Read its current API,
+use authorized credentials and minimal nonsecret state, and validate any flags
+yourself. It supplements source review and real tests, never replaces the
+acceptance owner; unavailable access does not block ordinary review.
+
 ## Role Boundary
 
 Sol owns:
@@ -137,12 +168,14 @@ answer that question before further tools. Frustration is not authorization to
 cross an explicit scope boundary, and additional activity is not a substitute
 for answering.
 
-### 1. Bind one governing ticket
+### 1. Bind one governing ticket or approved plan
 
-Reuse the ticket supplied by `issue-work`. Outside that umbrella, search the
-project workspace and read plausible matches. If none governs the work, load
-`issue-create`, obtain its normal approval, post one ticket, and read it back.
-Never create a duplicate ticket or replace durable authority with a large prompt.
+Reuse the ticket supplied by `issue-work` or the decision-complete approved plan
+already governing the request. Outside those routes, search the project
+workspace and read plausible matches. Only if neither a ticket nor an adequate
+approved plan governs the work, load `issue-create`, obtain its normal approval,
+post one ticket, and read it back. Never create a duplicate or require a ticket
+solely for transport; never replace durable authority with a large prompt.
 
 Complete when one verified ticket URL or approved plan path owns the outcome.
 
@@ -379,7 +412,7 @@ resume a Herdr identity.
 - [ ] No overlapping turn targeted the same session; unrelated sessions were not blocked
 - [ ] Delivery claims have acknowledgement evidence, not merely a background process handle
 - [ ] Rejected or uncertain submissions were inspected and recovered without bypass or duplicate delivery
-- [ ] Parent inspected and tested the actual candidate
+- [ ] Parent read a substantive handback, dispositioned remaining gates in order, and tested the actual candidate
 - [ ] One integrated parent review and AC sweep completed
 - [ ] Corrections stayed within the one-plus-one bound
 - [ ] High-risk change received one targeted Risk review when required
