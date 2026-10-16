@@ -209,9 +209,14 @@ PY
 )
 ```
 
-Use the configured Tea login matching the parsed host. Verify the response says
-`draft: true`; if this forge version does not support draft PRs, stop rather
-than silently opening a ready-for-review PR.
+Use the configured Tea login matching the parsed host. Verify the response says `draft: true`. Some Forgejo versions ignore the create
+payload's `draft` field and derive draft state from the title. If readback is
+false, inspect `tea pulls edit --help`; when it documents `--draft`, apply that
+supported operation to the exact newly created PR, then GET it again and require
+`draft: true`. This repairs the authorized draft creation, not a ready transition.
+If neither mechanism is supported, stop rather than silently leaving a ready PR.
+Use absolute exact-head source URLs for repository-file links in the body;
+relative links can resolve beneath `/pulls/`.
 
 For one validated existing Forgejo PR, send the same explicit `title` and `body`
 fields with `PATCH /repos/<owner>/<repo>/pulls/<number>`. Omit `draft`, labels,
