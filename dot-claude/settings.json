@@ -83,6 +83,7 @@
   },
   "model": "opus[1m]",
   "syncClaudeAiPlugins": false,
+  "disableClaudeAiConnectors": true,
   "hooks": {
     "SessionStart": [
       {
