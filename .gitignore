@@ -73,6 +73,7 @@ dot-config/herdr/*
 !dot-config/herdr/codex-usage.py
 !dot-config/herdr/openrouter-spend.py
 !dot-config/herdr/host-label.sh
+!dot-config/herdr/AGENTS.md
 
 # Secrets in tool config dirs (tokens/oauth), never track
 dot-config/context7/

@@ -4,24 +4,6 @@
 
 Lazy.nvim-managed config using modern Neovim 0.11+ APIs. Nightfly theme. No Mason — LSPs come from Nix.
 
-## STRUCTURE
-
-```
-nvim/
-├── init.lua                    # Entry: loads core + lazy
-├── lua/bryan/
-│   ├── core.lua                # Barrel: keymaps + options
-│   ├── lazy.lua                # Lazy.nvim bootstrap
-│   ├── core/
-│   │   ├── options.lua         # vim.opt settings
-│   │   ├── keymaps.lua         # Global keybinds (leader = Space)
-│   │   └── colors.lua          # Shared Nightfly palette (imported by plugins)
-│   └── plugins/
-│       ├── init.lua            # Explicit manifest (require per plugin)
-│       └── [plugin].lua        # One file per plugin, returns Lazy spec
-└── lazy-lock.json              # Plugin version lockfile
-```
-
 ## WHERE TO LOOK
 
 | Task | Location | Notes |
@@ -49,11 +31,3 @@ nvim/
 | No hardcoded hex colors in plugins | Use `require("bryan.core.colors")` |
 | No `lspconfig[server].setup()` | Use modern `vim.lsp.config()` + `vim.lsp.enable()` API |
 | No formatter plugins (conform.nvim) | Formatting via `vim.lsp.buf.format` only (for now) |
-
-## ENABLED LSP SERVERS
-
-`pyright`, `ts_ls`, `lua_ls`, `nixd`, `solargraph`
-
-## PLUGIN STACK (17 plugins)
-
-colorscheme (nightfly), lsp + fidget, blink.cmp, telescope, treesitter, lualine, nvim-tree, bufferline, gitsigns, comment, autopairs, surround, indent-blankline, which-key, vim-maximizer, vim-be-good, opencode
