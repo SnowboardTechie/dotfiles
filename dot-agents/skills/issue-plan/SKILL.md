@@ -143,7 +143,7 @@ Runtime mapping is explicit:
 
 | Capability | Hermes | Claude / OpenCode |
 |---|---|---|
-| Generic task-plan authoring | installed `plan` | `superpowers:writing-plans` or an explicitly installed equivalent; stop if absent |
+| Generic task-plan authoring | installed `plan` | none — draft directly to the Phase 3 contract |
 | DX target exploration | installed `dx-target` | use `dx-target` only when installed; otherwise stop and hand the session to Hermes |
 | Decision coaching | pooled `grilling` or `adr-and-spec-coach` | pooled `grilling` or `adr-and-spec-coach` |
 | Spec conformance | installed `conforming-tech-specs` | installed pooled `conforming-tech-specs` |
@@ -228,11 +228,12 @@ a new folder or MOC without approval.
 Supporting `dx-target`, ADR, or spec notes remain separate atomic notes and link
 to the implementation plan. The implementation plan is the canonical handoff.
 
-### 2. Invoke the mapped plan-authoring skill with a path override
+### 2. Draft the plan at the vault path
 
-After design decisions are settled, load Hermes `plan` or the mapped host
-equivalent above. Override its normal workspace destination with the chosen vault
-note path and adapt its output to the vault's frontmatter and linking conventions.
+After design decisions are settled, draft the plan at the chosen vault note path.
+On Hermes, load `plan` for its writing craft and override its workspace
+destination; elsewhere, write directly. Either way, follow the vault's
+frontmatter and linking conventions.
 The plan must include:
 
 - Goal and externally observable outcome.

@@ -240,7 +240,7 @@
     "feature-dev@claude-plugins-official": false,
     "obsidian@obsidian-skills": false,
     "slack@claude-plugins-official": false,
-    "superpowers@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": false,
     "lua-lsp@claude-plugins-official": false,
     "skill-creator@claude-plugins-official": false,
     "github@claude-plugins-official": false,
