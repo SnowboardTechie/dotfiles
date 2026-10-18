@@ -100,6 +100,19 @@ class WorktrunkContextTests(unittest.TestCase):
         self.assertFalse((self.worktree / "AGENTS.md").is_symlink())
         self.assertFalse((self.worktree / "CLAUDE.md").is_symlink())
 
+    def test_global_hook_preserves_tracked_project_guidance(self):
+        (self.trunk / "AGENTS.md").write_text("Trunk guidance\n")
+        agents = self.worktree / "AGENTS.md"
+        agents.write_text("Branch-owned project guidance\n")
+        self.run_command("git", "add", "-f", "AGENTS.md", cwd=self.worktree)
+        self.run_command("git", "-c", "user.name=Context Test", "-c",
+                         "user.email=context@example.invalid", "-c", "commit.gpgsign=false",
+                         "commit", "-m", "Track project guidance", cwd=self.worktree)
+        self.run_context_hook()
+        self.assertFalse(agents.is_symlink())
+        self.assertEqual(agents.read_text(), "Branch-owned project guidance\n")
+        self.assertEqual(self.run_command("git", "status", "--porcelain", cwd=self.worktree).stdout, "")
+
     def test_direnv_hook_skips_absent_envrc_and_propagates_failures(self):
         config = tomllib.loads(CONFIG.read_text())
         command = next(step["direnv"] for step in config["pre-start"] if "direnv" in step)

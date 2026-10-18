@@ -28,6 +28,7 @@ direnv = "if [ -f .envrc ]; then direnv allow; fi"
 # worktree, so every worktree froze a copy that silently went stale (and
 # absolute links broke outright when a repo moved). A symlink to the trunk
 # stays current for free. Runs after copy-ignored, replacing what it copied.
+# Tracked project guidance belongs to each branch; never replace it with a link.
 # Claude Code reads AGENTS.md natively; do not recreate the retired CLAUDE.md bridge.
 [[pre-start]]
-link-agent-context = 't=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)"); if [ "$PWD" != "$t" ] && [ -f "$t/AGENTS.md" ]; then ln -sfn "$t/AGENTS.md" AGENTS.md; fi; true'
+link-agent-context = 't=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)"); if [ "$PWD" != "$t" ] && [ -f "$t/AGENTS.md" ] && ! git ls-files --error-unmatch -- AGENTS.md >/dev/null 2>&1; then ln -sfn "$t/AGENTS.md" AGENTS.md; fi; true'
