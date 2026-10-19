@@ -16,7 +16,6 @@
       "Grep(/Users/bryan/notes/**)",
       "Bash(git rev-parse:*)",
       "Bash(mkdir:*)",
-      "Bash(ln:*)",
       "Bash(readlink:*)",
       "Bash(echo:*)",
       "Bash(date:*)",
@@ -57,7 +56,6 @@
       "Bash(cd * && tea repos ls:*)",
       "Bash(cd * && tea repos show:*)",
       "Bash(grep *)",
-      "Bash(ln -s *)",
       "Read(.notes/**)",
       "Edit(.notes/**)",
       "Grep(.notes/**)"
