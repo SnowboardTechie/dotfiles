@@ -80,6 +80,7 @@ Colors are centralized but defined in two places that MUST stay in sync:
 - `setup-platform-configs.sh` compensates by manually symlinking `opencode/AGENTS.md`
 - GPG config requires manual: `ln -s ~/code/dotfiles/dot-gnupg/gpg-agent.conf ~/.gnupg/gpg-agent.conf`
 - `alacritty.toml` is a generated platform-conditional symlink, gitignored
+- `~/.config` is one folded symlink to `dot-config/`, so `.gitignore` allowlists the managed tools (`dot-config/*` then `!dot-config/<tool>/`). Adopting a new tool needs its own `!` line; never switch back to per-tool deny lines
 - `setup-platform-configs.sh` removes symlinks to the retired tmux configuration while preserving foreign files and links
 
 ## GIT IDENTITY
@@ -87,7 +88,7 @@ Colors are centralized but defined in two places that MUST stay in sync:
 - **Default**: snowboardtechie (personal Forgejo + Gitea credential helper), with `~/.gitconfig.local` included last to override host-local identity/signing settings
 - GPG signing on by default (`commit.gpgsign = true`)
 - To scope a different identity to a directory, add an `includeIf "gitdir:..."` block pointing at a new identity file
-- Global pre-commit hook in `dot-git-hooks/pre-commit` blocks commits without `user.email`
+- Global pre-commit hook in `dot-git-hooks/pre-commit` blocks commits without `user.email` and runs `gitleaks` on the staged diff in every repo (warns instead where gitleaks is missing). Tests: `bash tests/test-pre-commit-hook.sh`
 
 ## REPOSITORY DELIVERY
 

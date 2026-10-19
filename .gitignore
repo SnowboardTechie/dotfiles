@@ -7,7 +7,27 @@ dot-gitconfig.github
 dot-gitconfig.local
 dot-gitconfig.snowboardtechie
 
-dot-config/exercism/*
+# Workspace-owned state that must never land here, even on hosts (Omarchy)
+# where the global ignore file is not deployed
+.hermes/
+/vault
+
+# ~/.config is one stow-folded symlink to dot-config/, so every tool writes its
+# config, tokens, and runtime state straight into this repo. Allowlist the
+# managed tools; anything new stays ignored until it gets its own line here.
+dot-config/*
+!dot-config/alacritty/
+!dot-config/atuin/
+!dot-config/direnv/
+!dot-config/gh-dash/
+!dot-config/git/
+!dot-config/herdr/
+!dot-config/nvim/
+!dot-config/opencode/
+!dot-config/shell/
+!dot-config/worktrunk/
+!dot-config/zed/
+!dot-config/zsh/
 
 # Opencode - track config and lock files, ignore local artifacts
 dot-config/opencode/*
@@ -23,15 +43,6 @@ dot-config/opencode/plugins/*
 !dot-config/opencode/plugins/ollama-models.js
 !dot-config/opencode/plugins/worktrunk-guard.js
 dot-config/alacritty/alacritty.toml
-dot-config/fj-dash/
-dot-config/gh/
-dot-config/containers/
-dot-config/sol/
-dot-config/grafana/
-dot-config/openchamber/
-dot-config/gcloud/
-dot-config/gws/
-dot-config/uv/
 
 # Claude Code - track personal config and authored content, ignore local artifacts
 dot-claude/*
@@ -47,7 +58,6 @@ dot-claude/scripts/symlink-worktree-agents-md.log
 
 # Secrets - machine-specific, never committed
 .secrets/
-dot-config/watch/*
 
 # GPG - only track gpg-agent.conf, ignore everything else
 dot-gnupg/*
@@ -74,13 +84,6 @@ dot-config/herdr/*
 !dot-config/herdr/openrouter-spend.py
 !dot-config/herdr/host-label.sh
 !dot-config/herdr/AGENTS.md
-
-# Secrets in tool config dirs (tokens/oauth), never track
-dot-config/context7/
-dot-config/github-copilot/
-
-# Browser Harness - machine-local runtime state and logs
-dot-config/browser-harness/
 
 # Apple Notes native helper — built artifacts and signing material never tracked
 dot-agents/skills/apple-notes-pkm/helper/*.app

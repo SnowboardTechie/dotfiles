@@ -12,3 +12,19 @@ repository path.
 EOF
   exit 1
 fi
+
+# Secret scan of the staged diff, for every repo using this global hook.
+# Hosts without gitleaks (Omarchy) warn instead of blocking every commit.
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "Warning: gitleaks not installed; staged changes were not scanned for secrets." >&2
+  exit 0
+fi
+
+if ! gitleaks git --pre-commit --staged --redact --verbose --no-banner --log-level error; then
+  cat >&2 <<'EOF'
+Error: gitleaks found a likely secret in the staged changes (values redacted above).
+Remove it, or for a verified false positive add `gitleaks:allow` to the line or
+the finding's fingerprint to the repo's .gitleaksignore.
+EOF
+  exit 1
+fi
