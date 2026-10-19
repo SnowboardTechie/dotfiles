@@ -62,7 +62,18 @@
   ],
   "permission": {
     "bash": {
-      "*": "allow"
+      "*": "ask",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "git show*": "allow",
+      "ls*": "allow",
+      "pwd": "allow",
+      "cat *": "allow",
+      "head *": "allow",
+      "tail *": "allow",
+      "rg *": "allow",
+      "wc *": "allow"
     },
     "edit": "ask",
     "read": "allow",
