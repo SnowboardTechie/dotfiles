@@ -136,7 +136,7 @@ git diff --check                 # Trailing whitespace check
 
 - `herdr-studio` attaches over ordinary SSH to the persistent Studio server; `herdr-studio-remote` keeps Herdr's local-client remote mode for MBP-local image clipboard bridging
 - `gpg-agent.conf` hardcodes `pinentry-mac` — NixOS users must override manually
-- This repo syncs to 3 remotes: git.snowboardtechie.com (primary), Codeberg, GitHub
+- This repo syncs to 2 remotes: git.snowboardtechie.com (primary) and a GitHub push mirror
 - `AGENTS.md` is globally gitignored via `dot-config/git/ignore`. Repos that need to track it (dotfiles, nix-configs) use `!AGENTS.md` in their `.gitignore` to override.
 - `extensions.worktreeconfig` is deliberately OFF here (`core.repositoryformatversion = 0`). It was on with format version 1, which made strict git backends refuse to open the repo — `tea` errored with `does not support extension: worktreeconfig`, and p10k's bundled gitstatusd silently dropped the git prompt segment. Nothing used per-worktree config. If a `git worktree` or `sparse-checkout` operation re-enables it, the prompt goes quiet again: `git config --unset extensions.worktreeConfig && git config core.repositoryformatversion 0`.
 

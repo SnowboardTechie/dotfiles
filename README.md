@@ -370,9 +370,9 @@ Or manage these via your NixOS system configuration.
   - Per-project development environment shells (via flakes + direnv)
   - System settings and package management
 
-### 3 gits, one repo
+### 2 gits, one repo
 
-This repository syncs to multiple remotes. The primary repository is at [git.snowboardtechie.com](https://git.snowboardtechie.com/bryan/dotfiles), with backups on [Codeberg](https://codeberg.org/SnowboardTechie/dotfiles) and [GitHub](https://github.com/bryan-thompsoncodes/dotfiles).
+The primary repository is at [git.snowboardtechie.com](https://git.snowboardtechie.com/bryan/dotfiles), with a push mirror on [GitHub](https://github.com/bryan-thompsoncodes/dotfiles).
 
 ## Notes
 
