@@ -14,12 +14,15 @@ metadata:
 
 ## Overview
 
-Hand decision-complete substantial implementation to one visible Claude worker.
-Use a visible Hermes worker for requested lightweight questions and read-only
-inspection; Bryan's explicit runtime selection overrides those defaults.
-Simple questions stay with Sol unless Bryan asks for a worker. Sol remains the pairing,
-acceptance, publication, and live-verification authority. The worker produces a
-candidate; Sol independently accepts it.
+Sol orchestrates; Claude implements. Hand decision-complete implementation to a
+visible Claude worker, including small changes, fixtures, harnesses, tooling,
+and repairs discovered during verification. Task size and worker startup cost
+are not exceptions. Use a visible Hermes worker for requested read-only work;
+simple questions stay with Sol unless Bryan asks for a worker. Only Bryan's
+explicit selection changes the implementation role or runtime. Sol owns scope,
+dependencies, handoffs, supervision, independent acceptance, authorized Git
+integration/publication, and live verification. A worker produces a candidate,
+not an accepted deliverable.
 
 The workflow optimizes for one useful implementation turn and one bundled
 correction, not a prolonged conversation. Herdr mechanics are owned by
@@ -54,10 +57,10 @@ task IDs, preset names or paths already known. For a bounded read-only review,
 the user's request is the brief authority: narrow the brief to inspection and
 reporting, prohibit edits/publication, and start the worker. Ask a question only
 when that changes the work or a required project/permission is genuinely unknown.
-Substantial implementation still needs the governing ticket/approved plan and
-the role, acceptance, correction, capacity and cleanup rules below. Claude
-Opus/xhigh is the substantial-implementation default; Hermes/high is the
-lightweight-worker default. Bryan's explicit runtime selection overrides this
+Implementation still needs the governing ticket/approved plan and the role,
+acceptance, correction, capacity and cleanup rules below. Claude Opus/xhigh is
+the implementation default; Hermes/high is the read-only-worker default.
+Bryan's explicit runtime selection overrides this
 policy. Do not expand a simple question into an audit: keep the brief and
 verification proportional to the requested answer.
 
@@ -68,19 +71,17 @@ helper procedure below and retain its injected-pane prerequisites.
 
 ## When to Use
 
-Use for substantial repository work when all of these are true:
+Use for repository implementation of any size when all of these are true:
 
 - one governing ticket or approved plan exists;
 - goal, scope, exclusions, and architecture are decision-complete;
 - acceptance is observable through tests, probes, or exact readback;
-- edit and delivery permissions are explicit; and
-- the work benefits from sustained repository reading or multiple coordinated
-  edits.
+- edit and delivery permissions are explicit.
 
-Keep a `single-loop` change with the parent when it is one coherent edit/test
-cycle and touches no security, persistence, migration, protocol, concurrency,
-public-contract, or deployment boundary. An explicit same-run Claude request
-overrides this right-sizing rule. Use `issue-work`'s router for ticket work.
+Delegate a `single-loop` change too; right-size its brief and verification, not
+its implementation owner. For ticket work, use `issue-work`'s router with the
+standing Claude selection. Do not turn a fixture or tooling repair into parent
+implementation by calling it verification.
 
 Do not use this workflow for open architecture, live incident diagnosis,
 voice-heavy writing, or exploratory research. Resolve those with Sol first.
@@ -121,19 +122,28 @@ acceptance owner; unavailable access does not block ordinary review.
 Sol owns:
 
 - user deliberation and material decisions;
-- plan acceptance and risk calibration;
+- plan acceptance, dependency scheduling, bounded handoffs, and risk calibration;
+- worker supervision and recovery within the existing authority;
 - independent diff inspection and finding disposition;
 - commits, publication, deployment, and live readback.
 
 The worker owns:
 
 - repository inspection needed to execute the settled plan;
-- test-first implementation and local checks;
+- test-first implementation and local checks, including fixtures, test harnesses,
+  implementation probes, and tooling repairs;
 - one bundled correction, plus one narrowly conditional second correction when
   `pr-self-review` permits it.
 
-Do not spend a second Sol implementation session before handoff and then use
-Claude only as reviewer. Do not use a second Claude session to review the first
+Sol may inspect source, run existing checks, maintain plans/review artifacts and
+perform authorized integration. Sustained prerequisite investigation that needs
+new code or a repaired harness belongs in a bounded Claude handoff; do not build
+it in the coordinator while the implementer waits. A worker's failure, capacity
+limit or closed session does not transfer implementation ownership to Sol.
+Recover the permitted worker route or report its concrete blocker.
+
+Do not spend a Sol implementation session before handoff and then use Claude
+only as reviewer. Do not use a second Claude session to review the first
 by default outside Bryan's SGG closeout; the Sol parent is already the independent
 pre-publication acceptance context. For SGG issue implementation, `issue-work`
 owns the required sequence: parent acceptance, verified draft PR, fresh Claude
@@ -162,6 +172,13 @@ compatibility requirements and the actual affected call paths; perform isolated
 probes when already authorized. Preserve the candidate and return a concrete,
 evidence-backed decision only where implementation would cross the boundary.
 Do not ask permission merely to investigate the next recovery step.
+
+Keep an authorized multi-issue outcome moving: dispatch ready independent work
+within the governing concurrency limit, collect handbacks, accept prerequisites,
+and advance their consumers. Routine in-scope implementation and fixture repairs
+remain Claude's work under the existing completion authority, not another
+"may I proceed?" gate. Preserve actual correction counts and quality stops; ask
+Bryan only for a genuinely new decision, permission or applicable safety gate.
 
 When Bryan interrupts with a direct question about the work or agent behavior,
 answer that question before further tools. Frustration is not authorization to
@@ -215,8 +232,9 @@ Visible workers are approval-gated, not sandbox-confined. Claude uses
 cannot be proved.
 
 When Claude is selected, use `claude-opus-5-5` and `xhigh` effort; do not
-downgrade effort for simple or documentation-only work. Route lightweight work
-to Hermes instead unless Bryan explicitly selects Claude. Escalate to
+downgrade effort for simple or documentation-only work. Lightweight
+implementation still belongs to Claude; Hermes is the read-only-worker route
+unless Bryan explicitly selects otherwise. Escalate to
 `--claude-effort max` only when the work is simultaneously narrowly scoped,
 security-critical, and expensive enough that another correction cycle would be
 especially costly. Broad or decision-incomplete work does not qualify for
@@ -270,7 +288,7 @@ model/effort and governing artifact. Verify startup arguments/hash and the next
 normal permission gate before claiming recovery. A still-refused action remains
 blocked; do not escalate to a broader mode or another execution route.
 
-For lightweight work or explicit Hermes selection, use `--kind hermes` after independently checking
+For read-only work or explicit Hermes selection, use `--kind hermes` after independently checking
 its smart-approval prerequisites.
 
 The helper checks Herdr compatibility, targets the injected caller pane, splits
@@ -413,7 +431,7 @@ resume a Herdr identity.
 
 ## Common Pitfalls
 
-1. Handing off a single-loop edit whose startup cost exceeds the work.
+1. Keeping small edits, fixture/harness repairs, or implementation tooling with Sol to save worker startup cost.
 2. Confusing per-session turn serialization with a global ban on concurrent Claude work.
 3. Making the prompt a second plan.
 4. Rechecking identity with improvised shell commands instead of the helper.
@@ -428,7 +446,7 @@ resume a Herdr identity.
 
 ## Verification Checklist
 
-- [ ] Work is substantial or Claude was explicitly selected
+- [ ] Claude owns implementation regardless of task size; any alternate owner has Bryan's explicit selection
 - [ ] One verified ticket or approved plan governs the handoff
 - [ ] Brief contains locator, worktree, authority, and delivery permissions only
 - [ ] Destructive/history-rewriting Git operations remain prohibited

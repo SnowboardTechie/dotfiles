@@ -18,8 +18,10 @@ Take one GitHub or Forgejo issue from current authority to a verified reviewable
 PR through Intake → Plan → Implement → Accept → Publish. Keep durable state under
 the ticket workspace and code in an isolated implementation worktree.
 
-The lean path is deliberate: investigate only unresolved questions, use one
-implementation context, run independent parent acceptance, batch corrections,
+The lean path is deliberate: Sol orchestrates and Claude implements, including
+single-loop changes, fixtures, harnesses, and tooling repairs. Investigate only
+unresolved questions, use one implementation context per bounded assignment,
+run independent parent acceptance, batch corrections,
 and run full verification once when stable. For Bryan's SGG issue implementation,
 closeout then includes a verified draft PR and a fresh Claude final PR self-review;
 that required final gate is not a redundant pre-publication reviewer fan-out.
@@ -212,9 +214,10 @@ Complete when the plan is decision-complete and authority permits execution.
 
 ## Phase 3 — Implement once
 
-### 1. Right-size the worker
+### 1. Route implementation to Claude
 
-Classify task shape before routing:
+Classify task shape to right-size the handoff and checks, not to transfer
+implementation to Sol:
 
 - `single-loop`: one coherent edit/test cycle, limited repository reading, and no
   security, persistence, migration, protocol, concurrency, public-contract, or
@@ -232,16 +235,18 @@ python3 dot-agents/skills/issue-work/scripts/select_issue_worker.py \
   --implementation-host "$IMPLEMENTATION_HOST" \
   --implementation-repo "$IMPLEMENTATION_REPO" \
   --task-shape single-loop \
-  --override auto
+  --override claude
 ```
 
-Use `--task-shape substantial` when the criteria require it. `auto` keeps a
-single-loop task with the parent and routes substantial work to visible Claude.
-Explicit same-run `--override hermes`, `qwen`, `claude`, or `gpt` wins. Qwen is
-never an automatic route.
+Use `--task-shape substantial` when the criteria require it. Bryan's standing
+selection is Claude for both shapes: pass `--override claude` explicitly. The
+router's legacy `auto` single-loop route does not supersede that instruction.
+Use another implementation route only when Bryan explicitly selects it; task
+size, startup cost, fixture ownership and exhausted worker capacity do not
+authorize parent implementation. Qwen is never an automatic route.
 
 Complete when the routing result matches verified repository identity and the
-recorded task shape.
+recorded task shape, and selects Claude unless Bryan explicitly chose otherwise.
 
 ### 2. Execute the selected route
 
@@ -278,10 +283,14 @@ authorization. Destructive and history-rewriting Git operations are absolute and
 not approval-eligible: prohibit `git reset`, `git clean`, checkout-discard,
 rebase, amend, history rewrite, force-push, and local-ref/branch deletion.
 
-For an explicit Qwen route, use its original model-pure worker and session. For a
-single-loop/native route, the parent implements directly with `tdd`.
+For an explicit Qwen route, use its original model-pure worker and session. A
+host-native implementation route requires Bryan's explicit selection; it is not
+a fallback when Claude is unavailable. Sol runs existing checks and independently
+accepts results, but sends required code, fixture, harness and tooling repairs
+back through a bounded Claude contract under the current authority.
 
-Complete when one worker or parent context has produced a candidate and settled.
+Complete when the authorized implementation owner has produced a candidate and
+settled; worker settlement alone is not acceptance or delivery.
 
 ### 3. Inspect, test, and batch correction
 
@@ -547,7 +556,7 @@ weaker review, or fabricated completion claim.
 
 1. Spawning exploration because the phase exists rather than because a question
    exists.
-2. Handing a single-loop edit to Claude automatically.
+2. Letting the legacy single-loop router default override Bryan's standing Claude implementation role.
 3. Treating independent Claude issue sessions as a global concurrency conflict.
 4. Duplicating pre-publication acceptance through another generic reviewer.
    This warning does not apply to the required post-draft-PR SGG Claude final review.
@@ -563,6 +572,7 @@ weaker review, or fabricated completion claim.
 - [ ] Imperative/advisory authority recorded exactly
 - [ ] Exploration count follows unresolved questions, including zero
 - [ ] Task shape and router output preserved
+- [ ] Claude authored implementation, fixtures and tooling repairs unless Bryan explicitly selected otherwise
 - [ ] At most one turn targeted each Claude runtime session; independent sessions may overlap
 - [ ] Worker identity remained complete and unchanged
 - [ ] Parent inspected actual bytes and ran targeted checks
