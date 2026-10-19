@@ -52,13 +52,15 @@ if [[ "$MODE" == "render" && -f "$CACHE_FILE" ]] && [[ $(cache_age) -lt $CACHE_T
     UTILIZATION=$(sed -n '1p' "$CACHE_FILE")
     RESET_EPOCH=$(sed -n '2p' "$CACHE_FILE")
 else
-    HEADERS=$(curl -s \
+    # The bearer header goes in on stdin (printf is a builtin), keeping the
+    # token out of curl's argv where any local user could read it in ps.
+    HEADERS=$(printf 'Authorization: Bearer %s\n' "$TOKEN" | curl -s \
         --max-time 4 \
         --connect-timeout 3 \
         --retry 0 \
         -D - \
         -o /dev/null \
-        -H "Authorization: Bearer $TOKEN" \
+        -H @- \
         -H "anthropic-version: 2023-06-01" \
         -H "anthropic-beta: oauth-2025-04-20" \
         -H "Content-Type: application/json" \

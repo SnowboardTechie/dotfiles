@@ -24,8 +24,12 @@ expected='Authorization: Bearer fallback-token'
 previous=''
 found=false
 for argument in "$@"; do
-    if [[ "$previous" == "-H" && "$argument" == "$expected" ]]; then
-        found=true
+    # The token must never appear on the command line, where ps can read it.
+    [[ "$argument" == *fallback-token* ]] && exit 65
+    if [[ "$previous" == "-H" && "$argument" == "@-" ]]; then
+        while IFS= read -r line; do
+            [[ "$line" == "$expected" ]] && found=true
+        done
     fi
     previous="$argument"
 done
