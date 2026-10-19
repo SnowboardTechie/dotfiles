@@ -12,7 +12,9 @@
   "workdir": "/Users/bryan/code/sgg",
   "attach_to_session": true,
   "continuity": false,
-  "inferencePolicy": "Unpinned; follow the configured Hermes cron default. No new model pin authorized.",
+  "model": "gpt-6.1-sol",
+  "provider": "openai-codex",
+  "inferencePolicy": "GPT-6.1 Sol via OpenAI Codex, approved after the all-job comparison. Reasoning follows config/provider defaults.",
   "initiallyPaused": true,
   "continuationOrigin": {
     "platform": "matrix",

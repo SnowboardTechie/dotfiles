@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "management": "Standalone existing Hermes job; update by exact name/ID with hermes cron edit. Not managed by the fleet reconciler.",
+  "name": "Watch Inkling-Small release",
+  "schedule": "30 9 * * *",
+  "timezoneRequirement": "America/Los_Angeles",
+  "promptFile": "prompt.md",
+  "model": "gpt-6.1-sol",
+  "provider": "openai-codex",
+  "reasoningPolicy": "Follow config/provider defaults; the comparison used medium.",
+  "no_agent": false,
+  "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
+  "skills": [
+    "open-source-project-health",
+    "huggingface-hub",
+    "llama-cpp"
+  ],
+  "enabled_toolsets": [
+    "web",
+    "file",
+    "terminal"
+  ],
+  "workdir": "/Users/bryan/code/nix-configs",
+  "script": "check-inkling-small-release.py"
+}

@@ -30,13 +30,13 @@ class MorningBriefSplitContractTest(unittest.TestCase):
     # morning-brief test, which is test sensitivity, not coverage — each job
     # family pins its own models in its own tests.
     OWNED_JOBS = {
-        "Workday Morning Brief": ("gpt-5.6-terra", "openai-codex", None),
-        "Personal Morning Brief": ("gpt-5.6-terra", "openai-codex", None),
-        "Personal Weekly Orientation": ("gpt-5.6-terra", "openai-codex", None),
+        "Workday Morning Brief": ("gpt-6.1-sol", "openai-codex", None),
+        "Personal Morning Brief": ("gpt-6.1-sol", "openai-codex", None),
+        "Personal Weekly Orientation": ("gpt-6.1-sol", "openai-codex", None),
         "Personal Weekday Close": ("gpt-5.6-terra", "openai-codex", None),
         "Personal Saturday Orientation": ("gpt-5.6-terra", "openai-codex", None),
         "Personal Sunday Reset": ("gpt-5.6-terra", "openai-codex", None),
-        "Workday Dependency Triage": ("gpt-5.6-sol", "openai-codex", None),
+        "Workday Dependency Triage": ("gpt-6.1-sol", "openai-codex", None),
     }
 
     def test_manifest_pins_each_owned_job_to_its_intended_model(self) -> None:
@@ -81,7 +81,7 @@ class MorningBriefSplitContractTest(unittest.TestCase):
         job = next(job for job in manifest["cronJobs"] if job["name"] == "Personal Morning Brief")
 
         self.assertEqual(job["schedule"], "0 7 * * 1-5")
-        self.assertEqual(job["model"], "gpt-5.6-terra")
+        self.assertEqual(job["model"], "gpt-6.1-sol")
         self.assertEqual(job["provider"], "openai-codex")
         self.assertNotIn("baseUrl", job)
         self.assertEqual(job["deliver"], "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4")

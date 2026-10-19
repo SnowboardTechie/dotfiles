@@ -379,7 +379,7 @@ class MonitorScriptTest(unittest.TestCase):
                 value = MODULE.monitor_script_value(job)
                 self.assertEqual(value or "", job.get("monitorScript") or "")
 
-    def test_the_watcher_is_pinned_to_a_proven_research_route(self) -> None:
+    def test_the_watcher_is_pinned_to_the_approved_research_route(self) -> None:
         """Owned here, not in the morning-brief tests, so each family pins its own."""
         manifest = json.loads(
             (Path(__file__).with_name("manifest.json")).read_text(encoding="utf-8")
@@ -387,7 +387,7 @@ class MonitorScriptTest(unittest.TestCase):
         job = next(
             j for j in manifest["cronJobs"] if j["name"] == "Watch Matt Pocock skill updates"
         )
-        self.assertEqual(job["model"], "gpt-5.6-terra")
+        self.assertEqual(job["model"], "gpt-6.1-sol")
         self.assertEqual(job["provider"], "openai-codex")
         self.assertIsNone(job.get("baseUrl"), "a cloud route needs no base_url override")
 
