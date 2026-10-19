@@ -53,7 +53,7 @@ class WatchdogStateTest(unittest.TestCase):
     def test_grafana_probe_targets_the_studio_port(self) -> None:
         grafana = [probe for probe in self.module.PROBES if probe.name == "Grafana"]
         self.assertEqual(1, len(grafana))
-        self.assertEqual("http://100.121.238.48:33000/api/health", grafana[0].url)
+        self.assertEqual("http://127.0.0.1:33000/api/health", grafana[0].url)
 
     def test_three_failures_alert_once_and_recovery_alerts_once(self) -> None:
         state: dict = {}
