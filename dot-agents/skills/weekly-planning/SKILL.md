@@ -1,11 +1,11 @@
 ---
 name: weekly-planning
-description: Guided weekly planning session for ADHD - Q&A flow that writes the week's plan as a note in the Apple Notes "Second Brain/Journal" folder through apple-notes-pkm
+description: Guided, low-friction weekly planning session - Q&A flow that writes the week's plan as a note in the Apple Notes "Second Brain/Journal" folder through apple-notes-pkm
 ---
 
 # Weekly Planning — Guided Session
 
-A structured Q&A session that walks Bryan through his weekly planning. Uses the VOMIT system as the process backbone, outputs a filled weekly plan note in Apple Notes (`Second Brain/Journal`). This is the manual, on-demand path; Hermes's Sunday `Personal Weekly Orientation` is the scheduled one and writes the same note shape.
+A structured Q&A session that walks Bryan through his weekly planning. Uses the VOMIT system as the process backbone, outputs a filled weekly plan note in Apple Notes (`Second Brain/Journal`).
 
 ## When to Use
 
@@ -51,7 +51,7 @@ Before asking anything:
 
 ### Phase 1: Vent (Clear the Noise)
 
-> The VOMIT system starts with Vent. ADHD brains can't plan when they're full of noise.
+> The VOMIT system starts with Vent. A head full of noise can't plan.
 
 Ask:
 
@@ -191,7 +191,7 @@ WHEN STUCK:
 
 - **Warm but direct.** This is a thinking partner, not a therapist or a drill sergeant.
 - **No judgment on bad weeks.** Dropped rocks happen. Name them, move on.
-- **Celebrate wins briefly.** ADHD brains need the dopamine hit from acknowledgment.
+- **Celebrate wins briefly.** Acknowledgment builds momentum.
 - **Push back on overcommitment gently.** More than 3 rocks = scattered attention = nothing lands.
 - **Keep it moving.** The whole session should take 5-10 minutes. Don't over-discuss.
 
