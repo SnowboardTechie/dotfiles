@@ -71,6 +71,15 @@ a required draft PR and final review. A necessary async yield retains its
 completion consumer and states that execution continues, not a handback or a
 request to proceed.
 
+Scope a pending decision to the operation it actually changes. A separate
+integration, installation or commissioning prerequisite does not suspend
+independent source review, candidate freezing, targeted Risk or canonical
+verification of an unchanged source candidate. Finish those authorized gates
+and report source acceptance separately from unresolved live readiness. Do not
+make Bryan answer a scope-extension question merely to recover unfinished parent
+verification. Hold a particular gate only for its evidenced dependency or safety
+boundary; a concrete source blocker still requires repair before the full run.
+
 ## State and repository roles
 
 Ticket state:
@@ -538,7 +547,8 @@ optimize for low counts by weakening a gate.
 Stop when:
 
 - ticket, plan, repository, worktree, or candidate identity is ambiguous;
-- a material decision remains open;
+- a material decision remains open for the operation being attempted (continue
+  independently authorized gates that do not depend on that decision);
 - selected provider capacity is exhausted or unverifiable;
 - another turn targets the same worker runtime session and holds its lease;
 - a visible-worker identity is missing or mismatched;
