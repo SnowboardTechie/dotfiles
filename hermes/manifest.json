@@ -40,11 +40,6 @@
     "sgg-calendar-events.swift",
     "sgg-mail-messages.js",
     "sgg-pr-review-event.py",
-    "personal_notes.py",
-    "personal-morning-brief.py",
-    "personal-weekly-orientation.py",
-    "personal-alignment-brief.py",
-    "personal-mail-messages.js",
     "check-mattpocock-skill-updates.py",
     "check-herdr-homebrew-atuin-fix.py",
     "check-studio-services.py",
@@ -52,23 +47,25 @@
   ],
   "removedScripts": [
     "sgg-sync-workday-note.py",
-    "check-sssf-upstream.py"
+    "check-sssf-upstream.py",
+    "personal-mail-messages.js"
   ],
   "removedCopiedScripts": {
-    "sgg-granola-import.py": "6b0fe304239d04e87ddf088d8ddbc1530ae91f93d526e076de3706377f904988"
+    "sgg-granola-import.py": "6b0fe304239d04e87ddf088d8ddbc1530ae91f93d526e076de3706377f904988",
+    "personal_notes.py": "f600286dd1e928fb466bc650828059626fc3d757e87fd8315d9a3beff6e00a36",
+    "personal-morning-brief.py": "45a3c7125bec0f917b37727e94c613e26fe565428451ea2d77f23225d569db81",
+    "personal-weekly-orientation.py": "64c8a92f4ef661444876e4106848b57f30c870215cfce2283387d7b254a746e9",
+    "personal-alignment-brief.py": "5dbcb2359b25b845502161f78b35db6ccc2f48f0473d85c897e6f271d91fe0d7"
   },
   "removedLinks": [
-    "hindsight/config.json"
+    "hindsight/config.json",
+    "skills/productivity/personal-routine-automation"
   ],
   "copiedScripts": [
     "check-hermes-status-fix.py",
     "sgg-morning-brief.py",
     "sgg-pr-review-reminder.py",
     "sgg-pr-review-event.py",
-    "personal_notes.py",
-    "personal-morning-brief.py",
-    "personal-weekly-orientation.py",
-    "personal-alignment-brief.py",
     "check-mattpocock-skill-updates.py",
     "check-herdr-homebrew-atuin-fix.py",
     "check-studio-services.py",
@@ -85,7 +82,6 @@
     "mlops/openai-compatible-model-endpoints",
     "note-taking/vault-pkm",
     "productivity/gift-and-experience-capture",
-    "productivity/personal-routine-automation",
     "productivity/sgg-pr-review-reminder",
     "productivity/workday-briefing-automation",
     "security/self-hosted-agent-security",
@@ -158,138 +154,6 @@
       "attachToSession": true,
       "continuation": {
         "chatName": "SGG",
-        "userEnv": "MATRIX_ALLOWED_USERS"
-      }
-    },
-    {
-      "name": "Personal Morning Brief",
-      "deliveryIntent": "briefing",
-      "schedule": "0 7 * * 1-5",
-      "model": "gpt-6.1-sol",
-      "provider": "openai-codex",
-      "promptFile": "automations/personal-morning-brief/prompt.md",
-      "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
-      "skills": [
-        "personal-routine-automation",
-        "apple-notes-pkm"
-      ],
-      "script": "personal-morning-brief.py",
-      "noAgent": false,
-      "enabledToolsets": [
-        "file",
-        "terminal"
-      ],
-      "workdir": "/Users/bryan",
-      "attachToSession": true,
-      "carryPreviousOutput": true,
-      "continuation": {
-        "chatName": "Second Brain",
-        "userEnv": "MATRIX_ALLOWED_USERS"
-      }
-    },
-    {
-      "name": "Personal Weekly Orientation",
-      "deliveryIntent": "briefing",
-      "schedule": "0 11 * * 0",
-      "model": "gpt-6.1-sol",
-      "provider": "openai-codex",
-      "promptFile": "automations/personal-weekly-orientation/prompt.md",
-      "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
-      "skills": [
-        "personal-routine-automation",
-        "apple-notes-pkm"
-      ],
-      "script": "personal-weekly-orientation.py",
-      "noAgent": false,
-      "enabledToolsets": [
-        "file",
-        "terminal"
-      ],
-      "workdir": "/Users/bryan",
-      "attachToSession": true,
-      "continuation": {
-        "chatName": "Second Brain",
-        "userEnv": "MATRIX_ALLOWED_USERS"
-      }
-    },
-    {
-      "name": "Personal Weekday Close",
-      "deliveryIntent": "briefing",
-      "schedule": "0 17 * * 1-5",
-      "model": "gpt-5.6-terra",
-      "provider": "openai-codex",
-      "promptFile": "automations/personal-weekday-close/prompt.md",
-      "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
-      "skills": [
-        "personal-routine-automation",
-        "apple-notes-pkm"
-      ],
-      "script": "personal-alignment-brief.py",
-      "noAgent": false,
-      "repeat": 15,
-      "createIfMissing": false,
-      "enabledToolsets": [
-        "file",
-        "terminal"
-      ],
-      "workdir": "/Users/bryan",
-      "attachToSession": true,
-      "continuation": {
-        "chatName": "Second Brain",
-        "userEnv": "MATRIX_ALLOWED_USERS"
-      }
-    },
-    {
-      "name": "Personal Saturday Orientation",
-      "deliveryIntent": "briefing",
-      "schedule": "0 11 * * 6",
-      "model": "gpt-5.6-terra",
-      "provider": "openai-codex",
-      "promptFile": "automations/personal-saturday-orientation/prompt.md",
-      "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
-      "skills": [
-        "personal-routine-automation",
-        "apple-notes-pkm"
-      ],
-      "script": "personal-alignment-brief.py",
-      "noAgent": false,
-      "repeat": 3,
-      "createIfMissing": false,
-      "enabledToolsets": [
-        "file",
-        "terminal"
-      ],
-      "workdir": "/Users/bryan",
-      "attachToSession": true,
-      "continuation": {
-        "chatName": "Second Brain",
-        "userEnv": "MATRIX_ALLOWED_USERS"
-      }
-    },
-    {
-      "name": "Personal Sunday Reset",
-      "deliveryIntent": "briefing",
-      "schedule": "0 11 * * 0",
-      "model": "gpt-5.6-terra",
-      "provider": "openai-codex",
-      "promptFile": "automations/personal-sunday-reset/prompt.md",
-      "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
-      "skills": [
-        "personal-routine-automation",
-        "apple-notes-pkm"
-      ],
-      "script": "personal-alignment-brief.py",
-      "noAgent": false,
-      "repeat": 4,
-      "createIfMissing": false,
-      "enabledToolsets": [
-        "file",
-        "terminal"
-      ],
-      "workdir": "/Users/bryan",
-      "attachToSession": true,
-      "continuation": {
-        "chatName": "Second Brain",
         "userEnv": "MATRIX_ALLOWED_USERS"
       }
     },

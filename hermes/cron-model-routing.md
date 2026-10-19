@@ -1,13 +1,13 @@
 # Scheduled-agent inference routing
 
-The nine active model-backed jobs use `gpt-6.1-sol` through `openai-codex`.
+The seven active model-backed jobs use `gpt-6.1-sol` through `openai-codex`.
 The October all-job comparison used **medium** effort for all three candidates.
 The routing change preserves reasoning inheritance; it does not introduce effort
 pins. Script-only jobs remain model-free, and dormant/completed jobs stay dormant.
 
 ## Source ownership
 
-- Six jobs are in `hermes/manifest.json`, reconciled by `hermes/reconcile_cron.py`.
+- Four jobs are in `hermes/manifest.json`, reconciled by `hermes/reconcile_cron.py`.
 - The Friday recap and Inkling/Colibri watches have standalone `job.json` and
   `prompt.md` definitions under `hermes/automations/`. They are not created by the
   fleet reconciler. The Inkling watch references its existing installed collector;
