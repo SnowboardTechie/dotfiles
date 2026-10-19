@@ -23,9 +23,8 @@ is a separate skill: `sprint-status-update`.
 
 ## Key Rules
 
-1. **Always tag Julius, not Lucas.** Open every comment with `@juchang111`. Do not tag
-   `@lucasmbrown-usds` in future HHS deliverable updates; Lucas is no longer part of
-   this HHS work. Recheck copied precedents for stale mentions.
+1. **Always tag Julius.** Open every comment with `@juchang111`. Recheck copied
+   precedents for stale mentions.
 2. **ACs and metrics are different things.** Use the bolded name from the deliverable as
    the sub-heading (e.g., "### Custom Fields Catalog", "### SGG Adoption"). Never use
    numbered labels like "Criteria 1", "Criteria 2".
@@ -112,8 +111,9 @@ format** to match, and the sub-issues are **what actually happened**.
 
 The P&D team's sprint doc holds the committed goal, dates, and issue list for every sprint:
 
-- Doc ID: `1eTNaLYWsXn1oRU0TB3KRXyTYRHI4oCqf1h-CQBuCo-E`
-- URL: https://docs.google.com/document/d/1eTNaLYWsXn1oRU0TB3KRXyTYRHI4oCqf1h-CQBuCo-E/edit
+The doc link lives in the private SGG vault, not here: read the **Sprint planning doc**
+section of `~/code/sgg/vault/technical/epic-and-deliverable-reporting.md`. If that section
+is missing, stop and ask Bryan for the link rather than guessing or searching Drive.
 
 Fetch it through the active agent's authenticated Google Workspace integration. In
 Hermes, load `google-workspace` and use its Docs read command; save the JSON/text response
