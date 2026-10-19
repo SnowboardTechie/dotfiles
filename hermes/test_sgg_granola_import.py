@@ -127,10 +127,10 @@ class CalendarIdentityTest(unittest.TestCase):
             "start": {"dateTime": "2026-09-01T11:00:00-07:00"},
             "end": {"dateTime": "2026-09-01T12:00:00-07:00"},
             "originalStartTime": {"dateTime": "2026-09-01T11:00:00-07:00"},
-            "organizer": {"email": "laura@agile6.com", "displayName": "Laura"},
+            "organizer": {"email": "organizer@example.com", "displayName": "Laura"},
             "attendees": [
                 {
-                    "email": "bryan.thompson@agile6.com",
+                    "email": "attendee@example.com",
                     "displayName": "Bryan",
                     "self": True,
                     "responseStatus": "accepted",
