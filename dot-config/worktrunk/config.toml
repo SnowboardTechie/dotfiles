@@ -20,8 +20,11 @@ summary = true     # LLM branch summaries in wt list --full
 [[pre-start]]
 copy-ignored = "wt step copy-ignored"
 
+# Trust only the trunk's own untracked .envrc that copy-ignored just copied.
+# A tracked .envrc arrives with the branch, and a contributor's PR branch must
+# not get auto-trusted shell; review it and run `direnv allow` by hand.
 [[pre-start]]
-direnv = "if [ -f .envrc ]; then direnv allow; fi"
+direnv = 't=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)"); if [ -f .envrc ] && ! git ls-files --error-unmatch -- .envrc >/dev/null 2>&1 && cmp -s .envrc "$t/.envrc"; then direnv allow; fi'
 
 # Link agent context instead of letting copy-ignored snapshot it.
 # copy-ignored duplicates the trunk's untracked AGENTS.md into each new

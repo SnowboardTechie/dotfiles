@@ -113,18 +113,40 @@ class WorktrunkContextTests(unittest.TestCase):
         self.assertEqual(agents.read_text(), "Branch-owned project guidance\n")
         self.assertEqual(self.run_command("git", "status", "--porcelain", cwd=self.worktree).stdout, "")
 
-    def test_direnv_hook_skips_absent_envrc_and_propagates_failures(self):
+    def run_direnv_hook(self, direnv_status=0):
         config = tomllib.loads(CONFIG.read_text())
         command = next(step["direnv"] for step in config["pre-start"] if "direnv" in step)
+        script = f'direnv() {{ printf "called:%s\\n" "$*"; return {direnv_status}; }}; {command}'
+        return subprocess.run(["sh", "-c", script], cwd=self.worktree,
+                              env=self.env, capture_output=True, text=True)
+
+    def test_direnv_hook_skips_absent_envrc_and_propagates_failures(self):
+        (self.trunk / ".git/info/exclude").write_text(".envrc\n")
+        (self.trunk / ".envrc").write_text("# Test fixture\n")
         for exists, direnv_status, expected in ((False, 0, 0), (True, 0, 0), (True, 7, 7)):
             with self.subTest(envrc_exists=exists, direnv_status=direnv_status):
                 if exists:
                     (self.worktree / ".envrc").write_text("# Test fixture\n")
-                script = f'direnv() {{ printf "called:%s\\n" "$*"; return {direnv_status}; }}; {command}'
-                result = subprocess.run(["sh", "-c", script], cwd=self.worktree,
-                                        env=self.env, capture_output=True, text=True)
+                result = self.run_direnv_hook(direnv_status)
                 self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
                 self.assertEqual(result.stdout, "called:allow\n" if exists else "")
+
+    def test_direnv_hook_never_trusts_branch_or_edited_envrc(self):
+        (self.trunk / ".git/info/exclude").write_text(".envrc\n")
+        (self.trunk / ".envrc").write_text("# Trunk fixture\n")
+        (self.worktree / ".envrc").write_text("# Edited after copy\n")
+        result = self.run_direnv_hook()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout, "", "an untracked .envrc that differs from trunk was trusted")
+
+        (self.worktree / ".envrc").write_text("# Trunk fixture\n")
+        self.run_command("git", "add", "-f", ".envrc", cwd=self.worktree)
+        self.run_command("git", "-c", "user.name=Context Test", "-c",
+                         "user.email=context@example.invalid", "-c", "commit.gpgsign=false",
+                         "commit", "-m", "Branch supplies .envrc", cwd=self.worktree)
+        result = self.run_direnv_hook()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout, "", "a branch-tracked .envrc was trusted")
 
     def test_full_worktree_launch_without_envrc_runs_later_context_hook(self):
         self.remove_worktree()
