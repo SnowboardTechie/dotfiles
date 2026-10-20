@@ -14,12 +14,12 @@ metadata:
 
 ## Overview
 
-Sol orchestrates; Claude implements. Hand decision-complete implementation to a
+The Hermes parent orchestrates; a Claude worker implements. Hand decision-complete implementation to a
 visible Claude worker, including small changes, fixtures, harnesses, tooling,
 and repairs discovered during verification. Task size and worker startup cost
 are not exceptions. Use a visible Hermes worker for requested read-only work;
-simple questions stay with Sol unless Bryan asks for a worker. Only Bryan's
-explicit selection changes the implementation role or runtime. Sol owns scope,
+simple questions stay with the parent unless Bryan asks for a worker. Only Bryan's
+explicit selection changes the implementation role or runtime. The parent owns scope,
 dependencies, handoffs, supervision, independent acceptance, authorized Git
 integration/publication, and live verification. A worker produces a candidate,
 not an accepted deliverable.
@@ -84,7 +84,7 @@ standing Claude selection. Do not turn a fixture or tooling repair into parent
 implementation by calling it verification.
 
 Do not use this workflow for open architecture, live incident diagnosis,
-voice-heavy writing, or exploratory research. Resolve those with Sol first.
+voice-heavy writing, or exploratory research. Resolve those in the parent conversation first.
 
 ## Delivery boundary and substantive handback
 
@@ -119,7 +119,7 @@ acceptance owner; unavailable access does not block ordinary review.
 
 ## Role Boundary
 
-Sol owns:
+The parent owns:
 
 - user deliberation and material decisions;
 - plan acceptance, dependency scheduling, bounded handoffs, and risk calibration;
@@ -135,16 +135,16 @@ The worker owns:
 - one bundled correction, plus one narrowly conditional second correction when
   `pr-self-review` permits it.
 
-Sol may inspect source, run existing checks, maintain plans/review artifacts and
+The parent may inspect source, run existing checks, maintain plans/review artifacts and
 perform authorized integration. Sustained prerequisite investigation that needs
 new code or a repaired harness belongs in a bounded Claude handoff; do not build
 it in the coordinator while the implementer waits. A worker's failure, capacity
-limit or closed session does not transfer implementation ownership to Sol.
+limit or closed session does not transfer implementation ownership to the parent.
 Recover the permitted worker route or report its concrete blocker.
 
-Do not spend a Sol implementation session before handoff and then use Claude
+Do not spend a parent implementation session before handoff and then use Claude
 only as reviewer. Do not use a second Claude session to review the first
-by default outside Bryan's SGG closeout; the Sol parent is already the independent
+by default outside Bryan's SGG closeout; the parent is already the independent
 pre-publication acceptance context. For SGG issue implementation, `issue-work`
 owns the required sequence: parent acceptance, verified draft PR, fresh Claude
 final PR self-review, parent disposition, and cleanup. That post-publication final
@@ -213,7 +213,7 @@ true cross-machine handoff use `cross-machine-coding-agent-handoffs`.
 
 Treat the artifact's scope as closed. A worker may inspect broadly enough to
 implement safely, but it edits only what the settled acceptance criteria
-require. Unexpected adjacent defects are reported to Sol; the worker does not
+require. Unexpected adjacent defects are reported to the parent; the worker does not
 add characterization tests, production fixes, trackers, or "helpful" cleanup
 for them. In particular, "cover every existing call site" means apply the
 selected mechanism at every site, not exhaustively discover every latent
@@ -385,7 +385,7 @@ status.
 Inspect the real branch, diff, worktree, and worker report. Run targeted checks
 needed to validate the implementation. Then follow `pr-self-review`:
 
-- the Sol parent performs one integrated Standards, Spec, conditional Risk, and
+- the parent performs one integrated Standards, Spec, conditional Risk, and
   Ponytail review plus the acceptance-criteria sweep;
 - all validated blockers are batched into one correction contract;
 - correction returns to this same worker identity;
@@ -431,7 +431,7 @@ resume a Herdr identity.
 
 ## Common Pitfalls
 
-1. Keeping small edits, fixture/harness repairs, or implementation tooling with Sol to save worker startup cost.
+1. Keeping small edits, fixture/harness repairs, or implementation tooling with the parent to save worker startup cost.
 2. Confusing per-session turn serialization with a global ban on concurrent Claude work.
 3. Making the prompt a second plan.
 4. Rechecking identity with improvised shell commands instead of the helper.
@@ -439,7 +439,7 @@ resume a Herdr identity.
 6. Letting a worker-discovered adjacent defect expand the ticket or candidate without a new user decision.
 7. Using "all call sites" as permission for an exhaustive domain audit rather than bounded application of the selected mechanism.
 8. Starting a fresh worker for corrections instead of resuming the recorded one.
-9. Duplicating Sol's pre-publication acceptance through a generic fresh reviewer.
+9. Duplicating the parent's pre-publication acceptance through a generic fresh reviewer.
    Bryan's required post-draft-PR SGG Claude final review is not this pitfall.
 10. Leaving a settled pane open as a status marker.
 11. Confusing correction allowance with provider capacity.
