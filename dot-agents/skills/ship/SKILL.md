@@ -101,7 +101,8 @@ Source priority:
 
 Preserve every template section. Replace placeholders, justify checkbox
 selections, use `N/A` only when genuinely inapplicable, and preserve clickable
-issue/PR links. Never add AI attribution.
+issue/PR links. Never add AI attribution, and don't add draft-status or
+permission disclaimers to the body.
 
 Choose only labels supported by the repository and justified by the diff. In
 `issue-work-authorized` mode, skip labels unless `labels_authorized: true` was

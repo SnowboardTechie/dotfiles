@@ -112,7 +112,7 @@ Fill the template (read from the PR body in Step 3) following the shared fill di
 
 The **source material** here is the diff from Step 2 — this skill has no summary artifact, so drive every section factually from the diff.
 
-Do not add AI attribution, generated-by notices, or `Co-authored-by` text. Preserve factual issue links and the repository template exactly.
+Do not add AI attribution, generated-by notices, `Co-authored-by` text, or draft-status or permission disclaimers. Preserve factual issue links and the repository template exactly.
 
 ### Step 4.5: Approval gate
 
