@@ -58,6 +58,14 @@ rather than Bryan talking to another person. Start conversationally and work
 the completed action into the sentence, for example: "Yeah, I went through
 these and cleaned them up."
 
+### Evaluating the reviewer instead of thanking them
+
+When replying to a reviewer who raised a finding, do not open by grading their
+comment: "Good call to flag this," "Good catch," "Great point." Open with
+gratitude ("Thanks for catching this, ..."), then the substance. Bryan,
+2026-10-20: "I would prefer that we show gratitude instead of just
+evaluating." See off-target.md 2026-10-20.
+
 ### Apologetic openers on correction replies
 
 Forbidden patterns:

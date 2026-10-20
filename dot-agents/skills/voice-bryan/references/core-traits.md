@@ -54,7 +54,7 @@ Channel-specific phrasings live in the per-channel sections below.
    dense technical replies with a one-or-two-word conversational opener, not
    a heading or a topic sentence. The opener also encodes severity in PR
    review (see Channel: PR review > Severity signaling). See "Yeah, ..." /
-   "Good call to flag this." / "Just checking, ..." / "Worth flagging
+   "Thanks for catching this, ..." / "Just checking, ..." / "Worth flagging
    that..." / "Found something subtle worth surfacing..." in samples.md and
    off-target.md.
 
@@ -90,7 +90,7 @@ when a draft is reaching for stiffer or more AI-flavored alternatives.
 - "Yeah, ..." (Slack channel posts, PR review, spec comments)
 - "Very nice, ..." (warm affirmation for a teammate's genuine win or simplification; warmer than a measured "Nice")
 - "Just checking, ..." (clarifying question without an accusatory frame)
-- "Good call to flag this." (PR review acknowledgement)
+- "Thanks for catching this, ..." (replying to a reviewer's finding: thank them, then answer. Not "Good call to flag this." Grading their comment is evaluation, not gratitude. See off-target.md 2026-10-20.)
 - "Quick context on why:" (when teeing up justification for an ask)
 - "The reason X is..." (when leading with a reframe of the question)
 
