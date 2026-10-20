@@ -16,8 +16,8 @@ class MorningBriefSplitContractTest(unittest.TestCase):
     # test, which is test sensitivity, not coverage — each job family pins
     # its own models in its own tests.
     OWNED_JOBS = {
-        "Workday Morning Brief": ("gpt-6.1-sol", "openai-codex", None),
-        "Workday Dependency Triage": ("gpt-6.1-sol", "openai-codex", None),
+        "Workday Morning Brief": ("claude-sonnet-5-5", "claude-subscription-directsdk-experimental", None),
+        "Workday Dependency Triage": ("claude-sonnet-5-5", "claude-subscription-directsdk-experimental", None),
     }
 
     def test_manifest_pins_each_owned_job_to_its_intended_model(self) -> None:
@@ -45,7 +45,7 @@ class MorningBriefSplitContractTest(unittest.TestCase):
                     self.assertFalse(job["attachToSession"])
                     self.assertNotIn("continuation", job)
 
-    def test_every_agent_job_uses_the_codex_subscription(self) -> None:
+    def test_every_agent_job_uses_the_claude_subscription(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         for job in manifest["cronJobs"]:
             with self.subTest(job=job["name"]):
@@ -53,8 +53,8 @@ class MorningBriefSplitContractTest(unittest.TestCase):
                     self.assertIsNone(job["model"])
                     self.assertIsNone(job["provider"])
                 else:
-                    self.assertTrue(job["model"].startswith("gpt-"))
-                    self.assertEqual(job["provider"], "openai-codex")
+                    self.assertTrue(job["model"].startswith("claude-"))
+                    self.assertEqual(job["provider"], "claude-subscription-directsdk-experimental")
                 self.assertIsNone(job.get("baseUrl"))
 
     def test_retired_personal_routines_are_removed_from_the_studio(self) -> None:

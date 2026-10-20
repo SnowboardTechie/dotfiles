@@ -103,6 +103,9 @@ def monitor_script_value(definition: dict) -> str | None:
     return monitor_script
 
 
+CLAUDE_PROVIDER = "claude-subscription-directsdk-experimental"
+
+
 def values_match(key: str, expected: object, actual: object) -> bool:
     """Compare scheduler values, resolving equivalent workdir symlinks."""
     if key == "workdir" and isinstance(expected, str) and isinstance(actual, str):
@@ -111,7 +114,7 @@ def values_match(key: str, expected: object, actual: object) -> bool:
 
 
 def verify_inference_route(definition: dict) -> None:
-    """Keep unattended inference on Codex unless the manifest policy changes."""
+    """Keep unattended inference on the Claude subscription unless the manifest policy changes."""
     name = definition["name"]
     model = definition.get("model")
     provider = definition.get("provider")
@@ -120,12 +123,12 @@ def verify_inference_route(definition: dict) -> None:
         if model is not None or provider is not None or base_url is not None:
             fail(f"{name!r} is noAgent and must remain model-free")
         return
-    if not isinstance(model, str) or not model.startswith("gpt-"):
-        fail(f"{name!r} must use an explicit GPT model through the Codex subscription")
-    if provider != "openai-codex":
-        fail(f"{name!r} must use provider 'openai-codex', got {provider!r}")
+    if not isinstance(model, str) or not model.startswith("claude-"):
+        fail(f"{name!r} must use an explicit Claude model through the Claude subscription")
+    if provider != CLAUDE_PROVIDER:
+        fail(f"{name!r} must use provider {CLAUDE_PROVIDER!r}, got {provider!r}")
     if base_url is not None:
-        fail(f"{name!r} must not override the OpenAI Codex subscription base URL")
+        fail(f"{name!r} must not override the Claude subscription provider base URL")
 
 
 def verify_mcp_requirements(manifest: dict) -> None:

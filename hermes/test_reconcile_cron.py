@@ -147,14 +147,14 @@ class InferenceRouteTest(unittest.TestCase):
     def definition(self, **overrides: object) -> dict:
         definition = {
             "name": "Test Brief",
-            "model": "gpt-5.6-terra",
-            "provider": "openai-codex",
+            "model": "claude-sonnet-5-5",
+            "provider": "claude-subscription-directsdk-experimental",
             "noAgent": False,
         }
         definition.update(overrides)
         return definition
 
-    def test_accepts_codex_subscription_route(self) -> None:
+    def test_accepts_claude_subscription_route(self) -> None:
         MODULE.verify_inference_route(self.definition())
 
     def test_accepts_model_free_no_agent_job(self) -> None:
@@ -298,8 +298,8 @@ class MonitorScriptTest(unittest.TestCase):
             "name": "Watch Something",
             "deliveryIntent": "alert",
             "schedule": "5 9 * * 1",
-            "model": "gpt-5.6-terra",
-            "provider": "openai-codex",
+            "model": "claude-sonnet-5-5",
+            "provider": "claude-subscription-directsdk-experimental",
             "promptFile": "automations/x/prompt.md",
             "monitorScript": "check-something.py",
             "deliver": "matrix",
@@ -387,8 +387,8 @@ class MonitorScriptTest(unittest.TestCase):
         job = next(
             j for j in manifest["cronJobs"] if j["name"] == "Watch Matt Pocock skill updates"
         )
-        self.assertEqual(job["model"], "gpt-6.1-sol")
-        self.assertEqual(job["provider"], "openai-codex")
+        self.assertEqual(job["model"], "claude-opus-5-5")
+        self.assertEqual(job["provider"], "claude-subscription-directsdk-experimental")
         self.assertIsNone(job.get("baseUrl"), "a cloud route needs no base_url override")
 
     def test_prompt_file_for_every_cron_job_resolves(self) -> None:
@@ -542,8 +542,8 @@ class MergedFeatureIntegrationTest(unittest.TestCase):
         "name": "Watch Something",
         "deliveryIntent": "alert",
         "schedule": "5 9 * * 1",
-        "model": "gpt-5.6-terra",
-        "provider": "openai-codex",
+        "model": "claude-sonnet-5-5",
+        "provider": "claude-subscription-directsdk-experimental",
         "promptFile": "automations/x/prompt.md",
         "monitorScript": "check-something.py",
         "deliver": "matrix",
@@ -558,8 +558,8 @@ class MergedFeatureIntegrationTest(unittest.TestCase):
         "name": "Personal Brief",
         "deliveryIntent": "briefing",
         "schedule": "20 7 * * 1-5",
-        "model": "gpt-5.6-terra",
-        "provider": "openai-codex",
+        "model": "claude-sonnet-5-5",
+        "provider": "claude-subscription-directsdk-experimental",
         "promptFile": "automations/x/prompt.md",
         "deliver": "matrix:!room",
         "skills": ["personal-routine-automation"],

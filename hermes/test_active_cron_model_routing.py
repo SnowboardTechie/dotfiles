@@ -4,17 +4,17 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-MODEL = "gpt-6.1-sol"
-PROVIDER = "openai-codex"
-ACTIVE_NAMES = {
-    "Workday Morning Brief",
-    "Watch Inkling-Small release",
-    "Watch Colibri GLM-5.2 Studio readiness",
-    "Workday Dependency Triage",
-    "Watch Matt Pocock skill updates",
-    "SGG PR Review Reminder",
-    "SGG Friday Recap",
+PROVIDER = "claude-subscription-directsdk-experimental"
+ROUTES = {
+    "Workday Morning Brief": "claude-sonnet-5-5",
+    "SGG PR Review Reminder": "claude-sonnet-5-5",
+    "Workday Dependency Triage": "claude-sonnet-5-5",
+    "Watch Matt Pocock skill updates": "claude-opus-5-5",
+    "Watch Inkling-Small release": "claude-sonnet-5-5",
+    "Watch Colibri GLM-5.2 Studio readiness": "claude-sonnet-5-5",
+    "SGG Friday Recap": "claude-opus-5-5"
 }
+ACTIVE_NAMES = set(ROUTES)
 STANDALONE = (
     "inkling-small-release-watch",
     "colibri-glm52-readiness-watch",
@@ -35,7 +35,7 @@ class ActiveCronModelRoutingTest(unittest.TestCase):
         self.assertEqual(set(jobs), ACTIVE_NAMES)
         for name, job in jobs.items():
             with self.subTest(job=name):
-                self.assertEqual(job["model"], MODEL)
+                self.assertEqual(job["model"], ROUTES[name])
                 self.assertEqual(job["provider"], PROVIDER)
                 self.assertIsNone(job.get("baseUrl"))
                 self.assertIsNone(job.get("base_url"))

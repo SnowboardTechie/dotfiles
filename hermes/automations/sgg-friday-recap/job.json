@@ -12,9 +12,9 @@
   "workdir": "/Users/bryan/code/sgg",
   "attach_to_session": true,
   "continuity": false,
-  "model": "gpt-6.1-sol",
-  "provider": "openai-codex",
-  "inferencePolicy": "GPT-6.1 Sol via OpenAI Codex, approved after the all-job comparison. Reasoning follows config/provider defaults.",
+  "model": "claude-opus-5-5",
+  "provider": "claude-subscription-directsdk-experimental",
+  "inferencePolicy": "Claude Opus 5.5 via the Claude subscription (OpenAI subscription retired). Reasoning follows config/provider defaults.",
   "initiallyPaused": true,
   "continuationOrigin": {
     "platform": "matrix",

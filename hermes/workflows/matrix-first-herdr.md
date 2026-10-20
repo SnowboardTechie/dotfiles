@@ -19,7 +19,8 @@ software.
   a Herdr server limitation. Never fabricate HERDR_ENV or a caller pane.
 - Keep existing services, E2EE credentials/store, default model, soul, memory,
   unrelated Claude settings, scheduled jobs, and deferred maintenance unchanged.
-- Default remains gpt-6.1-sol / openai-codex. Jev is a future structured-decision
+- Default is Claude Opus 5.5 on the Claude subscription (OpenAI retired
+  2026-10-20). Jev is a future structured-decision
   tuning candidate, not part of this implementation.
 - Timed resets no longer run in installed Hermes core; do not add a reset plugin
   or rely on midnight boundaries. Preserve existing room and thread routing.

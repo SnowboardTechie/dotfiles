@@ -39,7 +39,7 @@ Requested lightweight questions and read-only inspection use a configured Hermes
 preset; substantial implementation uses a configured Claude preset. Explicit
 runtime selection overrides these defaults. Keep the brief and verification
 proportional: a simple question is not permission to commission an exhaustive
-audit. Bryan's pilot uses `hermes-sol` as the omitted-preset default, with
+audit. Bryan's pilot uses `hermes-claude` as the omitted-preset default, with
 `claude-opus` selected for substantial implementation. Neither preset's effort,
 model nor approval mode changes. This is routing guidance, not a latency guarantee
 or additional authorization.

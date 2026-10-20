@@ -211,8 +211,8 @@ class ContractTest(unittest.TestCase):
         self.assertIn("sgg-pr-review-reminder.py", self.manifest["copiedScripts"])
         self.assertIn("productivity/sgg-pr-review-reminder", self.manifest["skills"])
         self.assertEqual(self.job["schedule"], "0 8 * * 2,4")
-        self.assertEqual(self.job["model"], "gpt-6.1-sol")
-        self.assertEqual(self.job["provider"], "openai-codex")
+        self.assertEqual(self.job["model"], "claude-sonnet-5-5")
+        self.assertEqual(self.job["provider"], "claude-subscription-directsdk-experimental")
         self.assertEqual(
             self.job["deliver"],
             "matrix:!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU",
