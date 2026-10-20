@@ -97,7 +97,8 @@
         "Adds `claim-status`, so the exact operation id holding a ticket — and the command to release it — is inspectable rather than guessable.",
         "Value validation is real rather than shape-matching: ticket and map numbers must be positive integers (Forgejo numbers issues from 1, so zero is a missing value dressed as one, and the synthetic `ticket: 0` fallback is gone), and a timestamp must parse to a real UTC instant — `2026-99-99T99:99:99Z` matches every plausible regex. Blank lines inside a managed block are rejected rather than skipped, because padding a reader tolerates is padding a forger can hide behind.",
         "Map and ticket identity are exact: a map needs exactly one balanced current-version managed region (zero is not a map; two is worse, since a decision would be merged into one while a reader sees the other), and a ticket needs both `wayfinder:ticket` and the `wayfinder:{type}` label agreeing with exact `map`/`type` metadata — a label that contradicts the body is two sources of truth, and this adapter refuses to pick one.",
-        "A resolution that records what the session settled with Bryan is applied without showing him the preview; the session still runs and reviews it as publication, and asks only on a discrepancy. Map and ticket creation previews are still shown."
+        "A resolution that records what the session settled with Bryan is applied without showing him the preview; the session still runs and reviews it as publication, and asks only on a discrepancy. Map and ticket creation previews are still shown.",
+        "Names the next decision by its issue number together with its title, refining the accepted refer-by-name rule."
       ],
       "acceptedUpstreamRules": [
         "Destination named first; it fixes the scope.",
