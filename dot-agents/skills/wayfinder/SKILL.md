@@ -117,6 +117,7 @@ improvise them.
 Every map and ticket has a title. In everything Bryan reads, refer to it **by
 that name**, never by a bare number. A wall of `#42, #43, #44` is illegible;
 names read at a glance. The link rides inside the name.
+When you name the next decision, give its issue number with its title.
 
 ## Ticket types
 
