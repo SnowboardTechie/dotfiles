@@ -176,6 +176,13 @@ email) for a whole-server health readback. Report only what you verified.
 
 ## Pitfalls
 
+- Expected run times seen so far: Element ~20 s; Phanpy ~3.5 min (Node
+  build); GoToSocial ~30 s plus a ~1.3 GB safety backup. GoToSocial's backup
+  logs `could not change directory to "/home/yunohost.backup/tmp/..."` and
+  `Permission denied`. This appears to be the database dump's user not being
+  able to enter the backup dir, so it's harmless while the backup still reports
+  `SUCCESS Backup created`. Treat it as a failure if that SUCCESS line is
+  missing.
 - Treating the package's offered version as vetted: forgejo_ynh shipped
   17.0.0 the day after Forgejo published an advisory against upgrading.
 - Reviewing only the target release: a 6-release Synapse jump has several
