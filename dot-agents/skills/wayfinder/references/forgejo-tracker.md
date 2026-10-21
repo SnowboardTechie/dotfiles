@@ -253,7 +253,7 @@ pasted into it.
 
 ## Operations
 
-Every mutating command previews by default. `--apply` performs it.
+Every mutating command previews by default. `--apply` performs it. This is a global argparse option: put it **before the subcommand**, for example `python3 "$S" --origin "$ORIGIN" --tracker "$TRACKER" --apply claim ...`. The trailing `[--apply]` notation below indicates availability, not accepted literal ordering; trailing `--apply` is refused without writing.
 
 **Tea/worktree pitfall:** some Tea builds use a Git parser that refuses
 repositories carrying `extensions.worktreeConfig` with
