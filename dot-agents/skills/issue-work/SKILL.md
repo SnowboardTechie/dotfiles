@@ -42,6 +42,10 @@ title and description synchronized. It does not authorize merge, issue comments,
 issue-body edits, label changes, closure, deployment, destructive Git, or a
 material scope/architecture/public-contract change.
 
+Exception: in Bryan's personal repositories that deliver directly to `main`
+(dotfiles, nix-configs), the work request covers closing the issue once every
+acceptance criterion is verified, including via a closing keyword in the commit.
+
 A request to plan, inspect, review, or advise is not implementation authority.
 Questions and corrections are not authorization. Record the authority mode in
 `progress.md` so resume does not invent or discard it.
