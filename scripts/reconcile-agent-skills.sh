@@ -137,7 +137,7 @@ HERMES_SKILLS=(
     dx-target dx-preview conforming-tech-specs
     catalog-review dependency-review dependency-triage sprint-deliverable-update
     "${ADAPTED_CORES[@]}"
-    guided-learning
+    guided-learning yunohost-updates
 )
 
 # Print an operation line. Operations mutate only under --apply; check mode

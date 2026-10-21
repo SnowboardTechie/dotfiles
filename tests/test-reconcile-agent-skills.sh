@@ -87,7 +87,7 @@ check "t1: Codex excludes Hermes orchestration" test ! -e "$H/.agents/skills/cod
 check "t1: Claude receives 25 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 25
 check "t1: OpenCode receives 25 pool links" test "$(links_into_pool "$H/.config/opencode/skills")" -eq 25
 check "t1: Pi receives 11 pool links"       test "$(links_into_pool "$H/.pi/agent/skills")" -eq 11
-check "t1: Hermes receives 31 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 31
+check "t1: Hermes receives 32 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 32
 check "t1: Claude-only skill is linked"     link_resolves_to "$H/.claude/skills/dx-target" "$POOL/dx-target"
 check "t1: Claude excludes non-Claude common" test ! -e "$H/.claude/skills/obsidian"
 check "t1: Pi keeps non-Claude common"      link_resolves_to "$H/.pi/agent/skills/obsidian" "$POOL/obsidian"
