@@ -689,5 +689,50 @@ class MergedFeatureIntegrationTest(unittest.TestCase):
         self.assertEqual(updated["store"]["Personal Brief"]["repeat"], {"times": 3})
 
 
+class EmptyToolsetReadbackTest(unittest.TestCase):
+    """An empty `enabledToolsets` is a zero-tool allowlist, not "unrestricted".
+
+    Hermes persists `[]` as `[]` on create and update, so readback must expect
+    the manifest value exactly. Expecting None rejected every no-agent job.
+    """
+
+    def empty_toolset_jobs(self) -> list[dict]:
+        manifest = json.loads(SCRIPT.with_name("manifest.json").read_text(encoding="utf-8"))
+        jobs = [job for job in manifest["cronJobs"] if job["enabledToolsets"] == []]
+        self.assertTrue(jobs, "manifest declares no empty-toolset job")
+        return jobs
+
+    def test_created_job_reads_back_its_empty_allowlist(self) -> None:
+        jobs = self.empty_toolset_jobs()
+        result = MergedFeatureIntegrationTest.run_reconcile([], jobs)
+        self.assertEqual(result["rc"], 0)
+        for call in result["calls"]:
+            with self.subTest(job=call["name"]):
+                self.assertEqual(call["enabled_toolsets"], [])
+                self.assertEqual(result["store"][call["name"]]["enabled_toolsets"], [])
+
+    def test_updated_job_keeps_its_empty_allowlist(self) -> None:
+        jobs = self.empty_toolset_jobs()
+        existing = [
+            {
+                "id": f"job-{index}",
+                "name": job["name"],
+                "enabled_toolsets": [],
+                "context_from": [],
+                "attach_to_session": False,
+                "enabled": True,
+                "state": "active",
+            }
+            for index, job in enumerate(jobs)
+        ]
+        result = MergedFeatureIntegrationTest.run_reconcile(existing, jobs)
+        self.assertEqual(result["rc"], 0)
+        for call in result["calls"]:
+            with self.subTest(job=call["name"]):
+                self.assertEqual(call["action"], "update")
+                self.assertEqual(call["enabled_toolsets"], [])
+                self.assertEqual(result["store"][call["name"]]["enabled_toolsets"], [])
+
+
 if __name__ == "__main__":
     unittest.main()

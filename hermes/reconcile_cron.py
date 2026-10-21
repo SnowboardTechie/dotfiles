@@ -320,8 +320,9 @@ def main() -> int:
             "skills": definition["skills"],
             "script": definition["script"],
             "no_agent": definition["noAgent"],
-            # Hermes normalizes an explicitly empty toolset list to null.
-            "enabled_toolsets": definition["enabledToolsets"] or None,
+            # Hermes persists an explicitly empty toolset list as [], a
+            # zero-tool allowlist; only null means unrestricted.
+            "enabled_toolsets": definition["enabledToolsets"],
             "workdir": definition["workdir"],
         }
         expected["monitor_script"] = monitor_script or None
