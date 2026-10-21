@@ -302,8 +302,16 @@ without focus, starts the worker, computes Git identity, and atomically records:
 - `worker_worktree_identity`.
 
 For Claude it also runs the live capacity gate before pane creation. Any nonzero
-capacity result stops before a provider turn. Do not hand-edit or reconstruct an
-identity record. `start` exclusively reserves the identity path before any pane
+capacity result stops before a provider turn.
+
+**Bryan's capacity ceiling is 75% consumed of the 5-hour window.** Do not start
+or prompt a Claude turn at or above 75%. Below 75%, dispatch: the remaining 25%
+is the buffer that absorbs a turn's overrun. Do not forecast whether the
+expected turn, a concurrent session or past-lane costs will push past 75%, and
+do not defer dispatch to wait for a reset while below it. The helper's own check
+refuses only at 100%, so read its percentage against 75% yourself.
+
+Do not hand-edit or reconstruct an identity record. `start` exclusively reserves the identity path before any pane
 side effect while holding a per-identity start lock. It refuses every
 pre-existing record, including a closed one. If an interruption leaves
 `starting` or `cleanup_required`, run `recover-start`; it either validates the
