@@ -1,7 +1,7 @@
 ---
 name: yunohost-updates
-description: Use when checking, reviewing, or monitoring YunoHost server upgrades. Read-only agent access; Bryan runs root upgrades.
-version: 1.0.0
+description: Use when checking, reviewing, running, or monitoring YunoHost server upgrades. Approval-gated per app.
+version: 1.1.0
 author: Bryan Thompson
 license: MIT
 metadata:
@@ -31,14 +31,22 @@ Bryan's approval, and monitoring the upgrade he runs.
     agent@snowboardtechie.com "$@"; }
   ```
 
-- `agent` has passwordless sudo for exactly four commands, from
-  `/etc/sudoers.d/zz-agent`:
-  `/usr/bin/yunohost tools update`, `/usr/bin/yunohost app list`,
-  `/usr/bin/yunohost tools versions`, `/usr/bin/yunohost log list`.
+- `agent` has passwordless sudo, from `/etc/sudoers.d/zz-agent`, for exactly:
+  - read-only: `/usr/bin/yunohost tools update`, `/usr/bin/yunohost app list`,
+    `/usr/bin/yunohost tools versions`, `/usr/bin/yunohost log list`;
+  - upgrades, one exact command per target with no extra flags:
+    `/usr/bin/yunohost tools upgrade system` and
+    `/usr/bin/yunohost app upgrade <app>` for element, phanpy, gotosocial,
+    synapse, forgejo, cinny, prosody, coturn. A newly installed app needs
+    Bryan to add its own line. Multi-app upgrades don't match, so upgrade
+    one app per command.
+- Having the rule is not approval. Run an upgrade only after Bryan's explicit
+  yes for that item in the current conversation.
 - `agent` has an ACL granting read access to `/var/log/yunohost` (including the
   default ACL for new files), so operation logs can be tailed without sudo.
-- Upgrades, backups, `yunohost diagnosis`, `app setting` and `log show` need
-  root. Bryan runs them as `bryan` with his password. Hand him the exact command.
+- Backups, `yunohost diagnosis`, `app setting`, `log show` and any upgrade
+  with flags need root. Bryan runs those as `bryan` with his password; hand him
+  the exact command.
 
 ### Sudo pitfalls (each failure emails Bryan)
 
@@ -118,24 +126,27 @@ source, and the exact command. Recommend an order. Run the lowest-risk items
 first and one consequential app (Forgejo, Synapse, GoToSocial) at a time.
 Nothing gets upgraded without his explicit yes for each item.
 
-Commands for Bryan to run as `bryan` (YunoHost takes a safety backup before
-each app upgrade by default; never suggest `--no-safety-backup` unless he
-asks):
+After approval, run each upgrade yourself, detached in `screen` (installed;
+tmux is not), so a dropped SSH session can't kill it. YunoHost takes a safety
+backup (`<app>-pre-upgrade1`) before each app upgrade:
 
 ```bash
-sudo yunohost tools upgrade system          # system packages
-sudo yunohost app upgrade element phanpy    # named apps, one operation each
-sudo yunohost app upgrade forgejo           # consequential apps alone
+ynh 'screen -dmS ynh-<app> bash -c "sudo -n /usr/bin/yunohost app upgrade <app> > ~/upgrade-<app>.out 2>&1; echo EXIT=\$? >> ~/upgrade-<app>.out"'
 ```
 
-For long runs suggest wrapping in `screen -S ynh-upgrade` (installed;
-tmux is not), so a dropped SSH session can't kill the upgrade.
+Use `tools upgrade system` the same way for system packages. If Bryan prefers
+to run it himself, he can SSH in as `bryan`
+(`ssh -p 5518 bryan@git.snowboardtechie.com`) or use the web admin at
+`https://snowboardtechie.com/yunohost/admin` → Applications → Upgrade. Never
+suggest `--no-safety-backup` unless he asks.
 
 ## 4. Monitor the run
 
-Once Bryan starts it, follow the newest operation log without sudo:
+Follow `~/upgrade-<app>.out` (ends with `EXIT=<code>`) and the newest
+operation log, without sudo:
 
 ```bash
+ynh 'tail -3 ~/upgrade-<app>.out'
 ynh 'ls -t /var/log/yunohost/operations/ | head -4'
 ynh 'tail -n 40 /var/log/yunohost/operations/<id>.log'
 ynh 'cat /var/log/yunohost/operations/<id>.yml'  # success / error / ended_at
