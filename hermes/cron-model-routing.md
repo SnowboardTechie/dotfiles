@@ -13,6 +13,7 @@ provider. Do not route jobs back to GPT unless no Claude route can do the work.
 | Watch Colibri GLM-5.2 Studio readiness | `claude-sonnet-5-5` |
 | Watch Matt Pocock skill updates | `claude-opus-5-5` |
 | SGG Friday Recap | `claude-opus-5-5` |
+| Watch for official Pi Durable Claude provider | `claude-opus-5-5` |
 
 Sonnet covers collection-and-summary jobs; Opus covers weekly jobs where
 judgment or Bryan's voice matters most. Move a Sonnet job to Opus if its output
@@ -22,7 +23,7 @@ dormant.
 
 ## Source ownership
 
-- Four jobs are in `hermes/manifest.json`, reconciled by `hermes/reconcile_cron.py`,
+- Five jobs are in `hermes/manifest.json`, reconciled by `hermes/reconcile_cron.py`,
   which refuses any agent job that is not a `claude-` model on the Claude
   subscription provider.
 - The Friday recap and Inkling/Colibri watches have standalone `job.json` and

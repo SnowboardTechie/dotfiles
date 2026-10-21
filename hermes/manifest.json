@@ -41,6 +41,7 @@
     "sgg-mail-messages.js",
     "sgg-pr-review-event.py",
     "check-mattpocock-skill-updates.py",
+    "check-pi-durable-claude-provider.py",
     "check-herdr-homebrew-atuin-fix.py",
     "check-studio-services.py",
     "check-hermes-context-threshold.py"
@@ -67,6 +68,7 @@
     "sgg-pr-review-reminder.py",
     "sgg-pr-review-event.py",
     "check-mattpocock-skill-updates.py",
+    "check-pi-durable-claude-provider.py",
     "check-herdr-homebrew-atuin-fix.py",
     "check-studio-services.py",
     "check-hermes-context-threshold.py"
@@ -226,6 +228,26 @@
       "skills": [
         "cross-agent-skill-migration"
       ],
+      "script": null,
+      "noAgent": false,
+      "enabledToolsets": [
+        "web",
+        "terminal",
+        "no_mcp"
+      ],
+      "workdir": "/Users/bryan/code/dotfiles",
+      "attachToSession": false
+    },
+    {
+      "name": "Watch for official Pi Durable Claude provider",
+      "deliveryIntent": "alert",
+      "schedule": "55 9 * * *",
+      "model": "claude-opus-5-5",
+      "provider": "claude-subscription-directsdk-experimental",
+      "promptFile": "automations/pi-durable-claude-provider-watch/prompt.md",
+      "monitorScript": "check-pi-durable-claude-provider.py",
+      "deliver": "matrix",
+      "skills": [],
       "script": null,
       "noAgent": false,
       "enabledToolsets": [
