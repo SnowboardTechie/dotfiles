@@ -1,7 +1,7 @@
 ---
 name: yunohost-updates
 description: Use when checking, reviewing, running, or monitoring YunoHost server upgrades. Approval-gated per app.
-version: 1.1.0
+version: 1.2.0
 author: Bryan Thompson
 license: MIT
 metadata:
@@ -33,7 +33,9 @@ Bryan's approval, and monitoring the upgrade he runs.
 
 - `agent` has passwordless sudo, from `/etc/sudoers.d/zz-agent`, for exactly:
   - read-only: `/usr/bin/yunohost tools update`, `/usr/bin/yunohost app list`,
-    `/usr/bin/yunohost tools versions`, `/usr/bin/yunohost log list`;
+    `/usr/bin/yunohost tools versions`, `/usr/bin/yunohost log list`, and
+    `/usr/bin/yunohost tools update --output-as json` (used by the nightly
+    report's scripts);
   - upgrades, one exact command per target with no extra flags:
     `/usr/bin/yunohost tools upgrade system` and
     `/usr/bin/yunohost app upgrade <app>` for element, phanpy, gotosocial,
@@ -60,6 +62,31 @@ Bryan's approval, and monitoring the upgrade he runs.
   overrides any NOPASSWD file rule. Keep `agent` out of the `admins` group.
 - Never allow `yunohost log show` via sudo: its `--share` flag uploads logs to
   YunoHost's public paste service. Read the log files directly instead.
+
+## Nightly report and Matrix approvals
+
+The Hermes cron job "YunoHost update report" (tracked in dotfiles
+`hermes/manifest.json`, prompt at
+`hermes/automations/yunohost-update-report/prompt.md`) runs at 20:00 Pacific.
+Its monitor `check-yunohost-updates.py` prints a stable pending snapshot, and
+the agent only runs when that snapshot changes, so a held item is reported once,
+not nightly. A changed snapshot runs `collect-yunohost-updates.py`, which adds
+bounded upstream release-note excerpts and recent issue titles, and a
+**zero-tool** assessor posts a threaded report to the private
+"Server Updates" Matrix room. The cron run cannot upgrade anything: it has no
+tools.
+
+When Bryan replies in that thread asking for upgrades, his reply is the
+approval for exactly the items he names. Then:
+
+1. Restate the items and versions you'll upgrade, and run them one at a time
+   (section 3). Don't add items he didn't name, even "safe" ones.
+2. If an item he names is marked hold or needs a check, say so in one line
+   and ask before running it.
+3. Synapse is the Matrix homeserver, so this room goes offline while it
+   upgrades. Say so before starting it, run it last, then post the result once
+   Matrix is back.
+4. Report each upgrade's result and verification in the thread (sections 4–5).
 
 ## 1. Check what is pending (read-only)
 

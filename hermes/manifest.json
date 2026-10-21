@@ -44,7 +44,10 @@
     "check-pi-durable-claude-provider.py",
     "check-herdr-homebrew-atuin-fix.py",
     "check-studio-services.py",
-    "check-hermes-context-threshold.py"
+    "check-hermes-context-threshold.py",
+    "yunohost_updates_lib.py",
+    "check-yunohost-updates.py",
+    "collect-yunohost-updates.py"
   ],
   "removedScripts": [
     "sgg-sync-workday-note.py",
@@ -71,7 +74,10 @@
     "check-pi-durable-claude-provider.py",
     "check-herdr-homebrew-atuin-fix.py",
     "check-studio-services.py",
-    "check-hermes-context-threshold.py"
+    "check-hermes-context-threshold.py",
+    "yunohost_updates_lib.py",
+    "check-yunohost-updates.py",
+    "collect-yunohost-updates.py"
   ],
   "plugins": [
     "matrix-key-recovery"
@@ -257,6 +263,28 @@
       ],
       "workdir": "/Users/bryan/code/dotfiles",
       "attachToSession": false
+    },
+    {
+      "name": "YunoHost update report",
+      "deliveryIntent": "briefing",
+      "schedule": "0 20 * * *",
+      "model": "claude-sonnet-5-5",
+      "provider": "claude-subscription-directsdk-experimental",
+      "promptFile": "automations/yunohost-update-report/prompt.md",
+      "monitorScript": "check-yunohost-updates.py",
+      "deliver": "matrix:!OTGdYFkIolD5nJvYklJ0Y-dbcaUyvAu0oXEI8-_sxuI",
+      "skills": [
+        "yunohost-updates"
+      ],
+      "script": "collect-yunohost-updates.py",
+      "noAgent": false,
+      "enabledToolsets": [],
+      "workdir": "/Users/bryan",
+      "attachToSession": true,
+      "continuation": {
+        "chatName": "Server Updates",
+        "userEnv": "MATRIX_ALLOWED_USERS"
+      }
     }
   ]
 }
