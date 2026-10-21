@@ -76,9 +76,9 @@ none was accepted.
 
 When drafting or revising text for Bryan, show the complete, paste-ready draft in the response. A request to change one sentence still requires the entire revised message, application answer, bio, or other drafting unit, not only the replacement sentence. Preserve unchanged wording unless another change is needed or requested. A saved file or a summary of edits does not substitute for showing the draft.
 
-For every revision, also show a separate, concise diff against the immediately preceding draft: exact removed and added wording for each changed passage. Keep the diff outside the clean copy so Bryan can paste the complete draft without editing out annotations. Use plain-text `-` and `+` lines when Markdown does not render. First drafts have no previous version and need no diff. Only provide fragments or omit the diff when Bryan explicitly requests that exception in the current task.
+For work-facing revisions, also show a separate, concise diff against the immediately preceding draft: exact removed and added wording for each changed passage. Keep the diff outside the clean copy so Bryan can paste the complete draft without editing out annotations. Use plain-text `-` and `+` lines when Markdown does not render. First drafts have no previous version and need no diff. Do not show diffs while conversationally drafting personal X posts or similar personal writing unless Bryan explicitly asks. For those posts, provide the complete clean revision with only brief commentary.
 
-Before sending, verify both outputs are present: (1) the entire updated drafting unit with no placeholders or omitted unchanged paragraphs, and (2) the actual changes, with no unrelated rewrites hidden in the full draft. This applies even when the requested edit is tiny or the surrounding text appeared in the previous response.
+Before sending a work-facing revision, verify both outputs are present: (1) the entire updated drafting unit with no placeholders or omitted unchanged paragraphs, and (2) the actual changes, with no unrelated rewrites hidden in the full draft. This applies even when the requested edit is tiny or the surrounding text appeared in the previous response. For personal-post drafting, verify the complete clean draft is present without an unsolicited diff.
 
 ## When uncertain
 
