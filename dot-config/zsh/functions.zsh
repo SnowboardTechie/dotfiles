@@ -11,7 +11,7 @@ function _nix_config_host {
   fi
 
   case "${local_hostname:l}" in
-    *a6*mbp*|*a6*macbook*) print -r -- "a6mbp" ;;
+    *a6*mbp*|*a6*macbook*|bryan-thompson) print -r -- "a6mbp" ;;
     *studio*) print -r -- "studio" ;;
     gnarbox) print -r -- "gnarbox" ;;
     *macbook*|mbp) print -r -- "mbp" ;;

@@ -249,6 +249,7 @@ while IFS='|' read -r target local_hostname rebuild; do
 done <<'EOF'
 mbp|Bryans-MacBook-Pro|darwin-rebuild
 a6mbp|A6-MacBook-Pro|darwin-rebuild
+a6mbp|Bryan-Thompson|darwin-rebuild
 studio|Bryans-Mac-Studio|darwin-rebuild
 gnarbox|gnarbox|nixos-rebuild
 EOF
