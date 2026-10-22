@@ -12,20 +12,22 @@ version before assuming any endpoint below still behaves this way:
 
 ## What the API does and does not give us
 
-### Owner-approved public exception
+### The SGG tracker: private, owner-only writes
 
-`git.snowboardtechie.com/bryan/sgg-workspace` is public by Bryan's explicit
-choice, not merely visible to coworkers. Every map preview is a publication
-preview. Other public repositories remain refused. On this exact tracker the
+`git.snowboardtechie.com/bryan/sgg-workspace` is **private** (Forgejo API
+`private: true`, verified 2026-10-22). It was briefly public and is no longer;
+do not describe it as public. Coworkers with access can read it. The adapter
+keeps a dormant exception that would admit this one repository if it were
+public again; that is not approval to publish it, and every other public
+repository remains refused. On this exact tracker the
 adapter requires the API's `full_name` to match, checks the authenticated
 `GET /user` login is `bryan` before writes, and accepts only issue creators
 and comment authors whose server-reported `user.login` is `bryan` as managed
 state. Foreign or missing authors cannot claim, release, index, resolve, or
 enter the ticket frontier. It does not treat a session or operation ID as a
 credential. Human comments from teammates are preserved on Forgejo but not
-replayed by the adapter. Keep private meeting notes and vault content out of
-public issue bodies and comments; link public evidence or summarize only what
-Bryan intends to publish.
+replayed by the adapter. Keep credentials and anything Bryan has not chosen to
+share with coworkers out of issue bodies and comments.
 
 | Need | Forgejo support |
 |---|---|
@@ -271,7 +273,7 @@ ORIGIN=$(git remote get-url origin)
 TEA_CWD=$(mktemp -d)
 trap 'rmdir "$TEA_CWD"' EXIT
 # Then prefix each invocation below with: (cd "$TEA_CWD" && python3 "$S" ...)
-TRACKER=bryan/sgg-workspace     # explicit owner-approved public exception
+TRACKER=bryan/sgg-workspace     # private; explicit choice still required
 
 python3 "$S" --origin "$ORIGIN" --tracker "$TRACKER" check-private
 python3 "$S" --origin "$ORIGIN" --tracker "$TRACKER" read-map     --map 42

@@ -53,22 +53,22 @@ summary is not implementation authority.
 
 ## Where the map lives
 
-**Maps are private by default.** Bryan explicitly approved one public exception:
-`git.snowboardtechie.com/bryan/sgg-workspace`, which is shared with coworkers
-and also readable by anyone on the internet. The adapter accepts this exact
-repository only under the authenticated `bryan` account and replays only
-server-attributed `bryan` issues and comments as managed state. Teammates may
-read and comment as humans but their comments do not claim or resolve tickets.
-Do not generalize the exception to another public repository, and never put
-private meeting text, vault notes, credentials, or internal deliberation on a
-public map. Use public-source links and carefully scoped question summaries.
-The SGG workspace also tracks its vault in this now-public repository: do not
-assume a vault note is private or store non-public Granola detail there. Review
-every preview and Git-tracked handoff as publication.
+**Maps are private.** `git.snowboardtechie.com/bryan/sgg-workspace` is a
+**private** repository (Forgejo API `private: true`, verified 2026-10-22). It
+was briefly public and is no longer; do not describe it, its tracker, or the
+vault it carries as public. It is shared with coworkers who have access, so
+the adapter still accepts this exact repository only under the authenticated
+`bryan` account and replays only server-attributed `bryan` issues and comments
+as managed state. Teammates may read and comment as humans but their comments
+do not claim or resolve tickets. Write for those coworkers: keep credentials
+and material Bryan has not chosen to share with them out of issues and
+comments. The adapter keeps a dormant owner-only exception that would admit
+this one repository if it were ever made public again; that is not approval to
+make it public, and it never extends to another public repository.
 
 | Effort | Tracker |
 |---|---|
-| SGG multi-repository | owner-approved public `bryan/sgg-workspace` tracker (explicit choice required) |
+| SGG multi-repository | private `bryan/sgg-workspace` tracker (explicit choice required) |
 | A private single repository | that repository's own tracker |
 | A future public or external multi-repository domain | its private workspace wrapper tracker |
 | Other public or upstream source repositories | **never** — they receive only team-ready implementation work |
@@ -278,10 +278,11 @@ record with its exact key replaying as the ticket's *current* decision, and
 the closed ticket all read back.
 
 **Tracker eligibility is the last thing checked before every write.** Identity,
-metadata, ownership, dependencies, and (for the public exception) authenticated
+metadata, ownership, dependencies, and (for `bryan/sgg-workspace`) authenticated
 writer are checked first; `require_private()` rechecks the exact repository and
 visibility as the final network round trip before the mutation. The write itself
-reads nothing. A public exception is not permission for a different public repo.
+reads nothing. The dormant sgg-workspace exception is never permission for a
+different public repo.
 
 ## Invocation
 
@@ -305,7 +306,7 @@ Bryan invokes with a loose idea.
    first frontier item; do not bury the prerequisite in Notes or defer it to
    the implementation plan.
 3. **Resolve the tracker.** Origin remote plus Bryan's explicit choice. Confirm
-   the repository is private or the exact owner-approved public exception.
+   the repository is private (`check-private`).
 4. **Preview, then create the map** with Destination and Notes filled in,
    Decisions-so-far empty, and the fog sketched into Not yet specified.
 5. **Preview, then create the tickets you can specify now**, and wire blocking
