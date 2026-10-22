@@ -56,15 +56,10 @@ summary is not implementation authority.
 **Maps are private.** `git.snowboardtechie.com/bryan/sgg-workspace` is a
 **private** repository (Forgejo API `private: true`, verified 2026-10-22). It
 was briefly public and is no longer; do not describe it, its tracker, or the
-vault it carries as public. It is shared with coworkers who have access, so
-the adapter still accepts this exact repository only under the authenticated
-`bryan` account and replays only server-attributed `bryan` issues and comments
-as managed state. Teammates may read and comment as humans but their comments
-do not claim or resolve tickets. Write for those coworkers: keep credentials
-and material Bryan has not chosen to share with them out of issues and
-comments. The adapter keeps a dormant owner-only exception that would admit
-this one repository if it were ever made public again; that is not approval to
-make it public, and it never extends to another public repository.
+vault it carries as public. It is shared with coworkers who have access. Write
+for them: keep credentials and material Bryan has not chosen to share with them
+out of issues and comments. The adapter treats it like any other private
+tracker and refuses every public repository, this one included.
 
 | Effort | Tracker |
 |---|---|
@@ -180,8 +175,7 @@ adapter rather than hand-rolled API calls, and do not route around a refusal.
   answers already approve it, so apply it without a second approval round.
   Show it and wait only on a discrepancy — an answer that departs from or adds
   to what he settled, or a question still open.
-- **Every write preflights.** Tracker eligibility (private or the exact public
-  exception), authenticated writer on that exception, issue number, labels,
+- **Every write preflights.** Tracker eligibility (private), issue number, labels,
   metadata version and type, map association, and active claim are revalidated
   immediately before *each* write. A body marker alone is not identity.
 - **The map body is never written after creation.** Forgejo has no
@@ -278,11 +272,9 @@ record with its exact key replaying as the ticket's *current* decision, and
 the closed ticket all read back.
 
 **Tracker eligibility is the last thing checked before every write.** Identity,
-metadata, ownership, dependencies, and (for `bryan/sgg-workspace`) authenticated
-writer are checked first; `require_private()` rechecks the exact repository and
-visibility as the final network round trip before the mutation. The write itself
-reads nothing. The dormant sgg-workspace exception is never permission for a
-different public repo.
+metadata, ownership, and dependencies are checked first; `require_private()`
+rechecks the exact repository and visibility as the final network round trip
+before the mutation. The write itself reads nothing.
 
 ## Invocation
 

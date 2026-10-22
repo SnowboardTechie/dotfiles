@@ -12,22 +12,14 @@ version before assuming any endpoint below still behaves this way:
 
 ## What the API does and does not give us
 
-### The SGG tracker: private, owner-only writes
+### Private trackers only
 
-`git.snowboardtechie.com/bryan/sgg-workspace` is **private** (Forgejo API
-`private: true`, verified 2026-10-22). It was briefly public and is no longer;
-do not describe it as public. Coworkers with access can read it. The adapter
-keeps a dormant exception that would admit this one repository if it were
-public again; that is not approval to publish it, and every other public
-repository remains refused. On this exact tracker the
-adapter requires the API's `full_name` to match, checks the authenticated
-`GET /user` login is `bryan` before writes, and accepts only issue creators
-and comment authors whose server-reported `user.login` is `bryan` as managed
-state. Foreign or missing authors cannot claim, release, index, resolve, or
-enter the ticket frontier. It does not treat a session or operation ID as a
-credential. Human comments from teammates are preserved on Forgejo but not
-replayed by the adapter. Keep credentials and anything Bryan has not chosen to
-share with coworkers out of issue bodies and comments.
+The adapter accepts only a repository whose API `full_name` matches exactly and
+whose `private` is `true`; every public repository is refused.
+`git.snowboardtechie.com/bryan/sgg-workspace` is **private** (verified
+2026-10-22). It was briefly public and is no longer; do not describe it as
+public. Coworkers with access can read it, so keep credentials and anything
+Bryan has not chosen to share with them out of issue bodies and comments.
 
 | Need | Forgejo support |
 |---|---|
@@ -439,10 +431,8 @@ remembering its own preflights. In order, every write:
 2. where applicable, requires the exact active claim **identity tuple**;
 3. where applicable, snapshots the dependency set the write will be measured
    against;
-4. for the exact public exception, checks the authenticated writer is `bryan`;
-   then re-reads the repository and requires either private visibility or the
-   exact `git.snowboardtechie.com/bryan/sgg-workspace` identity — **last**, the
-   final network round trip before the mutation;
+4. re-reads the repository and requires its exact identity and private
+   visibility — **last**, the final network round trip before the mutation;
 5. performs exactly one write, from the state already captured. The write reads
    nothing: a read there would put a round trip between the eligibility check and
    the mutation, which is the window this ordering exists to close;
