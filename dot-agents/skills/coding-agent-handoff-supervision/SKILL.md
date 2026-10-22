@@ -256,6 +256,15 @@ Require `HERDR_ENV=1`, the injected `HERDR_PANE_ID`, and compatible
 `HERDR_BIN_PATH`. Visible work has no silent Agent View, print-mode, tmux, or
 background fallback.
 
+Hermes tool shells may not inherit the CLI's Herdr variables, so an empty
+`env | grep HERDR` there does not prove the session is outside Herdr. Before
+reporting a transport blocker, find this session's Hermes process (matching
+cwd; `herdr api snapshot` shows its pane focused under the expected tab label),
+read its `HERDR_*` values with `ps eww -o command= -p PID`, and export them.
+Background `terminal` processes do not inherit foreground exports: put the
+`export` inside every background `prompt` command, or the helper refuses
+before sending.
+
 Use the helper from the canonical skill directory:
 
 ```sh
