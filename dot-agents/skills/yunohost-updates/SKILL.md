@@ -216,6 +216,12 @@ email) for a whole-server health readback. Report only what you verified.
   able to enter the backup dir, so it's harmless while the backup still reports
   `SUCCESS Backup created`. Treat it as a failure if that SUCCESS line is
   missing.
+- Synapse's package builds LiveKit/lk-jwt with goenv. A stale
+  `/opt/goenv/shims/.goenv-shim` lock (e.g. left by an interrupted rehash)
+  makes `goenv` exit non-zero, so the upgrade fails during resource
+  provisioning, before the upgrade script, and Synapse keeps running the old
+  version. Check for that file (and `pgrep -af goenv`) before a Synapse
+  upgrade. Removing it needs root, so Bryan runs `sudo rm` on it.
 - Treating the package's offered version as vetted: forgejo_ynh shipped
   17.0.0 the day after Forgejo published an advisory against upgrading.
 - Reviewing only the target release: a 6-release Synapse jump has several
