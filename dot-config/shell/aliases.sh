@@ -45,8 +45,18 @@ fi
 # Studio is the primary workstation, so the usual fallback/mobile-MBP path
 # attaches over ordinary SSH. Keep Herdr's local-client remote mode available
 # when MBP-side image clipboard bridging is specifically useful.
-alias herdr-studio="ssh -t bryan@bryans-mac-studio herdr"
-alias herdr-studio-remote="herdr --remote bryan@bryans-mac-studio"
+# Without a connected tailnet (the work MBP has no Tailscale and is used only
+# at home), reach the Studio over the home LAN by its Bonjour name. Resolved
+# per invocation, not at shell startup.
+_studio_host() {
+  if command -v tailscale >/dev/null 2>&1 && tailscale status >/dev/null 2>&1; then
+    printf '%s\n' "bryans-mac-studio"
+  else
+    printf '%s\n' "bryans-mac-studio.local"
+  fi
+}
+alias herdr-studio='ssh -t "bryan@$(_studio_host)" herdr'
+alias herdr-studio-remote='herdr --remote "bryan@$(_studio_host)"'
 alias herdr-mbp="herdr --remote bryan@bryans-mbp"
 alias herdr-gnarbox="herdr --remote bryan@gnarbox"
 alias herdr-gnarchy="herdr --remote bryan@gnarbox"

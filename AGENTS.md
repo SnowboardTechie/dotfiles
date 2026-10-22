@@ -134,7 +134,7 @@ git diff --check                 # Trailing whitespace check
 
 ## NOTES
 
-- `herdr-studio` attaches over ordinary SSH to the persistent Studio server; `herdr-studio-remote` keeps Herdr's local-client remote mode for MBP-local image clipboard bridging
+- `herdr-studio` attaches over ordinary SSH to the persistent Studio server; `herdr-studio-remote` keeps Herdr's local-client remote mode for MBP-local image clipboard bridging. Both target the tailnet name only while `tailscale status` succeeds, otherwise the Bonjour name `bryans-mac-studio.local` (the work MBP has no Tailscale and is used only on the home LAN)
 - `gpg-agent.conf` hardcodes `pinentry-mac` — NixOS users must override manually
 - This repo syncs to 2 remotes: git.snowboardtechie.com (primary) and a GitHub push mirror
 - `AGENTS.md` is globally gitignored via `dot-config/git/ignore`. Repos that need to track it (dotfiles, nix-configs) use `!AGENTS.md` in their `.gitignore` to override.

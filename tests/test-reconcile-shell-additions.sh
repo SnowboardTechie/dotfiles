@@ -83,8 +83,17 @@ check "foreign reference: bashrc untouched"    test "$before" = "$(cat "$H3/.bas
 out="$(bash --noprofile --norc -c "set -e; shopt -s expand_aliases; source '$ALIASES_SRC'; alias gs; alias herdr-studio; alias herdr-studio-remote; alias herdr-imachy; type grb >/dev/null" 2>&1)"; rc=$?
 check "aliases.sh sources cleanly in bash"     test "$rc" -eq 0
 check "aliases.sh defines gs and grb"          bash -c 'grep -q "git status" <<<"$1"' _ "$out"
-check "aliases.sh defines SSH-first Studio"    bash -c 'grep -q "ssh -t bryan@bryans-mac-studio herdr" <<<"$1"' _ "$out"
-check "aliases.sh keeps remote-client Studio"  bash -c 'grep -q "herdr --remote bryan@bryans-mac-studio" <<<"$1"' _ "$out"
+check "aliases.sh defines SSH-first Studio"    bash -c 'grep -qF "ssh -t \"bryan@\$(_studio_host)\" herdr" <<<"$1"' _ "$out"
+check "aliases.sh keeps remote-client Studio"  bash -c 'grep -qF "herdr --remote \"bryan@\$(_studio_host)\"" <<<"$1"' _ "$out"
+
+# Studio host: tailnet name only while Tailscale is connected, else Bonjour LAN.
+ts_bin="$(new_home)/bin"; mkdir -p "$ts_bin"
+studio_host() { PATH="$ts_bin:/usr/bin:/bin" bash --noprofile --norc -c "source '$ALIASES_SRC'; _studio_host"; }
+check "Studio host is LAN without tailscale"   test "$(studio_host)" = "bryans-mac-studio.local"
+printf '#!/bin/sh\nexit 1\n' > "$ts_bin/tailscale"; chmod +x "$ts_bin/tailscale"
+check "Studio host is LAN when logged out"     test "$(studio_host)" = "bryans-mac-studio.local"
+printf '#!/bin/sh\nexit 0\n' > "$ts_bin/tailscale"
+check "Studio host is tailnet when connected"  test "$(studio_host)" = "bryans-mac-studio"
 check "aliases.sh defines herdr-imachy"        bash -c 'grep -q "herdr --remote bryan@imachy" <<<"$1"' _ "$out"
 
 # --- Argument handling ----------------------------------------------------------
