@@ -60,7 +60,11 @@ Instead, deliver a local blocker or ready-to-publish report for Bryan.
 
 1. **Pick one issue.** Use an explicit issue reference when supplied. Otherwise,
    query the current forge for the oldest open `ready-for-agent` issue. Use
-   `gh` on GitHub or authenticated `tea api` on Forgejo. If none exists, report
+   `gh` on GitHub or authenticated `tea api` on Forgejo. Skip (or, if named
+   explicitly, refuse) any issue that carries a `wayfinder:` label, even when
+   it also carries `ready-for-agent`:
+   Wayfinder maps and tickets are decisions, not implementation work, so report
+   the mislabel instead of working it. If no eligible issue exists, report
    `queue empty` and stop.
 2. **Run `issue-work`.** Preserve its intake, worktree, plan, implementation,
    verification, and self-review gates. Unattended mode must stop rather than

@@ -9,7 +9,8 @@
   "notes": [
     "Adapted copies, not vendored ones: each local skill diverges deliberately and is reviewed as local source.",
     "Upstream promotes 25 skills via .claude-plugin/plugin.json. Only the adaptations below are adopted; the rest are deliberately out of scope.",
-    "Upstream paths are relative to the repository root at the pinned commit."
+    "Upstream paths are relative to the repository root at the pinned commit.",
+    "`commit` is the baseline every adaptation was reviewed at. An adaptation's optional `reviewedThrough` records a later upstream commit its watched files were reviewed against; it never advances the global pin, because other adaptations may have unreviewed changes in between."
   ],
   "updatePolicy": {
     "readOnlyDetection": true,
@@ -49,12 +50,22 @@
       ],
       "rejectedUpstreamRules": [
         "Asking more than one question per round — Bryan requires one at a time, and batching even independent questions is refused.",
-        "Writing the questionnaire to a fixed filename in the current directory; the path is chosen explicitly and may be vault-native."
+        "Writing the questionnaire to a fixed filename in the current directory; the path is chosen explicitly and may be vault-native.",
+        "A horizontal rule between questions in a round: not applicable, since a round here is exactly one question.",
+        "Wording every question so \"yes\" accepts the recommendation: Bryan declined it (2026-10-22); questions keep genuine options with a reasoned recommendation."
       ],
       "watchedFiles": [
         "skills/productivity/grilling/SKILL.md",
         "skills/productivity/to-questionnaire/SKILL.md"
-      ]
+      ],
+      "reviewedThrough": {
+        "commit": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+        "verifiedOn": "2026-10-22",
+        "upstreamCommits": [
+          "85f83d3fde1d3a90d5c9a657f6998c79a6c37308",
+          "95249b0b49782349740fd9b8c6ce32b4e59e497a"
+        ]
+      }
     },
     {
       "skill": "wayfinder",
@@ -98,7 +109,9 @@
         "Value validation is real rather than shape-matching: ticket and map numbers must be positive integers (Forgejo numbers issues from 1, so zero is a missing value dressed as one, and the synthetic `ticket: 0` fallback is gone), and a timestamp must parse to a real UTC instant — `2026-99-99T99:99:99Z` matches every plausible regex. Blank lines inside a managed block are rejected rather than skipped, because padding a reader tolerates is padding a forger can hide behind.",
         "Map and ticket identity are exact: a map needs exactly one balanced current-version managed region (zero is not a map; two is worse, since a decision would be merged into one while a reader sees the other), and a ticket needs both `wayfinder:ticket` and the `wayfinder:{type}` label agreeing with exact `map`/`type` metadata — a label that contradicts the body is two sources of truth, and this adapter refuses to pick one.",
         "A resolution that records what the session settled with Bryan is applied without showing him the preview; the session still runs and reviews it as publication, and asks only on a discrepancy. Map and ticket creation previews are still shown.",
-        "Names the next decision by its issue number together with its title, refining the accepted refer-by-name rule."
+        "Names the next decision by its issue number together with its title, refining the accepted refer-by-name rule.",
+        "No-triage-label rule is backed by `loop-issue`, which skips or refuses any issue carrying a `wayfinder:` label even if it also carries `ready-for-agent`.",
+        "The no-placeholder-reference rule is adapted to the never-edit-a-body design: upstream writes real references into bodies during the wiring pass; here ordering lives only in native dependencies and any other cross-reference is a comment posted once the target exists."
       ],
       "acceptedUpstreamRules": [
         "Destination named first; it fixes the scope.",
@@ -114,19 +127,30 @@
         "Two invocation modes; never more than one non-research ticket per session.",
         "Charting stops after creating the map; it hand-resolves nothing.",
         "Logic prototypes surface complete state with guided happy, edge, and illegal scenarios.",
-        "UI variants prefer a real existing page, differ structurally, and switch on a stable `?variant=` parameter."
+        "UI variants prefer a real existing page, differ structurally, and switch on a stable `?variant=` parameter.",
+        "`wayfinder:` labels are the only labels a map or ticket carries; never a triage label such as `ready-for-agent`.",
+        "Never publish a placeholder or draft-numbered issue reference; it auto-links to an unrelated issue.",
+        "Resolve each ticket as the type its `wayfinder:<type>` label names; the body never states the type, and the grilling fallback applies only to HITL tickets."
       ],
       "rejectedUpstreamRules": [
         "The local-markdown tracker default and the `/setup-matt-pocock-skills` bootstrap.",
         "Automatically committing prototype branches and preserving every prototype; retention follows the owning project's publication gates.",
-        "Routing to upstream's `research` and `domain-modeling` skills, which are not adopted."
+        "Routing to upstream's `research` and `domain-modeling` skills, which are not adopted.",
+        "Pushing research findings to a throwaway `research/<name>` branch without a PR: not applicable, because local research tickets record findings as a context pointer and use no research branch."
       ],
       "watchedFiles": [
         "skills/engineering/wayfinder/SKILL.md",
         "skills/engineering/prototype/SKILL.md",
         "skills/engineering/prototype/LOGIC.md",
         "skills/engineering/prototype/UI.md"
-      ]
+      ],
+      "reviewedThrough": {
+        "commit": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+        "verifiedOn": "2026-10-22",
+        "upstreamCommits": [
+          "8295b8e10d4cdb6cce772a56dda7b7c37075074d"
+        ]
+      }
     },
     {
       "skill": "tdd",

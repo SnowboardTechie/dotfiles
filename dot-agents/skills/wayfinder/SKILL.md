@@ -87,6 +87,13 @@ the adapter never edits it.
 label, linked to their map by a stable managed metadata block. Each body is one
 question, sized to a single agent session.
 
+`wayfinder:` labels are the only labels a map or ticket carries — never a
+triage or queue label such as `ready-for-agent` or `needs-human`. Maps and
+tickets are decisions, not implementation work, and a queue label would hand
+them to `loop-issue` as if they were ready to build. The adapter applies only
+`wayfinder:` labels; if another label appears, report it to Bryan rather than
+relabeling by hand.
+
 **Blocking** uses Forgejo's **native** issue dependencies, so the frontier
 renders in the tracker's own UI and Bryan can see what is takeable without
 opening the map. A ticket is **unblocked** when every ticket blocking it is
@@ -303,7 +310,12 @@ Bryan invokes with a loose idea.
    Decisions-so-far empty, and the fog sketched into Not yet specified.
 5. **Preview, then create the tickets you can specify now**, and wire blocking
    edges in a **second pass** — issues need ids before they can reference each
-   other. Wiring sorts them into the frontier and the blocked. Create previews
+   other. Wiring sorts them into the frontier and the blocked. **Never write an
+   issue reference before its target exists**: a draft-numbered `#1`–`#8` or a
+   placeholder `#<n>` auto-links to an unrelated old issue, and bodies are never
+   edited after creation, so the wrong link would be permanent. Ordering goes in
+   native dependencies; any other cross-reference is posted as a comment once
+   the real number exists, named by title. Create previews
    print a **creation identity**; apply requires the same `--creation`, and a
    retry with it converges on the issue the first attempt made instead of
    duplicating the map or ticket.
@@ -323,9 +335,15 @@ decision, not him.
    exact `--operation`, so the record posted is the record reviewed — together
    with the session name: release and resolve need both, and no other pair
    will do.
-3. Resolve it. Zoom as needed — fetch the full body of any related or closed
-   ticket on demand. Load whichever skills the map's Notes name; when in doubt,
-   `grilling`.
+3. Resolve it **as the type its `wayfinder:<type>` label names** (the adapter's
+   `type`, which it verifies agrees with the metadata) — the body never states
+   the type, so read the label, not just the question. `grilling` and
+   `prototype` are worked live with Bryan; `research` is resolved by the agent
+   from sources; a `task` resolves when the work is done. Do not default a
+   research or task ticket into grilling, and never answer a HITL ticket on
+   Bryan's behalf. Zoom as needed — fetch the full body of any related or
+   closed ticket on demand. Load whichever skills the map's Notes name; for a
+   HITL ticket with no named skill, `grilling`.
 4. **Preview, then record the resolution** (the preview is yours to review;
    see *Safety* for when Bryan sees it): post the answer as a resolution
    comment, post one index record on the map — the decision's gist, bound to
@@ -338,7 +356,8 @@ decision, not him.
    ticket is refused: corrections reopen the affected decision, and the
    re-resolved answer supersedes the old index record at replay — history
    stays append-only, and each ticket has at most one current decision.
-5. Add newly surfaced tickets (create, then wire). Graduate any fog the answer
+5. Add newly surfaced tickets (create, then wire, under the same
+   no-placeholder-reference rule as charting). Graduate any fog the answer
    made specifiable — the graduated question lives in its new ticket. The map
    body's "Not yet specified" list is Bryan's prose; note stale fog lines for
    him in an ordinary map comment rather than editing the body. If the answer
