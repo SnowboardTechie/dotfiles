@@ -29,7 +29,7 @@ message bodies, room keys, device keys, credentials, or ciphertext.
 Cross-user recovery is limited to:
 
 - `@bryan:snowboardtechie.com`;
-- four exact, private Bryan/Hermes room IDs;
+- five exact, private, two-member Bryan/Hermes room IDs;
 - a user who is currently joined to the requested room; and
 - devices whose effective Mautrix trust is `CROSS_SIGNED_TOFU`,
   `CROSS_SIGNED_TRUSTED`, or `VERIFIED`.
@@ -60,3 +60,10 @@ plaintext.
 
 Review decision: acceptable for the stated four private rooms after the
 cross-signed-device restriction and frozen-copy deployment changes above.
+
+Scope extension (2026-10-21): added the Server Updates room
+(`!OTGdYFkIolD5nJvYklJ0Y-dbcaUyvAu0oXEI8-_sxuI`). The change is data-only: one
+room ID in `AUTHORIZED_ROOMS`, with no code-path change. The room meets the same
+invariant as the original four: private, invite-only, encrypted, unlisted,
+`history_visibility=joined`, guests forbidden, and exactly two joined members
+(Hermes and Bryan), verified by live state readback at creation.

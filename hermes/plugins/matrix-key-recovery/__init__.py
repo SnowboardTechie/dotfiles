@@ -17,6 +17,8 @@ AUTHORIZED_ROOMS = frozenset(
         "!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
         "!CsY4wEHn3w715wk78Uz9RQ9lNv2hV9CFPr6T6YgQNgE",
         "!dc6CqGlnIP1ivE6QDrbNedXZlmViaDOK75KjdzQ63_w",
+        # Server Updates: nightly YunoHost reports and upgrade approvals.
+        "!OTGdYFkIolD5nJvYklJ0Y-dbcaUyvAu0oXEI8-_sxuI",
     }
 )
 

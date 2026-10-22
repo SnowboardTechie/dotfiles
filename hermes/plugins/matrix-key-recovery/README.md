@@ -1,9 +1,9 @@
 # Matrix key recovery
 
-This user plugin protects encrypted delivery to Bryan's four private,
-two-member Hermes, SGG, Second Brain, and CairnOS rooms.
+This user plugin protects encrypted delivery to Bryan's five private,
+two-member Hermes, SGG, Second Brain, CairnOS, and Server Updates rooms.
 
-For those four exact room IDs and only for `@bryan:snowboardtechie.com`, it:
+For those five exact room IDs and only for `@bryan:snowboardtechie.com`, it:
 
 - creates fresh Olm channels before a newly rotated Megolm room key is shared;
 - accepts a missing-room-key request only while Bryan is currently joined and
