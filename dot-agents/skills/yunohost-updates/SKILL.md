@@ -203,6 +203,12 @@ email) for a whole-server health readback. Report only what you verified.
 
 ## Pitfalls
 
+- The Server Updates room only stays decryptable for Bryan because its ID is
+  in `AUTHORIZED_ROOMS` in dotfiles `hermes/plugins/matrix-key-recovery/`.
+  Without that, Hermes shares room keys over stale Olm sessions and every post
+  shows "Unable to decrypt". A replacement room needs the same entry, then
+  `install.py` and a gateway restart, which Bryan runs outside Hermes. Messages
+  sent before the fix can't be recovered; repost them.
 - Expected run times seen so far: Element ~20 s; Phanpy ~3.5 min (Node
   build); GoToSocial ~30 s plus a ~1.3 GB safety backup. GoToSocial's backup
   logs `could not change directory to "/home/yunohost.backup/tmp/..."` and
