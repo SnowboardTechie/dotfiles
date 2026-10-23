@@ -41,7 +41,6 @@
     "sgg-mail-messages.js",
     "sgg-pr-review-event.py",
     "check-mattpocock-skill-updates.py",
-    "check-pi-durable-claude-provider.py",
     "check-herdr-homebrew-atuin-fix.py",
     "check-studio-services.py",
     "check-hermes-context-threshold.py",
@@ -59,7 +58,8 @@
     "personal_notes.py": "f600286dd1e928fb466bc650828059626fc3d757e87fd8315d9a3beff6e00a36",
     "personal-morning-brief.py": "45a3c7125bec0f917b37727e94c613e26fe565428451ea2d77f23225d569db81",
     "personal-weekly-orientation.py": "64c8a92f4ef661444876e4106848b57f30c870215cfce2283387d7b254a746e9",
-    "personal-alignment-brief.py": "5dbcb2359b25b845502161f78b35db6ccc2f48f0473d85c897e6f271d91fe0d7"
+    "personal-alignment-brief.py": "5dbcb2359b25b845502161f78b35db6ccc2f48f0473d85c897e6f271d91fe0d7",
+    "check-pi-durable-claude-provider.py": "43a8c455befd210df5d774266ad3e6c6bb0c29754aac9d7be3be24bc20237f89"
   },
   "removedLinks": [
     "hindsight/config.json",
@@ -71,7 +71,6 @@
     "sgg-pr-review-reminder.py",
     "sgg-pr-review-event.py",
     "check-mattpocock-skill-updates.py",
-    "check-pi-durable-claude-provider.py",
     "check-herdr-homebrew-atuin-fix.py",
     "check-studio-services.py",
     "check-hermes-context-threshold.py",
@@ -234,26 +233,6 @@
       "skills": [
         "cross-agent-skill-migration"
       ],
-      "script": null,
-      "noAgent": false,
-      "enabledToolsets": [
-        "web",
-        "terminal",
-        "no_mcp"
-      ],
-      "workdir": "/Users/bryan/code/dotfiles",
-      "attachToSession": false
-    },
-    {
-      "name": "Watch for official Pi Durable Claude provider",
-      "deliveryIntent": "alert",
-      "schedule": "55 9 * * *",
-      "model": "claude-opus-5-5",
-      "provider": "claude-subscription-directsdk-experimental",
-      "promptFile": "automations/pi-durable-claude-provider-watch/prompt.md",
-      "monitorScript": "check-pi-durable-claude-provider.py",
-      "deliver": "matrix",
-      "skills": [],
       "script": null,
       "noAgent": false,
       "enabledToolsets": [

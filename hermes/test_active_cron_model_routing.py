@@ -12,8 +12,7 @@ ROUTES = {
     "Watch Matt Pocock skill updates": "claude-opus-5-5",
     "Watch Inkling-Small release": "claude-sonnet-5-5",
     "Watch Colibri GLM-5.2 Studio readiness": "claude-sonnet-5-5",
-    "SGG Friday Recap": "claude-opus-5-5",
-    "Watch for official Pi Durable Claude provider": "claude-opus-5-5"
+    "SGG Friday Recap": "claude-opus-5-5"
 }
 ACTIVE_NAMES = set(ROUTES)
 STANDALONE = (
