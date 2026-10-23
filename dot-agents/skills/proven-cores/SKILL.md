@@ -61,6 +61,20 @@ Do not raise it for:
    the proof covers only the core.
 4. **Pin the version and upgrade deliberately.** Releases are weekly, and 2.0.38 changed how JS hosts
    see constructor tags.
+5. **Model what the law protects.** Laws reason only about what the model represents. The spike's
+   model tracked state labels, not in-flight work, so mislabeling a still-stopping run as failed
+   passed. If a rule is about work in flight, the model must carry it.
+6. **Add Bend's AGENTS.md block.** Every repository where Bend code is committed carries this block
+   verbatim, by Bryan's direction. Its own conditions (gate, approvals) follow it. Bryan's global git
+   ignore excludes AGENTS.md, so the repository opts in with `!AGENTS.md` in its `.gitignore`.
+
+   ```text
+   When using Bend:
+   - run `bend guide` to learn it
+   - use `LAWS.bend` to keep important rules
+   - run `bend PROOF.bend` before committing
+   - parallelize the code whenever possible
+   ```
 
 ## Writing Bend proofs
 
@@ -92,6 +106,22 @@ The plan-run lifecycle spike:
 - 0.08 s to check;
 - a 767-line `.mjs`, about 0.1 µs per step in Node;
 - all real injected bugs unprovable, and two safe changes needing one proof-repair round.
+
+Head-to-head with the existing TypeScript suite (291 tests, about 52 s per run), on the same injected
+bugs:
+
+- Both caught overlap, an ignored generation and a cancel that does not advance the generation.
+- The laws alone caught "resume ignores the readback", which is probably unreachable in the host
+  today.
+- The suite alone caught an authorization bug, which is outside the core.
+- The laws missed a bug the model cannot represent (in-flight work).
+- Weigh the laws as every-ordering coverage of a narrow core, not a replacement for host tests.
+
+Upkeep:
+
+- **A new law:** 1 round, 96 s, no core change.
+- **A new state plus operation:** 2 rounds, 37 s, about 60 lines each in core and proof. The edit is
+  mechanical: every case-by-case match gains one arm.
 
 ## Environment
 
