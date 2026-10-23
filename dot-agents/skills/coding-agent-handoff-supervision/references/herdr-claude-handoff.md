@@ -10,7 +10,7 @@ JSON parsing or focus-sensitive pane commands into another skill.
 - non-empty `HERDR_PANE_ID`
 - executable injected `HERDR_BIN_PATH`
 - named Git branch and existing worktree
-- for Claude, executable `~/.config/herdr/claude-usage.sh`
+- for Claude, executable `~/.config/herdr/claude-usage.sh`. Its line begins with a non-ASCII icon (e.g. `<icon> 72% ↻1:11`), so an anchored `^ *[0-9]+` never matches. A capacity waiter written that way polls for nothing until it times out. Parse it with `grep -oE '[0-9]+%' | tr -d %`, and make a waiter fail at once on an empty reading instead of looping.
 - for Hermes, independently verified smart approvals and no yolo mode
 
 The helper requires both `endpoint_compatible: yes` and
