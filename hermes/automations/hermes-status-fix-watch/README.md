@@ -1,45 +1,27 @@
-# Hermes nightly update hold
+# Retired: Hermes upstream status-fix hold watcher
 
-Bryan approved pausing his nightly update on 2026-10-14 and requested an upstream
-fix watch. Only the user LaunchAgent `gui/501/ai.hermes.update` is disabled and
-unloaded. The hold is a persistent launchd disabled override, not a change to
-Traci's schedule or the gateway/dashboard. The Nix definition remains present;
-this temporary operational override must remain in place until deliberate release.
-After any system deployment, verify `launchctl print-disabled gui/$(id -u)` still
-lists `ai.hermes.update` as disabled. Do not blindly reload or enable it.
+This watcher is no longer installed or scheduled by the dotfiles manifest.
+The exact installed script digest is recorded in `removedCopiedScripts` so
+normal reconciliation removes only the unmodified managed copy. The source
+and its offline recognition tests remain as history, not an active release gate.
 
-Reason: the required local `cli-status-session.patch` fixes classic `/status`
-querying nonexistent `session_key` instead of `session_id`. Herdr uses truthful
-native approval status. The managed nightly wrapper rejects the dirty checkout.
-A separate successful v0.22.0 update also left detached HEAD, while the existing
-wrapper requires `main`; fixing the upstream status line alone does not establish
-that nightly updates are safe to resume.
+The watcher originally supported Bryan's 2026-10-14 temporary nightly-update
+hold while the classic `/status` query used `session_key` instead of the
+`session_id` used by `/yolo`. Herdr's admission checks needed the local repair.
 
-`Watch Hermes status fix for nightly updates` runs daily at 09:20 Pacific,
-model-free, through the default-profile Hermes cron scheduler. Its script resolves
-upstream main to an immutable SHA, inspects that exact source statically, stays
-silent while the known bug remains, and alerts the private Second Brain Matrix
-room on the pending-to-fixed transition. Unknown/refactored source or retrieval
-failure is an actionable error, not a false pending result. No fetched code is
-executed. No runtime update, patch removal, service restart or automatic re-enable
-is authorized by this watch. The alert identifies a candidate for review, not a
-verified safe update. Cron history owns delivery evidence; watcher state records
-notification preparation. Recover saved output if transport fails.
+Bryan clarified on 2026-10-23 that repairing automatic updates means making
+them work, not disabling them. The replacement in nix-configs follows the
+installation's configured update channel, accepts detached stable releases,
+and admits only the exact reviewed status patch. It predicts the patch merge
+before downtime, uses Hermes's supported stash/restore, and checks the target,
+install stamp, retained correction and service health after updating. An
+identical upstream correction is absorbed automatically; upstream is no longer
+a prerequisite for normal upgrades.
 
-Before resuming:
+Source of truth:
+https://git.snowboardtechie.com/bryan/nix-configs/src/branch/main/docs/hermes-auto-updates.md
 
-1. Verify the immutable upstream fix and current Herdr compatibility, including
-   current YOLO toggle/preflight behavior.
-2. Preserve the local patch and any unrelated work; remove the patch only when the
-   replacement runtime supplies the correction.
-3. Reconcile current Hermes updater checkout behavior with the Nix-managed wrapper
-   (do not force `main` merely to bypass its guard).
-4. Exercise the supported update path with its state backup and health checks.
-5. Release the launchd override deliberately with
-   `launchctl enable gui/$(id -u)/ai.hermes.update`, then load its existing managed
-   plist. Verify loaded schedule and enabled state; do not trigger a surprise update.
-6. Retire this watcher from manifest/live cron and remove its installed script and
-   source-specific tests once the hold is resolved.
-
-Source: `hermes/scripts/check-hermes-status-fix.py`, manifest and adjacent prompt.
-Tests: `python3 hermes/test_hermes_status_fix_watch.py`.
+Do not re-enable this watcher or use its historical “nightly remains disabled”
+message to infer current operational state. Nix owns the update schedule;
+read the deployed launchd job and updater receipts for live evidence. The
+unrelated clarify-context watcher is unchanged.

@@ -1,5 +1,6 @@
 """Offline checks for upstream fix recognition and quiet transition delivery."""
 import importlib.util
+import json
 import unittest
 from pathlib import Path
 
@@ -22,6 +23,15 @@ class CLI:
 
 
 class WatchTests(unittest.TestCase):
+    def test_retired_watch_is_not_reinstalled(self):
+        manifest = json.loads(Path(__file__).with_name("manifest.json").read_text())
+        name = "check-hermes-status-fix.py"
+        self.assertNotIn(name, manifest["scripts"])
+        self.assertNotIn(name, manifest["copiedScripts"])
+        self.assertNotIn("Watch Hermes status fix for nightly updates",
+                         [job["name"] for job in manifest["cronJobs"]])
+        self.assertRegex(manifest["removedCopiedScripts"][name], r"^[0-9a-f]{64}$")
+
     def test_current_bug_is_pending(self):
         self.assertFalse(watch.fixed(source("session_key")))
 
