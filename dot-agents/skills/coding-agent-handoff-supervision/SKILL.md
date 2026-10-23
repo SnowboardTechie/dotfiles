@@ -97,7 +97,11 @@ every mechanical prerequisite into a separate user decision.
 
 Require a durable handback path in the governing plan/ticket. Before settling,
 the worker writes candidate identity, changes, actual checks/results, unfinished
-criteria, blockers, exact approval requests in dependency order, and next owner.
+criteria, blockers, exact approval requests in dependency order, next owner, and
+one `Divergence:` line: how the result differs from the task as given (another
+approach, changed scope, a new agreement), or `Divergence: None`. Put that line
+in every contract's handback list. Check it against the diff and the contract
+rather than recording it; an unstated difference the diff shows is a finding.
 Read the report and the real candidate before reporting completion or answering
 what Claude said. A lifecycle `done` event is not a handback. If the report is
 absent, retrieve the final message using the supervised helper's identity-checked
