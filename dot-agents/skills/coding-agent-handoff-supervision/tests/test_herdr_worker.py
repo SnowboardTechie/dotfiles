@@ -39,6 +39,35 @@ class FakeHerdr:
         self.vanish_on_prompt = False
         self.read_count = 0
         self.runtime_session = "runtime-session"
+        # Tabs: the caller's tab, and any sub-agents tab a start creates. Panes added by hand join the newest tab.
+        self.tabs: dict[str, str] = {"test-tab": "Durable Pi"}
+        self.pane_tab: dict[str, str] = {"caller": "test-tab"}
+        self.created_tabs: list[tuple[str, str]] = []
+        self.splits: list[tuple[str, str]] = []
+
+    def list_tabs(self) -> dict:
+        return {
+            "result": {
+                "tabs": [
+                    {"tab_id": tab_id, "label": label, "workspace_id": "test-workspace"}
+                    for tab_id, label in self.tabs.items()
+                ]
+            }
+        }
+
+    def create_tab(self, *, workspace_id: str, label: str, cwd: Path) -> tuple[str, str]:
+        tab_id = f"tab-{len(self.tabs)}"
+        self.tabs[tab_id] = label
+        self.created_tabs.append((tab_id, label))
+        self.split_count += 1
+        self.panes.add("worker-pane")
+        self.pane_tab["worker-pane"] = tab_id
+        if self.interrupt_after_split:
+            raise RuntimeError("interrupted after split (a new tab's root pane)")
+        return tab_id, "worker-pane"
+
+    def tab_of(self, pane_id: str) -> str:
+        return self.pane_tab.get(pane_id) or list(self.tabs)[-1]
 
     def status(self) -> str:
         return "endpoint_compatible: yes\nprivate_protocol_compatible: yes\n"
@@ -47,11 +76,13 @@ class FakeHerdr:
         if pane_id not in self.panes:
             raise RuntimeError("missing caller pane")
 
-    def split(self, *, pane_id: str, cwd: Path) -> str:
+    def split(self, *, pane_id: str, cwd: Path, direction: str = "right") -> str:
         if pane_id not in self.panes:
             raise RuntimeError("missing caller pane")
         self.split_count += 1
+        self.splits.append((pane_id, direction))
         self.panes.add("worker-pane")
+        self.pane_tab["worker-pane"] = self.tab_of(pane_id)
         if self.interrupt_after_split:
             raise RuntimeError("interrupted after split")
         return "worker-pane"
@@ -132,7 +163,7 @@ class FakeHerdr:
                 "pane": {
                     "cwd": str(self.worktree),
                     "pane_id": pane_id,
-                    "tab_id": "test-tab",
+                    "tab_id": self.tab_of(pane_id),
                     "terminal_id": f"terminal-{pane_id}",
                     "workspace_id": "test-workspace",
                 }
@@ -228,6 +259,55 @@ class HerdrWorkerTests(unittest.TestCase):
         self.assertNotIn("worker", fake.agents)
         self.assertTrue(json.loads(identity_path.read_text(encoding="utf-8"))["closed"])
         self.assertTrue(controller.close(identity_path=identity_path)["closed"])
+
+    def test_first_worker_opens_its_own_sub_agents_tab_with_no_empty_pane(self) -> None:
+        controller, fake = self.controller()
+        started = controller.start(
+            caller_pane="caller", worktree=self.repo, identity_path=self.root / "identity.json",
+            name="worker", kind="claude", title="Test worker",
+        )
+        self.assertEqual(fake.created_tabs, [("tab-1", "Durable Pi Sub Agents")])
+        self.assertEqual(fake.splits, [], "a new tab's root pane is the worker; nothing is split")
+        self.assertEqual(started["worker_pane_id"], "worker-pane")
+        self.assertEqual(fake.tab_of("worker-pane"), "tab-1")
+        self.assertEqual(
+            sorted(pane for pane in fake.panes if fake.tab_of(pane) == "tab-1"), ["worker-pane"],
+            "the sub-agents tab holds only the worker",
+        )
+        self.assertEqual(fake.tab_of("caller"), "test-tab", "the orchestrator's tab is untouched")
+
+    def test_later_workers_split_inside_the_existing_sub_agents_tab(self) -> None:
+        controller, fake = self.controller()
+        fake.tabs["subs"] = "Durable Pi Sub Agents"
+        fake.panes.add("earlier-worker")
+        fake.pane_tab["earlier-worker"] = "subs"
+        controller.start(
+            caller_pane="caller", worktree=self.repo, identity_path=self.root / "identity.json",
+            name="worker", kind="claude", title="Test worker",
+        )
+        self.assertEqual(fake.created_tabs, [])
+        self.assertEqual(fake.splits, [("earlier-worker", "right")])
+        self.assertEqual(fake.tab_of("worker-pane"), "subs")
+
+    def test_an_orchestrator_in_a_sub_agents_tab_keeps_its_workers_there(self) -> None:
+        self.assertEqual(self.module.subagent_tab_label("Durable Pi"), "Durable Pi Sub Agents")
+        self.assertEqual(self.module.subagent_tab_label("Durable Pi Sub Agents"), "Durable Pi Sub Agents")
+
+    def test_an_explicit_tab_label_and_two_same_labelled_tabs(self) -> None:
+        controller, fake = self.controller()
+        controller.start(
+            caller_pane="caller", worktree=self.repo, identity_path=self.root / "identity.json",
+            name="worker", kind="claude", title="Test worker", tab_label="Reviews",
+        )
+        self.assertEqual(fake.created_tabs, [("tab-1", "Reviews")])
+        controller2, fake2 = self.controller()
+        fake2.tabs.update({"a": "Durable Pi Sub Agents", "b": "Durable Pi Sub Agents"})
+        with self.assertRaisesRegex(self.module.HandoffError, "more than one tab"):
+            controller2.start(
+                caller_pane="caller", worktree=self.repo, identity_path=self.root / "identity-2.json",
+                name="worker2", kind="claude", title="Test worker",
+            )
+        self.assertEqual(fake2.split_count, 0)
 
     def test_done_worker_accepts_same_session_correction(self) -> None:
         controller, fake = self.controller()

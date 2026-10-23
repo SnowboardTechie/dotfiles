@@ -198,6 +198,29 @@ def _extract_panes(payload: dict[str, Any]) -> list[dict[str, Any]]:
     return panes
 
 
+def _extract_tabs(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    try:
+        tabs = payload["result"]["tabs"]
+    except (KeyError, TypeError) as exc:
+        raise HandoffError("Herdr response omitted result.tabs") from exc
+    if not isinstance(tabs, list) or not all(isinstance(item, dict) for item in tabs):
+        raise HandoffError("Herdr result.tabs is not a list of objects")
+    return tabs
+
+
+SUBAGENT_TAB_SUFFIX = " Sub Agents"
+
+
+def subagent_tab_label(caller_label: str) -> str:
+    """The tab an orchestrator's workers open in: its own tab's label plus " Sub Agents".
+
+    Each orchestrator tab gets its own workers' tab, so many orchestrators can run at once while Bryan talks only to
+    the orchestrators. An orchestrator already in a sub-agents tab keeps using that tab.
+    """
+    label = caller_label.strip() or "Orchestrator"
+    return label if label.endswith(SUBAGENT_TAB_SUFFIX) else label + SUBAGENT_TAB_SUFFIX
+
+
 def _runtime_session_id(agent: dict[str, Any]) -> str:
     session = agent.get("agent_session")
     if not isinstance(session, dict) or not isinstance(session.get("value"), str):
@@ -253,6 +276,8 @@ def make_start_record(
         "caller_pane_id": caller_pane,
         "caller_workspace_id": None,
         "caller_tab_id": None,
+        "worker_tab_id": None,
+        "worker_tab_label": None,
         "pre_split_pane_ids": [],
         "split_started": False,
         "starting": True,
@@ -481,7 +506,36 @@ class RealHerdr:
     def current_pane(self, pane_id: str) -> None:
         self._run(["pane", "current", "--pane", pane_id])
 
-    def split(self, *, pane_id: str, cwd: Path) -> str:
+    def list_tabs(self) -> dict[str, Any]:
+        return self._json(["tab", "list"])
+
+    def create_tab(self, *, workspace_id: str, label: str, cwd: Path) -> tuple[str, str]:
+        """Create an unfocused tab; return its ID and its root pane's ID."""
+        payload = self._json(
+            [
+                "tab",
+                "create",
+                "--workspace",
+                workspace_id,
+                "--label",
+                label,
+                "--cwd",
+                str(cwd),
+                "--no-focus",
+            ]
+        )
+        try:
+            tab = payload["result"]["tab"]["tab_id"]
+            root = payload["result"]["root_pane"]["pane_id"]
+        except (KeyError, TypeError) as exc:
+            raise HandoffError("Herdr tab create response omitted its tab or root pane") from exc
+        if not isinstance(tab, str) or not tab or not isinstance(root, str) or not root:
+            raise HandoffError("Herdr tab create returned an empty tab or pane ID")
+        return tab, root
+
+    def split(self, *, pane_id: str, cwd: Path, direction: str = "right") -> str:
+        if direction not in {"right", "down"}:
+            raise HandoffError(f"unsupported split direction: {direction}")
         payload = self._json(
             [
                 "pane",
@@ -489,7 +543,7 @@ class RealHerdr:
                 "--pane",
                 pane_id,
                 "--direction",
-                "right",
+                direction,
                 "--ratio",
                 "0.5",
                 "--cwd",
@@ -725,9 +779,12 @@ class HandoffController:
         claude_model: str = DEFAULT_CLAUDE_MODEL,
         claude_effort: str = DEFAULT_CLAUDE_EFFORT,
         claude_settings: str | None = None,
+        tab_label: str | None = None,
     ) -> dict[str, Any]:
         if kind not in {"claude", "hermes"}:
             raise HandoffError(f"unsupported visible worker kind: {kind}")
+        if tab_label is not None and not tab_label.strip():
+            raise HandoffError("sub-agents tab label must not be blank")
         if claude_settings is not None:
             try:
                 settings = json.loads(claude_settings)
@@ -794,19 +851,54 @@ class HandoffController:
                     pre_split_ids.append(value)
                 if caller_pane not in pre_split_ids:
                     raise HandoffError("caller pane is absent from the pane inventory")
+                # Workers open in the orchestrator's own sub-agents tab, never beside it.
+                tabs = [
+                    tab for tab in _extract_tabs(self.herdr.list_tabs())
+                    if tab.get("workspace_id") == caller_workspace
+                ]
+                caller_label = next(
+                    (tab.get("label") for tab in tabs if tab.get("tab_id") == caller_tab), None
+                )
+                if not isinstance(caller_label, str):
+                    raise HandoffError("caller tab is absent from the tab inventory")
+                target_label = tab_label if tab_label is not None else subagent_tab_label(caller_label)
+                matches = [tab for tab in tabs if tab.get("label") == target_label]
+                if len(matches) > 1:
+                    raise HandoffError(f"more than one tab is labelled {target_label!r}")
+                target_tab = matches[0].get("tab_id") if matches else None
+                if target_tab is not None and not isinstance(target_tab, str):
+                    raise HandoffError("sub-agents tab has an invalid tab ID")
                 start_record.update(
                     {
                         "caller_workspace_id": caller_workspace,
                         "caller_tab_id": caller_tab,
+                        "worker_tab_id": target_tab,
+                        "worker_tab_label": target_label,
                         "pre_split_pane_ids": sorted(pre_split_ids),
                         "split_started": True,
                     }
                 )
                 _atomic_write_json(identity_path, start_record)
-                pane_id = self.herdr.split(
-                    pane_id=caller_pane,
-                    cwd=Path(worktree_identity["root"]),
-                )
+                if target_tab is None:
+                    # A new tab's root pane is the worker's pane, so closing the last worker closes the tab.
+                    target_tab, pane_id = self.herdr.create_tab(
+                        workspace_id=caller_workspace,
+                        label=target_label,
+                        cwd=Path(worktree_identity["root"]),
+                    )
+                    start_record["worker_tab_id"] = target_tab
+                else:
+                    in_tab = [
+                        pane.get("pane_id") for pane in pre_split_panes
+                        if pane.get("tab_id") == target_tab
+                    ]
+                    if not in_tab:
+                        raise HandoffError("sub-agents tab has no pane to split")
+                    pane_id = self.herdr.split(
+                        pane_id=in_tab[-1],
+                        cwd=Path(worktree_identity["root"]),
+                        direction="right" if len(in_tab) == 1 else "down",
+                    )
                 start_record["worker_pane_id"] = pane_id
                 start_record["split_started"] = False
                 _atomic_write_json(identity_path, start_record)
@@ -1154,6 +1246,22 @@ class HandoffController:
                     or not isinstance(caller_tab, str)
                 ):
                     raise HandoffError("split recovery inventory is incomplete")
+                # The new pane is in the sub-agents tab: the recorded one, or, if the tab was being created when the
+                # start was interrupted, the one tab carrying its label. Records from before sub-agents tabs split
+                # beside the caller.
+                worker_tab = record.get("worker_tab_id")
+                worker_label = record.get("worker_tab_label")
+                if isinstance(worker_tab, str) and worker_tab:
+                    expected_tabs = {worker_tab}
+                elif isinstance(worker_label, str) and worker_label:
+                    expected_tabs = {
+                        tab["tab_id"] for tab in _extract_tabs(self.herdr.list_tabs())
+                        if tab.get("workspace_id") == caller_workspace
+                        and tab.get("label") == worker_label
+                        and isinstance(tab.get("tab_id"), str)
+                    }
+                else:
+                    expected_tabs = {caller_tab}
                 candidates: list[str] = []
                 for pane in _extract_panes(self.herdr.list_panes()):
                     candidate_id = pane.get("pane_id")
@@ -1162,7 +1270,7 @@ class HandoffController:
                         isinstance(candidate_id, str)
                         and candidate_id not in pre_split_ids
                         and pane.get("workspace_id") == caller_workspace
-                        and pane.get("tab_id") == caller_tab
+                        and pane.get("tab_id") in expected_tabs
                         and isinstance(candidate_cwd, str)
                         and Path(candidate_cwd).expanduser().resolve()
                         == Path(worktree_identity["root"])
@@ -1476,6 +1584,10 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument(
         "--claude-effort", choices=CLAUDE_EFFORTS, default=DEFAULT_CLAUDE_EFFORT
     )
+    start.add_argument(
+        "--tab-label",
+        help="the tab the worker opens in; default: the caller tab's label plus ' Sub Agents', created if missing",
+    )
 
     prompt = subparsers.add_parser("prompt")
     prompt.add_argument("--identity-file", type=Path, required=True)
@@ -1575,6 +1687,7 @@ def main() -> int:
                 claude_effort=args.claude_effort,
                 claude_settings=(args.claude_settings.read_text(encoding="utf-8")
                                  if args.claude_settings is not None else None),
+                tab_label=args.tab_label,
             )
         elif args.command == "handoff":
             prompt_path = _validated_prompt_path(args.prompt_file, args.identity_file)

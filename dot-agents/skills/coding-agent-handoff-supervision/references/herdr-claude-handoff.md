@@ -19,6 +19,14 @@ client found through `PATH` is not a fallback.
 
 ## Start
 
+Workers never open in the orchestrator's own tab. `start` puts each worker in the orchestrator's sub-agents tab, labelled with the caller tab's label plus " Sub Agents" (for example "Durable Pi Sub Agents"), in the same workspace:
+
+- **If the tab doesn't exist,** `start` creates it, and the new tab's root pane becomes the worker. No empty shell is left beside it, and closing the last worker closes the tab.
+- **If it does exist,** `start` splits its last pane.
+- **`--tab-label`** overrides the label.
+
+Each orchestrator gets its own sub-agents tab, so many orchestrators can run at once while Bryan talks only to them. Read-only research and briefing agents also run as visible workers here, not as hidden background delegations.
+
 ```sh
 python3 scripts/herdr_worker.py start \
   --worktree "$WORKTREE" \
