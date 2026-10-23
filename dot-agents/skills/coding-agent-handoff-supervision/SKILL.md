@@ -58,7 +58,7 @@ the user's request is the brief authority: narrow the brief to inspection and
 reporting, prohibit edits/publication, and start the worker. Ask a question only
 when that changes the work or a required project/permission is genuinely unknown.
 Implementation still needs the governing ticket/approved plan and the role,
-acceptance, correction, capacity and cleanup rules below. Claude Opus/xhigh is
+acceptance, correction, capacity and cleanup rules below. Claude Opus/medium is
 the implementation default; Hermes/high is the read-only-worker default.
 Bryan's explicit runtime selection overrides this
 policy. Do not expand a simple question into an audit: keep the brief and
@@ -231,14 +231,11 @@ Visible workers are approval-gated, not sandbox-confined. Claude uses
 `HERMES_YOLO_MODE`, and no `--yolo`. Stop when hard confinement is required but
 cannot be proved.
 
-When Claude is selected, use `claude-opus-5-5` and `xhigh` effort; do not
-downgrade effort for simple or documentation-only work. Lightweight
-implementation still belongs to Claude; Hermes is the read-only-worker route
-unless Bryan explicitly selects otherwise. Escalate to
-`--claude-effort max` only when the work is simultaneously narrowly scoped,
-security-critical, and expensive enough that another correction cycle would be
-especially costly. Broad or decision-incomplete work does not qualify for
-`max`; narrow the scope or settle the decisions first.
+When Claude is selected, use `claude-opus-5-5` at `medium` effort, for
+implementers and reviewers alike (Bryan, 2026-10-23). The coordinator's own
+effort setting does not carry over to workers. Lightweight implementation still
+belongs to Claude; Hermes is the read-only-worker route unless Bryan explicitly
+selects otherwise. Use a higher `--claude-effort` only when Bryan asks for it.
 
 Starting a worker in the inspected worktree created for Bryan's authorized task
 already authorizes Claude's ordinary **Yes, I trust this folder** startup step.
@@ -276,8 +273,8 @@ python3 scripts/herdr_worker.py start \
   --title "$TITLE"
 ```
 
-`--claude-effort` defaults to `xhigh`. Add `--claude-effort max` only when all
-three escalation conditions above hold.
+`--claude-effort` defaults to `medium`. Pass a higher value only when Bryan asks
+for one.
 
 When an explicitly approved installation is misclassified, distinguish missing
 authorization from missing runtime configuration. Never retry a refused action
@@ -317,8 +314,13 @@ capacity result stops before a provider turn.
 or prompt a Claude turn at or above 75%. Below 75%, dispatch: the remaining 25%
 is the buffer that absorbs a turn's overrun. Do not forecast whether the
 expected turn, a concurrent session or past-lane costs will push past 75%, and
-do not defer dispatch to wait for a reset while below it. The helper's own check
-refuses only at 100%, so read its percentage against 75% yourself.
+do not defer dispatch to wait for a reset while below it. A self-imposed lower
+threshold (say, "start once below 55%") idles ready lanes for hours. Reviewers
+are Claude turns too, and the same rule applies to them. The helper's own check
+refuses only at 100%, so read its percentage against 75% yourself. When usage
+really is at or above 75%, a background waiter may poll for it to drop below 75.
+Parse the reading as `references/herdr-claude-handoff.md` describes, and make an
+empty reading fail the waiter at once.
 
 Do not hand-edit or reconstruct an identity record. `start` exclusively reserves the identity path before any pane
 side effect while holding a per-identity start lock. It refuses every
@@ -425,7 +427,11 @@ Complete when the parent has independently accepted one exact candidate.
 
 Keep the pane only while the worker is active, blocked on a specific answer, or
 has one identified same-session correction. Pending publication, merge, or live
-verification is not a concrete next turn.
+verification is not a concrete next turn. A pending fresh final review is: its
+in-scope blockers return to this worker as the bounded correction. So for a
+Risk-lane or high-consequence candidate, keep the implementer's pane until the
+final review is dispositioned. A closed pane forces the correction into a new
+session that lacks the implementation context.
 
 ```sh
 python3 scripts/herdr_worker.py close \
@@ -439,6 +445,82 @@ readback failure resumes safely through the same `close` operation. Do not ask
 for cleanup approval and never close the caller or an unrelated pane.
 
 Complete when the recorded pane and agent are absent.
+
+## Running an unattended multi-lane batch
+
+When Bryan approves a queue of issues to run while he is away (an overnight
+batch), follow this shape:
+
+- **Record the batch.** Write its order, authority (merge-once-cleared or
+  stop-at-PR), concurrency limit and live-uptake rule in the project vault before
+  dispatch. Change that record, not just the chat, when a decision changes
+  mid-run.
+- **Lanes by shared files.** Issues that touch the same files run serially in one
+  lane. Independent lanes all run in parallel. Bryan sets no cap on how many
+  builders run at once (2026-10-23); only the Claude capacity ceiling above limits
+  dispatch. Don't hold a ready lane because other builders are busy.
+- **The brief is a contract file.** Write `contract.md` in the ticket state
+  directory: authority links, settled open questions, required behaviour, tests,
+  verify commands, permissions and handback shape. The prompt is one line
+  pointing at it. Run every `prompt` as a background terminal job with
+  `notify=true`, so each settlement wakes the coordinator.
+- **Integrate before the gate.** Merge the current `origin/main` into the feature
+  branch (a signed merge commit, never a rebase) before the canonical gate. The
+  gate and final review then judge the integrated candidate.
+- **Re-integrate if main moved before the merge.** Main can advance after a
+  branch's gate or review, because a sibling lane merged. Check
+  `git diff --stat <branch-base> origin/main -- package.json package-lock.json tsconfig.json packages workspaces`.
+  If any code path changed, merge main into the branch again and rerun the gate
+  before squash-merging. A squash that git merges cleanly can still combine
+  untested code. A move limited to vault or docs doesn't need a rerun.
+- **A design choice the worker raises is a decision turn, not a correction.**
+  Sometimes a handback asks the coordinator to choose between two implementations.
+  When an existing rule settles the choice (an invariant from an earlier merged
+  change, for example), write `decision-N.md`: the choice, the rule behind it, the
+  added assertion or mutant, and the reruns. Send it to the same worker. It
+  doesn't spend the issue's correction. Ask Bryan only when no existing authority
+  settles it.
+- **Never file issues from review findings without Bryan's approval.** A finding
+  that the issue's acceptance criteria cover is fixed in that lane before merge;
+  don't split it off, even if the issue's examples didn't name it. For other
+  non-blocking or pre-existing findings, record them in the PR body, then draft
+  any proposed later work in the vault plan's "Proposed for Bryan's approval"
+  section and report it when he returns. Keep working; never stop to wait for
+  that conversation. Filing a ticket per nit makes the queue feed itself, so the
+  work never ends.
+- **Serialize full canonical gates.** Two concurrent full runs (browser suites,
+  fake services) contend for load and ports. Queue the next gate behind the
+  running one's PID.
+- **Clean up workers' scratch.** Worker sessions are often refused `rm -rf` of
+  their own scratch directories. The coordinator removes the paths named in the
+  handback after reading it.
+- **Hold live changes that need a human check.** An authorized behaviour change
+  whose activation needs a live check, a pending experiment or a message into a
+  real room can still merge as source. Hold its live uptake, and record the hold
+  and why for Bryan's morning. Its PR says `Refs #N`, not `Closes #N`, so the
+  merge doesn't close an issue whose live acceptance item is still open.
+- **Conflicts with a sibling lane are a worker turn, not a correction.** When
+  `git merge origin/main` stops on conflicts because another lane landed first,
+  write an `integration.md` (what landed, which files conflict, keep both sides'
+  tests whole, report rather than work around a behavioural clash, one authorized
+  `git commit --no-edit`). Send it to a fresh worker identity
+  (`integration-worker-identity.json`). The parent doesn't hand-resolve code
+  conflicts, and the turn doesn't spend the issue's correction.
+- **Final-review findings mid-batch.** Bundle the in-scope blockers into the one
+  correction right away and dispatch it. Post the items that are Bryan's call
+  (scope or semantics the authority left open) on the issue, each with a
+  recommendation, and keep going. Don't hold the lane waiting for him. If the
+  candidate changes text he must approve (laws, contracts), park the correction
+  until he decides instead of correcting twice.
+- **Predicted mutants are not results.** A read-only reviewer may be refused
+  permission to execute tests and then only predict which test catches each
+  mutant. Put real mutant runs into the correction contract (or run them as the
+  parent) before accepting, and name any mutant that survives today.
+- **Absolute scratch paths across calls.** Write PR bodies and comment drafts to
+  `~/.hermes/cache/scratch/<name>.md` with `write_file`, never `$TMPDIR`: tool
+  calls can see different `TMPDIR` values, and a missing body file makes
+  `tea pr create` publish an empty description silently. Read the body back
+  after creating the PR.
 
 ## Explicit Background-Only Route
 

@@ -192,10 +192,8 @@ python3 dot-agents/skills/coding-agent-handoff-supervision/scripts/herdr_worker.
 
 `--claude-model` defaults to `claude-opus-5-5`. When Bryan explicitly selects another
 Claude model, pass its exact full model name and carry that choice in the prompt;
-never add a fallback model. Claude effort defaults to `xhigh`, including for
-simple and documentation-only work. Add `--claude-effort max` only when the
-slice is narrowly scoped, security-critical, and another correction cycle would
-be especially expensive.
+never add a fallback model. Claude effort defaults to `medium`
+(Bryan, 2026-10-23); pass a higher value only when Bryan asks for one.
 
 `handoff-status` starts the worker, records `engagement_mode: status-only`
 before anything is sent, submits the prompt exactly once through Herdr's

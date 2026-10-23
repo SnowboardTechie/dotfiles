@@ -20,7 +20,7 @@ from typing import Any, Callable
 
 
 CLAUDE_EFFORTS = ("low", "medium", "high", "xhigh", "max")
-DEFAULT_CLAUDE_EFFORT = "xhigh"
+DEFAULT_CLAUDE_EFFORT = "medium"
 DEFAULT_CLAUDE_MODEL = "claude-opus-5-5"
 
 

@@ -71,7 +71,7 @@ target-project vault.
    high-reasoning route. Reject any fallback chain or conflicting
    `delegation.model`, `delegation.provider`, or `delegation.base_url` override.
    Do not repair configuration.
-8. Verify Claude authentication and the Opus 5.5/xhigh-effort route without exposing
+8. Verify Claude authentication and the Opus 5.5/medium-effort route without exposing
    credentials. No model-family fallback is allowed.
 
 Completion: one authorized teammate PR, one clean implementation trunk, one
@@ -143,7 +143,7 @@ prompt.
 
 Pass both reviewers the same candidate and manifest identity plus the same
 [reviewer-orchestrator contract](references/reviewer-orchestrator-contract.md).
-Pass distinct worktrees, state roots, and output paths. Claude uses Opus 5.5/xhigh
+Pass distinct worktrees, state roots, and output paths. Claude uses Opus 5.5/medium
 effort in auto permission mode and Opus 5.5 leaves. Hermes uses the
 instigating root's active GPT model/provider/base URL, high reasoning, smart
 approvals, no yolo, and leaves that inherit or exactly match that GPT route.

@@ -786,7 +786,7 @@ class HerdrWorkerTests(unittest.TestCase):
             sent[0][sent[0].index("--model") + 1],
             "claude-fable-5-1",
         )
-        self.assertEqual(sent[0][sent[0].index("--effort") + 1], "xhigh")
+        self.assertEqual(sent[0][sent[0].index("--effort") + 1], "medium")
         self.assertNotIn("opus", sent[0])
 
         herdr.start_agent(
@@ -1394,7 +1394,7 @@ class HerdrWorkerTests(unittest.TestCase):
         )
         self.assertEqual(arguments.command, "handoff-status")
         self.assertEqual(arguments.claude_model, "claude-fable-5-1")
-        self.assertEqual(arguments.claude_effort, "xhigh")
+        self.assertEqual(arguments.claude_effort, "medium")
         self.assertEqual(arguments.timeout_ms, 7_200_000)
         recovery = parser.parse_args(
             ["status-wait", "--identity-file", str(self.root / "identity.json")]
@@ -1526,7 +1526,7 @@ class HerdrWorkerTests(unittest.TestCase):
         self.assertEqual(arguments.command, "handoff")
         self.assertEqual(arguments.kind, "claude")
         self.assertEqual(arguments.claude_model, "claude-opus-5-5")
-        self.assertEqual(arguments.claude_effort, "xhigh")
+        self.assertEqual(arguments.claude_effort, "medium")
         for command in ("start", "handoff-status"):
             with self.subTest(command=command):
                 required = [
