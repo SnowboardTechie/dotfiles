@@ -68,11 +68,11 @@ abdication. A recommendation is not a decision — see *Epistemic status*.
   will not remember which ticket is which. Keep it short: context for this one
   question, not a briefing on every ticket in the session. A long multi-ticket
   overview reads as a wall of text.
-- **Question cards stay short.** When a round uses a clarify card, put the
-  context, options and recommendation in a readable chat message first, then
-  end the turn or ask on the card with only a short question and short
-  choices. A card that carries a 100-word explanation ahead of a one-line
-  question renders as an unreadable wall of text.
+- **Ask in the final message, not on a clarify card.** Bryan sees only final
+  messages; text written before a tool call never reaches him, and a card
+  that carries the explanation renders as an unreadable wall of text. Put the
+  context, options, recommendation and the question in a readable final
+  message and end the turn.
 - **List every genuine option, including ones you recommend against.** Never
   silently drop an option because your recommendation makes it redundant. Show
   it, and say in one clause why it loses. Otherwise Bryan has to ask where it
