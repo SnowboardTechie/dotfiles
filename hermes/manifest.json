@@ -35,6 +35,7 @@
   },
   "scripts": [
     "check-hermes-status-fix.py",
+    "check-hermes-clarify-context-fix.py",
     "sgg-morning-brief.py",
     "sgg-pr-review-reminder.py",
     "sgg-calendar-events.swift",
@@ -67,6 +68,7 @@
   ],
   "copiedScripts": [
     "check-hermes-status-fix.py",
+    "check-hermes-clarify-context-fix.py",
     "sgg-morning-brief.py",
     "sgg-pr-review-reminder.py",
     "sgg-pr-review-event.py",
@@ -109,6 +111,21 @@
       "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
       "skills": [],
       "script": "check-hermes-status-fix.py",
+      "noAgent": true,
+      "enabledToolsets": [],
+      "workdir": "/Users/bryan",
+      "attachToSession": false
+    },
+    {
+      "name": "Watch Hermes clarify-context fix",
+      "deliveryIntent": "alert",
+      "schedule": "25 9 * * *",
+      "model": null,
+      "provider": null,
+      "promptFile": "automations/hermes-clarify-context-fix-watch/prompt.md",
+      "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
+      "skills": [],
+      "script": "check-hermes-clarify-context-fix.py",
       "noAgent": true,
       "enabledToolsets": [],
       "workdir": "/Users/bryan",

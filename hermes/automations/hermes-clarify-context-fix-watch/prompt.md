@@ -1,0 +1,1 @@
+Run the model-free Hermes clarify-context fix watcher. Empty stdout means pending or already alerted; deliver non-empty stdout verbatim. Never edit skills, memory or Hermes, update Hermes or restart services automatically.
