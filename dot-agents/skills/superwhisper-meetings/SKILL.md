@@ -39,6 +39,30 @@ Do not use `record`, `start`, `stop`, `switch`, `transcribe`, `vocab`,
 `superwhisper mcp` can expose the same data as a stdio MCP server
 (command: the absolute path above, args: `["mcp"]`) if a client needs it.
 
+## Imported Granola meetings
+
+138 Granola meetings (through 2026-10-22, Agile6 account) were imported on
+2026-10-23 as Superwhisper meeting folders. Recognize them by summary text
+starting `_Imported from Granola. Participants: ..._` and speaker names
+`Microphone` / `System audio` / `System audio (<name>)`. They have no audio.
+`Microphone` is the recorder's mic (usually Bryan, not guaranteed); plain
+`System audio` can be several people. Speakers are Granola's labels, not
+voice-separated by Superwhisper. Summaries are Granola's AI summaries.
+
+Durable Markdown copy (outside iCloud): `~/granola-export/index.md` and
+`~/granola-export/meetings/*.md`; raw MCP responses in `~/granola-export/raw/`;
+folder ↔ Granola ID map in `~/granola-export/superwhisper-import.json`.
+Screenshots attached in Granola were not exported.
+
+How the import works (the CLI has no import command): each recording is
+`~/Documents/superwhisper/recordings/<unix-epoch>/meta.json` (+ audio); on
+launch the app backfills folders with valid meta.json into its SQLite index.
+A meeting needs `"kind": "meeting"`, `title`, `privateNotes`, `llmResult`
+(summary), `result`/`rawResult` (transcript), `segments` (start/end/text/
+speaker/words), `speakers` [{number,name}], `datetime` (UTC), `duration` ms.
+The folder name should be the meeting's epoch. Quit and reopen Superwhisper,
+then verify with `meetings --json`. Unsupported format; back up first.
+
 Fallback without the CLI: ask Bryan to open the meeting in Superwhisper,
 click Share, and drag the summary note into the chat, or paste the relevant
 notes or transcript. Use only the material provided.
