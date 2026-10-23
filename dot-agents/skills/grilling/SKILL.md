@@ -62,6 +62,26 @@ Every consequential question carries genuine options, their trade-offs, and a
 reasoned recommendation. "What do you want to do?" is not a question, it is an
 abdication. A recommendation is not a decision — see *Epistemic status*.
 
+- **Open each question with two or three sentences of context.** Name the
+  project or map the ticket belongs to, what it is for in plain terms, and what
+  is already settled around it. Bryan works many maps and plans in parallel and
+  will not remember which ticket is which. Keep it short: context for this one
+  question, not a briefing on every ticket in the session. A long multi-ticket
+  overview reads as a wall of text.
+- **Question cards stay short.** When a round uses a clarify card, put the
+  context, options and recommendation in a readable chat message first, then
+  end the turn or ask on the card with only a short question and short
+  choices. A card that carries a 100-word explanation ahead of a one-line
+  question renders as an unreadable wall of text.
+- **List every genuine option, including ones you recommend against.** Never
+  silently drop an option because your recommendation makes it redundant. Show
+  it, and say in one clause why it loses. Otherwise Bryan has to ask where it
+  went.
+- **When Bryan asks what a term or tool is** ("what is X?", "what does it cost
+  to add Y now?"), answer that alone, with a reference link and verified costs.
+  Then re-ask the same open question. The question is not settled until he
+  picks.
+
 ## Facts are your job
 
 Finding *facts* is never Bryan's job. If a frontier question needs something
