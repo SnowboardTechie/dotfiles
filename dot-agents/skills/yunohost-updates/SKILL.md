@@ -99,7 +99,9 @@ ynh 'grep -h " install \| upgrade " /var/log/dpkg.log | tail -20'  # incl. unatt
 `tools update` prints each upgradable app with `current_version`,
 `new_version`, the package repo `url`, `new_revision`, and any manifest
 `notifications` (pre-upgrade warnings). It also lists system packages and
-`important_yunohost_upgrade` / `pending_migrations`. The server runs
+`important_yunohost_upgrade` / `pending_migrations`. In `--output-as json`,
+`system` is `[]` when apt has nothing, but a dict of category → package list
+(e.g. `{"misc utils and libs": [...]}`) when it does; parse both. The server runs
 `unattended-upgrades` (security packages install automatically) and Bryan
 sometimes upgrades through the web admin, so check recent operations before
 assuming anything is pending.
