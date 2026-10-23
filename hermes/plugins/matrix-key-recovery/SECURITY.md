@@ -29,7 +29,7 @@ message bodies, room keys, device keys, credentials, or ciphertext.
 Cross-user recovery is limited to:
 
 - `@bryan:snowboardtechie.com`;
-- five exact, private, two-member Bryan/Hermes room IDs;
+- six exact, private, two-member Bryan/Hermes room IDs;
 - a user who is currently joined to the requested room; and
 - devices whose effective Mautrix trust is `CROSS_SIGNED_TOFU`,
   `CROSS_SIGNED_TRUSTED`, or `VERIFIED`.
@@ -67,3 +67,11 @@ room ID in `AUTHORIZED_ROOMS`, with no code-path change. The room meets the same
 invariant as the original four: private, invite-only, encrypted, unlisted,
 `history_visibility=joined`, guests forbidden, and exactly two joined members
 (Hermes and Bryan), verified by live state readback at creation.
+
+Scope extension (2026-10-23): added the Studio Alerts room
+(`!BY2yuFPzB-GFM6e1MCD33kHk-YH2c1H3Ga-R59PCTUg`), which receives Alertmanager
+notifications through Hermes's deliver-only `studio-alerts` webhook route. The
+change is data-only: one room ID in `AUTHORIZED_ROOMS`, with no code-path
+change. Live state readback on 2026-10-23 confirmed the same invariant:
+private, invite-only, encrypted, unlisted, `history_visibility=joined`, guests
+forbidden, and exactly two joined members (Hermes and Bryan).

@@ -19,6 +19,8 @@ AUTHORIZED_ROOMS = frozenset(
         "!dc6CqGlnIP1ivE6QDrbNedXZlmViaDOK75KjdzQ63_w",
         # Server Updates: nightly YunoHost reports and upgrade approvals.
         "!OTGdYFkIolD5nJvYklJ0Y-dbcaUyvAu0oXEI8-_sxuI",
+        # Studio Alerts: Alertmanager notifications through the webhook route.
+        "!BY2yuFPzB-GFM6e1MCD33kHk-YH2c1H3Ga-R59PCTUg",
     }
 )
 
