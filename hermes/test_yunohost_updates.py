@@ -64,6 +64,32 @@ class SnapshotTests(unittest.TestCase):
         changed["apps"][0]["upgrade"]["new_version"] = "1.164.0~ynh1"
         self.assertNotEqual(lib.render(lib.snapshot(PENDING)), lib.render(lib.snapshot(changed)))
 
+    def test_system_packages_grouped_by_category(self):
+        # Real `tools update --output-as json` shape when apt has upgrades:
+        # a dict of category -> package list, not a flat list.
+        grouped = dict(PENDING, system={
+            "misc utils and libs": [
+                {"name": "libexpat1-dev", "new_version": "2.5.0-1+deb12u5",
+                 "current_version": "2.5.0-1+deb12u4"},
+                {"name": "libexpat1", "new_version": "2.5.0-1+deb12u5",
+                 "current_version": "2.5.0-1+deb12u4"},
+            ],
+        })
+        system = json.loads(lib.render(lib.snapshot(grouped)))["system"]
+        self.assertEqual([p["name"] for p in system], ["libexpat1", "libexpat1-dev"])
+        self.assertEqual(system[0]["category"], "misc utils and libs")
+        self.assertEqual(system[0]["newVersion"], "2.5.0-1+deb12u5")
+
+    def test_system_packages_flat_list_still_supported(self):
+        flat = dict(PENDING, system=[{"name": "curl", "current_version": "1", "new_version": "2"}])
+        system = json.loads(lib.render(lib.snapshot(flat)))["system"]
+        self.assertEqual([p["name"] for p in system], ["curl"])
+
+    def test_unknown_system_shape_fails_loudly(self):
+        for bad in ({"libs": ["libexpat1"]}, ["libexpat1"], "libexpat1"):
+            with self.assertRaises(lib.SourceError):
+                lib.snapshot(dict(PENDING, system=bad))
+
 
 class VersionTests(unittest.TestCase):
     def test_keys(self):

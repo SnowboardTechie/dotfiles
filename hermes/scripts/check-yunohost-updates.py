@@ -19,11 +19,11 @@ import yunohost_updates_lib as lib  # noqa: E402
 
 def main() -> int:
     try:
-        pending = lib.fetch_pending()
+        snap = lib.snapshot(lib.fetch_pending())
     except (lib.SourceError, OSError, TimeoutError) as exc:
         print(f"YunoHost update check failed: {exc}", file=sys.stderr)
         return 1
-    sys.stdout.write(lib.render(lib.snapshot(pending)))
+    sys.stdout.write(lib.render(snap))
     return 0
 
 

@@ -77,6 +77,29 @@ def upstream_version(version: str) -> str:
     return (version or "").split("~", 1)[0]
 
 
+def system_packages(raw: Any) -> list[tuple[str | None, dict]]:
+    """Flatten ``tools update``'s ``system`` field into (category, package) pairs.
+
+    With no apt upgrades YunoHost returns ``[]``; with upgrades it returns a dict
+    of category -> package list (e.g. ``{"misc utils and libs": [...]}``). Accept
+    both, plus a flat list of packages. Any other shape raises SourceError so the
+    run fails visibly instead of reporting a quiet night.
+    """
+    pairs: list[tuple[str | None, dict]]
+    if isinstance(raw, dict):
+        pairs = [(str(category), package)
+                 for category, packages in raw.items()
+                 for package in (packages or [])]
+    elif isinstance(raw, list) or raw is None:
+        pairs = [(None, package) for package in raw or []]
+    else:
+        raise SourceError(f"unexpected 'system' field type: {type(raw).__name__}")
+    for _, package in pairs:
+        if not isinstance(package, dict):
+            raise SourceError(f"unexpected system package entry: {str(package)[:120]}")
+    return pairs
+
+
 def snapshot(pending: dict) -> dict:
     """Stable identity of what is pending. Excludes every time-varying field."""
     apps = []
@@ -94,12 +117,15 @@ def snapshot(pending: dict) -> dict:
             "requirements": upgrade.get("requirements") or {},
         })
     system = []
-    for package in pending.get("system") or []:
-        system.append({
+    for category, package in system_packages(pending.get("system")):
+        entry = {
             "name": package.get("name"),
             "currentVersion": package.get("current_version"),
             "newVersion": package.get("new_version"),
-        })
+        }
+        if category is not None:
+            entry["category"] = category
+        system.append(entry)
     migrations = []
     for migration in pending.get("pending_migrations") or []:
         migrations.append(migration.get("id") if isinstance(migration, dict) else str(migration))
