@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [issues, implementation, review, delivery]
-    related_skills: [issue-plan, worktrunk, coding-agent-handoff-supervision, pr-self-review, ship]
+    related_skills: [issue-plan, worktrunk, coding-agent-handoff-supervision, pr-self-review, ship, black-box-verification]
 ---
 
 # Issue Work
@@ -323,6 +323,12 @@ settled; worker settlement alone is not acceptance or delivery.
 Treat worker output as a claim. Inspect every changed path and the actual diff.
 Run the plan's targeted tests and adversarial probes needed to validate the
 changed behavior. Do not run the full repository gate yet.
+
+When the change has observable public-interface behavior (a CLI, endpoint, UI,
+written files, or external side effects), load `black-box-verification` and
+drive that interface in isolation with contract-derived expectations, instead of
+rediscovering how to run the application. It supplies evidence to this step and
+Phase 4; it adds no gate for internal logic, documentation, or trivial changes.
 
 If targeted checks find blockers that prevent a candidate commit, write one
 consolidated correction contract and resume the same worker. This consumes the

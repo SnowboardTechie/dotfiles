@@ -87,8 +87,11 @@ fi
 # PKM is split by backend: vault-pkm (project/workspace Markdown vaults),
 # apple-notes-pkm (personal second brain in Apple Notes), knowledge-capture
 # (the router that decides which of the two a capture belongs to).
+# black-box-verification is a shared verification method (see
+# dot-agents/upstreams/pstack-claude.json), so even lean Pi receives it.
 COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review code-review
-    vault-pkm apple-notes-pkm knowledge-capture session-handoff)
+    vault-pkm apple-notes-pkm knowledge-capture session-handoff
+    black-box-verification)
 
 # Claude dropped these on 2026-09-28 (no recorded use); OpenCode, Pi, and Codex keep them.
 NON_CLAUDE_COMMON=(skill-retrospective obsidian)
@@ -133,7 +136,7 @@ HERMES_SKILLS=(
     manual-merge issue-create issue-plan issue-work loop-issue
     coding-agent-handoff-supervision
     apple-notes-pkm knowledge-capture skill-retrospective adr-and-spec-coach voice-bryan
-    session-handoff
+    session-handoff black-box-verification
     dx-target dx-preview conforming-tech-specs proven-cores
     catalog-review dependency-review dependency-triage sprint-deliverable-update
     "${ADAPTED_CORES[@]}"

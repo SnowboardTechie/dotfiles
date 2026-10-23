@@ -1,0 +1,70 @@
+{
+  "upstream": "https://github.com/michael-denyer/pstack-claude",
+  "version": "0.9.88",
+  "commit": "963781d11834918bf0951202d721c2e144777a70",
+  "license": "MIT",
+  "licenseFile": "pstack-claude-LICENSE",
+  "attribution": "Concepts adapted from pstack-claude, MIT licensed, Copyright (c) 2026 Lauren Tan and Copyright (c) 2026 Michael Denyer. Upstream's NOTICE.md credits create-verification-skill to cursor/plugins/pstack (Lauren Tan); blast-radius is a port-authored skill. Retained in pstack-claude-LICENSE.",
+  "verifiedOn": "2026-10-23",
+  "notes": [
+    "Concept adaptation, not a vendored copy: the local skill is rewritten prose that folds two upstream skills into one lean skill with two disclosed references.",
+    "The pstack plugin, its poteto-mode coordinator, hooks, commands, and the rest of its skills are deliberately not adopted.",
+    "Upstream paths are relative to the repository root at the pinned commit."
+  ],
+  "updatePolicy": {
+    "readOnlyDetection": true,
+    "humanApprovedPinAdvance": true,
+    "autoApply": false,
+    "monitor": null,
+    "description": "No automated watcher exists for this source; the adaptation is small and concept-level. Re-reading the watched files and advancing `commit` is a manual, reviewed local change."
+  },
+  "adaptations": [
+    {
+      "skill": "black-box-verification",
+      "upstreamPaths": [
+        "plugins/pstack/skills/blast-radius/SKILL.md",
+        "plugins/pstack/skills/create-verification-skill/SKILL.md",
+        "plugins/pstack/skills/create-verification-skill/references/feature-map-example/README.md"
+      ],
+      "localPaths": [
+        "dot-agents/skills/black-box-verification/SKILL.md",
+        "dot-agents/skills/black-box-verification/references/change-impact.md",
+        "dot-agents/skills/black-box-verification/references/project-recipe.md"
+      ],
+      "localChanges": [
+        "Separates black-box public-interface verification from source-informed change-impact investigation, and labels implementation reading as test selection rather than black-box execution.",
+        "Requires expected results to come from the contract (acceptance criteria, spec, docs), never from the implementation under test.",
+        "Folds `blast-radius` in as the change-impact reference and `create-verification-skill` in as the project-recipe reference, each with an explicit open-when trigger.",
+        "Planning stays read-only: execution-level proof is recorded as a verification step for implementation authority instead of being run during planning.",
+        "The skill grants no install, live write, outbound message, or process-launch authority; existing workflow gates remain authoritative.",
+        "Requires every substituted and untested boundary to be named, and refuses to count a failing setup as a reproduced regression.",
+        "Recipe placement is a recorded decision that reuses existing project docs first, instead of unconditionally generating `.claude/skills/verify/`.",
+        "Routed conditionally from `issue-plan` (unproven cross-boundary safety assumptions) and `issue-work` (observable public-interface behavior); no gate for trivial, internal, or documentation changes."
+      ],
+      "acceptedUpstreamRules": [
+        "Find the one or two facts a change is safe because of and prove them by running code, not by writing them up.",
+        "The proof ladder: asserted, pointed at, reasoned, executed, reproduced in the running application; report where each fact stopped.",
+        "Look where grep stops: library source and pinned version, execution timing, payloads, columns, wire formats, flags.",
+        "Report confirmed risks separately from cleared ones; a search that found nothing is an answer; never invent a caller or API.",
+        "A recipe covers launch with usable readiness, a read-only doctor check, a real drive with stable handles, evidence, and cleanup.",
+        "Exercise the real user path, not internal setters or test-only endpoints; mocks only where a production boundary already isolates the external system.",
+        "Read back side effects and verify by observation what a dry run actually skips.",
+        "Kill only what the run started, never by process name; cleanup never deletes the evidence.",
+        "A journey whose precondition is missing reports the gap; it is never weakened to pass.",
+        "A generated recipe is proven once end to end before it is called done; a stand-in target leaves its target-only steps unverified."
+      ],
+      "rejectedUpstreamRules": [
+        "Running a wide change as an `arena` across multiple models — no additional reviewer or model fan-out; review stays with the owning workflow.",
+        "Always naming the generated skill `verify` under `.claude/skills/` to shadow Claude Code's built-in; placement is chosen per project and must be visible to every runtime.",
+        "Fixing a broken checkout or creating scaffolding assets before generating a recipe without separate authority.",
+        "The `maintain-verification-skill` loop and a feature-map directory per project as a default; a recipe stays as small as the project's real need.",
+        "Writing the report through `unslop` and the poteto-mode playbooks, autonomy, and shipping flow that surround these skills upstream.",
+        "Plugin installation, slash-command stubs, and hooks; distribution is the local skill reconciler only."
+      ],
+      "watchedFiles": [
+        "plugins/pstack/skills/blast-radius/SKILL.md",
+        "plugins/pstack/skills/create-verification-skill/SKILL.md"
+      ]
+    }
+  ]
+}

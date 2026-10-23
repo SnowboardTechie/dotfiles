@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [issues, planning, vaults, implementation]
-    related_skills: [issue-work, plan, vault-pkm, grilling, wayfinder, adr-and-spec-coach, dx-target, conforming-tech-specs]
+    related_skills: [issue-work, plan, vault-pkm, grilling, wayfinder, adr-and-spec-coach, dx-target, conforming-tech-specs, black-box-verification]
 ---
 
 # Issue Plan
@@ -138,6 +138,7 @@ are composable, not mutually exclusive:
 | The effort plainly exceeds one planning session | Stop and offer `wayfinder`; a map is a separate effort, not a phase of this one |
 | A formal ADR/spec must conform to an established conventions index | `conforming-tech-specs` after decisions are settled |
 | Pure decision logic whose rules must never break (lifecycles, approvals, ledgers, deduplication, retry ceilings) | `proven-cores`: weigh a Bend proven core as one option, never a default |
+| The design rests on an unproven claim about code across a boundary ("X already handles Y", "nothing else reads this") | `black-box-verification` → its change-impact reference: prove the one or two load-bearing facts read-only; plan any execution-level check as a verification step |
 | Concrete implementation sequence, files, and checks | `plan` after design decisions are settled |
 
 Runtime mapping is explicit:
