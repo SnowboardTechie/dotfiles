@@ -137,6 +137,7 @@ are composable, not mutually exclusive:
 | A load-bearing architectural choice is still open | `grilling` **or** `adr-and-spec-coach` — ask which; both are live during the pilot (below) |
 | The effort plainly exceeds one planning session | Stop and offer `wayfinder`; a map is a separate effort, not a phase of this one |
 | A formal ADR/spec must conform to an established conventions index | `conforming-tech-specs` after decisions are settled |
+| Pure decision logic whose rules must never break (lifecycles, approvals, ledgers, deduplication, retry ceilings) | `proven-cores`: weigh a Bend proven core as one option, never a default |
 | Concrete implementation sequence, files, and checks | `plan` after design decisions are settled |
 
 Runtime mapping is explicit:

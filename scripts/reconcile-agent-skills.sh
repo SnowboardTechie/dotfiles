@@ -113,7 +113,7 @@ CODEX_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
 
 CLAUDE_SKILLS=("${COMMON_SKILLS[@]}"
     manual-merge issue-create issue-plan issue-work
-    adr-and-spec-coach dx-target conforming-tech-specs
+    adr-and-spec-coach dx-target conforming-tech-specs proven-cores
     catalog-review dependency-review dependency-triage
     voice-bryan
     "${ADAPTED_CORES[@]}")
@@ -134,7 +134,7 @@ HERMES_SKILLS=(
     coding-agent-handoff-supervision
     apple-notes-pkm knowledge-capture skill-retrospective adr-and-spec-coach voice-bryan
     session-handoff
-    dx-target dx-preview conforming-tech-specs
+    dx-target dx-preview conforming-tech-specs proven-cores
     catalog-review dependency-review dependency-triage sprint-deliverable-update
     "${ADAPTED_CORES[@]}"
     guided-learning yunohost-updates
