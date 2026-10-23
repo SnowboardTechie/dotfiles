@@ -208,7 +208,30 @@ def _extract_tabs(payload: dict[str, Any]) -> list[dict[str, Any]]:
     return tabs
 
 
+def _extract_layout(payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        layout = payload["result"]["layout"]
+        panes = layout["panes"]
+    except (KeyError, TypeError) as exc:
+        raise HandoffError("Herdr response omitted result.layout.panes") from exc
+    if not isinstance(panes, list) or not panes:
+        raise HandoffError("Herdr result.layout.panes is not a nonempty list")
+    for pane in panes:
+        rect = pane.get("rect") if isinstance(pane, dict) else None
+        if (
+            not isinstance(rect, dict)
+            or not isinstance(pane.get("pane_id"), str)
+            or not pane["pane_id"]
+            or any(type(rect.get(side)) is not int for side in ("x", "y", "width", "height"))
+        ):
+            raise HandoffError("Herdr layout has a pane without an ID and rect")
+    return layout
+
+
 SUBAGENT_TAB_SUFFIX = " Sub Agents"
+# A sub-agents tab fills as two rows of four.
+SUBAGENT_GRID_COLUMNS = 4
+SUBAGENT_GRID_PANES = 2 * SUBAGENT_GRID_COLUMNS
 
 
 def subagent_tab_label(caller_label: str) -> str:
@@ -219,6 +242,32 @@ def subagent_tab_label(caller_label: str) -> str:
     """
     label = caller_label.strip() or "Orchestrator"
     return label if label.endswith(SUBAGENT_TAB_SUFFIX) else label + SUBAGENT_TAB_SUFFIX
+
+
+def subagent_split(panes: list[dict[str, Any]]) -> tuple[str, str]:
+    """The pane a new worker splits in a sub-agents tab, and the direction.
+
+    Panes 2-4 split the widest top-row pane right, the leftmost on a tie, so the top row ends as four equal columns.
+    Panes 5-8 split each top-row column down, left to right. Past eight, the largest pane splits right if it is wider
+    than tall, otherwise down. Slots come from the tab's live geometry every time, so a closed pane's slot is
+    refilled first: a short top row, then the leftmost column with nothing below it.
+    """
+    cells = [{"pane_id": pane["pane_id"], **pane["rect"]} for pane in panes]
+    top_y = min(cell["y"] for cell in cells)
+    top_row = sorted((cell for cell in cells if cell["y"] == top_y), key=lambda cell: cell["x"])
+    below = [cell for cell in cells if cell["y"] > top_y]
+    if len(cells) < SUBAGENT_GRID_PANES:
+        if len(top_row) < SUBAGENT_GRID_COLUMNS:
+            widest = max(top_row, key=lambda cell: (cell["width"], -cell["x"]))
+            return widest["pane_id"], "right"
+        for column in top_row:
+            if not any(
+                cell["x"] < column["x"] + column["width"] and column["x"] < cell["x"] + cell["width"]
+                for cell in below
+            ):
+                return column["pane_id"], "down"
+    largest = max(cells, key=lambda cell: (cell["width"] * cell["height"], -cell["y"], -cell["x"]))
+    return largest["pane_id"], "right" if largest["width"] > largest["height"] else "down"
 
 
 def _runtime_session_id(agent: dict[str, Any]) -> str:
@@ -721,6 +770,9 @@ class RealHerdr:
     def list_panes(self) -> dict[str, Any]:
         return self._json(["pane", "list"])
 
+    def pane_layout(self, pane_id: str) -> dict[str, Any]:
+        return self._json(["pane", "layout", "--pane", pane_id])
+
     def close_pane(self, pane_id: str) -> None:
         self._run(["pane", "close", pane_id])
 
@@ -894,10 +946,14 @@ class HandoffController:
                     ]
                     if not in_tab:
                         raise HandoffError("sub-agents tab has no pane to split")
+                    layout = _extract_layout(self.herdr.pane_layout(in_tab[0]))
+                    if layout.get("tab_id") != target_tab:
+                        raise HandoffError("pane layout is not the sub-agents tab's")
+                    split_pane, direction = subagent_split(layout["panes"])
                     pane_id = self.herdr.split(
-                        pane_id=in_tab[-1],
+                        pane_id=split_pane,
                         cwd=Path(worktree_identity["root"]),
-                        direction="right" if len(in_tab) == 1 else "down",
+                        direction=direction,
                     )
                 start_record["worker_pane_id"] = pane_id
                 start_record["split_started"] = False

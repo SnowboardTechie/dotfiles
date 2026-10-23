@@ -21,7 +21,43 @@ def load_module():
     return module
 
 
+def _edit(node, pane_id: str, new):
+    """Replace a pane in a split tree; None removes it, and its sibling takes its space."""
+    if node == pane_id:
+        return new
+    if not isinstance(node, tuple):
+        return node
+    direction, first, second = node
+    first, second = _edit(first, pane_id, new), _edit(second, pane_id, new)
+    if first is None or second is None:
+        return first if second is None else second
+    return (direction, first, second)
+
+
+def _place(node, x: int, y: int, width: int, height: int, rects: dict) -> None:
+    if isinstance(node, str):
+        rects[node] = {"x": x, "y": y, "width": width, "height": height}
+    elif node[0] == "right":
+        _place(node[1], x, y, width // 2, height, rects)
+        _place(node[2], x + width // 2, y, width - width // 2, height, rects)
+    else:
+        _place(node[1], x, y, width, height // 2, rects)
+        _place(node[2], x, y + height // 2, width, height - height // 2, rects)
+
+
+def rows(rects: dict) -> list[list[str]]:
+    """Pane IDs by row, top to bottom, each row left to right."""
+    by_y: dict[int, list[str]] = {}
+    for pane, rect in sorted(rects.items(), key=lambda item: (item[1]["y"], item[1]["x"])):
+        by_y.setdefault(rect["y"], []).append(pane)
+    return list(by_y.values())
+
+
 class FakeHerdr:
+    # Each tab's geometry is a split tree over this area: a pane ID, or (direction, first, second) halved at the
+    # default ratio. A split opens the new pane right of or below its target.
+    AREA = (240, 60)
+
     def __init__(self, worktree: Path) -> None:
         self.worktree = worktree.resolve()
         self.panes = {"caller"}
@@ -44,6 +80,7 @@ class FakeHerdr:
         self.pane_tab: dict[str, str] = {"caller": "test-tab"}
         self.created_tabs: list[tuple[str, str]] = []
         self.splits: list[tuple[str, str]] = []
+        self.trees: dict = {}
 
     def list_tabs(self) -> dict:
         return {
@@ -62,12 +99,48 @@ class FakeHerdr:
         self.split_count += 1
         self.panes.add("worker-pane")
         self.pane_tab["worker-pane"] = tab_id
+        self.trees[tab_id] = "worker-pane"
         if self.interrupt_after_split:
             raise RuntimeError("interrupted after split (a new tab's root pane)")
         return tab_id, "worker-pane"
 
     def tab_of(self, pane_id: str) -> str:
         return self.pane_tab.get(pane_id) or list(self.tabs)[-1]
+
+    def tree(self, tab_id: str):
+        if tab_id not in self.trees:
+            # A pane added by hand is its tab's whole layout.
+            (self.trees[tab_id],) = [pane for pane in self.panes if self.tab_of(pane) == tab_id]
+        return self.trees[tab_id]
+
+    def rects(self, tab_id: str) -> dict:
+        rects: dict = {}
+        _place(self.tree(tab_id), 0, 0, *self.AREA, rects)
+        return rects
+
+    def pane_layout(self, pane_id: str) -> dict:
+        if pane_id not in self.panes:
+            raise RuntimeError("missing pane")
+        tab_id = self.tab_of(pane_id)
+        rects = self.rects(tab_id)
+        return {
+            "result": {
+                "type": "pane_layout",
+                "layout": {
+                    "workspace_id": "test-workspace",
+                    "tab_id": tab_id,
+                    "zoomed": False,
+                    "area": {"x": 0, "y": 0, "width": self.AREA[0], "height": self.AREA[1]},
+                    "focused_pane_id": pane_id,
+                    # Listed in reverse ID order, so nothing can lean on pane order.
+                    "panes": [
+                        {"pane_id": pane, "focused": pane == pane_id, "rect": rects[pane]}
+                        for pane in sorted(rects, reverse=True)
+                    ],
+                    "splits": [],
+                },
+            }
+        }
 
     def status(self) -> str:
         return "endpoint_compatible: yes\nprivate_protocol_compatible: yes\n"
@@ -81,11 +154,14 @@ class FakeHerdr:
             raise RuntimeError("missing caller pane")
         self.split_count += 1
         self.splits.append((pane_id, direction))
-        self.panes.add("worker-pane")
-        self.pane_tab["worker-pane"] = self.tab_of(pane_id)
+        new = "worker-pane" if self.split_count == 1 else f"worker-pane-{self.split_count}"
+        tab_id = self.tab_of(pane_id)
+        self.trees[tab_id] = _edit(self.tree(tab_id), pane_id, (direction, pane_id, new))
+        self.panes.add(new)
+        self.pane_tab[new] = tab_id
         if self.interrupt_after_split:
             raise RuntimeError("interrupted after split")
-        return "worker-pane"
+        return new
 
     def start_agent(
         self,
@@ -182,6 +258,9 @@ class FakeHerdr:
 
     def close_pane(self, pane_id: str) -> None:
         self.panes.discard(pane_id)
+        tab_id = self.pane_tab.get(pane_id)
+        if tab_id in self.trees:
+            self.trees[tab_id] = _edit(self.trees[tab_id], pane_id, None)
         for name, agent in list(self.agents.items()):
             if agent["pane_id"] == pane_id:
                 del self.agents[name]
@@ -288,6 +367,123 @@ class HerdrWorkerTests(unittest.TestCase):
         self.assertEqual(fake.created_tabs, [])
         self.assertEqual(fake.splits, [("earlier-worker", "right")])
         self.assertEqual(fake.tab_of("worker-pane"), "subs")
+
+    def start_workers(self, controller, numbers) -> list[str]:
+        """Start one worker per number; return their panes in start order."""
+        return [
+            controller.start(
+                caller_pane="caller", worktree=self.repo, identity_path=self.root / f"grid-{number}.json",
+                name=f"worker{number}", kind="claude", title="Test worker",
+            )["worker_pane_id"]
+            for number in numbers
+        ]
+
+    def test_sub_agents_tab_fills_a_top_row_of_four_then_a_bottom_row_of_four(self) -> None:
+        controller, fake = self.controller()
+        p1, p2, p3, p4 = self.start_workers(controller, range(1, 5))
+        # Panes 2–4 split the widest top-row pane right, the leftmost on a tie: halves, then quarters.
+        self.assertEqual(fake.splits, [(p1, "right"), (p1, "right"), (p2, "right")])
+        self.assertEqual(rows(fake.rects("tab-1")), [[p1, p3, p2, p4]])
+        self.assertEqual({rect["width"] for rect in fake.rects("tab-1").values()}, {60})
+
+        p5, p6, p7, p8 = self.start_workers(controller, range(5, 9))
+        # Panes 5–8 split each top-row column down, left to right.
+        self.assertEqual(fake.splits[3:], [(p1, "down"), (p3, "down"), (p2, "down"), (p4, "down")])
+        self.assertEqual(rows(fake.rects("tab-1")), [[p1, p3, p2, p4], [p5, p6, p7, p8]])
+        self.assertEqual(
+            {(rect["width"], rect["height"]) for rect in fake.rects("tab-1").values()}, {(60, 30)}
+        )
+        self.assertEqual(fake.created_tabs, [("tab-1", "Durable Pi Sub Agents")])
+
+    def test_past_eight_the_largest_pane_splits_along_its_longer_side(self) -> None:
+        controller, fake = self.controller()
+        p1, _, p3, *_ = self.start_workers(controller, range(1, 11))
+        # Eight equal 60×30 panes: the top-left goes first, and wider than tall splits right.
+        self.assertEqual(fake.splits[7:], [(p1, "right"), (p3, "right")])
+        # Closing the pane under the first column leaves its two halves 30 wide and full height. They tie the
+        # largest area, and the top-left one, taller than wide, splits down.
+        controller.close(identity_path=self.root / "grid-5.json")
+        self.start_workers(controller, [11])
+        self.assertEqual(fake.splits[-1], (p1, "down"))
+
+    def test_a_closed_top_row_pane_is_refilled_before_the_bottom_row(self) -> None:
+        controller, fake = self.controller()
+        p1, _, p3, p4, p5, p6 = self.start_workers(controller, range(1, 7))
+        # Close the third column's pane, which has nothing below it. The fourth column's pane takes its space.
+        controller.close(identity_path=self.root / "grid-2.json")
+        q1, q2, q3 = self.start_workers(controller, [7, 8, 9])
+        # The top row is refilled first, then the bottom row resumes under the leftmost empty column.
+        self.assertEqual(fake.splits[-3:], [(p4, "right"), (p4, "down"), (q1, "down")])
+        self.assertEqual(rows(fake.rects("tab-1")), [[p1, p3, p4, q1], [p5, p6, q2, q3]])
+        self.assertEqual(
+            {(rect["width"], rect["height"]) for rect in fake.rects("tab-1").values()}, {(60, 30)}
+        )
+
+    def test_a_closed_bottom_pane_is_refilled_under_its_column(self) -> None:
+        controller, fake = self.controller()
+        p1, p2, p3, p4, p5, p6, _, p8 = self.start_workers(controller, range(1, 9))
+        # Close the third column's bottom pane; the pane above it becomes full height.
+        controller.close(identity_path=self.root / "grid-7.json")
+        (new,) = self.start_workers(controller, [9])
+        self.assertEqual(fake.splits[-1], (p2, "down"))
+        self.assertEqual(rows(fake.rects("tab-1")), [[p1, p3, p2, p4], [p5, p6, new, p8]])
+
+    def test_a_closed_top_pane_with_one_below_is_refilled_under_the_pane_that_moved_up(self) -> None:
+        controller, fake = self.controller()
+        p1, p2, _, p4, p5, p6, p7, p8 = self.start_workers(controller, range(1, 9))
+        # Close the second column's top pane; the pane below it takes the whole column.
+        controller.close(identity_path=self.root / "grid-3.json")
+        (new,) = self.start_workers(controller, [9])
+        self.assertEqual(fake.splits[-1], (p6, "down"))
+        self.assertEqual(rows(fake.rects("tab-1")), [[p1, p6, p2, p4], [p5, new, p7, p8]])
+
+    def test_a_bottom_pane_spanning_two_columns_splits_right_once_no_column_is_empty(self) -> None:
+        controller, fake = self.controller()
+        _, p2, p3, p4, _, p6 = self.start_workers(controller, range(1, 7))
+        # Closing the whole first column leaves the second column's two panes 120 wide.
+        controller.close(identity_path=self.root / "grid-1.json")
+        controller.close(identity_path=self.root / "grid-5.json")
+        q1, q2, q3, q4 = self.start_workers(controller, [7, 8, 9, 10])
+        self.assertEqual(fake.splits[-4:], [(p3, "right"), (p2, "down"), (p4, "down"), (p6, "right")])
+        self.assertEqual(rows(fake.rects("tab-1")), [[p3, q1, p2, p4], [p6, q4, q2, q3]])
+
+    def test_a_layout_that_is_not_the_sub_agents_tab_is_refused_before_splitting(self) -> None:
+        cases = {
+            "another tab": lambda layout: layout.update(tab_id="test-tab"),
+            "a pane without a rect": lambda layout: layout["panes"][0].pop("rect"),
+            "no panes": lambda layout: layout.update(panes=[]),
+        }
+        for number, (case, corrupt) in enumerate(cases.items(), start=1):
+            with self.subTest(case=case):
+                controller, fake = self.controller()
+                self.start_workers(controller, [number])
+                real = fake.pane_layout
+
+                def corrupted(pane_id: str) -> dict:
+                    payload = real(pane_id)
+                    corrupt(payload["result"]["layout"])
+                    return payload
+
+                fake.pane_layout = corrupted
+                identity_path = self.root / f"refused-{number}.json"
+                with self.assertRaisesRegex(self.module.HandoffError, "layout"):
+                    controller.start(
+                        caller_pane="caller", worktree=self.repo, identity_path=identity_path,
+                        name="refused", kind="claude", title="Test worker",
+                    )
+                self.assertEqual(fake.splits, [])
+                # The journaled split window recovers as safe absence.
+                self.assertTrue(json.loads(identity_path.read_text(encoding="utf-8"))["split_started"])
+                self.assertTrue(controller.recover_start(identity_path=identity_path)["closed"])
+
+    def test_real_client_reads_the_layout_of_a_pane_s_tab(self) -> None:
+        sent: list[list[str]] = []
+        client = self.module.RealHerdr.__new__(self.module.RealHerdr)
+        client._json = lambda args, **kwargs: sent.append(args) or {}
+
+        client.pane_layout("worker-pane")
+
+        self.assertEqual(sent, [["pane", "layout", "--pane", "worker-pane"]])
 
     def test_an_orchestrator_in_a_sub_agents_tab_keeps_its_workers_there(self) -> None:
         self.assertEqual(self.module.subagent_tab_label("Durable Pi"), "Durable Pi Sub Agents")

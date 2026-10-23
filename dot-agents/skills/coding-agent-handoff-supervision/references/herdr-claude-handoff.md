@@ -22,7 +22,7 @@ client found through `PATH` is not a fallback.
 Workers never open in the orchestrator's own tab. `start` puts each worker in the orchestrator's sub-agents tab, labelled with the caller tab's label plus " Sub Agents" (for example "Durable Pi Sub Agents"), in the same workspace:
 
 - **If the tab doesn't exist,** `start` creates it, and the new tab's root pane becomes the worker. No empty shell is left beside it, and closing the last worker closes the tab.
-- **If it does exist,** `start` splits its last pane.
+- **If it does exist,** `start` reads the tab's live layout (`herdr pane layout`) and fills it as two rows of four. Workers 2–4 open side by side across the top: each splits the widest top-row pane right, the leftmost on a tie, so the four columns end equal. Workers 5–8 open below, one under each column from left to right. Past eight, the largest pane splits right if it is wider than tall, otherwise down. A closed worker's slot is refilled first: a short top row, then the leftmost column with nothing below it.
 - **`--tab-label`** overrides the label.
 
 Each orchestrator gets its own sub-agents tab, so many orchestrators can run at once while Bryan talks only to them. Read-only research and briefing agents also run as visible workers here, not as hidden background delegations.
@@ -45,8 +45,8 @@ where another correction cycle would be especially expensive.
 
 The command exclusively reserves a new identity path under a per-identity owner
 lock before any pane side effect, performs the live capacity check before pane
-creation, creates a
-right-hand `--no-focus` split from the injected caller pane, starts Claude with
+creation, creates the worker's `--no-focus` pane in the sub-agents tab as above,
+starts Claude with
 auto permissions and Opus 5.5/xhigh effort by default, verifies the runtime session
 and Git worktree, then atomically writes the six-field identity file with mode
 0600.
