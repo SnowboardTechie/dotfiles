@@ -546,6 +546,12 @@ resume a Herdr identity.
    Bryan's required post-draft-PR SGG Claude final review is not this pitfall.
 10. Leaving a settled pane open as a status marker.
 11. Confusing correction allowance with provider capacity.
+12. Reading "hand it off to a subagent" as `delegate_task` or a cron-spawned
+    hidden subagent. Bryan means this skill's normal visible handoff. A
+    deferred start ("after usage resets") changes only when the handoff
+    starts. Defer it with a reminder or a check-in back to the parent, never
+    by delegating the work itself from a cron job. A hidden subagent also
+    inherits the delegation model instead of the worker role's.
 
 ## Verification Checklist
 
