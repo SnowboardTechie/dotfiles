@@ -125,7 +125,16 @@ versions. Do not skim headlines; read upgrade/breaking sections in full.
      Strip `<!-- ... -->` comments, then read the "Breaking features",
      "Breaking bug fixes" and "Security" sections. Also check the release body
      for an "Attention" banner and search recent issues
-     (`codeberg.org/api/v1/repos/forgejo/forgejo/issues?q=<ver>`) for regressions.
+     (`codeberg.org/api/v1/repos/forgejo/forgejo/issues?q=<ver>&type=issues`)
+     for regressions. `q=` matches loosely, so filter results by title in code
+     and read a candidate's comments before calling it a regression: many
+     "broke after upgrade" reports close as local misconfiguration. Never pass
+     an issue number from a pipeline that can come back empty: the comments
+     endpoint then returns megabytes of unrelated threads.
+     Also read the release schedule
+     (`https://forgejo.org/docs/latest/admin/release-schedule/`) for the
+     installed and target lines' end-of-life dates; a hold on a line about to
+     go EOL is only a stopgap, so say when the next jump becomes unavoidable.
    - Synapse: `docs/upgrade.md` on `element-hq/synapse` has one
      "Upgrading to vX" section per release that needs admin attention. Read
      every section in the range; GitHub release bodies are only links.
@@ -144,7 +153,8 @@ versions. Do not skim headlines; read upgrade/breaking sections in full.
      feature Bryan uses, or a required manual migration.
    Call out security fixes in the range, because skipping an upgrade has a cost
    too. If the package only offers a version you'd hold, say whether an older
-   package revision exists and that pinning it is a separate decision.
+   package revision exists and that pinning it is a separate decision. To
+   find and hand over that pin, follow `references/pinned-package-revision.md`.
 4. Cite each finding with its source URL. Separate what the notes say from
    your inference about whether it affects this server.
 
