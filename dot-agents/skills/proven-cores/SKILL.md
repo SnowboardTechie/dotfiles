@@ -64,7 +64,38 @@ Do not raise it for:
 5. **Model what the law protects.** Laws reason only about what the model represents. The spike's
    model tracked state labels, not in-flight work, so mislabeling a still-stopping run as failed
    passed. If a rule is about work in flight, the model must carry it.
-6. **Add Bend's AGENTS.md block.** Every repository where Bend code is committed carries this block
+6. **Keep the gate from running candidate code.** `bend FILE.bend` checks the file and then runs its
+   `main`, and an IO `main` can start processes. So the gate must:
+   - check proofs with `bend PROOF.bend --check-only`, which checks the file and its imports and
+     runs nothing;
+   - before invoking Bend, read every source as tokens, not lines, and refuse any source containing
+     the word `main` or `unsafe` at all, even in a comment or string (a line scan missed `def` on one
+     line and `main()` on the next);
+   - refuse a foreign `import "…"` or any import other than Base and the local sources;
+   - run Bend with a minimal environment and a scratch HOME, so it inherits no tracker login
+     through the environment. That is not a sandbox; `--check-only` and the source check are what
+     keep candidate code from running.
+
+   Otherwise a candidate whose proofs check can post its own approval.
+7. **Make the approval more than "a comment by Bryan's account".** Agents commonly act through
+   Bryan's forge login, so the account proves only that some process holding it posted. The gate
+   must:
+   - refuse an edited approval comment (`updated_at` ≠ `created_at`);
+   - pin the tracker login and host explicitly rather than taking them from the candidate's
+     checkout;
+   - tell Bryan the remaining boundary is procedural unless agents get their own forge account.
+8. **Tie the host's initial state to the laws.** Laws that replay from a `fresh(...)` defined in
+   `LAWS.bend` say nothing about the core's own constructor (`start`, `new`) that the host calls.
+   Add a law such as `Core.start(i) == fresh(i)`, or a changed default proves unchanged.
+9. **No bound may hold by not counting.** A cap law like "charged never exceeds X" can be satisfied
+   by moving the excess into a field no law constrains (`overrun`). Bound every field that
+   accumulates the protected quantity, or state the law over what actually ran. With concurrent
+   work, decide explicitly whether a tolerance is per attempt in flight or global, before Bryan
+   approves the text.
+10. **Digest the compiled module's body as well as its sources.** A source-digest check in the
+    ordinary test suite catches forgotten rebuilds but not a hand edit to the emitted `.mjs`. Record
+    and check both.
+11. **Add Bend's AGENTS.md block.** Every repository where Bend code is committed carries this block
    verbatim, by Bryan's direction. Its own conditions (gate, approvals) follow it. Bryan's global git
    ignore excludes AGENTS.md, so the repository opts in with `!AGENTS.md` in its `.gitignore`.
 
@@ -93,6 +124,11 @@ Do not raise it for:
 - **Budget for basics.** Base ships almost no lemmas.
 - **A rejection is not a bug.** Brittle proofs reject safe changes. Classify a rejected change by a
   concrete counterexample from the compiled core, not by the gate's verdict.
+- **Get a fresh adversarial review before the laws go to Bryan for approval.** Ask it to read each
+  law and predicate against the decision in plain English, hunting for vacuity, quantifier gaps
+  (laws only over `fresh`), unbounded side fields and trust-boundary bypasses in the gate. Approval
+  freezes the text by digest, so a gap found after approval costs a second approval round. Have the
+  review also write a plain-English reading of each law for Bryan.
 - **Calibrate every checker.** A randomized check must find a planted bug before its silence means
   anything. Low-bit moduli of a power-of-two LCG produced near-identical sequences and missed the
   planted bug entirely.
