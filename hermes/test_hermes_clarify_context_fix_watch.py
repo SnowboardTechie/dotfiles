@@ -34,9 +34,15 @@ class DetectorTests(unittest.TestCase):
     def test_pr_wording_is_steered(self):
         self.assertTrue(watch.steered(FIXED))
 
+    def test_reworded_upstream_description_is_recognized(self):
+        reworded = CURRENT.replace("a decision, \"\n        \"clarification, or feedback before proceeding.",
+                                   "a decision or feedback.\"\n        \"")
+        self.assertNotIn("clarification", reworded)
+        self.assertFalse(watch.steered(reworded))
+
     def test_refactor_fails_closed(self):
         for text in ("", "CLARIFY_SCHEMA = build()", CURRENT.replace('"description"', '"summary"'),
-                     CURRENT.replace("clarification", "help")):
+                     CURRENT.replace("Ask the user", "Collect")):
             with self.subTest(text=text[:40]), self.assertRaises(ValueError):
                 watch.steered(text)
 

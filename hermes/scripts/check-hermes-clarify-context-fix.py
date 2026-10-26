@@ -73,7 +73,9 @@ def steered(source: str) -> bool:
     if len(descriptions) != 1:
         raise ValueError("clarify description missing; manual review needed")
     text = _strings(descriptions[0])
-    if "clarification" not in text:
+    # Anchor on the opening phrase: upstream 95505c60 (2026-10-23) dropped
+    # "clarification" from the description while keeping "Ask the user".
+    if "ask the user" not in text.lower():
         raise ValueError("clarify description unrecognized; manual review needed")
     return bool(STEER.search(text))
 
