@@ -46,7 +46,8 @@
     "check-hermes-context-threshold.py",
     "yunohost_updates_lib.py",
     "check-yunohost-updates.py",
-    "collect-yunohost-updates.py"
+    "collect-yunohost-updates.py",
+    "check-cloudflared-homebrew-release.py"
   ],
   "removedScripts": [
     "sgg-sync-workday-note.py",
@@ -77,7 +78,8 @@
     "check-hermes-context-threshold.py",
     "yunohost_updates_lib.py",
     "check-yunohost-updates.py",
-    "collect-yunohost-updates.py"
+    "collect-yunohost-updates.py",
+    "check-cloudflared-homebrew-release.py"
   ],
   "plugins": [
     "matrix-key-recovery"
@@ -265,6 +267,21 @@
         "chatName": "Server Updates",
         "userEnv": "MATRIX_ALLOWED_USERS"
       }
+    },
+    {
+      "name": "Watch cloudflared Homebrew release",
+      "deliveryIntent": "alert",
+      "schedule": "17 */2 * * *",
+      "model": null,
+      "provider": null,
+      "promptFile": "automations/cloudflared-homebrew-release-watch/prompt.md",
+      "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
+      "skills": [],
+      "script": "check-cloudflared-homebrew-release.py",
+      "noAgent": true,
+      "enabledToolsets": [],
+      "workdir": "/Users/bryan",
+      "attachToSession": false
     }
   ]
 }

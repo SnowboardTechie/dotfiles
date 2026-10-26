@@ -1,0 +1,1 @@
+Run the model-free cloudflared Homebrew release watcher. Empty stdout means Homebrew does not yet ship the target version, cloudflared is already upgraded, or the alert was already sent; deliver non-empty stdout verbatim. Never upgrade cloudflared or restart services automatically.
