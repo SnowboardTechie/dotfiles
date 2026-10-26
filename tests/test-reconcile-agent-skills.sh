@@ -78,16 +78,16 @@ H="$(new_home)"
 TMP_HOMES+=("$H")
 out="$(HOME="$H" "$RECONCILER" --apply 2>&1)"; rc=$?
 check "t1: apply exits 0 on a fresh home" test "$rc" -eq 0
-check "t1: Codex receives 28 pool links" test "$(links_into_pool "$H/.agents/skills")" -eq 28
+check "t1: Codex receives 29 pool links" test "$(links_into_pool "$H/.agents/skills")" -eq 29
 check "t1: Codex gets ADR coaching" link_resolves_to "$H/.agents/skills/adr-and-spec-coach" "$POOL/adr-and-spec-coach"
 check "t1: Codex gets conforming specs" link_resolves_to "$H/.agents/skills/conforming-tech-specs" "$POOL/conforming-tech-specs"
 check "t1: Codex gets shared handoff" link_resolves_to "$H/.agents/skills/session-handoff" "$POOL/session-handoff"
 check "t1: Codex gets review contract" link_resolves_to "$H/.agents/skills/code-review" "$POOL/code-review"
 check "t1: Codex excludes Hermes orchestration" test ! -e "$H/.agents/skills/coding-agent-handoff-supervision"
-check "t1: Claude receives 27 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 27
+check "t1: Claude receives 28 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 28
 check "t1: OpenCode receives 26 pool links" test "$(links_into_pool "$H/.config/opencode/skills")" -eq 26
 check "t1: Pi receives 12 pool links"       test "$(links_into_pool "$H/.pi/agent/skills")" -eq 12
-check "t1: Hermes receives 34 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 34
+check "t1: Hermes receives 36 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 36
 check "t1: Claude-only skill is linked"     link_resolves_to "$H/.claude/skills/dx-target" "$POOL/dx-target"
 check "t1: Claude excludes non-Claude common" test ! -e "$H/.claude/skills/obsidian"
 check "t1: Pi keeps non-Claude common"      link_resolves_to "$H/.pi/agent/skills/obsidian" "$POOL/obsidian"

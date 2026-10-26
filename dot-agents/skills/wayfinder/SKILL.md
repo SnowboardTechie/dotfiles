@@ -364,6 +364,14 @@ decision, not him.
    reveals a ticket sits beyond the destination, rule it out of scope rather
    than resolving it on the route. If the decision invalidates other parts of
    the map, update those tickets.
+6. **End by naming the next session.** The final report gives the next frontier
+   ticket by title and link, and the prompt to start it: a pointer naming the
+   map and that ticket, nothing the map already holds. If Bryan asks to launch
+   it, use `next-session`: it starts the new Hermes session in a Herdr split
+   beside this one with that prompt as its first turn, and he closes this
+   session himself. `next-session` is Hermes-only; elsewhere, give him the
+   prompt to paste. Never launch unasked, because the new session claims its
+   ticket at once.
 
 ## Retire an abandoned map
 

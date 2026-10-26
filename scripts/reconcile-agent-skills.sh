@@ -112,13 +112,14 @@ CODEX_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
     manual-merge issue-create issue-plan issue-work loop-issue
     adr-and-spec-coach conforming-tech-specs voice-bryan
     catalog-review dependency-review dependency-triage
+    superwhisper-meetings
     "${ADAPTED_CORES[@]}")
 
 CLAUDE_SKILLS=("${COMMON_SKILLS[@]}"
     manual-merge issue-create issue-plan issue-work
     adr-and-spec-coach dx-target conforming-tech-specs proven-cores
     catalog-review dependency-review dependency-triage
-    voice-bryan
+    voice-bryan superwhisper-meetings
     "${ADAPTED_CORES[@]}")
 
 OPENCODE_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
@@ -136,11 +137,11 @@ HERMES_SKILLS=(
     manual-merge issue-create issue-plan issue-work loop-issue
     coding-agent-handoff-supervision
     apple-notes-pkm knowledge-capture skill-retrospective adr-and-spec-coach voice-bryan
-    session-handoff black-box-verification
+    session-handoff next-session black-box-verification
     dx-target dx-preview conforming-tech-specs proven-cores
     catalog-review dependency-review dependency-triage sprint-deliverable-update
     "${ADAPTED_CORES[@]}"
-    guided-learning yunohost-updates
+    guided-learning yunohost-updates superwhisper-meetings
 )
 
 # Print an operation line. Operations mutate only under --apply; check mode
