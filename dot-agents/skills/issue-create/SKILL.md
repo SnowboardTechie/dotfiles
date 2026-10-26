@@ -166,8 +166,9 @@ Then define the **closure boundary** for the target repository. Every acceptance
 
 1. necessary to deliver the issue's stated outcome;
 2. observable or verifiable;
-3. completable within the target repository or artifact; and
-4. non-duplicative of another criterion.
+3. completable within the target repository or artifact;
+4. non-duplicative of another criterion; and
+5. completable by the working agent in its own session, not dependent on events nobody controls (the next live review, new PR traffic, a reboot). Put such a post-deployment observation in the plan's tracker row as a carried check with a reopen condition, not in the acceptance criteria. Otherwise the issue can't close when the work is done (Bryan, 2026-10-26).
 
 Prefer the smallest set of criteria that proves the public contract. Put downstream repository migrations, independently released packages, rollout sequencing, broad template cleanup, and optional compatibility matrices in related follow-up issues or a rollout note unless the user explicitly chose a cross-repository tracker. Avoid promoting implementation probes such as exact module identity, package-manager warning text, or negative installer behavior into acceptance criteria when a packed-consumer contract test already proves the supported path.
 

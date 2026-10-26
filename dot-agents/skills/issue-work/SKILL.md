@@ -46,6 +46,26 @@ Exception: in Bryan's personal repositories that deliver directly to `main`
 (dotfiles, nix-configs), the work request covers closing the issue once every
 acceptance criterion is verified, including via a closing keyword in the commit.
 
+**Private repositories: finish what you start.** In Bryan's private repositories
+(Forgejo `bryan/*`, dotfiles, nix-configs), close every issue the run opened or
+worked before the session ends. Take each follow-up the issue needs under its
+recorded authority: merge, deployment, live verification and the closing
+comment. Only one thing justifies leaving an issue open: waiting on another
+person's review or action, such as Bryan's `update-system` or a teammate's
+approval. Name that person and action in the final report.
+
+When Bryan asks "are we done?", every such issue must already be closed or in
+that waiting state. "Waiting for future traffic" is not a reason to stay open.
+An acceptance item that only uncontrolled future events can satisfy, such as
+the next live review or the next reboot, doesn't hold an issue open:
+
+1. Verify everything checkable now.
+2. Close the issue with that evidence.
+3. Carry the observation in the plan's tracker row, with the condition for
+   reopening.
+
+(Bryan, 2026-10-26; precedents #124 and #176.)
+
 A request to plan, inspect, review, or advise is not implementation authority.
 Questions and corrections are not authorization. Record the authority mode in
 `progress.md` so resume does not invent or discard it.
@@ -619,6 +639,7 @@ weaker review, or fabricated completion claim.
 - [ ] SGG closeout includes collected, parent-dispositioned fresh Claude final PR self-review
 - [ ] No merge or unapproved issue/deployment mutation occurred
 - [ ] Worker pane and watcher were released
+- [ ] Private-repo issues worked are closed, or wait only on a named person's review or action
 - [ ] Compact efficiency record contains factual totals
 
 ## References
