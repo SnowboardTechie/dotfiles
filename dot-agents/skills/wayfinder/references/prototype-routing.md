@@ -132,6 +132,11 @@ that hybrid is the actual design.
 
 ## Capture and retention
 
+Before showing Bryan a prototype, serve it behind a tailnet URL so he can open it
+from any of his devices. Use "Files prepared for Bryan" in
+`agent-collaboration-previews` (the `sgg-preview` workbench). Probe that URL and
+lead the handoff with it. A local path alone is not a handoff.
+
 Record the **answer** — the verdict and the question it settled — on the
 decision ticket. That is what the map needs.
 

@@ -12,15 +12,13 @@ Exploration intentionally shows competing directions. Implementation needs one a
 
 ## Remote reachability
 
-A localhost URL is not a remote preview. For Bryan's Studio-hosted disposable previews:
+A localhost URL or a file path is not a remote preview. Bryan reviews from his laptop and other devices. Before telling
+him a preview exists, the parent serves it behind a tailnet URL with the `sgg-preview` workbench, as described under
+"Files prepared for Bryan" in `agent-collaboration-previews`. The workbench publishes a tailnet-only HTTPS Serve route for
+the artifact folder. The parent probes that exact URL and leads the handoff with it. Don't bind a server to the
+Tailscale IP by hand unless the workbench can't start.
 
-- bind the preview server to Studio's direct Tailscale IP;
-- use an unambiguous unused port;
-- provide the direct `http://<tailscale-ip>:<port>/...` URL;
-- do not substitute a MagicDNS hostname when it triggers HTTPS/SSL handling for a plain HTTP server; and
-- fetch the exact remote URL before sharing it.
-
-Keep the server only while the preview is needed. Stop it after implementation is accepted.
+Keep the preview only while it's needed (`sgg-preview extend` or `down`). Stop it after the direction is accepted.
 
 ## Visual verification
 
