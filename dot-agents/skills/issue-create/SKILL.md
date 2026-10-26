@@ -162,6 +162,8 @@ Before asking questions or drafting, classify the ticket as one of:
 
 Treat the user's accepted direction as authoritative. Once the conversation has settled a decision, do not reopen it with `decide`, `evaluate`, conditional `if selected`, or open-question wording in the title, summary, or acceptance criteria. State the implementation outcome directly and preserve rejected alternatives only as concise rationale when useful.
 
+Title the issue in the words the reporter and its readers already use (for example "UUID-shaped ID"), not in shorthand from your own analysis (for example "variant nibble"). The title tends to become the branch name, the PR title, the test names, and the changelog line, so jargon in it shows up in all of those.
+
 Then define the **closure boundary** for the target repository. Every acceptance criterion should be:
 
 1. necessary to deliver the issue's stated outcome;

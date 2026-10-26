@@ -256,6 +256,11 @@ Report the PR as a Markdown link.
 
 7. **Writing the delegate's spec as an inventory of edits.** State outcomes; the
    diff lists the edits. Named forms in the spec exempt themselves from Ponytail.
+8. **Publishing analysis jargon.** Squash merges usually make the PR title the
+   changelog line. Before publishing, read the title, body, test names, and new
+   comments the way a newcomer would. Replace coined shorthand (for example
+   "variant nibble") with the words the issue's reporter and its readers use
+   (for example "UUID-shaped ID").
 
 ## Verification Checklist
 
