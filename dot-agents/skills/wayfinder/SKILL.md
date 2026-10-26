@@ -176,10 +176,12 @@ adapter rather than hand-rolled API calls, and do not route around a refusal.
 
 - **Preview first.** Every mutation defaults to dry-run, and the session
   reviews every preview as publication before applying it. Bryan sees the
-  exact content of a map or ticket creation — including any label the adapter
-  would have to create — before it is written. A **resolution** is the
-  exception: when it records exactly what the session settled with him, his
-  answers already approve it, so apply it without a second approval round.
+  exact content of a **map** creation — including any label the adapter
+  would have to create — before it is written. **Ticket creation** needs no
+  approval round: review the preview yourself, apply it, and report each new
+  ticket by title and link. A **resolution** is likewise
+  applied without a second approval round when it records exactly what the
+  session settled with him, because his answers already approve it.
   Show it and wait only on a discrepancy — an answer that departs from or adds
   to what he settled, or a question still open.
 - **Every write preflights.** Tracker eligibility (private), issue number, labels,
@@ -308,7 +310,8 @@ Bryan invokes with a loose idea.
    the repository is private (`check-private`).
 4. **Preview, then create the map** with Destination and Notes filled in,
    Decisions-so-far empty, and the fog sketched into Not yet specified.
-5. **Preview, then create the tickets you can specify now**, and wire blocking
+5. **Create the tickets you can specify now** (preview, review, apply; no
+   approval round), and wire blocking
    edges in a **second pass** — issues need ids before they can reference each
    other. Wiring sorts them into the frontier and the blocked. **Never write an
    issue reference before its target exists**: a draft-numbered `#1`–`#8` or a
@@ -364,7 +367,9 @@ decision, not him.
    reveals a ticket sits beyond the destination, rule it out of scope rather
    than resolving it on the route. If the decision invalidates other parts of
    the map, update those tickets.
-6. **End by naming the next session.** The final report gives the next frontier
+6. **End by naming the next session**, only once steps 4–5 are written and
+   read back. A next-session prompt beside unfinished writes tells Bryan the
+   session is done when it is not. The final report gives the next frontier
    ticket by title and link, and the prompt to start it: a pointer naming the
    map and that ticket, nothing the map already holds. If Bryan asks to launch
    it, use `next-session`: it starts the new Hermes session in a Herdr split
