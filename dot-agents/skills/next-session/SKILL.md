@@ -62,4 +62,6 @@ open and prints the command to run there by hand. Don't retry into a second pane
 Report the new pane, its agent name and the prompt it started with, then end the
 turn. Never close this pane or the new one: closing this session is Bryan's
 step. A launched session isn't evidence that its work happened. It only shows
-the first turn was submitted.
+the first turn was submitted. Don't ask Bryan to check that the new session
+picked up its prompt: an `idle` status right after launch is normal, and the
+start has proven reliable.
