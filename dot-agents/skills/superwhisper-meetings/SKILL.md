@@ -73,13 +73,33 @@ notes or transcript. Use only the material provided.
   `--since`/`--before` for date ranges.
 - If several meetings plausibly match, list them (title, date, ID prefix) and
   ask which one; don't pick silently.
-- Avoid dumping full transcripts into context; read the summary first.
+- Never dump full transcripts into context; read the summary first.
+
+## Transcript privacy
+
+Bryan does not want full meeting transcripts sent over networks. He runs
+Superwhisper's summary model locally for this reason; do not suggest cloud
+models to improve summaries. A cloud agent reading `--transcript` output into
+its context is the same exposure, so:
+
+- Work from the summary and `privateNotes` (Bryan's own notes) by default.
+- Never print or load a full transcript into context. When a specific
+  detail is needed, write the `--transcript` JSON to a scratch file, search it
+  locally (counts, keyword hits), print only short targeted excerpts, then
+  delete the file.
+- Local summaries are weaker than Granola's (observed 2026-10-27: invented
+  decisions, action items all assigned to one person, diarization collapsing
+  speakers). Label summary-derived decisions and owners as unconfirmed unless
+  Bryan's notes or a targeted excerpt support them.
 
 ## Reading and answering
 
-- Read the relevant meeting before answering. Start with the summary; fetch
-  `--transcript` when you need exact quotes, speaker attribution, timing, or
-  details the summary lacks.
+- Read the relevant meeting before answering. Start with the summary and
+  `privateNotes`; use a targeted local transcript search (see Transcript
+  privacy) only when you need an exact quote, speaker attribution, timing, or
+  a detail the summary lacks.
+- Speaker names come from calendar attendees, not voice recognition; Bryan
+  can appear as `Speaker N`. Verify attribution before assigning an owner.
 - Ground every answer in the meeting content. Name the meeting title and date;
   include speaker names or timestamps when available.
 - Distinguish decisions, proposals, and unresolved questions.
