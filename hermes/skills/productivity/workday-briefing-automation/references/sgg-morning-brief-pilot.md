@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Prepare Bryan for SGG work by reconstructing the previous business day's resting point, showing work constraints, and recommending one concrete work outcome. Personal projects, personal reminders, and personal calendar events are handled by the separate Second Brain morning brief. The SGG brief reads work mail, the work calendar, GitHub, Granola, canonical SGG notes, and project repositories without mutating those sources.
+Prepare Bryan for SGG work by reconstructing the previous business day's resting point, showing work constraints, and recommending one concrete work outcome. Personal projects, personal reminders, and personal calendar events are handled by the separate Second Brain morning brief. The SGG brief reads work mail, the work calendar, GitHub, Superwhisper meeting notes, canonical SGG notes, and project repositories without mutating those sources.
 
 ## Operational contract
 
@@ -13,7 +13,7 @@ Prepare Bryan for SGG work by reconstructing the previous business day's resting
   session so replies retain the brief as context.
 - Retain local cron output for audit/troubleshooting.
 - Use an LLM-driven job with a deterministic bounded pre-run collector.
-- The job may read notes, Granola, Calendar, Mail, and GitHub. It never writes notes, mutates those sources, or creates scheduled jobs.
+- The job may read notes, Superwhisper meetings (summaries and private notes only), Calendar, Mail, and GitHub. It never writes notes, mutates those sources, or creates scheduled jobs.
 
 ## Notes scope and authority
 
@@ -41,29 +41,35 @@ The collector reads its previous-workday Git history; canonical surfaces and
 live systems, not any external memory service, ground the brief. The job must
 not bulk-ingest the vault or meeting notes anywhere.
 
-#### Granola meeting review
+#### Superwhisper meeting review
 
-The morning agent reviews completed SGG meeting notes from the previous-business-day
-boundary through briefing time. It first lists meeting metadata, excludes every
-meeting that is not demonstrably SGG/CommonGrants/P&D work, then fetches details
-for at most ten in one bounded call. It never fetches an ambiguous meeting to
-decide whether that meeting is relevant.
+On 2026-10-27 Bryan moved meeting notes from Granola to Superwhisper and set a
+standing rule: full meeting transcripts are never sent over networks. The brief
+therefore has no Granola toolset and reads meetings through the local
+read-only CLI (`/Users/bryan/.local/bin/superwhisper`), never with
+`--transcript`. Granola keeps recording until the cancelled subscription
+lapses, for Bryan's own comparison only; it is not a brief source.
 
-The cron-facing `granola` MCP alias exposes only `list_meetings` and
-`get_meetings`; MCP resources and prompts are disabled. The separate
-`granola_full` alias preserves all interactive Granola tools for user-directed
-research. Declarative cron reconciliation fails closed unless both aliases,
-their OAuth endpoint, and their exact tool filters match the manifest.
+The morning agent lists Superwhisper meetings from the previous-business-day
+boundary through briefing time, excludes every meeting that is not demonstrably
+SGG/CommonGrants/P&D work from list metadata alone, then reads summary and
+`privateNotes` for at most ten. It never reads an ambiguous meeting to decide
+whether that meeting is relevant.
 
-Meeting-derived claims preserve title, date, meeting ID, explicit owner, action
-verb/object, and epistemic status. A source URL is included only when Granola
-returns one. Meeting notes cannot silently override canonical vault or live
-GitHub state. The morning agent never retrieves transcripts or retains meeting
-content itself; every Granola source failure remains visible.
+Superwhisper summaries come from a local model chosen for privacy. A
+2026-10-27 comparison against Granola found invented decisions, every action
+assigned to one person, and collapsed speakers. Bryan's `privateNotes` are the
+strongest meeting evidence; summary-only decisions and owners are labeled
+unconfirmed and never become Bryan's task without corroboration.
 
-The post-meeting Granola-to-Hindsight import jobs were retired on 2026-09-29
-with Hindsight itself. The collector schedules no jobs; Granola stays the source
-of record and is read directly at briefing time.
+Meeting-derived claims preserve title, Pacific date, meeting ID prefix,
+explicit owner, action verb/object, and epistemic status. Superwhisper has no
+web URL. Meeting notes cannot silently override canonical vault or live GitHub
+state. The agent never retains meeting content; a CLI failure stays visible and
+never falls back to Granola or old exports.
+
+The `granola` and `granola_full` MCP aliases remain configured for interactive
+use until the subscription lapses; the reconciler still verifies them.
 
 #### Concluded workday-note pilot
 
@@ -112,7 +118,7 @@ Check authored PRs, assigned reviews, actionable comments/requested changes, mea
 ## Output contract
 
 1. **Where work left off** — 1–4 grounded bullets covering work that actually changed or remained active since the previous workday.
-2. **Recent meeting context** — at most 3 relevant Granola-derived actions, decisions, status changes, or contradictions with meeting provenance; omit when empty.
+2. **Recent meeting context** — at most 3 relevant Superwhisper-derived actions, decisions, status changes, or contradictions with meeting provenance; omit when empty.
 3. **Today's work calendar** — commitments, verified preparation, conflicts, and focus windows.
 4. **Work email requiring attention** — at most 3 actionable messages; omit when empty.
 5. **GitHub watch list** — at most 3 genuinely actionable or materially changed items.

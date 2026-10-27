@@ -133,7 +133,6 @@
       "enabledToolsets": [
         "file",
         "terminal",
-        "granola",
         "no_mcp"
       ],
       "workdir": "/Users/bryan/code/sgg",

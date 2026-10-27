@@ -101,13 +101,13 @@ class MorningBriefSplitContractTest(unittest.TestCase):
         self.assertIn('        "vault",', collector)
         self.assertNotIn("NOTES_ROOT", collector)
 
-    def test_work_brief_reviews_granola_directly_without_hindsight(self) -> None:
+    def test_work_brief_reviews_superwhisper_without_transcripts_or_granola(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         job = next(job for job in manifest["cronJobs"] if job["name"] == "Workday Morning Brief")
         prompt = WORK_PROMPT.read_text(encoding="utf-8")
         collector = WORK_COLLECTOR.read_text(encoding="utf-8")
 
-        self.assertEqual(job["enabledToolsets"], ["file", "terminal", "granola", "no_mcp"])
+        self.assertEqual(job["enabledToolsets"], ["file", "terminal", "no_mcp"])
         self.assertNotIn("memory", job["enabledToolsets"])
         self.assertNotIn("sgg-sync-workday-note.py", manifest["scripts"])
         self.assertIn("sgg-sync-workday-note.py", manifest["removedScripts"])
@@ -132,15 +132,21 @@ class MorningBriefSplitContractTest(unittest.TestCase):
         self.assertEqual(
             manifest["mcpRequirements"]["granola_full"]["tools"]["exclude"], []
         )
-        self.assertIn("Review completed Granola meetings", prompt)
+        # Bryan moved meeting notes to Superwhisper on 2026-10-27 and does not
+        # want full transcripts sent over networks.
+        self.assertIn("Review completed Superwhisper meetings", prompt)
+        self.assertIn("/Users/bryan/.local/bin/superwhisper", prompt)
+        self.assertIn("never pass `--transcript`", prompt)
+        self.assertIn("(no `--transcript`)", prompt)
+        self.assertNotIn("get_meetings", prompt)
+        self.assertNotIn("list_meetings", prompt)
+        self.assertIn("Do not use Granola", prompt)
+        self.assertIn("unconfirmed (Superwhisper summary)", prompt)
         self.assertIn("not demonstrably about SGG", prompt)
-        self.assertIn("never fetch their details to decide relevance", prompt)
-        self.assertIn("call `get_meetings` once", prompt)
-        self.assertNotIn("query_granola_meetings", prompt)
-        self.assertIn("meeting title, date, and meeting ID", prompt)
-        self.assertIn("Do not invent a link", prompt)
-        self.assertIn("Do not retrieve transcripts", prompt)
-        self.assertIn("Never retain, archive, copy, or mirror Granola meeting content", prompt)
+        self.assertIn("never read their details to decide relevance", prompt)
+        self.assertIn("meeting title, Pacific date, and meeting ID", prompt)
+        self.assertIn("do not invent a link", prompt)
+        self.assertIn("Never retain, archive, copy, or mirror meeting content", prompt)
         self.assertIn("Do not create, update, or remove any scheduled job", prompt)
         self.assertNotIn("sgg-granola-import.py", manifest["scripts"])
         self.assertIn("A successful empty result", prompt)

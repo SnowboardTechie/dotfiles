@@ -42,8 +42,10 @@ and native compaction); no external memory provider is selected or installed.
 The retired Hindsight provider, its `hindsight-scoped` adapter, and the
 Granola-to-Hindsight import jobs were removed on 2026-09-29. The installer
 retires their managed config link and copied importer (`removedLinks`,
-`removedCopiedScripts`) but never deletes native memory. Granola remains the
-source of record for meeting notes; the SGG morning brief reads it directly.
+`removedCopiedScripts`) but never deletes native memory. Superwhisper
+replaced Granola as the meeting-notes source on 2026-10-27; the SGG morning
+brief and Friday recap read its summaries and private notes through the local
+CLI and never read transcripts.
 
 ## Installation
 

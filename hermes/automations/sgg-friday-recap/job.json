@@ -8,7 +8,7 @@
   "repeat": null,
   "deliver": "matrix:!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU",
   "skills": ["vault-pkm", "voice-bryan"],
-  "enabled_toolsets": ["file", "terminal", "granola", "skills", "no_mcp"],
+  "enabled_toolsets": ["file", "terminal", "skills", "no_mcp"],
   "workdir": "/Users/bryan/code/sgg",
   "attach_to_session": true,
   "continuity": false,
