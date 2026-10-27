@@ -20,6 +20,7 @@ Priority and assignment grounding:
 Meeting review (Superwhisper):
 6. Review completed Superwhisper meetings from `previousWorkdayStart` through `generatedAt` on every run.
    - Transcript privacy is a hard boundary: never pass `--transcript` to the CLI and never read raw transcript, segment, or audio data by any other route. Bryan does not want full meeting transcripts sent over networks. Use only the meeting summary and `privateNotes`.
+   - Run each CLI command as a plain command, without piping into an interpreter; cron denies flagged commands such as `python3 -c`.
    - First run `/Users/bryan/.local/bin/superwhisper meetings --json --since <previous workday date> --limit 50`. `datetime` is UTC; convert to Pacific and discard meetings outside the timestamp boundary.
    - Before reading any meeting, exclude every meeting that is not demonstrably about SGG, Simpler Grants, CommonGrants, Grants.gov data standards, or the P&D/Quad work described by this project. Decide only from list metadata (title, attendees, speaker names). Generic Agile6 meetings, all-hands, HR/recruiting, customer work, Donuts, and ambiguous titles are out of scope; never read their details to decide relevance.
    - Select at most 10 of the remaining SGG meetings. If none remain, read nothing. Otherwise run `/Users/bryan/.local/bin/superwhisper meetings read <id> --json` (no `--transcript`) for each selected ID.
