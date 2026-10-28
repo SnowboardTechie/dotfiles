@@ -556,8 +556,9 @@ batch), follow this shape:
 ## Reporting to Bryan
 
 - **Bryan doesn't do PR reviews.** PRs are for the coordinator and the Claude reviewers. When something needs his
-  approval (laws, a config file, a decision), put the full text he is approving in the message itself, in plain
-  words, with any raw URL only as a secondary pointer. Never ask him to read a PR, or send him there for the content.
+  approval (laws, a config file, a decision), put what he is approving in the message itself, in plain words. A link
+  is welcome for the web UI, but only to the exact file at an exact commit
+  (`https://<forge>/<owner>/<repo>/src/commit/<sha>/<path>`), one link per file, never a PR page.
 
 - **A count you state is the count you list.** "One thing is time-sensitive"
   followed by a numbered list of four reads as four urgent items, so the real
