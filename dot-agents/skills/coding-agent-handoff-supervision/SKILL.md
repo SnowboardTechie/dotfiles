@@ -259,9 +259,27 @@ background fallback.
 
 Hermes tool shells may not inherit the CLI's Herdr variables, so an empty
 `env | grep HERDR` there does not prove the session is outside Herdr. Before
-reporting a transport blocker, find this session's Hermes process (matching
-cwd; `herdr api snapshot` shows its pane focused under the expected tab label),
-read its `HERDR_*` values with `ps eww -o command= -p PID`, and export them.
+reporting a transport blocker, find this session's own Hermes process by walking
+the tool shell's ancestry (`p=$$; while [ $p -gt 1 ]; do ps -o command= -p $p;
+p=$(ps -o ppid= -p $p); done`), read its `HERDR_*` values with
+`ps eww -o command= -p PID`, and export them. Never pick the process by matching
+cwd: several Hermes sessions often share a project cwd, and their panes belong to
+other conversations. An ancestry ending at `hermes gateway run` does NOT prove the
+session has no caller pane: with the Claude direct-SDK provider, a CLI session in a
+Herdr pane runs its tools under the gateway, so the walk never reaches the CLI
+(Bryan corrected this repeatedly, 2026-10-28). Identify the session's own CLI
+process instead: find this conversation's session in `~/.hermes/state.db`
+(`select id, source, started_at from sessions where id in (select session_id from
+messages where content like '%<a unique phrase from this conversation>%')`); a
+`cli` source means a CLI session. Match its `started_at` to the one Hermes process
+with `HERDR_PANE_ID` in its environment whose `ps -o lstart=` agrees within a
+second or two, and export that process's `HERDR_*` values. Only a gateway-sourced
+session (Matrix and similar) has no caller pane: use the native `herdr_*` tools from
+"Select the execution surface first". If they refuse too, report the exact
+refusal and the two ways to unblock it (relaunch from a Herdr pane in the
+project, or authorize the conversation for gateway workers). Check the transport
+before writing the contract so the blocker surfaces early; the worktree and
+contract stay useful for the resumed session.
 Background `terminal` processes do not inherit foreground exports: put the
 `export` inside every background `prompt` command, or the helper refuses
 before sending.
