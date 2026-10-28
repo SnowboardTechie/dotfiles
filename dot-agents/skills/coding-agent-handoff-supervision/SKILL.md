@@ -538,11 +538,38 @@ batch), follow this shape:
   permission to execute tests and then only predict which test catches each
   mutant. Put real mutant runs into the correction contract (or run them as the
   parent) before accepting, and name any mutant that survives today.
+- **Ask for what needs Bryan; don't park it in a list.** A "waiting for Bryan"
+  line is not a question, and a gate with a deadline can sit in those lists
+  across sessions until the deadline passes. The first time you report an item
+  that needs him, say in plain words what it is and why it exists, what it costs,
+  what his answer unblocks, and your recommendation, cancelling included. Lead
+  with deadline-bearing items, before routine choices. Ask one question per
+  message, in chat, and wait for it to be settled before the next; while lanes
+  report in between, end each status update by restating the one open question
+  rather than queuing the next.
 - **Absolute scratch paths across calls.** Write PR bodies and comment drafts to
   `~/.hermes/cache/scratch/<name>.md` with `write_file`, never `$TMPDIR`: tool
   calls can see different `TMPDIR` values, and a missing body file makes
   `tea pr create` publish an empty description silently. Read the body back
   after creating the PR.
+
+## Reporting to Bryan
+
+- **Bryan doesn't do PR reviews.** PRs are for the coordinator and the Claude reviewers. When something needs his
+  approval (laws, a config file, a decision), put the full text he is approving in the message itself, in plain
+  words, with any raw URL only as a secondary pointer. Never ask him to read a PR, or send him there for the content.
+
+- **A count you state is the count you list.** "One thing is time-sensitive"
+  followed by a numbered list of four reads as four urgent items, so the real
+  one drowns. List exactly what you named; anything else goes after it, marked as
+  lower weight, or is left for the next session.
+- **"Anything before I go?" means only what can't wait.** Answer with the items
+  that need his action before he leaves, plus one line that nothing is running.
+  Leave review material, connections and open decisions for the session he comes
+  back to.
+- **Refresh live state before a final report.** Read the remote branch and the
+  project index again: a parallel session may already have acted on what you are
+  about to report as open.
 
 ## Explicit Background-Only Route
 
