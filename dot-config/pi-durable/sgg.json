@@ -1,0 +1,67 @@
+{
+	"state_dir": "~/.local/state/pi-durable/sgg",
+	"repos_tsv": "~/code/sgg/repos.tsv",
+	"self": "SnowboardTechie",
+	"secrets_file": "~/.secrets/pi-durable/sgg.env",
+	"evidence_dir": "/Users/bryan/.local/state/pi-durable/sgg/evidence/workspaces/sgg/evidence",
+	"tunables": {},
+	"jev": true,
+	"page": {
+		"port": 8790,
+		"url": "https://bryans-mac-studio.tail5ba690.ts.net:8790/"
+	},
+	"notify": {
+		"hermes": [
+			"~/.local/bin/hermes"
+		],
+		"room": "matrix:!zqxJd5umpT7oFvgq5UCj5wZqwr8J6SfWi-2zaX-iYrs"
+	},
+	"publisher": {
+		"remote": "ssh://forgejo@git.snowboardtechie.com:5518/bryan/sgg-workspace.git",
+		"branch": "main",
+		"vault_dir": "vault",
+		"web_url": "https://git.snowboardtechie.com/bryan/sgg-workspace/src/branch/main/",
+		"deploy_key": "~/.secrets/pi-durable/sgg-workspace-deploy-key",
+		"known_hosts": "~/.secrets/pi-durable/known_hosts",
+		"author": {
+			"name": "Pi Durable SGG pre-review",
+			"email": "pi-durable-sgg@localhost"
+		}
+	},
+	"claude": {
+		"cli": [
+			"claude"
+		],
+		"home": "~"
+	},
+	"sandbox": {
+		"cli": [
+			"/usr/local/bin/container"
+		],
+		"image": "pi-durable-sgg:4b67c9a",
+		"network": "pi-durable-sgg",
+		"proxy": "http://192.168.128.1:8888",
+		"prior_reviews": "~/code/sgg/vault/reviews",
+		"canaries": [
+			"192.168.128.1:7000",
+			"192.168.128.1:22",
+			"192.168.1.2:22",
+			"100.121.238.48:9119"
+		]
+	},
+	"gates": {
+		"sandbox": {
+			"container_version": "1.5.0",
+			"attestation": "2026-10-26T17:05:36Z, Claude orchestrator under Bryan's #174-#176 approval: SGG_LIVE_SANDBOX=1 sandbox.test.js live test (confinement and the VM's own loopback, 62 host services, the #174 allowlist active after update-system) passed on container 1.5.0 at e0c4333084aec62a8496aa2286bd06e9e859bbf7; log /Users/bryan/code/durable-pi-workspace/.hermes/issue-work/bryan-durable-pi-workspace-174/live-sandbox-gate-e0c4333.log"
+		},
+		"claude": "2026-10-16, Claude (commissioning session): SGG_LIVE_SANDBOX=1 + SGG_LIVE_CLAUDE=1 SGG_LIVE_CLAUDE_SECRETS=~/.secrets/pi-durable/sgg.env node --test dist/workspaces/sgg/test/claude.test.js, 25/25, live test ok on build 5ba9f22 (sandbox runs with NODE_USE_ENV_PROXY=1), Claude Code 2.1.301, container 1.5.0 (d265d66), image pi-durable-sgg:4b67c9a, network pi-durable-sgg, proxy http://192.168.128.1:8888, nix-configs be27a8a (pf anchor com.apple/100.pi-durable-sgg). Rerun on the final build: 25/25, live test ok. Log: ~/.local/state/pi-durable/commissioning/2026-10-16-claude-gate-3.log; durable-pi-workspace vault/2026-10-16-sgg-commissioning.md",
+		"resume": "2026-10-16, Claude (commissioning session) under Bryan's normal Claude Code (claude.ai Team login, /opt/homebrew/bin/claude 2.1.301): SGG_LIVE_RESUME=1 node --test dist/workspaces/sgg/test/review-session.test.js, 30/30, live test ok on build 9e548dd, plugin from ~/code/durable-pi-workspace. Log: ~/.local/state/pi-durable/commissioning/2026-10-16-resume-gate-3.log; durable-pi-workspace vault/2026-10-16-sgg-commissioning.md",
+		"publication": "2026-10-16, Bryan (commissioning session): deploy key pi-durable-sgg pushed 504be1c to bryan/sgg-workspace main through publishFiles with the service's SSH options, read back through the Forgejo API at web_url + path, removed in bcbe062. Log: durable-pi-workspace vault/2026-10-16-sgg-commissioning.md",
+		"delivery": "2026-10-16, Claude (commissioning session) with Bryan: pilot room matrix:!zqxJd5umpT7oFvgq5UCj5wZqwr8J6SfWi-2zaX-iYrs created by Hermes at Bryan's request; Bryan confirmed it holds only him and the Hermes user. One delivery check sent exactly as the service sends (hermes send --to <room> --file -, env PATH/HOME only) through ~/.local/bin/hermes at 2026-10-16T19:07:15Z, message $mlAQACW766xiYRUkMyANtb0bN2df1Nv4lvoOZwWHSFA; Bryan confirmed it arrived. (/run/current-system/sw/bin/hermes cannot send to Matrix: no mautrix.) Log: durable-pi-workspace vault/2026-10-16-sgg-commissioning.md",
+		"page": "2026-10-16, Bryan: opened https://bryans-mac-studio.tail5ba690.ts.net:8790/ from another tailnet device and the page showed (\"things look good\"); from Studio another Host name gets 421 and the other Serve routes are unchanged. Log: durable-pi-workspace vault/2026-10-16-sgg-commissioning.md",
+		"supervised": "2026-10-16, Bryan ran SVC once 'HHS/simpler-grants-protocol#1318' (build 9e548dd, agent booted out, starts unpaused for it): head b9e531ff admitted at 12% capacity, reviewed in the VM (session 48c3ab6e-5430-4319-89df-33ddde742db9, claude-opus-5-5, 8 commands all exit 0), draft published and read back as sgg-workspace 38a756a with its index entry, notice delivered (Bryan saw it in the pilot room), completed, starts left paused. Checked by Claude: case manifest, attempt result.json, transcript.jsonl, commands.jsonl, evidence result.json; no pi-sgg-* VM; the notice's resume command finds the session from ~/code/sgg (forked check, fork removed). The GITHUB_TOKEN is a public-repositories read-only fine-grained PAT and the service only GETs. Nothing posted to GitHub. Log: ~/.local/state/pi-durable/commissioning/2026-10-16-supervised-once.log; durable-pi-workspace vault/2026-10-16-sgg-commissioning.md"
+	},
+	"web": {
+		"approved_login": "gczygkswsk@privaterelay.appleid.com"
+	}
+}

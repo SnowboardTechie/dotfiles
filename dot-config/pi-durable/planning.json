@@ -1,0 +1,9 @@
+{
+	"schema_version": 2,
+	"state_dir": "~/.local/state/pi-durable/planning",
+	"claude": {
+		"executable": "/opt/homebrew/bin/claude",
+		"config_dir": "~/.config/pi-durable/planning/claude",
+		"token_file": "~/.config/pi-durable/planning/claude-token"
+	}
+}

@@ -26,6 +26,7 @@ dot-config/*
 !dot-config/opencode/
 !dot-config/shell/
 !dot-config/worktrunk/
+!dot-config/pi-durable/
 !dot-config/zed/
 !dot-config/zsh/
 
@@ -84,6 +85,13 @@ dot-config/herdr/*
 !dot-config/herdr/openrouter-spend.py
 !dot-config/herdr/host-label.sh
 !dot-config/herdr/AGENTS.md
+
+# Pi Durable - track each workspace's config by exact filename; tokens, the
+# Claude config directory, backups and any new file stay ignored
+dot-config/pi-durable/*
+!dot-config/pi-durable/sgg.json
+!dot-config/pi-durable/planning.json
+!dot-config/pi-durable/subscriptions.json
 
 # Apple Notes native helper — built artifacts and signing material never tracked
 dot-agents/skills/apple-notes-pkm/helper/*.app
