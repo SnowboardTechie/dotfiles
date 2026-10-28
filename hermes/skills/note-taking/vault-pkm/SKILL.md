@@ -176,7 +176,7 @@ Bryan treats Git synchronization as part of completing a non-draft vault update,
 
 1. Fetch and confirm the vault branch can be updated safely; preserve unrelated tracked and untracked work.
 2. Stage only the exact note paths authorized for the task.
-3. Run `git diff --cached --check`, commit with a concise vault-scoped message, and push.
+3. Run `git diff --cached --check`, commit with a concise vault-scoped message, and push. Vault-only commits go directly to the default branch with no PR, unless another agent will review them (Bryan, 2026-10-28).
 4. Fetch again and verify local `HEAD` equals the remote branch SHA.
 5. During ordinary note work, leave `drafts/` uncommitted unless Bryan explicitly promotes or asks to commit the draft.
 
