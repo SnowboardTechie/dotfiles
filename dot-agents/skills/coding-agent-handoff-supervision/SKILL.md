@@ -559,6 +559,8 @@ batch), follow this shape:
   approval (laws, a config file, a decision), put what he is approving in the message itself, in plain words. A link
   is welcome for the web UI, but only to the exact file at an exact commit
   (`https://<forge>/<owner>/<repo>/src/commit/<sha>/<path>`), one link per file, never a PR page.
+- **Every issue and PR named in a message gets its title and full URL, every time.** A bare `#246` or "PR 2" makes
+  Bryan ask again; he has had to repeat this many times. Status updates included.
 
 - **A count you state is the count you list.** "One thing is time-sensitive"
   followed by a numbered list of four reads as four urgent items, so the real
