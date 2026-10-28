@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "subscriptions": [
+    {
+      "id": "work",
+      "account": "Agile Six Team seat",
+      "kind": "work",
+      "provider": "claude",
+      "lines": { "five_hour": 90, "weekly": 90 }
+    },
+    {
+      "id": "personal",
+      "account": "Bryan's personal subscription",
+      "kind": "personal",
+      "provider": "claude",
+      "lines": { "five_hour": 90, "weekly": 90 }
+    }
+  ]
+}
