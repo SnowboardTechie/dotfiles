@@ -36,12 +36,17 @@ Write it to a file in session scratch (`$TMPDIR`), never into a repository or th
 vault. The file is read once, verbatim, at startup: nothing in it is
 shell-interpreted.
 
+Give the file a name unique to this launch (e.g. `next-session-<name>.md`), and
+read it back before launching. Never launch in the same batch as the write.
+Scratch is shared across sessions, so a fixed name can hold an earlier session's
+prompt, and a refused or failed write then launches that stale prompt.
+
 ## Launch
 
 ```sh
 S=~/.hermes/skills/personal/next-session/scripts/launch_next_session.py
-python3 "$S" launch --prompt-file "$TMPDIR/next-session-prompt.md" --name <name> --dry-run
-python3 "$S" launch --prompt-file "$TMPDIR/next-session-prompt.md" --name <name>
+python3 "$S" launch --prompt-file "$TMPDIR/next-session-<name>.md" --name <name> --dry-run
+python3 "$S" launch --prompt-file "$TMPDIR/next-session-<name>.md" --name <name>
 ```
 
 - `--name` is a short Herdr agent name (`[a-z][a-z0-9_-]{0,31}`) unique among
