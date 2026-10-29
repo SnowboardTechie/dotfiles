@@ -73,5 +73,12 @@
 		"repos": [
 			"HHS/simpler-grants-protocol"
 		]
+	},
+	"dependencies": {
+		"repos": [
+			"HHS/simpler-grants-protocol"
+		],
+		"room": null,
+		"gates": {}
 	}
 }
