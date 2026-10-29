@@ -559,6 +559,8 @@ batch), follow this shape:
   approval (laws, a config file, a decision), put what he is approving in the message itself, in plain words. A link
   is welcome for the web UI, but only to the exact file at an exact commit
   (`https://<forge>/<owner>/<repo>/src/commit/<sha>/<path>`), one link per file, never a PR page.
+- **Every ask is self-contained.** When Bryan has something to do, restate the exact steps or commands in that message.
+  Never point him at "my earlier message" or "the commands above".
 - **Every issue and PR named in a message gets its title and full URL, every time.** A bare `#246` or "PR 2" makes
   Bryan ask again; he has had to repeat this many times. Status updates included.
 
