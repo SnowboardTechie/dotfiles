@@ -68,5 +68,10 @@
 	},
 	"web": {
 		"approved_login": "gczygkswsk@privaterelay.appleid.com"
+	},
+	"triage": {
+		"repos": [
+			"HHS/simpler-grants-protocol"
+		]
 	}
 }
