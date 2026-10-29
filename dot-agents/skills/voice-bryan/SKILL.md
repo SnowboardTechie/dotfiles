@@ -49,6 +49,19 @@ standups remain placeholders pending samples in those channels.
    feels ambiguous. The corpus is the source of truth; `core-traits.md` is the
    distilled summary.
 
+## Assessing a teammate's proposal before replying
+
+When Bryan asks whether a teammate's plan or proposal is sensible, answer that
+question first: does it work as written, yes or no. Then list only gaps that
+would actually block the goal. Improvements, rewording, and nice-to-haves stay
+out unless he asks for them. Do not assume he wants to send critique back. The
+default fix for a real gap is for Bryan to absorb it into his own share of the
+work quietly, not to ask the teammate to change their plan.
+
+The reply draft then carries only what Bryan has decided. It is not a vehicle
+for the agent's suggestions. If his decided content is two lines, ship two
+lines. Ask what he wants to add rather than inventing substance to fill it out.
+
 ## Personal posts: develop the idea, deliver the post
 
 For an X post or other short personal reflection, treat Bryan's rough wording

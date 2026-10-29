@@ -116,6 +116,23 @@ that the opening still serves the original purpose, supporting facts remain
 visible at the right weight, and exclusions hold across every public-facing
 version.
 
+### Speaking for Bryan beyond what he decided
+
+Never put a commitment, deadline, deliverable, or ownership claim in a draft
+that Bryan has not stated ("I'll send X over tonight"). If the teammate
+framed a step as joint ("let's settle X"), keep it joint rather than assigning
+it to Bryan. Do not make picks in the recipient's lane on Bryan's behalf, even
+as placeholders. A sent message commits a real person, so every promise in it
+must be one he made.
+
+### Shorthand from the agent's own research
+
+Every reference in a draft must make sense to Bryan and the recipient without
+the agent's research context. A phrase like "X from Y's doc" points at
+something only the agent just read. If Bryan would have to ask what a phrase
+means, spell it out or cut it. Do not assume he has the details of a source
+fresh in mind because the agent does.
+
 ### Packing every investigation finding into the reply
 
 If a finding does not change the reader's next decision, it stays in Bryan's

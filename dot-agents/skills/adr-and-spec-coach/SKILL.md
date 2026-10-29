@@ -94,6 +94,24 @@ This agenda is the thing you descend in Phase 3. Triage sets **order and
 depth**, not what gets skipped — every decision is still deliberated, the
 trivial ones just go fast.
 
+**Co-authored artifacts.** When the work is split between authors ("you own
+discovery, I own the request mechanism"), map every agenda item to an owner.
+Items nobody owns default to the author you are helping, absorbed into their
+lane. Do not turn the gap into critique of the collaborator's split unless the
+author asks for that.
+
+### Phase 2b — Research fan-out (when evidence is thin)
+
+If several load-bearing decisions need fresh evidence (precedents, source
+constraints, standards), dispatch parallel **read-only** research subagents
+before Phase 3. Split them by decision cluster, not by source. Each child
+returns options, trade-offs, a recommendation, and the exact question the
+author must answer, and writes one draft file. Dispatch needs the author's go
+ahead ("get to work" counts). Verify consequential claims yourself before
+presenting them, because child summaries are self-reports. Then descend Phase 3
+as usual. The research does not replace one-decision-per-turn deliberation.
+Brief template and source-pinning recipe: `references/research-fanout.md`.
+
 ### Phase 3 — Descend the agenda, one decision per turn
 
 Top of the agenda first. For **each** decision, in its own turn:
