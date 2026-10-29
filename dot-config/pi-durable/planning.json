@@ -4,6 +4,10 @@
 	"claude": {
 		"executable": "/opt/homebrew/bin/claude",
 		"config_dir": "~/.config/pi-durable/planning/claude",
-		"token_file": "~/.config/pi-durable/planning/claude-token"
+		"subscriptions": [
+			{
+				"id": "work"
+			}
+		]
 	}
 }

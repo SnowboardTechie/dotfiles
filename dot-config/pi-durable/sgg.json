@@ -32,7 +32,12 @@
 		"cli": [
 			"claude"
 		],
-		"home": "~"
+		"home": "~",
+		"subscriptions": [
+			{
+				"id": "work"
+			}
+		]
 	},
 	"sandbox": {
 		"cli": [
