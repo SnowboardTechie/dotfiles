@@ -21,6 +21,10 @@ AUTHORIZED_ROOMS = frozenset(
         "!OTGdYFkIolD5nJvYklJ0Y-dbcaUyvAu0oXEI8-_sxuI",
         # Studio Alerts: Alertmanager notifications through the webhook route.
         "!BY2yuFPzB-GFM6e1MCD33kHk-YH2c1H3Ga-R59PCTUg",
+        # SGG Dependencies: the Dependency Triage's daily notices after cutover.
+        "!G-1AFqv6TX64et_lxtdAfOEemeaDSuyf9LxtFlbB5c8",
+        # SGG Dependencies (test): the triage's shadow room until cutover.
+        "!e3H0RN1JtrSQo00Xc22JuKmAjPIFSB6BVCSL38HU3A4",
     }
 )
 

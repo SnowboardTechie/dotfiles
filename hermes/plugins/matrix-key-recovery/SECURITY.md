@@ -75,3 +75,13 @@ change is data-only: one room ID in `AUTHORIZED_ROOMS`, with no code-path
 change. Live state readback on 2026-10-23 confirmed the same invariant:
 private, invite-only, encrypted, unlisted, `history_visibility=joined`, guests
 forbidden, and exactly two joined members (Hermes and Bryan).
+
+Scope extension (2026-10-30): added the two SGG Dependency Triage rooms, "SGG
+Dependencies" (`!G-1AFqv6TX64et_lxtdAfOEemeaDSuyf9LxtFlbB5c8`) and "SGG
+Dependencies (test)" (`!e3H0RN1JtrSQo00Xc22JuKmAjPIFSB6BVCSL38HU3A4`), which
+receive the SGG service's daily triage notices through `hermes send`
+(durable-pi-workspace#256). The change is data-only: two room IDs in
+`AUTHORIZED_ROOMS`, with no code-path change. Live state readback at creation
+on 2026-10-30 confirmed the same invariant: private, invite-only, encrypted,
+unlisted, `history_visibility=joined`, guests forbidden, and exactly two
+members, Hermes joined and Bryan invited.
