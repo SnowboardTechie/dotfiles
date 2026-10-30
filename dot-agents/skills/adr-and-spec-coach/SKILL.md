@@ -201,6 +201,16 @@ relevant consequences, risks, rollout, and testing language from the selected
 anatomy. If any check fails, return to the corresponding phase rather than
 papering over the gap in the draft.
 
+**Close review gaps before handing back the draft.** When a review of the
+draft surfaces small gaps after the author has worked through the agenda,
+resolve every gap that follows from the author's stated design goal or their
+recorded decisions yourself. Record each as a labeled agent drafting choice the
+author can change. Never return a finished draft with an "open questions" list
+on top. Ask only about a genuinely new load-bearing trade-off, and then through
+the one-decision-per-turn contract. Why: after a long decision session, a
+leftover list of derivable questions reads as unfinished work pushed back onto
+the author.
+
 **Planning is not execution authorization.** Do not dispatch an implementation
 agent, edit code, deploy, commit, post, or open a PR merely because the user
 asked for a plan or fresh-agent handoff. The handoff is text until the author
