@@ -80,5 +80,28 @@
 		],
 		"room": null,
 		"gates": {}
+	},
+	"timezone": "America/Los_Angeles",
+	"rooms": {
+		"dependencies": "matrix:!G-1AFqv6TX64et_lxtdAfOEemeaDSuyf9LxtFlbB5c8",
+		"dependencies-test": "matrix:!e3H0RN1JtrSQo00Xc22JuKmAjPIFSB6BVCSL38HU3A4"
+	},
+	"jobs": {
+		"triage": {
+			"enabled": true,
+			"schedule": {
+				"days": [
+					"mon",
+					"tue",
+					"wed",
+					"thu",
+					"fri"
+				],
+				"at": "10:00"
+			},
+			"deadline_hours": 2,
+			"room": "dependencies-test",
+			"mention": "@bryan:snowboardtechie.com"
+		}
 	}
 }
