@@ -25,7 +25,10 @@ approval as merge approval.
 ## When to Use
 
 - The origin is Forgejo, Gitea, or Codeberg.
-- The PR has completed human review and all required CI checks are green.
+- The PR has completed review and all required checks are green. Review means
+  human review, or the gates a recorded standing merge authority names in its
+  place (see step 3). Where the repository has no hosted CI, the required checks
+  are its full local gate on the exact head.
 - Local squash merge is required to preserve the expected signature.
 
 Do not use to bypass review, CI, branch protection, or an unresolved discussion.
@@ -52,7 +55,8 @@ the reviewed PR record in this workflow.
 Read back the PR and its current checks immediately before merging. Verify:
 
 - PR is open and not a draft;
-- required human review is present;
+- required review is present: human review, or each gate a recorded standing
+  merge authority names, passed on this exact head;
 - no unresolved review request or blocking conversation remains;
 - every required CI check is green;
 - head SHA matches the branch SHA being merged;
@@ -90,6 +94,13 @@ Show:
 
 Obtain explicit approval immediately before changing the default branch. One
 approval may cover the complete listed sequence, including cleanup.
+
+A recorded standing merge authority is that approval. Bryan sometimes grants
+"merge once cleared" for a batch in an approved plan, naming the gates that
+replace his review (for example, parent acceptance, a green full gate and a
+fresh final review on the exact head). Under it, don't ask again. Verify each
+named gate on the exact head, cite the plan in your report, and proceed.
+Implementation approval alone is still not merge approval.
 
 ### 4. Prepare the default-branch worktree
 
@@ -129,8 +140,9 @@ Then verify `git status --porcelain` is empty and `HEAD` still equals
 `$pre_merge_head`. If either check fails, stop and ask the user how to proceed;
 do not escalate to `git reset --hard` automatically.
 
-On success, inspect the staged diff before committing. Use the reviewed PR title
-and body:
+On success, inspect the staged diff before committing. Sync the PR body with the
+final gate and review results first, because the squash commit carries the body
+into `main`. Use the reviewed PR title and body:
 
 ```text
 <PR title> (#<PR number>)
@@ -204,10 +216,10 @@ state, and any retained worktree/branch.
 
 ## Verification Checklist
 
-- [ ] Human review confirmed
-- [ ] Required CI green at the current head SHA
+- [ ] Human review confirmed, or the standing authority's named gates passed on the exact head
+- [ ] Required CI (or the local full gate) green at the current head SHA
 - [ ] Project planning-closeout requirements satisfied
-- [ ] Explicit merge approval obtained
+- [ ] Explicit merge approval obtained, or the recorded standing authority cited
 - [ ] Default worktree clean and synchronized with origin
 - [ ] Squash diff inspected before commit
 - [ ] Commit signature verified
