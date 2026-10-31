@@ -1,13 +1,13 @@
 ---
 name: next-session
-description: Use when Bryan asks to launch the next session you suggested. Starts it in a Herdr split beside this one, with the prompt as its first turn, so he can close this session and continue there without copy-paste.
+description: Use when Bryan asks to launch the next session you suggested. Starts it in a Herdr or Rex split beside this one, with the prompt as its first turn, so he can close this session and continue there without copy-paste.
 ---
 
 # Next session
 
 Many sessions end by suggesting what Bryan should say to the next agent. A
 Wayfinder ticket, for example, names the next decision on the map. This skill
-does that handoff for him: it splits this session's Herdr pane to the right
+does that handoff for him: it splits this session's Herdr or Rex pane to the right
 (a vertical divider), starts a fresh Hermes session in the new pane, and seeds
 it with the suggested prompt as its first turn. Bryan then closes this session
 and carries on in the new one.
@@ -22,7 +22,7 @@ implementation slices use `session-handoff`.
 - Only when Bryan asks for it ("launch it", "start the next one", "split and
   start it"). Suggesting the prompt is the default ending; launching is his call,
   because the new session starts working (and, on a map, claims a ticket) at once.
-- Only from a Hermes CLI session inside Herdr. If the helper can't find this
+- Only from a Hermes CLI session inside Herdr or Rex. If the helper can't find this
   session's pane, give him the prompt to paste and say why. That is a normal
   outcome, not a failure to work around.
 
@@ -49,18 +49,30 @@ python3 "$S" launch --prompt-file "$TMPDIR/next-session-<name>.md" --name <name>
 python3 "$S" launch --prompt-file "$TMPDIR/next-session-<name>.md" --name <name>
 ```
 
-- `--name` is a short Herdr agent name (`[a-z][a-z0-9_-]{0,31}`) unique among
-  live agents, e.g. `wf-182`.
+- `--name` is a short name (`[a-z][a-z0-9_-]{0,31}`), e.g. `wf-182`. In Herdr
+  it is the agent name and must be unique among live agents; in Rex it labels
+  the new pane.
 - The working directory defaults to this pane's. Pass `--cwd` only when the next
   session belongs elsewhere.
 - `--skills a,b` preloads skills when the prompt names one to use.
 - Focus stays in this pane so Bryan can read the final report. Pass `--focus`
   only if he asks.
 
-The helper refuses unless exactly one Hermes pane runs on this session's TTY.
-It finds that pane from Hermes's own TTY record and Herdr's process info, never
-from UI focus. If the split succeeds but the start fails, it leaves the new pane
-open and prints the command to run there by hand. Don't retry into a second pane.
+The helper picks the host from the pane's own environment (`dot-agents/lib/terminal_host.py`):
+Herdr when `HERDR_ENV`/`HERDR_PANE_ID` are set, else Rex when `REX_BLOCK` and
+`REX_SESSION` are. Herdr wins because it can run inside a Rex pane. Outside both
+it refuses; give Bryan the prompt instead.
+
+- **Herdr:** it refuses unless exactly one Hermes pane runs on this session's
+  TTY. It finds that pane from Hermes's own TTY record and Herdr's process info,
+  never from UI focus.
+- **Rex:** the caller is `REX_BLOCK`, which must still exist on the server. The
+  new pane is a shell with the `hermes chat` command typed in, labelled with
+  `--name`. Launch counts as done once a Hermes process is that pane's
+  foreground. That proves Hermes started, not that the first turn finished.
+
+If the split succeeds but the start fails, it leaves the new pane open and prints
+the command to run there by hand. Don't retry into a second pane.
 
 ## Finish
 

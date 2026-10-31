@@ -87,6 +87,8 @@ class LaunchNextSessionTest(unittest.TestCase):
         self.prompt = self.tmp / "prompt.md"
         self.prompt.write_text("Work the map.\nUse the wayfinder skill.\n")
         self.log = self.tmp / "herdr.log"
+        # Herdr inside a Rex pane: inherited REX_* must not divert the launch to Rex.
+        self.extra_env = {"REX_SESSION": "session:outer", "REX_BLOCK": "block:outer"}
 
     def record(self, tty: str, session: str) -> None:
         (self.home / "terminal-sessions" / f"tty-dev-{tty}").write_text(json.dumps({"session_id": session, "cwd": "/", "ts": 1}))
@@ -102,7 +104,9 @@ class LaunchNextSessionTest(unittest.TestCase):
             "FAKE_STATE": str(state),
             "FAKE_LOG": str(self.log),
         }
-        env.pop("HERDR_BIN", None)
+        for key in ("HERDR_BIN", "HERDR_BIN_PATH", "REX_BIN", "REX_BIN_DIR"):
+            env.pop(key, None)
+        env.update({"HERDR_ENV": "1", "HERDR_PANE_ID": "w1:p2", **self.extra_env})
         done = subprocess.run(["python3", str(SCRIPT), *args], capture_output=True, text=True, env=env, timeout=60)
         return done.returncode, json.loads(done.stdout)
 
@@ -189,6 +193,165 @@ class LaunchNextSessionTest(unittest.TestCase):
                 self.assertEqual(code, 1)
                 self.assertIn(reason, out["reason"])
         self.assertEqual(self.calls(), [])
+
+
+FAKE_REX = textwrap.dedent(
+    """\
+    #!/usr/bin/env python3
+    import json, os, sys
+    path = os.environ["FAKE_STATE"]
+    state = json.load(open(path))
+    args = sys.argv[1:]
+    with open(os.environ["FAKE_LOG"], "a") as log:
+        log.write(json.dumps(args) + "\\n")
+    def out(value):
+        print(json.dumps(value))
+        sys.exit(0)
+    if args[:3] == ["block", "call", "-b"] and args[4] == "process":
+        block = args[3]
+        if block not in state["blocks"]:
+            print(f'Error: block target "{block}" not found', file=sys.stderr)
+            sys.exit(1)
+        polls = state.setdefault("polls", {})
+        polls[block] = polls.get(block, 0) + 1
+        json.dump(state, open(path, "w"))
+        sequence = state["blocks"][block]
+        out({"foreground": sequence[min(polls[block], len(sequence)) - 1]})
+    if args[:3] == ["api", "call", "session.new_split"]:
+        out({"anchor_id": json.loads(args[3])["anchor_id"], "block_ids": ["block:new"],
+             "split_ids": ["split:1"], "revision": 7})
+    sys.exit(9)
+    """
+)
+
+
+class RexLaunchTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = Path(tempfile.mkdtemp(prefix="next-session-rex-test-"))
+        self.bin_dir = self.tmp / "bin"
+        self.bin_dir.mkdir()
+        self.rex = self.bin_dir / "rex"
+        self.rex.write_text(FAKE_REX)
+        self.rex.chmod(0o755)
+        self.cwd = self.tmp / "work"
+        self.cwd.mkdir()
+        hermes_fg = {"pid": 42, "name": "python3.14", "argv0": "/Users/me/.hermes/tools/python/bin/python3", "cwd": str(self.cwd)}
+        self.state = {"blocks": {
+            "block:me": [{"pid": 7, "name": "python3.14", "argv0": "/Users/me/.hermes/tools/python/bin/python3", "cwd": str(self.cwd)}],
+            # The new pane shows its shell first, then Hermes.
+            "block:new": [{"pid": 40, "name": "zsh", "argv0": "-zsh", "cwd": str(self.cwd)}, hermes_fg],
+        }}
+        self.prompt = self.tmp / "prompt's file.md"
+        self.prompt.write_text("Work the map.\n")
+        self.log = self.tmp / "rex.log"
+
+    def run_script(self, *args: str, env_extra: dict | None = None) -> tuple[int, dict]:
+        state = self.tmp / "state.json"
+        state.write_text(json.dumps(self.state))
+        env = {k: v for k, v in os.environ.items() if not k.startswith(("HERDR_", "REX_"))}
+        env.update({
+            # Not on PATH: found through REX_BIN_DIR, as the Rex app sets it up.
+            "PATH": "/usr/bin:/bin",
+            "REX_BIN_DIR": str(self.bin_dir),
+            "REX_SESSION": "session:s1",
+            "REX_BLOCK": "block:me",
+            "HERMES_SESSION_ID": SESSION,
+            "HERMES_HOME": str(self.tmp / "hermes"),
+            "FAKE_STATE": str(state),
+            "FAKE_LOG": str(self.log),
+            "NEXT_SESSION_REX_START_TIMEOUT": "3",
+            **(env_extra or {}),
+        })
+        done = subprocess.run(["python3", str(SCRIPT), *args], capture_output=True, text=True, env=env, timeout=60)
+        return done.returncode, json.loads(done.stdout)
+
+    def calls(self) -> list[list[str]]:
+        return [json.loads(line) for line in self.log.read_text().splitlines()] if self.log.exists() else []
+
+    def split_request(self) -> dict:
+        call = next(c for c in self.calls() if c[:3] == ["api", "call", "session.new_split"])
+        return json.loads(call[3])
+
+    def test_whoami_is_this_rex_block(self) -> None:
+        code, out = self.run_script("whoami")
+        self.assertEqual(code, 0, out)
+        self.assertEqual((out["host"], out["pane_id"], out["rex_session"]), ("rex", "block:me", "session:s1"))
+        self.assertEqual(out["cwd"], str(self.cwd))
+
+    def test_refuses_a_stale_block(self) -> None:
+        code, out = self.run_script("whoami", env_extra={"REX_BLOCK": "block:gone"})
+        self.assertEqual(code, 1)
+        self.assertIn("not on the connected server", out["reason"])
+
+    def test_refuses_outside_both_hosts(self) -> None:
+        code, out = self.run_script("whoami", env_extra={"REX_BLOCK": ""})
+        self.assertEqual(code, 1)
+        self.assertIn("not running inside Herdr or Rex", out["reason"])
+
+    def test_dry_run_splits_nothing(self) -> None:
+        code, out = self.run_script("launch", "--prompt-file", str(self.prompt), "--name", "wf-9", "--dry-run")
+        self.assertEqual(code, 0, out)
+        self.assertFalse(out["launched"])
+        self.assertFalse(any(c[:3] == ["api", "call", "session.new_split"] for c in self.calls()))
+
+    def test_launch_splits_right_unfocused_and_waits_for_hermes(self) -> None:
+        code, out = self.run_script("launch", "--prompt-file", str(self.prompt), "--name", "wf-9", "--skills", "wayfinder")
+        self.assertEqual(code, 0, out)
+        self.assertEqual((out["launched"], out["pane"], out["foreground_pid"]), (True, "block:new", 42))
+        req = self.split_request()
+        self.assertEqual((req["session_id"], req["anchor_id"]), ("session:s1", "block:me"))
+        self.assertEqual((req["direction"], req["side"], req["focus"]), ("horizontal", "after", False))
+        block = req["layout"]["block"]
+        self.assertEqual((block["flavor"], block["label"]), ("com.superlogical.terminal.shell", "wf-9"))
+        self.assertEqual(block["options"]["cwd"], str(self.cwd))
+        typed = block["options"]["initial_input"]
+        self.assertTrue(typed.endswith("\n"))
+        import shlex
+        self.assertEqual(shlex.split(typed), ["hermes", "chat", "--query-file", str(self.prompt.resolve()), "--skills", "wayfinder"])
+
+    def test_focus_flag(self) -> None:
+        self.run_script("launch", "--prompt-file", str(self.prompt), "--name", "wf-9", "--focus")
+        self.assertTrue(self.split_request()["focus"])
+
+    def test_cwd_override(self) -> None:
+        other = self.tmp / "other"
+        other.mkdir()
+        self.run_script("launch", "--prompt-file", str(self.prompt), "--name", "wf-9", "--cwd", str(other))
+        self.assertEqual(self.split_request()["layout"]["block"]["options"]["cwd"], str(other.resolve()))
+
+    def test_hermes_never_starting_keeps_the_pane_and_prints_the_manual_command(self) -> None:
+        self.state["blocks"]["block:new"] = [{"pid": 40, "name": "zsh", "argv0": "-zsh"}]
+        code, out = self.run_script("launch", "--prompt-file", str(self.prompt), "--name", "wf-9")
+        self.assertEqual(code, 1)
+        self.assertEqual(out["pane"], "block:new")
+        self.assertIn("--query-file", out["manual"])
+        self.assertFalse(any("close" in c for c in self.calls()))
+
+    def test_refuses_bad_inputs_before_splitting(self) -> None:
+        code, out = self.run_script("launch", "--prompt-file", str(self.prompt), "--name", "Bad Name")
+        self.assertEqual(code, 1)
+        self.assertEqual(self.calls(), [])
+
+
+class TerminalHostTest(unittest.TestCase):
+    def setUp(self) -> None:
+        import sys
+        sys.path.insert(0, str(REPO_ROOT / "dot-agents" / "lib"))
+        import terminal_host
+        self.th = terminal_host
+
+    def test_herdr_wins_over_inherited_rex_variables(self) -> None:
+        host = self.th.detect({"HERDR_ENV": "1", "HERDR_PANE_ID": "w1:p1", "HERDR_BIN_PATH": "/x/herdr",
+                               "REX_SESSION": "session:s", "REX_BLOCK": "block:b"})
+        self.assertEqual((host.kind, host.pane, host.binary), ("herdr", "w1:p1", "/x/herdr"))
+
+    def test_rex_needs_both_block_and_session(self) -> None:
+        self.assertIsNone(self.th.detect({"REX_BLOCK": "block:b", "PATH": ""}))
+        host = self.th.detect({"REX_BLOCK": "block:b", "REX_SESSION": "session:s", "REX_BIN": "/r/rex"})
+        self.assertEqual((host.kind, host.pane, host.session, host.binary), ("rex", "block:b", "session:s", "/r/rex"))
+
+    def test_nothing(self) -> None:
+        self.assertIsNone(self.th.detect({}))
 
 
 if __name__ == "__main__":
