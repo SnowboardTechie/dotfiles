@@ -8,9 +8,9 @@ generates a short session title; this plugin copies it onto the tab.
 The agent runs in the gateway, so ``REX_*`` are not in ``os.environ``: they
 arrive in the session's client environment (``terminal.client_env_passthrough``
 in config.yaml) and are bound for the turn, which is where ``post_llm_call``
-fires. The values are captured there, then a daemon thread waits for the
-model-written title (it is generated in the background and can land after the
-first turn ends) and renames the tab.
+fires. The values are captured there, then a daemon thread names the tab from
+the instant title and keeps polling for the model-written title (generated in
+the background; it can land after the turn ends, or time out entirely).
 
 A tab is renamed only while it still has Rex's generated label
 (``Window 1a2b3c4d``) or a label this gateway process wrote itself, so a tab
@@ -32,10 +32,13 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-_PLATFORMS = frozenset({"cli", "tui"})
-# Titles Bryan set (/title) or the title model wrote. ``derived`` is an instant
-# placeholder cut from the opening message and is never copied to a tab.
-_ACCEPTED_SOURCES = frozenset({"user", "llm"})
+# Shell clients' sessions; the gateway stores them as ``local`` and may report either.
+_PLATFORMS = frozenset({"cli", "tui", "local"})
+# ``derived`` is the instant title cut from the opening message: shown at once
+# (the model title can time out entirely), then replaced by the title model's
+# (``llm``) or Bryan's ``/title`` (``user``) when one lands.
+_USABLE_SOURCES = frozenset({"derived", "user", "llm"})
+_FINAL_SOURCES = frozenset({"user", "llm"})
 _GENERATED_LABEL = re.compile(r"Window [0-9a-f]{8}")
 _FALLBACK_REX = "/Applications/Rex Beta.app/Contents/Helpers/Rex Server.rex/Contents/MacOS/rex"
 _MAX_LABEL = 48
@@ -173,14 +176,15 @@ def _follow_title(session_id: str, rex: dict[str, str], deadline: float) -> None
     try:
         while True:
             title, source = _session_title(session_id)
-            if title and source in _ACCEPTED_SOURCES:
+            if title and source in _USABLE_SOURCES:
                 label = tab_label(title)
                 with _lock:
                     already = _applied.get(session_id) == label
                 if not already:
                     outcome = apply_title(session_id, rex, label)
                     logger.debug("rex-tab-title %s: %s", session_id, outcome)
-                return
+                if source in _FINAL_SOURCES:
+                    return
             if time.monotonic() >= deadline:
                 return
             time.sleep(_POLL_SECONDS)

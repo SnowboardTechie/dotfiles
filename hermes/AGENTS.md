@@ -24,6 +24,6 @@ Paths are relative to the dotfiles repo root.
 
 `hermes/plugins/rex-tab-title/` + `hermes/test_rex_tab_title_plugin.py`
 
-- Renames the Rex tab (a Rex *window*, not the Rex session) holding the session's `REX_BLOCK` to the Hermes session title (`llm` or `user` source; never the `derived` placeholder). Fires from `post_llm_call`, where the session's client env is bound; `os.environ` in the gateway has no `REX_*`.
+- Renames the Rex tab (a Rex *window*, not the Rex session) holding the session's `REX_BLOCK` to the Hermes session title: the instant `derived` title at once, upgraded to the `llm`/`user` title when one lands (model titling can time out). Fires from `post_llm_call`, where the session's client env is bound; `os.environ` in the gateway has no `REX_*`.
 - Only replaces Rex's generated `Window xxxxxxxx` label or a label the same gateway process wrote, so hand-named tabs stay put.
 - Managed by `install.py` (frozen copy + enable); a gateway restart activates it. Source changes need `SECURITY.md` re-reviewed.

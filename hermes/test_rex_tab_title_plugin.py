@@ -89,10 +89,10 @@ class RexTabTitleTest(unittest.TestCase):
         self.assertEqual(self.read_state()["renames"], [])
         self.assertEqual(self.read_state()["label"], "hermes renaming tabs")
 
-    def test_derived_placeholder_is_ignored(self) -> None:
-        self.set_title("s1", "we did a lot of work to set you", "derived")
-        self.follow("s1")
-        self.assertEqual(self.read_state()["renames"], [])
+    def test_instant_title_is_used_when_the_model_title_never_lands(self) -> None:
+        self.set_title("s1", "What is the boiling point of water at 5000 feet…", "derived")
+        self.follow("s1", wait=0.05)
+        self.assertEqual(self.read_state()["renames"], ["What is the boiling point of water at 5000 feet…"])
 
     def test_waits_for_model_title_after_turn(self) -> None:
         self.set_title("s1", "placeholder", "derived")
@@ -104,7 +104,7 @@ class RexTabTitleTest(unittest.TestCase):
 
         threading.Thread(target=upgrade).start()
         self.follow("s1", wait=2.0)
-        self.assertEqual(self.read_state()["renames"], ["Late model title"])
+        self.assertEqual(self.read_state()["renames"], ["placeholder", "Late model title"])
 
     def test_new_session_in_same_tab_replaces_our_own_label(self) -> None:
         self.set_title("s1", "First task", "llm")
