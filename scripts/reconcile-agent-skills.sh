@@ -132,6 +132,8 @@ OPENCODE_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
 # skills live in a dedicated category so the shared pool remains canonical while
 # Hermes's curator and bundled-skill lifecycle stay separate. apple-notes-pkm is
 # the one personal-knowledge backend every runtime shares, Hermes included.
+# `rex` is Hermes-only: Rex's own `rex skill setup` already covers Claude, Codex,
+# OpenCode, and Pi (its skill dir lives in ~/.agents/skills/rex), but not Hermes.
 HERMES_SKILLS=(
     ship worktrunk update-pr-description pr-self-review code-review multiagent-pr-review
     manual-merge issue-create issue-plan issue-work loop-issue
@@ -142,6 +144,7 @@ HERMES_SKILLS=(
     catalog-review dependency-review dependency-triage sprint-deliverable-update
     "${ADAPTED_CORES[@]}"
     guided-learning yunohost-updates superwhisper-meetings
+    rex
 )
 
 # Print an operation line. Operations mutate only under --apply; check mode

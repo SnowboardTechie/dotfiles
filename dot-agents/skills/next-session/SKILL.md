@@ -71,6 +71,8 @@ this session's `hermes chat` process: `ps eww` on each Hermes process with a
 TTY, matching `PWD` to this session's working directory. Read its `REX_SESSION`,
 `REX_BLOCK`, `REX_SERVER` and `REX_BIN_DIR` (or its `HERDR_*` variables), export
 them, and dry-run again. If more than one process matches, ask Bryan which pane.
+Sessions created after `terminal.client_env_passthrough` lists the `REX_*` names
+get them directly; `HERDR_*` and older sessions still need this lookup.
 
 - **Herdr:** it refuses unless exactly one Hermes pane runs on this session's
   TTY. It finds that pane from Hermes's own TTY record and Herdr's process info,

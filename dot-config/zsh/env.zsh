@@ -20,6 +20,12 @@ export NODE_OPTIONS="--max-old-space-size=4096"
 # delete credentials.enc after a decryption mismatch (upstream issue #886).
 export GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND="${GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND:-file}"
 
+# Rex - the app exports its CLI directory in its terminals but doesn't put rex on
+# PATH. Agents' Rex hooks and skills call plain `rex`, so append it here.
+if [[ -n "${REX_BIN_DIR:-}" && -x "$REX_BIN_DIR/rex" ]] && (( ! ${path[(Ie)$REX_BIN_DIR]} )); then
+  path+=("$REX_BIN_DIR")
+fi
+
 # PostgreSQL - Add libpq binaries to PATH (macOS Homebrew only, NixOS handles via system packages)
 if [[ -d /opt/homebrew/opt/libpq/bin ]]; then
   export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
