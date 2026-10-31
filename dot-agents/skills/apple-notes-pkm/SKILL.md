@@ -1,18 +1,19 @@
 ---
 name: apple-notes-pkm
 description: >
-  Bryan's personal second brain lives in Apple Notes, in the iCloud folder
-  "Second Brain". Use for personal recall ("what did I decide/explore about X",
-  gift ideas, vehicles, home, learning, journal), personal capture, and any
-  read or write of personal knowledge. Search, read, create, append, replace,
-  and link through the bounded helper script in this skill — never by
-  memo, an MCP, Full Disk Access, or the Notes database. Project and
-  workspace knowledge is NOT here; that stays in Markdown vaults under
-  vault-pkm. The frozen Git archive at ~/second-brain is rollback history,
-  not a live source.
+  RETIRED 2026-10-31 — not curated for any runtime. Bryan's personal second
+  brain returned to the ~/second-brain Markdown vault (vault-pkm). This skill
+  and its helper remain only for read-only access to the Apple Notes rollback
+  copy (iCloud folder "Second Brain") when Bryan explicitly asks.
 ---
 
 # Apple Notes personal knowledge
+
+> **Retired 2026-10-31.** Personal knowledge lives in `~/second-brain` again
+> (decision: `~/second-brain/Decisions/2026-10-31-decision-return-personal-second-brain-to-markdown-git.md`).
+> Do not write to Apple Notes. The text below describes the helper as it was
+> when Notes was authoritative; use it only for explicit, read-only rollback
+> lookups.
 
 Apple Notes is the sole active personal second brain (decision record:
 `~/second-brain/Decisions/2026-09-16-decision-apple-notes-personal-second-brain.md`).

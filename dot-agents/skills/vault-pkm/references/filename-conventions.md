@@ -16,8 +16,11 @@ Existing vaults with organic structure (sgg's `explorations/`, `sessions/`,
 `technical/`; burnt-ice's `design/`, `art/`, `planning/`, `technical/`) preserve
 their folders. Add the canonical folders above only when first needed.
 
-## Personal notes
+## ~/second-brain/
 
-Not files any more. Personal Exploration / Decision / Idea / hub titles follow
-the same date-or-slug rule inside Apple Notes; see
-`apple-notes-pkm/references/note-shapes.md`.
+Follow `~/second-brain/AGENTS.md` filename rules:
+
+- Exploration: `YYYY-MM-DD-{topic-slug}.md` in `Explorations/`
+- Decision: `YYYY-MM-DD-decision-{slug}.md` in `Decisions/`
+- Idea: vault root, `YYYY-MM-DD-idea-{slug}.md`
+- Topic notes (life areas, hubs): Title Case slug at vault root (e.g., `Garage Tools Buildout.md`)

@@ -1,11 +1,11 @@
 ---
 name: weekly-planning
-description: Guided, low-friction weekly planning session - Q&A flow that writes the week's plan as a note in the Apple Notes "Second Brain/Journal" folder through apple-notes-pkm
+description: Guided, low-friction weekly planning session - Q&A flow that fills out the Weekly Planning template in the ~/second-brain vault (Journal/)
 ---
 
 # Weekly Planning — Guided Session
 
-A structured Q&A session that walks Bryan through his weekly planning. Uses the VOMIT system as the process backbone, outputs a filled weekly plan note in Apple Notes (`Second Brain/Journal`).
+A structured Q&A session that walks Bryan through his weekly planning. Uses the VOMIT system as the process backbone, outputs a filled Weekly Planning note in `~/second-brain/Journal/`.
 
 ## When to Use
 
@@ -21,19 +21,15 @@ A structured Q&A session that walks Bryan through his weekly planning. Uses the 
 
 ---
 
-## Where the plan lives
+## Vault & Template Location
 
 ```
-BACKEND:  Apple Notes, iCloud folder "Second Brain" (skill: apple-notes-pkm)
-HELPER:   ~/code/dotfiles/dot-agents/skills/apple-notes-pkm/scripts/apple-notes-pkm.py
-FOLDER:   Journal
-OUTPUT:   note titled {YYYY-MM-DD}-weekly-plan   (that week's Monday date)
-TEMPLATE: search --mode title "Weekly Planning" --folder Templates (historical shape); the
-          section list in Phase 7 is authoritative
+VAULT: ~/second-brain
+TEMPLATE: ~/second-brain/Templates/Weekly Planning.md
+OUTPUT: ~/second-brain/Journal/{YYYY-MM-DD}-weekly-plan.md
 ```
 
-Load `apple-notes-pkm` first and run `health`. Never write to `~/second-brain`
-on disk; it is a frozen archive.
+If `Journal/` doesn't exist, create it.
 
 ---
 
@@ -45,8 +41,8 @@ Run this as an interactive Q&A using the `question` tool. Each phase maps to a s
 
 Before asking anything:
 
-1. Check for last week's planning note: `search "{last Monday}-weekly-plan" --mode title --folder Journal` (fall back to `search "weekly-plan" --mode title --folder Journal --limit 5` and pick the newest)
-2. If found, `read` it by id — especially the "This Week's Rocks" / "Active Goals and Projects" and "End of Week" sections
+1. Check for last week's planning note: look in `~/second-brain/Journal/` for the most recent `*-weekly-plan.md`
+2. If found, read it — especially the "This Week's Rocks" and "End of Week" sections
 3. Note any incomplete rocks or carry-forward items to reference during planning
 
 ### Phase 1: Vent (Clear the Noise)
@@ -158,11 +154,12 @@ What's the ONE thing you're going to do today that moves one of your rocks forwa
 
 Using all collected answers, generate the weekly planning note:
 
-1. Use these sections (the shape Hermes's routines also read): `## Starting Point`, `## Active Goals and Projects` (the 3 rocks as `- ` bullets — the morning brief extracts exactly these), `## Explicitly Parked`, `## Energy Routing`, `## Today's One Thing`, `## Whiteboard Slate`, `## Daily Reflections`, `## End of Week`
+1. Use the template structure from `~/second-brain/Templates/Weekly Planning.md`
 2. Fill in all sections with their answers
 3. Include the whiteboard section pre-formatted for easy copying
-4. Name related notes (projects, routines) by their exact Apple Notes titles
-5. Write it: `create --folder Journal --title {YYYY-MM-DD}-weekly-plan --body-file <draft.md>`; the helper verifies the write, report the returned id
+4. Add any wikilinks to relevant vault notes (projects, routines, etc.)
+5. Save to `~/second-brain/Journal/{YYYY-MM-DD}-weekly-plan.md`
+6. Commit and push it per `~/second-brain/AGENTS.md` (pull first; confirm `HEAD` equals `origin/main`)
 
 ### Phase 8: Whiteboard Summary
 
@@ -212,13 +209,13 @@ Skip Phase 2's rock review. Ask open-ended: "How was last week in general?"
 Adjust language — "rest of the week" instead of "this week." Still pick 3 rocks (or fewer).
 
 **User says they don't know what their rocks should be:**
-`search "Projects TODO" --mode title`, `read` it, and present the list. Ask: "Any of these calling to you this week?"
+Pull from `~/second-brain/Projects TODO.md` and present the list. Ask: "Any of these calling to you this week?"
 
 ---
 
 ## Dependencies
 
-- **apple-notes-pkm** — the helper, folders, note shapes, and write safety
+- **`~/second-brain/AGENTS.md`** — vault conventions, wikilink syntax, and the commit-and-push rule (Git on Forgejo is the only sync)
 
 ---
 

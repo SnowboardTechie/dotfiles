@@ -36,11 +36,12 @@ one-line change to a curation array.
 Not every tool gets every skill. Pi is kept lean (the common core only). Hermes
 gets adapted personal workflows but keeps its bundled/local `obsidian` and
 `vault-pkm` implementations, so those names are intentionally excluded from its
-pool links. Personal knowledge has one backend for every runtime:
-`apple-notes-pkm` (Apple Notes "Second Brain", accessed only through the helper
-script inside that skill), with `knowledge-capture` routing resting-point
-captures between it and `vault-pkm`. `vault-capture` is retired; the reconciler
-prunes its stale links.
+pool links. Personal knowledge lives in the `~/second-brain` Markdown vault
+(Forgejo Git), written through `vault-pkm` like any other vault, with
+`knowledge-capture` routing resting-point captures between it and project
+vaults. `apple-notes-pkm` is retired (2026-10-31) and no longer curated for any
+runtime; its helper source stays in the pool for rollback, and the reconciler
+prunes its stale links. `vault-capture` is likewise retired.
 
 The **single authoritative curation source** is the set of `*_SKILLS` Bash arrays
 in [`../scripts/reconcile-agent-skills.sh`](../scripts/reconcile-agent-skills.sh):

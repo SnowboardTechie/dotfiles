@@ -67,7 +67,7 @@ Also use for a supplied transcript or prior-session reference.
 Do not use the full audit when:
 
 - The user already identified a specific correction; use the direct route above.
-- The main result belongs in a knowledge store. Use `knowledge-capture` (project vault or Apple Notes).
+- The main result belongs in a knowledge store. Use `knowledge-capture` (project vault or `~/second-brain`).
 - The task is still in progress and more evidence is likely.
 - A loaded skill is already known to be stale or wrong and host policy requires
   an immediate patch. Fix it during the task instead of postponing it.

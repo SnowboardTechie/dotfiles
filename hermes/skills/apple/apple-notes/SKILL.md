@@ -1,48 +1,36 @@
 ---
 name: apple-notes
-description: "Apple Notes on this Mac: Bryan's personal second brain is the iCloud folder 'Second Brain', accessed only through the apple-notes-pkm skill and its bounded helper script. Use this pointer when a task mentions Apple Notes, Notes.app, or personal notes; do not use memo, a Notes MCP, or the Notes database."
-version: 2.1.0
+description: "Apple Notes on this Mac is NOT Bryan's second brain any more. Personal knowledge returned to the ~/second-brain Markdown vault on 2026-10-31; the iCloud Notes folder 'Second Brain' is a read-only rollback copy. Use this pointer when a task mentions Apple Notes, Notes.app, or personal notes; do not use memo, a Notes MCP, or the Notes database."
+version: 3.0.0
 author: Bryan
 license: MIT
 platforms: [macos]
 metadata:
   hermes:
     tags: [Notes, Apple, macOS, note-taking, pkm]
-    related_skills: [apple-notes-pkm, knowledge-capture]
+    related_skills: [vault-pkm, knowledge-capture]
 ---
 
 # Apple Notes
 
-This replaces the bundled `memo`-based guidance, which advertised CLI syntax the
-installed tool never had (its search was an interactive `fzf` flow that
-materialized every note). `memo` is not installed and is not the backend.
+Bryan's personal second brain is the Markdown vault `~/second-brain`, synced
+only through Forgejo Git. Apple Notes held it from 2026-09-16 to 2026-10-31;
+everything written there in that window was brought back into the vault
+(decision: `~/second-brain/Decisions/2026-10-31-decision-return-personal-second-brain-to-markdown-git.md`).
 
 ## What to load instead
 
-- **`apple-notes-pkm`** (personal, `~/.hermes/skills/personal/apple-notes-pkm`)
-  — bounded search, exact-id read, guarded create/append/replace, links and
-  backlinks, all hard-scoped to the iCloud folder `Second Brain`. Every Notes
-  interaction goes through its helper:
-
-  ```bash
-  python3 ~/.hermes/skills/personal/apple-notes-pkm/scripts/apple-notes-pkm.py health
-  python3 ~/.hermes/skills/personal/apple-notes-pkm/scripts/apple-notes-pkm.py search "drz250 valve" --limit 10
-  ```
-
+- **`vault-pkm`** plus `~/second-brain/AGENTS.md` — personal recall and capture.
 - **`knowledge-capture`** — decides at a resting point whether something is
-  worth keeping and whether it is personal (Apple Notes) or project (Markdown
-  vault via `vault-pkm`).
+  worth keeping and whether it belongs in `~/second-brain` or a project vault.
 
 ## Rules
 
-1. Never return or read the whole library; search is capped and content is
-   fetched only by exact id.
-2. Never delete a note; the helper has no delete and neither does this skill.
-3. Never widen macOS permissions. Every Notes call runs through the signed
-   native helper **Apple Notes PKM Helper**, not through Python's own identity.
-   If the helper reports Automation permission denied (exit 5), stop and tell
-   Bryan; the one-time grant for that named helper is his action. Exit 7 means
-   the native helper is missing or its signature does not match the expected
-   identity — a build/setup problem, not a permission one.
-4. Notes outside the `Second Brain` folder are out of scope for agents.
-5. `/Users/bryan/second-brain` is a frozen Git rollback archive, not a source.
+1. Do not read Apple Notes as a current source and do not write to it. The
+   iCloud folder `Second Brain` is a rollback copy only; never delete it.
+2. If Bryan explicitly asks about something only in Apple Notes, the retired
+   `apple-notes-pkm` helper source remains in the dotfiles pool
+   (`dot-agents/skills/apple-notes-pkm/`); use it read-only and say that it is
+   the rollback copy.
+3. `memo`, a Notes MCP, the Notes database, and widened macOS permissions stay
+   out of scope.

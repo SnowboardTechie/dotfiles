@@ -25,11 +25,11 @@ making sense of project context that doesn't live in code — invoke the
 `AGENTS.md` at its root (`vault/AGENTS.md`), read it after the skill — it
 overrides skill defaults for that specific vault.
 
-Bryan's **personal** second brain is Apple Notes (iCloud folder `Second
-Brain`), not a Markdown vault. For personal recall or capture — decisions,
-explorations, ideas, vehicles, home, tools, gifts, journal, learning — invoke
-the `apple-notes-pkm` skill and use only its helper script. At a session's
+Bryan's **personal** second brain is the Markdown vault `~/second-brain/`
+(Forgejo Git is its only sync; read its `AGENTS.md` after `vault-pkm`). For
+personal recall or capture — decisions, explorations, ideas, vehicles, home,
+tools, gifts, journal, learning — use it through `vault-pkm`. At a session's
 resting point, `knowledge-capture` decides whether anything is worth keeping
-and routes personal → `apple-notes-pkm`, project → `vault-pkm`.
-`~/second-brain/` on disk is a frozen read-only rollback archive: never write
-there and never treat it as current.
+and routes personal → `~/second-brain`, project → that repo's vault. Apple
+Notes' `Second Brain` folder is a retired rollback copy (2026-10-31): never
+read it as current and never write to it.

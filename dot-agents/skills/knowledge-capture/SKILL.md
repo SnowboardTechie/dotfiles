@@ -7,10 +7,10 @@ description: >
   Triggers: "anything worth capturing?", "any notes we should save from this
   session?", "should this go in the vault / second brain?", "capture this",
   or /knowledge-capture (formerly /vault-capture). Routes personal knowledge
-  to apple-notes-pkm (Apple Notes "Second Brain") and project/workspace
-  knowledge to vault-pkm (Markdown vaults). This skill is the judgment of
-  *whether, what, and which backend*; the mechanics belong to the backend
-  skill it hands off to.
+  to the ~/second-brain Markdown vault and project/workspace knowledge to that
+  repository's vault, both written through vault-pkm. This skill is the
+  judgment of *whether, what, and which destination*; the mechanics belong to
+  vault-pkm and the destination vault's AGENTS.md.
 ---
 
 # Knowledge capture
@@ -22,11 +22,12 @@ mechanics.**
 
 | Knowledge is about… | Backend | Skill |
 |---|---|---|
-| Bryan's life: decisions, explorations, ideas, vehicles, home, tools, gifts, journal, learning | Apple Notes `Second Brain` (iCloud) | `apple-notes-pkm` |
+| Bryan's life: decisions, explorations, ideas, vehicles, home, tools, gifts, journal, learning | `~/second-brain` (Markdown, Forgejo Git) | `vault-pkm` + `~/second-brain/AGENTS.md` |
 | A project or workspace: code, plans, issues, handoffs, architecture, DX artifacts, reviews | that repo's Markdown vault (`vault/`, `~/code/notes/<project>/`) | `vault-pkm` |
 | Agent behaviour corrections, "remember to…" for the agent itself | the harness's native memory (e.g. Claude auto-memory, Hermes `MEMORY.md`/`USER.md`) | none — name it and let that native system catch it |
 
-`~/second-brain` on disk is a frozen rollback archive. Never write there and
+Apple Notes' `Second Brain` folder is a retired rollback copy (personal
+knowledge returned to `~/second-brain` on 2026-10-31). Never write there and
 never treat it as a live source.
 
 ## Bryan's closeout authorization (overrides the slate gate below)
@@ -41,8 +42,7 @@ suggestions or make structural changes under this exception.
 
 Answer a substantive new question before capture housekeeping. If Bryan
 interrupts drafting to resume discussion, stop writing. Before resuming a
-partial capture, re-read the live target (a fresh `read` in Notes, live Git for
-a vault): another session may already have saved it or advanced the plan.
+partial capture, re-read the live target (pull and read the live Git copy): another session may already have saved it or advanced the plan.
 
 Two failure modes this exists to prevent:
 
@@ -59,10 +59,11 @@ Two failure modes this exists to prevent:
 ### Step 1 — Route, then load the backend's conventions
 
 Decide the backend from the table above before anything else. Mixed sessions
-split: the project part goes to the project vault, the personal part to Notes.
-Then load that backend's skill — `apple-notes-pkm` (run `health`, search for
-existing notes to extend) or `vault-pkm` (vault readiness, `INDEX.md`, local
-`AGENTS.md`). Do not freelance structure from memory in either backend.
+split: the project part goes to the project vault, the personal part to
+`~/second-brain`. Then load `vault-pkm` and the destination's own `AGENTS.md`
+(`~/second-brain/AGENTS.md` for personal: note shapes, folders, frontmatter,
+commit discipline; a project's `vault/AGENTS.md` and `INDEX.md` otherwise).
+Search for existing notes to extend. Do not freelance structure from memory.
 
 ### Step 2 — Sweep the session for candidates
 
@@ -85,7 +86,8 @@ duplicate.
 - **capture-now** — shaped knowledge: a decision + its why, a confirmed
   investigation, an observed behaviour, a learning → a full note.
 - **defer-until-signal** — a live but unshaped idea → a one-line seed (an
-  `Idea` note in Notes; an "Open threads" line in a vault `INDEX.md`).
+  `Idea` note in `~/second-brain`; an "Open threads" line in a project vault's
+  `INDEX.md`).
 - **decline** — routine, derivable, or failed a gate → nothing.
 
 ### Step 4 — Present the slate; the author picks
@@ -96,12 +98,12 @@ common answer.
 
 ### Step 5 — Write only what's greenlit, via the backend skill
 
-Personal → `apple-notes-pkm`: search first, name folder + title, `append` to an
-existing note where one fits, otherwise `create`; the helper verifies the
-write. Project → `vault-pkm`: filename, frontmatter, MOC link, never-orphan,
-commit discipline.
+Both destinations → `vault-pkm`: search first, name the path, extend an
+existing note where one fits, otherwise create one with the vault's filename,
+frontmatter, and linking rules; then commit and push per that vault's
+`AGENTS.md` and confirm local `HEAD` equals the remote.
 
-Any structural change — a new Notes folder, a new MOC — is itself a decision:
+Any structural change — a new folder, a new MOC — is itself a decision:
 name it and get a yes first.
 
 ---
@@ -111,7 +113,7 @@ name it and get a yes first.
 - The capture question is not write authorization (closeout exception above).
 - Provenance gate requires adoption.
 - "Nothing worth capturing" is a valid result.
-- Route before writing; never put project plans in Notes or personal
+- Route before writing; never put project plans in `~/second-brain` or personal
   reflection in a project vault because it was convenient.
 - defer ≠ a full note.
 - Don't duplicate what instructions, code, git, or an existing note hold.
@@ -120,13 +122,12 @@ name it and get a yes first.
 
 - Writing before showing a slate (outside an authorized closeout).
 - Capturing an agent-proposed convention Bryan has not adopted.
-- Writing to `~/second-brain` on disk, or reading it as if it were current.
+- Writing to Apple Notes, or reading it as if it were current.
 - Creating a folder/MOC to fit a capture without asking.
 - Manufacturing a note because a blank answer feels unhelpful.
 
 ## See also
 
-- `apple-notes-pkm` — personal backend: bounded search/read, guarded writes,
-  note shapes, folders, linking.
-- `vault-pkm` — project/workspace backend: topology, frontmatter, links,
-  commit discipline.
+- `vault-pkm` — Markdown vault mechanics for both destinations: topology,
+  frontmatter, links, commit discipline.
+- `~/second-brain/AGENTS.md` — personal note shapes, folders, and Git rules.

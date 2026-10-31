@@ -1,25 +1,22 @@
 ---
 name: vault-pkm
 description: >
-  PKM conventions for Bryan's project and workspace Markdown vaults (tracked
-  vault/ dirs in project or workspace repos, plus retained snapshots under
-  ~/code/notes/). Use when working in a repo with a top-level vault/ or in
-  ~/code/notes/ — or when capturing project decisions, investigations,
-  learnings, plans, or project context that doesn't live in code. Encodes
-  MOC-and-spoke topology, atomic-spoke discipline, look-first/never-orphan
-  rule, compiled-project ingest/reconciliation, filename conventions,
-  frontmatter shape, and per-vault git commit discipline. Personal knowledge
-  is NOT a vault any more: it lives in Apple Notes under apple-notes-pkm, and
-  ~/second-brain is a frozen rollback archive.
+  PKM conventions for Bryan's project vaults (tracked vault/ dirs in project or
+  workspace repos, plus retained snapshots under ~/code/notes/) and personal
+  vault (~/second-brain/). Use when working in a repo with a top-level vault/,
+  in ~/code/notes/, or in ~/second-brain/ — or when capturing decisions, taking
+  notes, investigating debugs, recording learnings, or making sense of project
+  context that doesn't live in code. Encodes MOC-and-spoke topology,
+  atomic-spoke discipline, look-first/never-orphan rule, compiled-project
+  ingest/reconciliation, filename conventions, frontmatter shape, and per-vault
+  git commit discipline.
 ---
 
 # Vault PKM conventions
 
-Bryan's project vaults are PKM-style: MOC-and-spoke topology, atomic spokes,
-linked richly. A living graph, not a filing pile. This skill encodes the shared
-conventions across his project and workspace vaults. Personal knowledge moved
-to Apple Notes on 2026-09-16 (`apple-notes-pkm`); `~/second-brain/` is a frozen
-read-only rollback archive and is never a write destination or a live source.
+Bryan's vaults are PKM-style: MOC-and-spoke topology, atomic spokes, linked
+richly. A living graph, not a filing pile. This skill encodes the shared
+conventions across his project vaults and personal vault.
 
 ## When this applies
 
@@ -29,14 +26,15 @@ read-only rollback archive and is never a write destination or a live source.
 - You're operating in `~/code/notes/<project>/` directly (retained
   dormant/historical snapshots — check the vault's INDEX.md disposition before
   treating contents as current)
-- The user is capturing a project decision, investigation, learning, or
-  exploration (personal ones route to `apple-notes-pkm` via `knowledge-capture`)
+- You're operating in `~/second-brain/`
+- The user is capturing a decision, investigation, learning, or exploration
 - You're asked "where should this note go?" or "what does the vault say about X?"
 
 ## Step 1 — check for per-vault overrides
 
 Before applying defaults, check if the vault has an `AGENTS.md` at its root:
 - Project vaults: `vault/AGENTS.md` (= `~/code/notes/<vault>/AGENTS.md` via symlink)
+- `~/second-brain/`: `~/second-brain/AGENTS.md` (already exists — IS the override file for that vault)
 
 If present:
 - Read the override file. Its rules take precedence where they conflict with this skill.
@@ -46,7 +44,9 @@ If not present, proceed with skill defaults below.
 
 ## Step 2 — at session start in a vault
 
-Read the vault's entry point: `vault/INDEX.md` (the Map of Content).
+Read the vault's entry point:
+- Project vaults: `vault/INDEX.md` (the Map of Content)
+- ~/second-brain/: the `AGENTS.md` at the vault root
 
 Check INDEX.md's `index-last-verified:` frontmatter field. If older than 30 days,
 mention this to the user — the Map of Content may have drifted from the vault's
@@ -90,10 +90,8 @@ routing table dynamically. The mechanism differs; the content is the same.
 
 ## See also
 
-- `apple-notes-pkm` — Bryan's personal second brain (Apple Notes). Personal
-  note shapes (Exploration / Decision / Idea) live there now; nothing personal
-  is written to a Markdown vault.
-- `knowledge-capture` — the router that decides personal vs. project at a
-  session's resting point.
+- `~/second-brain/AGENTS.md` — second-brain has its own note shapes
+  (Exploration / Decision / Idea) and frontmatter tuned for personal-knowledge
+  work; this skill defers to that file for second-brain specifics
 - `~/code/notes/AGENTS.md` — orientation for agents that land in the
   project-vaults repo directly

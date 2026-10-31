@@ -84,13 +84,13 @@ if [[ -z "$SKILLS_SRC" || ! -d "$SKILLS_SRC" ]]; then
 fi
 
 # Common core shared by Claude, OpenCode, Pi, and Codex: dev/PR and PKM.
-# PKM is split by backend: vault-pkm (project/workspace Markdown vaults),
-# apple-notes-pkm (personal second brain in Apple Notes), knowledge-capture
-# (the router that decides which of the two a capture belongs to).
+# PKM: vault-pkm (every Markdown vault, including the personal ~/second-brain)
+# and knowledge-capture (the router that decides personal vs. project).
+# apple-notes-pkm was retired 2026-10-31 and is curated for no runtime.
 # black-box-verification is a shared verification method (see
 # dot-agents/upstreams/pstack-claude.json), so even lean Pi receives it.
 COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review code-review
-    vault-pkm apple-notes-pkm knowledge-capture session-handoff
+    vault-pkm knowledge-capture session-handoff
     black-box-verification)
 
 # Claude dropped these on 2026-09-28 (no recorded use); OpenCode, Pi, and Codex keep them.
@@ -130,15 +130,15 @@ OPENCODE_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
 
 # Hermes keeps its bundled/local obsidian and vault-pkm implementations. Personal
 # skills live in a dedicated category so the shared pool remains canonical while
-# Hermes's curator and bundled-skill lifecycle stay separate. apple-notes-pkm is
-# the one personal-knowledge backend every runtime shares, Hermes included.
+# Hermes's curator and bundled-skill lifecycle stay separate. Personal knowledge
+# is ~/second-brain, reached through Hermes's own vault-pkm.
 # `rex` is Hermes-only: Rex's own `rex skill setup` already covers Claude, Codex,
 # OpenCode, and Pi (its skill dir lives in ~/.agents/skills/rex), but not Hermes.
 HERMES_SKILLS=(
     ship worktrunk update-pr-description pr-self-review code-review multiagent-pr-review
     manual-merge issue-create issue-plan issue-work loop-issue
     coding-agent-handoff-supervision
-    apple-notes-pkm knowledge-capture skill-retrospective adr-and-spec-coach voice-bryan
+    knowledge-capture skill-retrospective adr-and-spec-coach voice-bryan
     session-handoff next-session black-box-verification
     dx-target dx-preview conforming-tech-specs proven-cores
     catalog-review dependency-review dependency-triage sprint-deliverable-update

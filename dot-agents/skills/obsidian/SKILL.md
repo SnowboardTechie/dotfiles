@@ -38,7 +38,7 @@ BASE_PATH="~/notes"
 | Vault | Path | Purpose |
 |-------|------|---------|
 | Workday | `${BASE_PATH}/workday` | Work - Simpler Grants development |
-| ~~Second Brain~~ | (retired 2026-09-16) | Personal knowledge moved to Apple Notes — use `apple-notes-pkm`; `~/second-brain` is a frozen archive |
+| Second Brain | `~/second-brain` | Personal - vehicles, hobbies, learning (agent-first; Git/Forgejo sync only — see its `AGENTS.md`) |
 | Burnt Ice | `${BASE_PATH}/burnt-ice` | Personal - Game development |
 
 ---
