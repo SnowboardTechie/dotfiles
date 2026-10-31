@@ -63,16 +63,21 @@ Herdr when `HERDR_ENV`/`HERDR_PANE_ID` are set, else Rex when `REX_BLOCK` and
 `REX_SESSION` are. Herdr wins because it can run inside a Rex pane. Outside both
 it refuses; give Bryan the prompt instead.
 
-**A refusal from the terminal tool doesn't show where the session runs.** When the tool's
-commands run under the Hermes gateway (`$PPID` is `hermes ... gateway run`, with
-no TTY), its environment has no `REX_*` or `HERDR_*` variables, even though this
-session's chat runs in a pane. Before saying the session isn't in a pane, find
-this session's `hermes chat` process: `ps eww` on each Hermes process with a
-TTY, matching `PWD` to this session's working directory. Read its `REX_SESSION`,
-`REX_BLOCK`, `REX_SERVER` and `REX_BIN_DIR` (or its `HERDR_*` variables), export
-them, and dry-run again. If more than one process matches, ask Bryan which pane.
-Sessions created after `terminal.client_env_passthrough` lists the `REX_*` names
-get them directly; `HERDR_*` and older sessions still need this lookup.
+**Under the gateway, the helper finds the pane itself.** When the tool's commands
+run under the Hermes gateway (`$PPID` is `hermes ... gateway run`, with no TTY),
+their environment has no `REX_*` or `HERDR_*` variables, even though this
+session's chat runs in a pane. The helper then takes this session's TTY from
+Hermes's own record, finds the one Hermes process on it, and adopts that
+process's `HERDR_*`/`REX_*` values, read exactly from the kernel. `host_env_from`
+in its output names the TTY and pid. Don't export variables by hand first.
+
+If it still refuses, its `lookup` field says why (no TTY record, several Hermes
+processes on the TTY, or a process outside both hosts); give Bryan the prompt
+then. Never scrape `ps eww` to fill the variables in: it joins variables with
+spaces, and Rex's `REX_BIN_DIR` contains spaces ("Application Support",
+"Rex Server.app"), so a hand-parsed value silently breaks the launch. To inspect
+a process's host variables, run `python3 dot-agents/lib/terminal_host.py <pid>`
+from the dotfiles repo.
 
 - **Herdr:** it refuses unless exactly one Hermes pane runs on this session's
   TTY. It finds that pane from Hermes's own TTY record and Herdr's process info,

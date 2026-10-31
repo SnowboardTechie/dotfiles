@@ -24,6 +24,11 @@ Commands:
   whoami                       print this session's id, TTY and Herdr pane
   launch --prompt-file F --name N [--cwd D] [--skills S] [--focus] [--dry-run]
 
+Gateway: when this process has no HERDR_* or REX_* variables (the agent's
+commands run under the Hermes gateway, not in the pane), they are adopted from
+the one Hermes process on this session's recorded TTY, read exactly from the
+kernel. ``host_env_from`` in the output names that TTY and pid.
+
 Environment: HERMES_SESSION_ID (required), HERMES_HOME (default ~/.hermes),
 HERDR_BIN (default ``herdr`` on PATH), REX_BIN (default ``rex`` on PATH, then
 ``$REX_BIN_DIR/rex``). Exit 0 on success, 1 on a refusal or a
@@ -62,9 +67,20 @@ class Refused(Exception):
         self.detail = detail
 
 
+class CannotRun(Refused):
+    """The host's binary couldn't be started at all: nothing about panes is known."""
+
+
+def run_host(exe: str, args: tuple[str, ...], timeout: int) -> subprocess.CompletedProcess:
+    try:
+        return subprocess.run([exe, *args], capture_output=True, text=True, timeout=timeout)
+    except OSError as exc:
+        raise CannotRun(f"cannot run {exe}", error=str(exc)) from exc
+
+
 def herdr(*args: str) -> dict:
     exe = os.environ.get("HERDR_BIN_PATH") or os.environ.get("HERDR_BIN") or "herdr"
-    done = subprocess.run([exe, *args], capture_output=True, text=True, timeout=180)
+    done = run_host(exe, args, 180)
     if done.returncode != 0:
         raise Refused(f"herdr {args[0]} {args[1] if len(args) > 1 else ''} failed".strip(),
                       exit_code=done.returncode, stderr=done.stderr.strip()[-800:], stdout=done.stdout.strip()[-800:])
@@ -96,6 +112,43 @@ def session_tty(session: str, home: Path) -> str:
     if len(ttys) != 1:
         raise Refused("this session's TTY is not recorded exactly once", session=session, ttys=ttys, records=str(records))
     return ttys[0]
+
+
+def tty_processes(tty: str) -> list[tuple[int, int, str]]:
+    """(pid, ppid, command) of every process on the TTY."""
+    done = subprocess.run(["ps", "-t", tty, "-o", "pid=,ppid=,command="], capture_output=True, text=True, timeout=10)
+    procs = []
+    for line in done.stdout.splitlines():
+        fields = line.split(None, 2)
+        if len(fields) >= 2 and fields[0].isdigit() and fields[1].isdigit():
+            procs.append((int(fields[0]), int(fields[1]), fields[2] if len(fields) > 2 else ""))
+    return procs
+
+
+def adopt_session_host(session: str, home: Path) -> dict:
+    """Take the host variables from this session's own Hermes process.
+
+    The agent's commands may run under the Hermes gateway, whose environment has
+    no Herdr or Rex variables even though the chat runs in a pane. Hermes
+    records the chat's TTY; the one Hermes process on it (its children aside)
+    holds the pane's variables. Only HERDR_* and REX_* are adopted, read exactly
+    from the kernel (terminal_host.process_environment), never from ``ps eww``.
+    """
+    tty = session_tty(session, home)
+    hermes = [p for p in tty_processes(tty) if "/.hermes/" in p[2] or Path(p[2].split(" ", 1)[0]).name == "hermes"]
+    pids = {pid for pid, _, _ in hermes}
+    roots = [pid for pid, ppid, _ in hermes if ppid not in pids]
+    if len(roots) != 1:
+        raise Refused("no single Hermes process runs on this session's TTY", tty=tty, pids=sorted(roots))
+    try:
+        env = terminal_host.process_environment(roots[0])
+    except OSError as exc:
+        raise Refused("cannot read this session's Hermes process environment", tty=tty, pid=roots[0], error=str(exc)) from exc
+    adopted = {k: v for k, v in env.items() if k.startswith(terminal_host.HOST_PREFIXES)}
+    if terminal_host.detect(adopted) is None:
+        raise Refused("not running inside Herdr or Rex: no pane to split", tty=tty, pid=roots[0])
+    os.environ.update(adopted)
+    return {"tty": tty, "pid": roots[0]}
 
 
 def caller_pane(session: str, home: Path) -> dict:
@@ -164,7 +217,7 @@ def launch(args: argparse.Namespace, session: str, home: Path) -> dict:
 
 
 def rex(host: terminal_host.Host, *args: str) -> dict:
-    done = subprocess.run([host.binary, *args], capture_output=True, text=True, timeout=60)
+    done = run_host(host.binary, args, 60)
     if done.returncode != 0:
         raise Refused(f"rex {' '.join(args[:2])} failed", exit_code=done.returncode,
                       stderr=done.stderr.strip()[-800:], stdout=done.stdout.strip()[-800:])
@@ -192,6 +245,8 @@ def is_hermes(process: dict | None) -> bool:
 def rex_caller(session: str, host: terminal_host.Host) -> dict:
     try:
         info = rex_process(host, host.pane)
+    except CannotRun:
+        raise
     except Refused as exc:
         raise Refused("this session's Rex block is not on the connected server", block=host.pane,
                       rex_session=host.session, **exc.detail) from exc
@@ -266,12 +321,21 @@ def main(argv: list[str] | None = None) -> int:
         if not session:
             raise Refused("HERMES_SESSION_ID is not set: not running inside a Hermes session")
         host = terminal_host.detect()
+        adopted = None
+        if host is None:
+            try:
+                adopted = adopt_session_host(session, home)
+            except Refused as exc:
+                raise Refused("not running inside Herdr or Rex: no pane to split", lookup=exc.reason, **exc.detail) from exc
+            host = terminal_host.detect()
         if host is None:
             raise Refused("not running inside Herdr or Rex: no pane to split")
         if host.kind == "rex":
             result = rex_caller(session, host) if args.command == "whoami" else rex_launch(args, session, host)
         else:
             result = caller_pane(session, home) if args.command == "whoami" else launch(args, session, home)
+        if adopted is not None:
+            result = {**result, "host_env_from": adopted}
     except Refused as exc:
         print(json.dumps({"ok": False, "reason": exc.reason, **exc.detail}, indent=2))
         return 1

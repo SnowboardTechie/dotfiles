@@ -262,7 +262,9 @@ Hermes tool shells may not inherit the CLI's Herdr variables, so an empty
 reporting a transport blocker, find this session's own Hermes process by walking
 the tool shell's ancestry (`p=$$; while [ $p -gt 1 ]; do ps -o command= -p $p;
 p=$(ps -o ppid= -p $p); done`), read its `HERDR_*` values with
-`ps eww -o command= -p PID`, and export them. Never pick the process by matching
+`python3 ~/code/dotfiles/dot-agents/lib/terminal_host.py PID` (exact JSON; never
+hand-parse `ps eww`, which joins variables with spaces and breaks any value
+that contains one), and export them. Never pick the process by matching
 cwd: several Hermes sessions often share a project cwd, and their panes belong to
 other conversations. An ancestry ending at `hermes gateway run` does NOT prove the
 session has no caller pane: with the Claude direct-SDK provider, a CLI session in a

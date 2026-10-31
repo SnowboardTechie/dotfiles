@@ -333,6 +333,113 @@ class RexLaunchTest(unittest.TestCase):
         self.assertEqual(self.calls(), [])
 
 
+FAKE_PS_TTY = textwrap.dedent(
+    """\
+    #!/usr/bin/env python3
+    import json, os, sys
+    state = json.load(open(os.environ["FAKE_STATE"]))
+    if "-t" in sys.argv:
+        for line in state["tty_procs"].get(sys.argv[sys.argv.index("-t") + 1], []):
+            print(line)
+    """
+)
+
+
+class GatewayAdoptionTest(unittest.TestCase):
+    """The helper runs under the Hermes gateway, with no host variables of its own.
+
+    A real child process stands in for this session's Hermes chat, so its
+    environment is read from the kernel exactly as it would be live, including
+    a REX_BIN_DIR with spaces in it, as the Rex app sets it.
+    """
+
+    def setUp(self) -> None:
+        self.tmp = Path(tempfile.mkdtemp(prefix="next-session-gw-test-"))
+        self.bin_dir = self.tmp / "bin"
+        self.bin_dir.mkdir()
+        ps = self.bin_dir / "ps"
+        ps.write_text(FAKE_PS_TTY)
+        ps.chmod(0o755)
+        self.rex_dir = self.tmp / "Application Support" / "Rex Server.app" / "Contents" / "MacOS"
+        self.rex_dir.mkdir(parents=True)
+        rex = self.rex_dir / "rex"
+        rex.write_text(FAKE_REX)
+        rex.chmod(0o755)
+        self.home = self.tmp / "hermes"
+        (self.home / "terminal-sessions").mkdir(parents=True)
+        (self.home / "terminal-sessions" / "tty-dev-ttys003").write_text(json.dumps({"session_id": SESSION, "cwd": "/", "ts": 1}))
+        self.cwd = self.tmp / "work"
+        self.cwd.mkdir()
+        self.prompt = self.tmp / "prompt.md"
+        self.prompt.write_text("Work the map.\n")
+        self.log = self.tmp / "rex.log"
+        self.children: list[subprocess.Popen] = []
+        hermes_fg = {"pid": 42, "name": "python3.14", "argv0": "/Users/me/.hermes/tools/python/bin/python3", "cwd": str(self.cwd)}
+        self.state = {"blocks": {"block:me": [hermes_fg], "block:new": [hermes_fg]}, "tty_procs": {}}
+
+    def tearDown(self) -> None:
+        for child in self.children:
+            child.kill()
+            child.wait()
+
+    def chat_process(self, host_env: dict) -> int:
+        env = {k: v for k, v in os.environ.items() if not k.startswith(("HERDR_", "REX_"))}
+        env.update(host_env)
+        child = subprocess.Popen(["python3", "-c", "import time; time.sleep(60)"], env=env)
+        self.children.append(child)
+        return child.pid
+
+    def rex_env(self) -> dict:
+        return {"REX_SESSION": "session:s1", "REX_BLOCK": "block:me", "REX_BIN_DIR": str(self.rex_dir),
+                "REX_SERVER": "unix:///Users/me/Library/Application%20Support/rex/server.sock"}
+
+    def on_tty(self, *lines: str) -> None:
+        self.state["tty_procs"]["ttys003"] = list(lines)
+
+    def run_script(self, *args: str, env_extra: dict | None = None) -> tuple[int, dict]:
+        state = self.tmp / "state.json"
+        state.write_text(json.dumps(self.state))
+        env = {k: v for k, v in os.environ.items() if not k.startswith(("HERDR_", "REX_"))}
+        env.update({"PATH": f"{self.bin_dir}:/usr/bin:/bin", "HERMES_SESSION_ID": SESSION, "HERMES_HOME": str(self.home),
+                    "FAKE_STATE": str(state), "FAKE_LOG": str(self.log), "NEXT_SESSION_REX_START_TIMEOUT": "3",
+                    **(env_extra or {})})
+        done = subprocess.run(["python3", str(SCRIPT), *args], capture_output=True, text=True, env=env, timeout=60)
+        return done.returncode, json.loads(done.stdout)
+
+    def test_adopts_rex_variables_with_spaces_from_the_sessions_hermes_process(self) -> None:
+        chat = self.chat_process(self.rex_env())
+        self.on_tty("  500     1 -zsh", f"{chat:5d}   500 /Users/me/.hermes/tools/python/bin/python3 -I -c import os",
+                    f"  777 {chat:5d} /Users/me/.hermes/tools/python/bin/python3 -m some_mcp_server")
+        code, out = self.run_script("launch", "--prompt-file", str(self.prompt), "--name", "wf-9")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(out["host_env_from"], {"tty": "ttys003", "pid": chat})
+        self.assertEqual((out["host"], out["caller_pane"], out["pane"]), ("rex", "block:me", "block:new"))
+        split = next(c for c in [json.loads(l) for l in self.log.read_text().splitlines()] if c[:3] == ["api", "call", "session.new_split"])
+        self.assertEqual(json.loads(split[3])["session_id"], "session:s1")
+
+    def test_refuses_two_hermes_processes_on_the_tty(self) -> None:
+        first, second = self.chat_process(self.rex_env()), self.chat_process(self.rex_env())
+        self.on_tty(f"{first} 1 /Users/me/.hermes/tools/python/bin/python3", f"{second} 1 /Users/me/.hermes/tools/python/bin/python3")
+        code, out = self.run_script("whoami")
+        self.assertEqual(code, 1)
+        self.assertIn("not running inside Herdr or Rex", out["reason"])
+        self.assertIn("no single Hermes process", out["lookup"])
+        self.assertEqual(out["pids"], sorted([first, second]))
+
+    def test_refuses_when_the_hermes_process_is_outside_both_hosts(self) -> None:
+        chat = self.chat_process({})
+        self.on_tty(f"{chat} 1 /Users/me/.hermes/tools/python/bin/python3")
+        code, out = self.run_script("whoami")
+        self.assertEqual(code, 1)
+        self.assertIn("not running inside Herdr or Rex", out["reason"])
+
+    def test_a_missing_host_binary_is_a_refusal_not_a_traceback(self) -> None:
+        code, out = self.run_script("whoami", env_extra={**self.rex_env(), "REX_BIN": str(self.tmp / "no" / "rex")})
+        self.assertEqual(code, 1)
+        self.assertIn("cannot run", out["reason"])
+        self.assertIn("No such file", out["error"])
+
+
 class TerminalHostTest(unittest.TestCase):
     def setUp(self) -> None:
         import sys
@@ -352,6 +459,20 @@ class TerminalHostTest(unittest.TestCase):
 
     def test_nothing(self) -> None:
         self.assertIsNone(self.th.detect({}))
+
+    def test_cli_prints_host_variables_exactly_even_with_spaces(self) -> None:
+        spaced = "/Users/me/Library/Application Support/x/Rex Server.app/Contents/MacOS"
+        env = {k: v for k, v in os.environ.items() if not k.startswith(("HERDR_", "REX_"))}
+        env.update({"REX_BIN_DIR": spaced, "REX_BLOCK": "block:b", "UNRELATED": "x y"})
+        child = subprocess.Popen(["python3", "-c", "import time; time.sleep(60)"], env=env)
+        try:
+            done = subprocess.run(["python3", str(REPO_ROOT / "dot-agents" / "lib" / "terminal_host.py"), str(child.pid)],
+                                  capture_output=True, text=True, timeout=30)
+        finally:
+            child.kill()
+            child.wait()
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertEqual(json.loads(done.stdout), {"REX_BIN_DIR": spaced, "REX_BLOCK": "block:b"})
 
 
 if __name__ == "__main__":
