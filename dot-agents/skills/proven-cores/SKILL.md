@@ -56,7 +56,13 @@ Do not raise it for:
    itself only checks that `PROOF.bend` imports `LAWS.bend`, so a weakened law passes.
 2. **Make laws quantify only over the exported entry point.** Define every predicate and the replay
    of operations inside `LAWS.bend`. A law that reads a helper from the core can be made vacuous by
-   editing that helper.
+   editing that helper. The core's *types* are a second channel: Bend binds constructor fields by
+   position while the host sends them by name, so reordering two same-typed fields in the unapproved
+   core silently changes what a law means. Reproduce every type the laws read inside `LAWS.bend` so
+   the digest covers it, and have the gate compare declarations as equal token sequences found by
+   tokens, not lines (a line regex misses a tab, newline or leading space after `type`; a substring
+   test accepts a body cut short by a blank or comment line). Fail closed on an unresolved
+   `Core.<X>` and on duplicate declarations.
 3. **Test the host glue.** Ordinary tests must show the host routes its decisions through the core;
    the proof covers only the core.
 4. **Pin the version and upgrade deliberately.** Releases are weekly, and 2.0.38 changed how JS hosts
@@ -124,14 +130,32 @@ Do not raise it for:
 - **Budget for basics.** Base ships almost no lemmas.
 - **A rejection is not a bug.** Brittle proofs reject safe changes. Classify a rejected change by a
   concrete counterexample from the compiled core, not by the gate's verdict.
-- **Get a fresh adversarial review before the laws go to Bryan for approval.** Ask it to read each
-  law and predicate against the decision in plain English, hunting for vacuity, quantifier gaps
-  (laws only over `fresh`), unbounded side fields and trust-boundary bypasses in the gate. Approval
-  freezes the text by digest, so a gap found after approval costs a second approval round. Have the
-  review also write a plain-English reading of each law for Bryan.
+- **Get fresh adversarial reviews before the laws go to Bryan for approval, until one comes back
+  clean.** Ask each to read every law and predicate against the decision in plain English, hunting
+  for vacuity, quantifier gaps (laws only over `fresh`), unbounded side fields and trust-boundary
+  bypasses in the gate, and to prove each finding with an edited core the laws accept. Approval
+  freezes the text by digest, so a gap found after approval costs a second approval round. Expect
+  several rounds: each revision adds clauses with holes of their own, so scope later reviews to the
+  delta plus re-running the earlier attacks. Have the review also write a plain-English reading of
+  each law for Bryan.
+- **Hole classes that recur in decision cores; check each before approval:**
+  - a choice must rest on a *successful* reading since the last decision, or a core that never asks
+    for readings (or counts a failed one) satisfies every law while enforcing nothing;
+  - every waiting, refused or backed-off state must be required to be re-probed somewhere, or a
+    lawful core never recovers it; and a mandated wait whose end can already be past is a busy loop;
+  - model and search lists of at least three entries: two-entry models hide every "healthy one in
+    the middle" case.
+- **Bring each product choice a review surfaces to Bryan as its own question before the approval
+  request**, with the trace behind it and a recommendation, then fold every answer and statement fix
+  into one revision so he approves one digest.
+- **Show the laws where Bryan can read them.** Publish the candidate as a draft PR with the plain
+  reading in its description and give him the exact approval line to post; never post it yourself.
 - **Calibrate every checker.** A randomized check must find a planted bug before its silence means
   anything. Low-bit moduli of a power-of-two LCG produced near-identical sequences and missed the
-  planted bug entirely.
+  planted bug entirely. The same holds for each move of an exhaustive search: show every move
+  (for example "jump the clock to the next reset") actually fires, because a move that silently never
+  runs (`Math.min(...later, now)` always returns `now`) leaves "no counterexample" meaning far less
+  than reported. Recount the runner's caught-bug total from its own output before reporting it.
 
 ## Cost reference (one data point)
 

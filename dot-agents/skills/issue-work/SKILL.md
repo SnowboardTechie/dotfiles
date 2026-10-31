@@ -617,6 +617,21 @@ weaker review, or fabricated completion claim.
 6. Asking for plan or PR permission already carried by an imperative work command.
 7. Treating a worker report or green focused test as final acceptance.
 8. Keeping panes open through publication or merge.
+9. Merging a PR that makes the live service's current config invalid (a newly
+   required field, a now-refused key) before its live config change is ready.
+   Anything that rebuilds the deployment from main then breaks a running
+   service. State the merge order in the PR body and merge it together with, and
+   immediately before, the uptake that changes the config.
+10. Running a stacked follow-up PR in the first PR's worktree. Worker identity
+    is bound to worktree and branch, so stack the next PR on its own branch and
+    worktree (`wt switch --create <next> --base <first-branch>`) with a fresh
+    worker, and close the first worker once its corrections are spent. Carry the
+    first PR's remaining final-review Minors into the stacked PR's correction
+    when the first has none left.
+11. Gating in a worktree whose `node_modules` predates the lockfile. A checkout
+    installed before new workspace packages lacks their tools, and the typecheck
+    fails with "command not found". Run `npm ci` from the unchanged lockfile in
+    the worktree first, and confirm the lockfile didn't change.
 
 ## Verification Checklist
 

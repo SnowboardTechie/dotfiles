@@ -331,7 +331,13 @@ Bryan invokes with a loose idea.
 Bryan invokes with a map. A ticket is optional — without one, *you* pick the next
 decision, not him.
 
-1. Load the **map** at low resolution. Not every ticket body.
+1. **Find the map's tracker, then load the map** at low resolution (not every
+   ticket body). An existing map already records Bryan's tracker choice: take
+   the repository from the map's own URL (the project vault's INDEX entry for
+   the map links it), not from the SGG default in the table above. Maps for
+   one repository's work live on that repository's tracker. Run the adapter
+   from the scratch directory with an absolute `--origin`, then `check-private`,
+   `read-map`, `frontier` and `claim-status` in one batch.
 2. Choose the ticket: the one Bryan named, else the first frontier ticket in
    order. **Claim it before any work**, and confirm the claim by readback.
    **Keep the operation id the claim preview prints** — applying requires that
@@ -345,7 +351,15 @@ decision, not him.
    from sources; a `task` resolves when the work is done. Do not default a
    research or task ticket into grilling, and never answer a HITL ticket on
    Bryan's behalf. Zoom as needed — fetch the full body of any related or
-   closed ticket on demand. Load whichever skills the map's Notes name; for a
+   closed ticket on demand. **Read the ticket's comments as well as its body**:
+   a dependency on another map's ticket is recorded as a comment, not a
+   native edge, so `frontier` lists the ticket as unblocked anyway. Check that
+   other ticket's state. If it is still open, keep going: put the constraint
+   in front of Bryan (for example, "must sit inside whatever that ticket
+   decides") and frame the options so they hold up however it resolves.
+   Before asking a scope question, check the current baseline in source
+   (live config, cron prompts, code constants). The map's Notes may be out
+   of date. Load whichever skills the map's Notes name; for a
    HITL ticket with no named skill, `grilling`.
 4. **Preview, then record the resolution** (the preview is yours to review;
    see *Safety* for when Bryan sees it): post the answer as a resolution

@@ -418,6 +418,13 @@ which actor resolved it. For a worker still running after a lost answer race,
 reattach a read-only identity-checked wait to the existing state-change sequence;
 never send a duplicate prompt merely to regain completion notification.
 
+Wait on the handback, not on `agent_status` alone. A Claude turn can settle as
+`done` while its own background test shell is still running and its handback is
+unwritten, and a `prompt` can return `agent_prompt_stalled` while the worker is in
+fact working. In both cases, inspect the worker, then poll until the contract's
+handback section ends with its `Divergence:` line *and* the worker is not
+`working`. Never re-send a prompt to recover a completion signal.
+
 Complete when the original worker settles and the helper returns a verified
 status.
 
@@ -439,6 +446,14 @@ For security, persistence, migration, protocol, concurrency, public-contract, or
 deployment changes, add one targeted Risk reviewer only after the parent gate has
 stabilized the candidate. A candidate change invalidates that targeted review;
 rerun it once against the corrected exact candidate.
+
+A correction contract the parent writes is itself a candidate source of defects.
+Before sending it, trace every edge rule it settles (a default for "nothing
+recorded", "stay quiet when...", "fresh state on start") through the first live run
+after rollout. That first run is usually exactly the empty-history case, so a
+"quiet when nothing is recorded" rule can hide the one change the rollout exists to
+announce. When the parent's own instruction caused a gap, say so in the next
+correction and report it to Bryan as the parent's error.
 
 Missing verification or an unresolved blocker means do not publish. A stop is
 not permission to lower quality or switch providers.
@@ -481,14 +496,28 @@ batch), follow this shape:
   lane. Independent lanes all run in parallel. Bryan sets no cap on how many
   builders run at once (2026-10-23); only the Claude capacity ceiling above limits
   dispatch. Don't hold a ready lane because other builders are busy.
-- **The brief is a contract file.** Write `contract.md` in the ticket state
+- **The brief is a contract file.** Write it in the ticket state
   directory: authority links, settled open questions, required behaviour, tests,
   verify commands, permissions and handback shape. The prompt is one line
-  pointing at it. Run every `prompt` as a background terminal job with
+  pointing at it. List the state directory first: an issue's directory outlives
+  its earlier lanes, and its ignored `handback.md`, `contract.md` and identity
+  files may be the only copies of that evidence. When it already holds them,
+  prefix every new file with the lane name (`<lane>-contract.md`,
+  `<lane>-handback.md`, `<lane>-worker-identity.json`), and make the contract
+  name that exact handback path, because the worker writes wherever the contract
+  says. Run every `prompt` as a background terminal job with
   `notify=true`, so each settlement wakes the coordinator.
 - **Integrate before the gate.** Merge the current `origin/main` into the feature
   branch (a signed merge commit, never a rebase) before the canonical gate. The
   gate and final review then judge the integrated candidate.
+- **A lane that depends on two unpublished lanes.** Create its branch from one
+  prerequisite branch (`wt switch --create <lane> --base <prereq-A>`), then make a
+  signed `--no-ff` merge of the other prerequisite into it. Review only the lane's
+  own changes, `<that merge commit>...<head>`, and say in the PR body which earlier
+  PRs its diff against main includes and in what order they merge. When the gate
+  tool a prerequisite adds isn't on main yet, run it from a clean `git archive`
+  export of the candidate, with `--root` at the worktree. Record the rerun from main
+  after the merge as a closeout step.
 - **Re-integrate if main moved before the merge.** Main can advance after a
   branch's gate or review, because a sibling lane merged. Check
   `git diff --stat <branch-base> origin/main -- package.json package-lock.json tsconfig.json packages workspaces`.
@@ -511,8 +540,11 @@ batch), follow this shape:
   that conversation. Filing a ticket per nit makes the queue feed itself, so the
   work never ends.
 - **Serialize full canonical gates.** Two concurrent full runs (browser suites,
-  fake services) contend for load and ports. Queue the next gate behind the
-  running one's PID.
+  fake services) contend for load and ports. When the repository has a gate
+  runner or lock, start every gate through it; it queues them itself. Only
+  without one, queue the next gate behind the running one's PID. Stop a queued
+  gate whose candidate a dispatched correction is about to change; its result
+  would judge a superseded head.
 - **Clean up workers' scratch.** Worker sessions are often refused `rm -rf` of
   their own scratch directories. The coordinator removes the paths named in the
   handback after reading it.
@@ -560,7 +592,10 @@ batch), follow this shape:
   is welcome for the web UI, but only to the exact file at an exact commit
   (`https://<forge>/<owner>/<repo>/src/commit/<sha>/<path>`), one link per file, never a PR page.
 - **Every ask is self-contained.** When Bryan has something to do, restate the exact steps or commands in that message.
-  Never point him at "my earlier message" or "the commands above".
+  Never point him at "my earlier message" or "the commands above". This holds for every status update that ends on
+  his pending action, and for a "where is it now?" answer: give the state table, then the full current ask.
+- **Before you say something waits on him, check its evidence by metadata.** Look for the files his step would create,
+  or the comment it would post. Then say whether it has happened, rather than repeating the ask blind.
 - **Every issue and PR named in a message gets its title and full URL, every time.** A bare `#246` or "PR 2" makes
   Bryan ask again; he has had to repeat this many times. Status updates included.
 

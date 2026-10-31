@@ -81,6 +81,12 @@ abdication. A recommendation is not a decision — see *Epistemic status*.
   to add Y now?"), answer that alone, with a reference link and verified costs.
   Then re-ask the same open question. The question is not settled until he
   picks.
+- **A conditional question is an answer, not a request to re-ask.** "If we
+  do X, can we also Y?" picks X and adds Y. Verify that Y is feasible, record
+  X+Y as accepted, and move on to the next frontier question. Re-asking the
+  same question with "X+Y" as a new option makes Bryan answer twice, and he
+  reads it as you not listening. Re-ask only if Y turns out infeasible or
+  changes X's trade-off, and say which fact forced it.
 
 ## Facts are your job
 
@@ -101,6 +107,15 @@ frontier now.
 
 Bryan answers **decisions**: what he wants, what he will accept, what the work
 is for, which trade-off he prefers. Those are his and only his.
+
+## Earlier records are not Bryan's decisions
+
+Treat a decision record or plan written in an earlier session as **what was recorded**, never as something Bryan understood and agreed to. Agents wrote many of those notes, and some say "decided" about things he never saw explained. When a record bears on a question:
+
+- describe what it says and what the running system actually does (verified);
+- ask him whether it still holds.
+
+Never use one to rule an option out, or to tell him he already agreed. When he says he didn't agree, reopen it and leave it open. (Bryan, 2026-10-30, on the pilot's model-on-host boundary.)
 
 ## Epistemic status
 

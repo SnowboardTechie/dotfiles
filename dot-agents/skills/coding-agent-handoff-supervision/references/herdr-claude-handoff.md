@@ -103,6 +103,22 @@ erase a successfully completed turn.
 
 Use `--text` instead of `--prompt-file` only for a genuinely short literal.
 
+**`agent_prompt_stalled` is not "not delivered".** The helper can fail with
+`agent prompt produced no observed working or blocked state within 5000 ms`
+while the worker has in fact picked up the prompt and starts working a moment
+later. Run `inspect` (and `read`) before deciding anything. If the worker is
+`working`, never resend: attach a read-only waiter that loops `inspect` until
+the status leaves `working`, run as a tracked background process with
+completion notification, so settlement still wakes the parent.
+
+**A worker that backgrounds its own long check goes idle and may not resume.**
+Claude can start a long run (a full mutant search, a test suite) as a background
+shell, settle as `done` and promise to finish "once it reports". Put "run long
+checks in the foreground" in every contract. When it happens anyway, check after
+a few minutes whether the handback section appeared; if not, send the same
+session one short continuation prompt to finish from the run's output. That is
+not a correction pass.
+
 ## Handoff with a status-only watch (default for `session-handoff`)
 
 ```sh
