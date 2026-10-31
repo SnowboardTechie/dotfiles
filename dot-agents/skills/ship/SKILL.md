@@ -19,7 +19,10 @@ repository's PR template, apply labels only when authorized, and report the
 clickable URL. This skill does not merge or declare the branch review-ready.
 
 For end-to-end ticket work, use `issue-work`. For an independent review of an
-already-open PR, use `pr-self-review`.
+already-open PR, use `pr-self-review`. To decide whether a draft is ready, or to
+mark it ready and request reviewers once Bryan says so, follow
+`references/ready-for-review.md`. It includes re-watching CI after every push,
+because audit jobs fail on newly published CVEs.
 
 ## When to Use
 
