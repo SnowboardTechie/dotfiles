@@ -1,6 +1,4 @@
 {
-  "syncClaudeAiSkills": false,
-  "syncClaudeAiPlugins": false,
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_CODE_SUBAGENT_MODEL": "claude-opus-5-5"
@@ -107,6 +105,15 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/sh -c 'rex __internal session-start --agent claude 2>/dev/null || true'",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "PreToolUse": [
@@ -144,6 +151,10 @@
     }
   },
   "effortLevel": "high",
+  "theme": "dark",
+  "skipAutoPermissionPrompt": true,
+  "syncClaudeAiSkills": false,
+  "syncClaudeAiPlugins": false,
   "modelSettings": {
     "claude-opus-5-5": {
       "effortLevel": "xhigh"
@@ -151,7 +162,5 @@
     "claude-fable-5-1": {
       "effortLevel": "xhigh"
     }
-  },
-  "theme": "dark",
-  "skipAutoPermissionPrompt": true
+  }
 }
