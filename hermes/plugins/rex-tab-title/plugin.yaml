@@ -1,0 +1,3 @@
+name: rex-tab-title
+version: "1.0.0"
+description: Name the Rex tab a Hermes CLI/TUI session runs in after the session's title

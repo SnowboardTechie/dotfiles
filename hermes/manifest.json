@@ -82,7 +82,8 @@
     "check-cloudflared-homebrew-release.py"
   ],
   "plugins": [
-    "matrix-key-recovery"
+    "matrix-key-recovery",
+    "rex-tab-title"
   ],
   "skills": [
     "apple/apple-mail",

@@ -19,3 +19,11 @@ Paths are relative to the dotfiles repo root.
 - Two files, pinned by blob and SHA256 in the manifest; apply with `git apply` per the manifest, restart CLI sessions. A Hermes update that touches either file makes the test fail closed until the patch is re-cut against the new base.
 - Bell/OSC 9 notifications are stock Hermes, enabled machine-locally: `display.bell_on_complete` and `display.bell_on_prompt`.
 - Probe in Rex with `zsh -ic 'hermes …'`: `rex run`'s login-shell PATH resolves `hermes` to a Nix store build, not this checkout.
+
+## Rex tab titles (plugin)
+
+`hermes/plugins/rex-tab-title/` + `hermes/test_rex_tab_title_plugin.py`
+
+- Renames the Rex tab (a Rex *window*, not the Rex session) holding the session's `REX_BLOCK` to the Hermes session title (`llm` or `user` source; never the `derived` placeholder). Fires from `post_llm_call`, where the session's client env is bound; `os.environ` in the gateway has no `REX_*`.
+- Only replaces Rex's generated `Window xxxxxxxx` label or a label the same gateway process wrote, so hand-named tabs stay put.
+- Managed by `install.py` (frozen copy + enable); a gateway restart activates it. Source changes need `SECURITY.md` re-reviewed.
