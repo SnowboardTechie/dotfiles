@@ -42,7 +42,11 @@ Do not use `record`, `start`, `stop`, `switch`, `transcribe`, `vocab`,
 ## Imported Granola meetings
 
 138 Granola meetings (through 2026-10-22, Agile6 account) were imported on
-2026-10-23 as Superwhisper meeting folders. Recognize them by summary text
+2026-10-23 as Superwhisper meeting folders. By 2026-10-31 only 4 of them
+(2026-10-15..22) remained in Superwhisper (recordings folder starts at
+2026-10-15; cause unknown, retention is set to 1 year). All 138 now live in
+Hex (`hex meetings list|search|show`, ids `<epoch-ms>-granola`); prefer Hex or
+`~/granola-export` for Granola-era meetings. Recognize them by summary text
 starting `_Imported from Granola. Participants: ..._` and speaker names
 `Microphone` / `System audio` / `System audio (<name>)`. They have no audio.
 `Microphone` is the recorder's mic (usually Bryan, not guaranteed); plain
