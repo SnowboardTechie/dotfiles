@@ -282,6 +282,12 @@ refusal and the two ways to unblock it (relaunch from a Herdr pane in the
 project, or authorize the conversation for gateway workers). Check the transport
 before writing the contract so the blocker surfaces early; the worktree and
 contract stay useful for the resumed session.
+A CLI session in a **Rex** pane (its process carries `REX_BLOCK`/`REX_SESSION`
+and no `HERDR_*`) has no worker transport: `herdr_worker.py` supports only
+Herdr, whatever `terminal_host.py`'s docstring says, and the gateway tools
+refuse a CLI conversation with `origin_not_authorized`. Check this before
+writing the contract, then ask Bryan to relaunch from a Herdr pane (or to
+select parent implementation for that task) instead of hunting further.
 Background `terminal` processes do not inherit foreground exports: put the
 `export` inside every background `prompt` command, or the helper refuses
 before sending.
