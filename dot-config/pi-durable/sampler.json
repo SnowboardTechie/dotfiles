@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "state_dir": "~/.local/state/pi-durable/sampler",
+  "workspaces": [
+    {
+      "name": "sgg",
+      "config": "~/.config/pi-durable/sgg.json"
+    },
+    {
+      "name": "planning",
+      "config": "~/.config/pi-durable/planning.json"
+    }
+  ],
+  "page": {
+    "port": 8791,
+    "url": "https://bryans-mac-studio.tail5ba690.ts.net:8791/"
+  },
+  "web": {
+    "approved_login": "gczygkswsk@privaterelay.appleid.com"
+  },
+  "notify": {
+    "hermes": [
+      "~/.local/bin/hermes"
+    ],
+    "room": "matrix:!tSD1iyTyecHdckUZ6hYRIane02TLhbL1pkp2c3dnToI"
+  },
+  "rooms": {
+    "test": "matrix:!6p_iHRCaUHvFDLX2ST6JZy709TuCGNpOBe9axFzSJrw"
+  },
+  "mention": "@bryan:snowboardtechie.com",
+  "weekly": {
+    "room": "notify",
+    "at": "00:15"
+  }
+}
