@@ -168,18 +168,6 @@ echo "Removing retired agent-memory wiring..."
 python3 "$REPO_ROOT/scripts/retire-agent-memory.py" --apply || \
     echo "  (retired agent-memory cleanup incomplete; resolve the reported file and re-run)"
 
-# Native Apple Notes helper (macOS only). Build/sign/install the one process
-# allowed to send Apple Events to Notes. No-op off macOS; stops (non-fatally
-# here) if no stable signing identity is configured — see the script's output.
-echo ""
-echo "Setting up the Apple Notes helper..."
-if [[ "$PLATFORM" == "macos" ]]; then
-    "$REPO_ROOT/scripts/reconcile-apple-notes-helper.sh" --apply || \
-        echo "  (Apple Notes helper not installed; resolve the reported setup decision and re-run)"
-else
-    echo "  Skipped (macOS only)"
-fi
-
 # Git-backed Hermes-local assets are installed explicitly rather than stowing
 # ~/.hermes, which also contains credentials, databases, logs, and live state.
 echo ""

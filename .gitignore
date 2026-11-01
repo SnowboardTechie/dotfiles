@@ -93,8 +93,3 @@ dot-config/pi-durable/*
 !dot-config/pi-durable/planning.json
 !dot-config/pi-durable/subscriptions.json
 !dot-config/pi-durable/sampler.json
-
-# Apple Notes native helper — built artifacts and signing material never tracked
-dot-agents/skills/apple-notes-pkm/helper/*.app
-dot-agents/skills/apple-notes-pkm/helper/*.o
-dot-agents/skills/apple-notes-pkm/helper/apple-notes-pkm-helper

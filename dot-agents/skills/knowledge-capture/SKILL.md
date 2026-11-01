@@ -26,9 +26,9 @@ mechanics.**
 | A project or workspace: code, plans, issues, handoffs, architecture, DX artifacts, reviews | that repo's Markdown vault (`vault/`, `~/code/notes/<project>/`) | `vault-pkm` |
 | Agent behaviour corrections, "remember to…" for the agent itself | the harness's native memory (e.g. Claude auto-memory, Hermes `MEMORY.md`/`USER.md`) | none — name it and let that native system catch it |
 
-Apple Notes' `Second Brain` folder is a retired rollback copy (personal
-knowledge returned to `~/second-brain` on 2026-10-31). Never write there and
-never treat it as a live source.
+Apple Notes is not a knowledge store (the personal second brain returned to
+`~/second-brain` on 2026-10-31 and the Notes folder was deleted). Never write
+personal knowledge there.
 
 ## Bryan's closeout authorization (overrides the slate gate below)
 
@@ -122,7 +122,7 @@ name it and get a yes first.
 
 - Writing before showing a slate (outside an authorized closeout).
 - Capturing an agent-proposed convention Bryan has not adopted.
-- Writing to Apple Notes, or reading it as if it were current.
+- Writing personal knowledge to Apple Notes or any store other than `~/second-brain`.
 - Creating a folder/MOC to fit a capture without asking.
 - Manufacturing a note because a blank answer feels unhelpful.
 

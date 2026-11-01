@@ -61,8 +61,10 @@ resolve_path() {
 #
 # This is an exact allowlist of historical targets, never a pattern. Every
 # other broken or foreign link is still preserved untouched. `vault-capture`
-# was replaced by the backend-neutral `knowledge-capture` router (2026-09-16).
-RETIRED_POOL_TARGETS=(agent-workspace git-master vault-capture)
+# was replaced by the backend-neutral `knowledge-capture` router (2026-09-16);
+# `apple-notes-pkm` was removed when the second brain returned to Markdown
+# (2026-10-31).
+RETIRED_POOL_TARGETS=(agent-workspace git-master vault-capture apple-notes-pkm)
 
 is_legacy_pool_link() { # <link-path> -> 0 when it names a retired pool skill
     local raw legacy
@@ -86,7 +88,7 @@ fi
 # Common core shared by Claude, OpenCode, Pi, and Codex: dev/PR and PKM.
 # PKM: vault-pkm (every Markdown vault, including the personal ~/second-brain)
 # and knowledge-capture (the router that decides personal vs. project).
-# apple-notes-pkm was retired 2026-10-31 and is curated for no runtime.
+# apple-notes-pkm was removed 2026-10-31.
 # black-box-verification is a shared verification method (see
 # dot-agents/upstreams/pstack-claude.json), so even lean Pi receives it.
 COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review code-review

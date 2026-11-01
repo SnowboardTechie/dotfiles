@@ -39,9 +39,8 @@ gets adapted personal workflows but keeps its bundled/local `obsidian` and
 pool links. Personal knowledge lives in the `~/second-brain` Markdown vault
 (Forgejo Git), written through `vault-pkm` like any other vault, with
 `knowledge-capture` routing resting-point captures between it and project
-vaults. `apple-notes-pkm` is retired (2026-10-31) and no longer curated for any
-runtime; its helper source stays in the pool for rollback, and the reconciler
-prunes its stale links. `vault-capture` is likewise retired.
+vaults. `apple-notes-pkm` (2026-10-31) and `vault-capture` are retired and removed; the
+reconciler prunes their stale links.
 
 The **single authoritative curation source** is the set of `*_SKILLS` Bash arrays
 in [`../scripts/reconcile-agent-skills.sh`](../scripts/reconcile-agent-skills.sh):

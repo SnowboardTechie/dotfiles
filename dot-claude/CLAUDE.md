@@ -31,5 +31,4 @@ personal recall or capture — decisions, explorations, ideas, vehicles, home,
 tools, gifts, journal, learning — use it through `vault-pkm`. At a session's
 resting point, `knowledge-capture` decides whether anything is worth keeping
 and routes personal → `~/second-brain`, project → that repo's vault. Apple
-Notes' `Second Brain` folder is a retired rollback copy (2026-10-31): never
-read it as current and never write to it.
+Notes is not a knowledge store (retired 2026-10-31).

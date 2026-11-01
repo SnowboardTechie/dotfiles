@@ -186,6 +186,5 @@ vaults; `~/second-brain/AGENTS.md` for the personal vault), read it after the
 skill — it overrides skill defaults for that specific vault.
 
 `knowledge-capture` routes resting-point captures: personal → `~/second-brain`,
-project → that repository's vault, both through `vault-pkm`. Apple Notes'
-`Second Brain` folder is a retired rollback copy (2026-10-31): never read it as
-current and never write to it.
+project → that repository's vault, both through `vault-pkm`. Apple Notes is
+not a knowledge store (retired 2026-10-31).
