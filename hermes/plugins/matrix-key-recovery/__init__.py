@@ -25,6 +25,10 @@ AUTHORIZED_ROOMS = frozenset(
         "!G-1AFqv6TX64et_lxtdAfOEemeaDSuyf9LxtFlbB5c8",
         # SGG Dependencies (test): the triage's shadow room until cutover.
         "!e3H0RN1JtrSQo00Xc22JuKmAjPIFSB6BVCSL38HU3A4",
+        # Claude usage: the usage sampler's weekly review, token notices and reminders.
+        "!tSD1iyTyecHdckUZ6hYRIane02TLhbL1pkp2c3dnToI",
+        # Claude usage (test): the sampler's test sends.
+        "!6p_iHRCaUHvFDLX2ST6JZy709TuCGNpOBe9axFzSJrw",
     }
 )
 

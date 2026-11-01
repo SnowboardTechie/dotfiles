@@ -85,3 +85,13 @@ receive the SGG service's daily triage notices through `hermes send`
 on 2026-10-30 confirmed the same invariant: private, invite-only, encrypted,
 unlisted, `history_visibility=joined`, guests forbidden, and exactly two
 members, Hermes joined and Bryan invited.
+
+Scope extension (2026-11-01): added the usage sampler's two rooms, "Claude usage"
+(`!tSD1iyTyecHdckUZ6hYRIane02TLhbL1pkp2c3dnToI`) and "Claude usage (test)"
+(`!6p_iHRCaUHvFDLX2ST6JZy709TuCGNpOBe9axFzSJrw`), which receive the Pi Durable
+usage sampler's weekly review, token notices and reminders through `hermes send`
+(durable-pi-workspace#236). The change is data-only: two room IDs in
+`AUTHORIZED_ROOMS`, with no code-path change. Live state readback at creation
+on 2026-11-01 confirmed the same invariant: private, invite-only, encrypted,
+unlisted, `history_visibility=joined`, guests forbidden, and exactly two
+members, Hermes joined and Bryan invited.
