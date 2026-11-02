@@ -26,12 +26,30 @@ confirms the session and block still exist.
 
 ## Start
 
+**Workers never open in the orchestrator's own tab** (the same rule as Herdr's,
+`herdr-claude-handoff.md`): a split beside the coordinator's block squeezes the
+chat Bryan reads. They open in the orchestrator's sub-agents tab, labelled with
+the caller tab's label plus " Sub Agents" (for example "Pi Durable Sub Agents"),
+in the same session, without taking focus:
+
+- **No such tab yet:** `"$REX" window new -s "$REX_SESSION" "<label> Sub Agents"
+  --focus=false --keep-open -c "$W" --json -- claude …`. Its root block is the
+  worker; no empty shell is left beside it. Read the caller tab's label from
+  `"$REX" window ls -s "$REX_SESSION" --json` (the window holding `$REX_BLOCK`).
+- **The tab exists:** `"$REX" split -s "$REX_SESSION" -b <a worker block in that
+  tab> --split=below --focus=false …`.
+- **Never** `split -b "$REX_BLOCK"`. A worker started there by mistake can be
+  moved without stopping it: `"$REX" block move -s "$REX_SESSION" <block> below
+  <a block in the sub-agents tab>`.
+
+The command and checks are the same either way:
+
 ```sh
 S=<ticket state dir>; W=<worktree>; NAME=<agent name, e.g. sgg-278-layout>
 cap=$(~/.config/herdr/claude-usage.sh | grep -oE '[0-9]+%' | head -1 | tr -d %)
 [ -n "$cap" ] && [ "$cap" -lt 75 ] || { echo "capacity $cap: stop"; exit 1; }
 UUID=$(uuidgen | tr A-Z a-z)
-"$REX" split -s "$REX_SESSION" -b "$REX_BLOCK" --split=right --focus=false \
+"$REX" split -s "$REX_SESSION" -b "$SUBAGENT_BLOCK" --split=below --focus=false \
   --keep-open --label "$NAME" -c "$W" --json -- \
   claude --permission-mode auto --model claude-opus-5-5 --effort medium \
   --name "$NAME" --session-id "$UUID" "$(cat "$S/<lane>-prompt.md")" \
@@ -46,7 +64,7 @@ UUID=$(uuidgen | tr A-Z a-z)
   it after `capture` shows the turn running, and don't let a `set -e` script
   abort before the identity record is written.
 - `--focus=false` keeps Bryan's focus; `--keep-open` keeps the pane readable
-  after Claude exits.
+  after Claude exits. Record `worker_rex_window` as the sub-agents tab.
 - An empty capacity reading is a stop, never a pass.
 - A new worktree may show Claude's "Yes, I trust this folder" prompt. Starting
   in the authorized worktree already covers it: confirm the shown path is the

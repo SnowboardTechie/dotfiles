@@ -285,9 +285,10 @@ before writing the contract so the blocker surfaces early; the worktree and
 contract stay useful for the resumed session.
 **A CLI session in a Rex pane** (its process carries `REX_BLOCK`/`REX_SESSION`
 and no `HERDR_*`; Hermes usually passes the `REX_*` values straight into the
-tool shell) starts its worker in a Rex split instead. Follow
-[references/rex-claude-handoff.md](references/rex-claude-handoff.md): `rex split`
-beside this block, Claude with the prompt as its first turn and a fixed
+tool shell) starts its worker through the `rex` CLI instead. Follow
+[references/rex-claude-handoff.md](references/rex-claude-handoff.md): the worker
+opens in the orchestrator's "<tab label> Sub Agents" tab, never beside the
+coordinator's own block, with Claude given the prompt as its first turn and a fixed
 `--session-id`, and the helper's checks done by hand (identity record, the 75%
 capacity gate, one turn at a time, settlement from transcript plus handback,
 close). `herdr_worker.py` is Herdr-only, and the gateway's `herdr_*` tools
