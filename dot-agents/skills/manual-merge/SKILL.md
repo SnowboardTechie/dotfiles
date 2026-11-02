@@ -80,6 +80,16 @@ Read back the PR and its current checks immediately before merging. Verify:
 If the forge cannot expose one of these facts, show the missing fact and ask the
 user to verify it. Never infer approval from silence.
 
+Two Forgejo states to clear first, once the gates have passed:
+
+- **A draft is a `WIP: ` title prefix** (`tea pr create --draft` adds it), and
+  Forgejo reports `mergeable: false` while it is there. Mark it ready with
+  `tea api -X PATCH -f title="<title without WIP: >" /repos/<owner>/<repo>/pulls/<n>`,
+  then read back `draft: false` and `mergeable: true`.
+- **A stacked PR still targets its base PR's branch** after that base merged.
+  Retarget it in the same PATCH (`-f base=<default-branch>`) and read back the
+  base before the squash.
+
 ### 3. Present the exact operation for approval
 
 Show:
@@ -185,7 +195,10 @@ branch deletion.
 
 ### 7. Clean up
 
-Only after the forge record is correct:
+Only after the forge record is correct, and only where the repository's own
+instructions allow deleting branches. Where they say to keep branches and remote
+refs, skip this step, report the branch as retained, and retire the worktree
+with the project's own non-deleting command instead:
 
 ```bash
 git push origin --delete <feature-branch>

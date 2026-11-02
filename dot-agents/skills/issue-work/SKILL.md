@@ -635,7 +635,19 @@ weaker review, or fabricated completion claim.
 11. Gating in a worktree whose `node_modules` predates the lockfile. A checkout
     installed before new workspace packages lacks their tools, and the typecheck
     fails with "command not found". Run `npm ci` from the unchanged lockfile in
-    the worktree first, and confirm the lockfile didn't change.
+    the worktree first, and confirm the lockfile didn't change. Remove its
+    `dist/` too before a full gate: a new worktree can arrive with another
+    checkout's ignored build output, and a compiled test whose source no longer
+    exists fails the run.
+12. Merging main into a branch stacked on a squash-merged PR. It conflicts on
+    every file that PR added; follow `coding-agent-handoff-supervision`'s
+    "stacked branch after its base PR is squash-merged" rule. Merge the stack in
+    dependency order, and merge a reviewed stacked PR's main-integration before
+    its final gate so the gate judges what lands.
+13. Leaving a worker's whole-slice contract shapes implicit when later PRs build
+    on it in parallel. Have the first PR's handback list the config, record and
+    API shapes, and point the parallel contracts at that list; any change to a
+    shape is then additive and named in the later handback.
 
 ## Verification Checklist
 

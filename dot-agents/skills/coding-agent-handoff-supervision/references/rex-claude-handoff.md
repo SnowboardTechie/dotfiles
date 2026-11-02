@@ -123,13 +123,18 @@ model, effort, `worker_runtime_session_id` (the UUID, after checking the
   print(last and last["type"], m.get("stop_reason"))'
   ```
   `assistant end_turn` means settled; `assistant tool_use` or `user` means working.
-- Wait with a bounded background loop that polls the handback and transcript
-  (for example every 60 s, under a cap sized to the task). Make it also exit
-  when the transcript has shown `end_turn` for about ten minutes with no
-  handback: that is a worker waiting on a question or one that stopped early,
-  and the coordinator must read the pane. Run it with
-  `terminal(background=true, notify=true)` so settlement wakes the coordinator.
-  Never resend a prompt to regain a completion signal.
+- Wait with `scripts/rex_wait.sh <transcript> <handback> <cap seconds>
+  [marker]`, run with `terminal(background=true, notify=true)` so settlement
+  wakes the coordinator. It polls every 60 s and also exits (code 2) when
+  `end_turn` has held about ten minutes with no handback: a worker waiting on a
+  question or one that stopped early, so read the pane. Never resend a prompt to
+  regain a completion signal.
+- **A correction turn needs the marker** (its new section's heading, such as
+  `"Correction 1"`): the handback already ends with the first turn's
+  `Divergence:` line, so without it the wait settles on the old turn.
+- Background shells load the interactive profile: use `test -f`, never `ls`,
+  to check a path there, because an alias can swap `ls` for a tool that rejects
+  the argument and kills the waiter before it starts.
 - **Text in the input line after a turn is often not Bryan's.** Claude Code
   greys in a predicted next prompt (prompt suggestion). Plain `capture` can't
   tell it from typed text; `capture --format=html` shows it inside
@@ -148,8 +153,9 @@ check, then type into the same block and submit:
 "$REX" send-key -s "$REX_SESSION" -b <block> enter
 ```
 
-Confirm in `capture` (and a new `user` record in the transcript) that it was
-accepted before you report it delivered.
+Confirm a new `user` record in the transcript that it was accepted before you
+report it delivered; `capture` can still show an empty prompt for several
+seconds after a good submit. Then start `rex_wait.sh` with the marker.
 
 ## Close
 
