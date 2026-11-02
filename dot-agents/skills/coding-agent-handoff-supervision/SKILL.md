@@ -534,6 +534,13 @@ batch), follow this shape:
   tool a prerequisite adds isn't on main yet, run it from a clean `git archive`
   export of the candidate, with `--root` at the worktree. Record the rerun from main
   after the merge as a closeout step.
+- **A stacked branch after its base PR is squash-merged.** Merging main into it
+  conflicts add/add on every file the base PR added and this branch changed,
+  because the squash isn't the base branch's commit. When
+  `git diff <base branch head> origin/main` is empty (main's only change is that
+  squash), abort and `git merge -s ours --no-ff -S origin/main` with a message
+  saying so, then check `git diff <gated head> HEAD` is empty: the gate evidence
+  still holds. If main has anything else, it's an integration worker turn.
 - **Re-integrate if main moved before the merge.** Main can advance after a
   branch's gate or review, because a sibling lane merged. Check
   `git diff --stat <branch-base> origin/main -- package.json package-lock.json tsconfig.json packages workspaces`.
