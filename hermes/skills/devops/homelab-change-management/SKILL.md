@@ -191,6 +191,7 @@ For Bryan's environment:
 
 - Agents may access the Studio broadly.
 - The Unraid NAS is out of scope unless Bryan explicitly authorizes an exact operation.
+- Standing exception (Bryan, 2026-11-02): agents may read, write and verify inside `/Volumes/Bryan/Backups/hermes`, the Hermes NAS backup folder (nix-configs `services.hermes-nas-backup`). The rest of the Bryan share stays out of scope. `approvals.deny` encodes this as per-character globs that block every path leaving that folder (fnmatch has no exceptions). Agents can't edit `approvals.deny`; Bryan applies a list with `hermes config set approvals.deny "$(cat <json>)"`. Check a candidate list first with Hermes's own matcher (`tools.approval_floors._match_user_deny_rule`, `approval_context._get_approval_config` stubbed) against allow and block command strings, run from a script file so the command line never names the NAS.
 - Do not list, search, index, checksum, stat, write, move, delete, mount, or unmount NAS content merely to confirm a mount.
 - Use declarative configuration and mount-table output for discovery whenever possible.
 - A mounted share may live under a home-directory path rather than `/Volumes`; never conclude it is absent from Finder's `/Volumes` view alone.
