@@ -5,7 +5,8 @@ pane, start and supervise the worker with the `rex` CLI directly, and do by hand
 the checks the helper would do: identity record, capacity gate, one turn per
 session, settlement, close. Everything else in the skill (contract file,
 one-line prompt, permissions, parent acceptance, correction bound) is unchanged.
-First used for durable-pi-workspace#278's layout prototype (2026-11-02).
+Verified end to end (start, settle, close) on durable-pi-workspace#278's
+layout prototype, 2026-11-02.
 
 ## Which host you are in
 
@@ -80,6 +81,10 @@ model, effort, `worker_runtime_session_id` (the UUID, after checking the
   (for example every 60 s, under a two-hour cap), run with
   `terminal(background=true, notify=true)` so settlement wakes the coordinator.
   Never resend a prompt to regain a completion signal.
+- **Text in the input line after a turn is often not Bryan's.** Claude Code
+  greys in a predicted next prompt (prompt suggestion). Plain `capture` can't
+  tell it from typed text; `capture --format=html` shows it inside
+  `opacity: 0.5`. Never read it as Bryan's answer, and never submit it.
 - A worker blocked on a permission or question shows it in `capture`. Answer
   only what the governing plan already settles, through `rex send` and
   `rex send-key`; anything new goes to Bryan.
@@ -103,7 +108,8 @@ When no concrete next turn remains, exit Claude and close only the recorded
 block, then confirm it is gone:
 
 ```sh
-"$REX" send-key -s "$REX_SESSION" -b <block> ctrl+c ctrl+c   # or /exit
+"$REX" send -s "$REX_SESSION" -b <block> "/exit"
+"$REX" send-key -s "$REX_SESSION" -b <block> enter   # pane prints the resume command
 "$REX" block close -s "$REX_SESSION" <block>
 "$REX" block ls -s "$REX_SESSION" --json | grep -c <block>    # expect 0
 ```
