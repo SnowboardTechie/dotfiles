@@ -1,7 +1,7 @@
 {
   "purpose": "The classic Hermes CLI reports its turn state to Rex with OSC 7501 (Rex's Program Status Protocol): working while a turn runs, blocked with kind permission/question/auth while a prompt waits, then done or error. Rex shows this as tab activity and alerts, as it does for Claude Code. Emitted only when TERM_PROGRAM=rex.",
   "upstream": "https://github.com/NousResearch/hermes-agent",
-  "base_commit": "bf0203a794a07aac3ff764972ab9087baa4e4f4e",
+  "base_commit": "f0d94882e89ab8d4098b5bb2f166adfb9ee0a0ab",
   "files": [
     {
       "path": "hermes_cli/terminal_notify.py",
@@ -11,9 +11,9 @@
     },
     {
       "path": "hermes_cli/cli_chat_turn_mixin.py",
-      "base_blob": "94d49d3553b7355557b9ab6c7b3254e4f78c9cf0",
-      "original_sha256": "6f8362aedf9b807b97bd7fe8b00f2b9126172f08ec14c879e5b62256e9e20e07",
-      "patched_sha256": "88a52069ddd21888f755fb617af01e172f8ae3ee4f64d7d54e717028eead94af"
+      "base_blob": "fadca305c3b98fbf3bb7ce3639fc8e59fcf74e85",
+      "original_sha256": "aad4a245b8187ec2da7e0d5bb9a33bc9d68fb2e3a873015c3c1fa02118fdbab8",
+      "patched_sha256": "eb07625263623fdb8737b6402fdf6db9e1066dac551a69c210f948a650ffeec9"
     }
   ],
   "patch": "rex-program-status.patch",
