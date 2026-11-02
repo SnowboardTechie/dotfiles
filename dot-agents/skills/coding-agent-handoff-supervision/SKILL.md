@@ -253,9 +253,9 @@ boundary without a second copy of the plan.
 
 ### 3. Start through the deterministic helper
 
-Require `HERDR_ENV=1`, the injected `HERDR_PANE_ID`, and compatible
-`HERDR_BIN_PATH`. Visible work has no silent Agent View, print-mode, tmux, or
-background fallback.
+In Herdr, require `HERDR_ENV=1`, the injected `HERDR_PANE_ID`, and compatible
+`HERDR_BIN_PATH`. In Rex, use the Rex procedure below instead of the helper.
+Visible work has no silent Agent View, print-mode, tmux, or background fallback.
 
 Hermes tool shells may not inherit the CLI's Herdr variables, so an empty
 `env | grep HERDR` there does not prove the session is outside Herdr. Before
@@ -275,19 +275,24 @@ process instead: find this conversation's session in `~/.hermes/state.db`
 messages where content like '%<a unique phrase from this conversation>%')`); a
 `cli` source means a CLI session. Match its `started_at` to the one Hermes process
 with `HERDR_PANE_ID` in its environment whose `ps -o lstart=` agrees within a
-second or two, and export that process's `HERDR_*` values. Only a gateway-sourced
-session (Matrix and similar) has no caller pane: use the native `herdr_*` tools from
+second or two, and export that process's `HERDR_*` values. If that process has only
+`REX_*` values, the session is in Rex: go to the Rex paragraph below. Only a
+gateway-sourced session (Matrix and similar) has no caller pane: use the native `herdr_*` tools from
 "Select the execution surface first". If they refuse too, report the exact
 refusal and the two ways to unblock it (relaunch from a Herdr pane in the
 project, or authorize the conversation for gateway workers). Check the transport
 before writing the contract so the blocker surfaces early; the worktree and
 contract stay useful for the resumed session.
-A CLI session in a **Rex** pane (its process carries `REX_BLOCK`/`REX_SESSION`
-and no `HERDR_*`) has no worker transport: `herdr_worker.py` supports only
-Herdr, whatever `terminal_host.py`'s docstring says, and the gateway tools
-refuse a CLI conversation with `origin_not_authorized`. Check this before
-writing the contract, then ask Bryan to relaunch from a Herdr pane (or to
-select parent implementation for that task) instead of hunting further.
+**A CLI session in a Rex pane** (its process carries `REX_BLOCK`/`REX_SESSION`
+and no `HERDR_*`; Hermes usually passes the `REX_*` values straight into the
+tool shell) starts its worker in a Rex split instead. Follow
+[references/rex-claude-handoff.md](references/rex-claude-handoff.md): `rex split`
+beside this block, Claude with the prompt as its first turn and a fixed
+`--session-id`, and the helper's checks done by hand (identity record, the 75%
+capacity gate, one turn at a time, settlement from transcript plus handback,
+close). `herdr_worker.py` is Herdr-only, and the gateway's `herdr_*` tools
+refuse a CLI conversation (`origin_not_authorized`), so neither is the route
+here. Don't ask Bryan to relaunch in Herdr; Rex is a supported host.
 Background `terminal` processes do not inherit foreground exports: put the
 `export` inside every background `prompt` command, or the helper refuses
 before sending.
@@ -652,8 +657,8 @@ resume a Herdr identity.
 - [ ] One verified ticket or approved plan governs the handoff
 - [ ] Brief contains locator, worktree, authority, and delivery permissions only
 - [ ] Destructive/history-rewriting Git operations remain prohibited
-- [ ] Visible path uses compatible injected Herdr without stealing focus
-- [ ] Helper atomically persisted all six identity fields
+- [ ] Visible path uses compatible injected Herdr, or a Rex split per references/rex-claude-handoff.md, without stealing focus
+- [ ] The helper (Herdr) or the coordinator (Rex) persisted all six identity fields
 - [ ] Claude capacity passed and the worker runtime session's turn lease was held
 - [ ] No overlapping turn targeted the same session; unrelated sessions were not blocked
 - [ ] Delivery claims have acknowledgement evidence, not merely a background process handle
@@ -668,5 +673,6 @@ resume a Herdr identity.
 ## References
 
 - [Herdr helper operations](references/herdr-claude-handoff.md)
+- [Visible Claude workers in Rex](references/rex-claude-handoff.md)
 - [Design-preview promotion](references/design-preview-handoff.md)
 - [Explicit background Agent View](references/claude-agent-view.md)

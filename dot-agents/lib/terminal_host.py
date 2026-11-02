@@ -1,7 +1,9 @@
 """Which terminal multiplexer, if any, the calling agent runs inside.
 
-Skills that open panes or tabs for other agents (next-session, handoff
-supervision) support Herdr and Rex. Both inject identifying variables into
+Skills that open panes or tabs for other agents support Herdr and Rex:
+next-session through this module, and handoff supervision through its Herdr
+helper (scripts/herdr_worker.py, Herdr only) or, in Rex, the manual procedure in
+its references/rex-claude-handoff.md. Both inject identifying variables into
 every pane they start, and nothing else is trusted: not UI focus, not a running
 server, not a binary merely being on PATH.
 
