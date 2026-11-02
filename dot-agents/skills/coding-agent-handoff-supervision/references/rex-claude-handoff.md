@@ -28,33 +28,58 @@ confirms the session and block still exist.
 
 **Workers never open in the orchestrator's own tab** (the same rule as Herdr's,
 `herdr-claude-handoff.md`): a split beside the coordinator's block squeezes the
-chat Bryan reads. They open in the orchestrator's sub-agents tab, labelled with
-the caller tab's label plus " Sub Agents" (for example "Pi Durable Sub Agents"),
-in the same session, without taking focus:
+chat Bryan reads. They open in the orchestrator's sub-agents tabs, in the same
+session, without taking focus:
 
-- **No such tab yet:** `"$REX" window new -s "$REX_SESSION" "<label> Sub Agents"
-  --focus=false --keep-open -c "$W" --json -- claude …`. Its root block is the
-  worker; no empty shell is left beside it. Read the caller tab's label from
-  `"$REX" window ls -s "$REX_SESSION" --json` (the window holding `$REX_BLOCK`).
-- **The tab exists:** `"$REX" split -s "$REX_SESSION" -b <a worker block in that
-  tab> --split=below --focus=false …`.
-- **Never** `split -b "$REX_BLOCK"`. A worker started there by mistake can be
-  moved without stopping it: `"$REX" block move -s "$REX_SESSION" <block> below
+- **Tabs.** The first is the caller tab's label plus " Sub Agents" (for example
+  "Pi Durable Sub Agents"); when it is full the next is "... Sub Agents 2", then
+  3. A tab holds at most **four** workers.
+- **Layout: 2x2.** The first worker is the tab's own root block. Each later one
+  splits the largest pane, right when it is at least as wide as tall, otherwise
+  below: 2 side by side, 3 with the left column split, 4 a square grid. A closed
+  worker's quadrant is refilled first. Never stack workers with `--split=below`
+  on a fixed anchor; that is the column of thin panes this rule replaces.
+- **No empty shell.** A new tab is created *with the worker's command*, so its
+  root block is the worker. Never `window new` without a command and then
+  split: the tab's initial shell is left idle and the grid starts one short.
+- **Never** `split -b "$REX_BLOCK"`. A worker started in the wrong place can be
+  moved without stopping it: `"$REX" block move -s "$REX_SESSION" <block> right
   <a block in the sub-agents tab>`.
 
-The command and checks are the same either way:
+`scripts/rex_subagent_slot.py` makes the choice from the live layout (tested in
+`tests/test_rex_subagent_slot.py`): it prints `{"action":"new","tab_label":…}`
+or `{"action":"split","anchor":…,"direction":…}`. Run it right before each
+start, never from a cached layout:
 
 ```sh
 S=<ticket state dir>; W=<worktree>; NAME=<agent name, e.g. sgg-278-layout>
+SK=~/code/dotfiles/dot-agents/skills/coding-agent-handoff-supervision
 cap=$(~/.config/herdr/claude-usage.sh | grep -oE '[0-9]+%' | head -1 | tr -d %)
 [ -n "$cap" ] && [ "$cap" -lt 75 ] || { echo "capacity $cap: stop"; exit 1; }
 UUID=$(uuidgen | tr A-Z a-z)
-"$REX" split -s "$REX_SESSION" -b "$SUBAGENT_BLOCK" --split=below --focus=false \
-  --keep-open --label "$NAME" -c "$W" --json -- \
-  claude --permission-mode auto --model claude-opus-5-5 --effort medium \
-  --name "$NAME" --session-id "$UUID" "$(cat "$S/<lane>-prompt.md")" \
-  > "$S/<lane>-rex-split.json"
+WORKER=(claude --permission-mode auto --model claude-opus-5-5 --effort medium
+  --name "$NAME" --session-id "$UUID" "$(cat "$S/<lane>-prompt.md")")
+SLOT=$("$REX" window ls -s "$REX_SESSION" --json |
+  python3 "$SK/scripts/rex_subagent_slot.py" --caller-block "$REX_BLOCK")
+get() { python3 -c 'import json,sys;print(json.loads(sys.argv[1])[sys.argv[2]])' "$SLOT" "$1"; }
+if [ "$(get action)" = new ]; then
+  "$REX" window new -s "$REX_SESSION" "$(get tab_label)" --focus=false \
+    --keep-open -c "$W" --json -- "${WORKER[@]}" > "$S/<lane>-rex-split.json"
+  "$REX" block rename -s "$REX_SESSION" \
+    "$(python3 -c 'import json,sys;print(json.load(sys.stdin)["block_ids"][0])' < "$S/<lane>-rex-split.json")" "$NAME"
+else
+  "$REX" split -s "$REX_SESSION" -b "$(get anchor)" --split="$(get direction)" \
+    --focus=false --keep-open --label "$NAME" -c "$W" --json -- "${WORKER[@]}" \
+    > "$S/<lane>-rex-split.json"
+fi
 ```
+
+`window new` has no `--label` for the block, hence the `block rename`. Start
+workers one at a time (each start re-reads the layout); two starts racing on
+the same layout can pick the same anchor. Verified in a scratch Rex session,
+2026-11-02: four starts gave four equal quadrants, a fifth went to a new
+"Sub Agents 2" tab, a closed quadrant was refilled, and closing a tab's last
+worker removes the tab.
 
 - The prompt is the positional argument, so the first turn starts with the
   pane; no typing into it.  `--session-id` fixes the runtime session ID up front,

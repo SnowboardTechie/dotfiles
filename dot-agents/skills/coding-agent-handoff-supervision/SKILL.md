@@ -287,8 +287,10 @@ contract stay useful for the resumed session.
 and no `HERDR_*`; Hermes usually passes the `REX_*` values straight into the
 tool shell) starts its worker through the `rex` CLI instead. Follow
 [references/rex-claude-handoff.md](references/rex-claude-handoff.md): the worker
-opens in the orchestrator's "<tab label> Sub Agents" tab, never beside the
-coordinator's own block, with Claude given the prompt as its first turn and a fixed
+opens in the orchestrator's "<tab label> Sub Agents" tab (then "... 2", "... 3"),
+at most four per tab in a 2x2 grid placed by `scripts/rex_subagent_slot.py`, a
+new tab's root block being the worker itself, never beside the coordinator's own
+block, with Claude given the prompt as its first turn and a fixed
 `--session-id`, and the helper's checks done by hand (identity record, the 75%
 capacity gate, one turn at a time, settlement from transcript plus handback,
 close). `herdr_worker.py` is Herdr-only, and the gateway's `herdr_*` tools
@@ -658,7 +660,7 @@ resume a Herdr identity.
 - [ ] One verified ticket or approved plan governs the handoff
 - [ ] Brief contains locator, worktree, authority, and delivery permissions only
 - [ ] Destructive/history-rewriting Git operations remain prohibited
-- [ ] Visible path uses compatible injected Herdr, or a Rex split per references/rex-claude-handoff.md, without stealing focus
+- [ ] Visible path uses compatible injected Herdr, or a Rex sub-agents tab slot (max four, 2x2) per references/rex-claude-handoff.md, without stealing focus
 - [ ] The helper (Herdr) or the coordinator (Rex) persisted all six identity fields
 - [ ] Claude capacity passed and the worker runtime session's turn lease was held
 - [ ] No overlapping turn targeted the same session; unrelated sessions were not blocked
