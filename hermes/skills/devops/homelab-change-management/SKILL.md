@@ -264,6 +264,7 @@ The runbook must remain usable after Hermes/chat/browser access disappears; neve
 - Rolling a client configuration to every host before one runtime canary has connected successfully.
 - Giving only a conceptual checklist when the operator must turn the agent off during the cutover.
 - Matching command denials only against resolved absolute paths even though approval checks see raw shell syntax before `~` and `$HOME` expansion.
+- Writing `${VAR}` in an `approvals.deny` glob. Hermes expands `${...}` in config.yaml values when it loads them, so `*${HOME}/Media*` became a copy of the absolute-path rule and `ls ${HOME}/Media` went through. Use brace forms without the `$` (`*{HOME}/Media*`, plus quote-split variants) and check the loaded list, not the file.
 
 ## References
 
