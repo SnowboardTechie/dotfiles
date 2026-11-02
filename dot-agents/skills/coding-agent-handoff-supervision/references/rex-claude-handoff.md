@@ -39,9 +39,12 @@ UUID=$(uuidgen | tr A-Z a-z)
 ```
 
 - The prompt is the positional argument, so the first turn starts with the
-  pane; no typing into it. `--session-id` fixes the runtime session ID up front,
+  pane; no typing into it.  `--session-id` fixes the runtime session ID up front,
   and the transcript lands at
-  `~/.claude/projects/<worktree path with / and . as ->/<UUID>.jsonl`.
+  `~/.claude/projects/<worktree path with / and . as ->/<UUID>.jsonl`. That
+  file appears only once Claude writes its first record (about 20 s), so check
+  it after `capture` shows the turn running, and don't let a `set -e` script
+  abort before the identity record is written.
 - `--focus=false` keeps Bryan's focus; `--keep-open` keeps the pane readable
   after Claude exits.
 - An empty capacity reading is a stop, never a pass.
@@ -78,7 +81,10 @@ model, effort, `worker_runtime_session_id` (the UUID, after checking the
   ```
   `assistant end_turn` means settled; `assistant tool_use` or `user` means working.
 - Wait with a bounded background loop that polls the handback and transcript
-  (for example every 60 s, under a two-hour cap), run with
+  (for example every 60 s, under a cap sized to the task). Make it also exit
+  when the transcript has shown `end_turn` for about ten minutes with no
+  handback: that is a worker waiting on a question or one that stopped early,
+  and the coordinator must read the pane. Run it with
   `terminal(background=true, notify=true)` so settlement wakes the coordinator.
   Never resend a prompt to regain a completion signal.
 - **Text in the input line after a turn is often not Bryan's.** Claude Code
