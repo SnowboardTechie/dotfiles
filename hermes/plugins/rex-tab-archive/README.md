@@ -17,8 +17,16 @@ so finished terminal conversations stop crowding the Desktop session list.
   disconnect is retried with backoff and never archives. The
   `sessions.auto_archive` idle sweep covers whatever this misses.
 - The archive is the idle sweep's kind (`auto_archived`): nothing is deleted,
-  `session_search` still finds it, and resuming it (`hermes --resume`, `/resume`,
-  or Desktop's archived view) un-hides it. Pinned sessions are never archived.
+  `session_search` still finds it, and it stays resumable (`hermes --resume`,
+  `/resume`, or Desktop's archived view). Pinned sessions are never archived.
+- Un-hiding is Hermes's: opening a session is a read, so it comes back only when
+  you send a message in it *and* the gateway had already marked it ended (a
+  closed CLI is ended `orphan_end_grace_s`, default 5 minutes, after its tab
+  closes). Resume within those 5 minutes and it keeps working but stays hidden.
+- A resumed session keeps the `REX_*` of the tab that created it (Hermes freezes
+  a session's `client_env` at `session.create`), so the plugin cannot see the
+  new tab: closing it archives nothing, and the idle sweep handles it instead.
+  The same limit leaves `rex-tab-title` unable to name a resumed session's tab.
 - After a gateway restart, watchers re-arm from the registry on the first agent
   turn the new gateway runs (any platform, cron included).
 

@@ -19,8 +19,10 @@ server restart) is forgotten without archiving; the ``sessions.auto_archive``
 idle sweep covers those.
 
 The archive is the idle sweep's own kind (``auto_archived``): the session stays
-in ``state.db``, ``session_search`` still finds it, and resuming it un-hides it.
-Pinned sessions are never archived.
+in ``state.db``, ``session_search`` still finds it, and it stays resumable;
+Hermes un-hides it when a message is sent in it after the gateway has ended it.
+Pinned sessions are never archived. A session resumed in a new tab keeps the
+``REX_*`` frozen at its creation, so that new tab is not tracked.
 """
 
 from __future__ import annotations
