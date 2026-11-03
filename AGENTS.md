@@ -92,6 +92,7 @@ Colors are centralized in `dot-config/nvim/lua/bryan/core/colors.lua` (Lua table
 - A local commit is not completion. Verify that `origin/main` contains the pushed commit before reporting the work done.
 - Preserve unrelated work: stage only the exact task-owned paths. Never absorb, discard, stash, reset, or rewrite unrelated changes to make the commit or push succeed.
 - If `origin/main` has diverged or the push is rejected, stop and report the blocker rather than rebasing or rewriting user work automatically.
+- Stage only at commit time, in the same command as `git commit`. Automated pi-durable commits (`dot-config/pi-durable/*.json`) run `git commit` on this checkout and sweep up whatever is already in the index: `git rm` stages immediately, so prefer plain `rm` while editing.
 
 ## COMMANDS
 
