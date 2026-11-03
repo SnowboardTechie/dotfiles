@@ -1,0 +1,3 @@
+name: rex-tab-archive
+version: "1.0.0"
+description: Archive a Hermes CLI/TUI session when the Rex tab it ran in is closed

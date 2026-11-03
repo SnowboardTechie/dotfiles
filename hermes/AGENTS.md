@@ -27,3 +27,12 @@ Paths are relative to the dotfiles repo root.
 - Renames the Rex tab (a Rex *window*, not the Rex session) holding the session's `REX_BLOCK` to the Hermes session title: the instant `derived` title at once, upgraded to the `llm`/`user` title when one lands (model titling can time out). Fires from `post_llm_call`, where the session's client env is bound; `os.environ` in the gateway has no `REX_*`.
 - Only replaces Rex's generated `Window xxxxxxxx` label or a label the same gateway process wrote, so hand-named tabs stay put.
 - Managed by `install.py` (frozen copy + enable); a gateway restart activates it. Source changes need `SECURITY.md` re-reviewed.
+
+## Rex tab archive (plugin)
+
+`hermes/plugins/rex-tab-archive/` + `hermes/test_rex_tab_archive_plugin.py`
+
+- Archives every Hermes session that ran in a Rex tab when that tab closes. `post_llm_call` records the tab (window holding `REX_BLOCK`) in `$HERMES_HOME/rex-tab-archive.json`; one daemon thread per tab blocks in `rex wait -s SESSION WINDOW --for 3600s`.
+- Archives only on a live close: `rex wait` exit 0 naming the window (or its Rex session), then `rex window inspect` exit 3 "not found". Measured Rex answers: close → 0 + `{"window_id"}`; whole session closed → 0 + `{"session_id"}`; `--for` timeout → 1 "timed out"; missing target → 3 "not found"; `wait` needs `-s`.
+- A tab already gone when a watcher starts, or a server disconnect, never archives. Uses the idle sweep's `_auto_archive_lineage`, so resume un-hides; pinned sessions are skipped. Pairs with `sessions.auto_archive` (machine-local config) for anything it misses.
+- Watchers re-arm from the registry on the first agent turn after a gateway restart. Activate or reload with `hermes plugins disable/enable rex-tab-archive` after `install.py` copies it (hot reload, no restart).

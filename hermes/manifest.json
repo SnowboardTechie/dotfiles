@@ -83,6 +83,7 @@
   ],
   "plugins": [
     "matrix-key-recovery",
+    "rex-tab-archive",
     "rex-tab-title"
   ],
   "skills": [
