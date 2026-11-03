@@ -128,7 +128,7 @@ For every failing check, answer three questions:
 | `ERR_PNPM_BROKEN_LOCKFILE` | Dependabot generated a malformed lockfile | `gh pr checkout {n}`, then `rm pnpm-lock.yaml && pnpm install`, commit, push |
 | `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` | Lockfile version doesn't match pnpm version | `pnpm install` to regenerate |
 | Import or compile error after bump | Breaking API change in updated dependency | Read the dep's changelog (linked in PR body), search codebase for affected API, migrate |
-| `pnpm audit` failure | New transitive vulnerabilities | Add `pnpm.auditConfig.ignoreGhsas` entries only after reading the advisory; prefer upgrading over suppressing |
+| `pnpm audit` failure | New transitive vulnerabilities | Follow the remedy ladder in `dependency-pr-readiness` (refresh, upgrade the parent, drop the dependency, then an approved override); never suppress. Flag any cross-major override written as a bare `pkg@<range>` key: it should be one `parent>pkg@<range>` entry per parent so future dependents stay visible to the audit |
 | Missing secret (e.g., `FIDER_API_TOKEN`) | Dependabot PRs lack access to repo secrets | Add `&& env.SECRET_NAME != ''` guard to the workflow step condition |
 | Publish dry-run failure | Release metadata or packaging issue | Check the package's `files`/`exports` and version state; releases themselves are cut by release-please, not by anything in the PR |
 
