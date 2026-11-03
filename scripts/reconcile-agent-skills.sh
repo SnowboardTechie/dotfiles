@@ -145,7 +145,7 @@ HERMES_SKILLS=(
     dx-target dx-preview conforming-tech-specs proven-cores
     catalog-review dependency-review dependency-triage sprint-deliverable-update
     "${ADAPTED_CORES[@]}"
-    guided-learning yunohost-updates superwhisper-meetings
+    guided-learning yunohost-updates superwhisper-meetings bot-planning
     rex
 )
 
