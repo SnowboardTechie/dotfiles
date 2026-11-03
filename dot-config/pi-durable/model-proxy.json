@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "listen": { "host": "192.168.128.1", "port": 8892 },
+  "routes": {
+    "anthropic": {},
+    "jev": { "keys": { "sgg": { "file": "~/.secrets/pi-durable/sgg.env", "name": "TYPESAFE_API_KEY" } } }
+  }
+}

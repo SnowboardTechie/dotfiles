@@ -93,3 +93,4 @@ dot-config/pi-durable/*
 !dot-config/pi-durable/planning.json
 !dot-config/pi-durable/subscriptions.json
 !dot-config/pi-durable/sampler.json
+!dot-config/pi-durable/model-proxy.json
