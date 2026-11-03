@@ -12,7 +12,7 @@ metadata:
 
 # Bot planning
 
-Bryan's bots are Hermes profiles. Each is one continuous thread ("Bot Chat") for one area of his life or work that he checks back on: fitness, taxes, writing, learning, SGG, home, garage, plus on-demand ballot and eBay helpers. He reaches them through the Bots tab in Hermes Desktop (Studio, MacBook, Gnarbox) and Hermex on his iPhone, and bot replies are what notify his phone. This skill decides **whether** something should be a bot and plans it. The persona rubric lives in `agent-persona-design`; build mechanics live in the `hermes-agent` skill's `references/bot-profiles.md`.
+Bryan's bots are Hermes profiles. Each is one continuous thread ("Bot Chat") for one area of his life or work that he checks back on: shredder (fitness), ledger (taxes), writer, syllabus (study list), sgg (SGG work), home (house upkeep and projects), gear (bikes, motorcycles, vehicles, RV, snowboard gear, garage), ballot (elections, neutral) and flip (eBay). The current roster and routines are in the decision note below. He reaches them through the Bots tab in Hermes Desktop (Studio, MacBook, Gnarbox) and Hermex on his iPhone, and bot replies are what notify his phone. This skill decides **whether** something should be a bot and plans it. The persona rubric lives in `agent-persona-design`; build mechanics live in the `hermes-agent` skill's `references/bot-profiles.md`.
 
 ## 1. Place the request before building anything
 
