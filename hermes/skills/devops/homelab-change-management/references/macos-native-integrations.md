@@ -143,6 +143,38 @@ osascript \
 
 For Bryan, successful Apple Mail automation is still **read-only**: reading, searching, and summarization are allowed, but never compose, send, reply, forward, or transmit mail. macOS does not provide a read-only Automation grant, so this is a behavioral/tool-use boundary rather than a TCC-enforced permission.
 
+## Local Network Privacy for launchd services
+
+macOS keys Local Network permission to each executable path. A Nix rebuild that changes a service's store path (prometheus, blackbox_exporter, any LAN-dialing daemon) starts the new binary with no grant, even when it runs as a system-domain LaunchDaemon with `UserName`. Loopback, Tailscale (`utun`) and the default gateway keep working, so the failure looks like the remote host going down.
+
+Signature: LAN dials fail instantly (<1 ms) with `connect: no route to host` (EHOSTUNREACH), starting exactly when the new process launched.
+
+Differential (no remote-host access needed):
+
+```bash
+# 1. Find live LAN hosts (leave any out-of-scope host out of the probe set)
+ping -c 2 -t 3 <subnet>.255 | grep -oE 'from [0-9.]+' | sort -u
+# 2. Shell (has the grant): a live host without HTTP answers "Couldn't connect" (refused)
+curl -sS -m 3 http://<live-lan-host>/
+# 3. The service binary: blackbox's debug probe shows the error it actually got
+curl -s "http://127.0.0.1:9115/probe?module=http_2xx&target=http://<live-lan-host>/&debug=true" | grep -i error
+```
+
+Refused from the shell but `no route to host` from the service means Local Network Privacy, not the network. The router succeeding from the service is expected and does not rule it out.
+
+Corroborate without root:
+
+```bash
+plutil -p /Library/Preferences/com.apple.networkextension.plist \
+  | grep -oE '/nix/store/[a-z0-9]+-(prometheus|blackbox_exporter)-[0-9.]+' | sort -u
+log show --last 30m --style compact \
+  --predicate 'subsystem == "com.apple.networkextension" AND eventMessage CONTAINS "LocalNetwork"' | tail
+```
+
+The plist holds one entry per previously granted store path. The running path missing from it confirms the diagnosis, and its modification time shows whether any grant happened since the rebuild.
+
+Remedy: Bryan allows the binaries in System Settings > Privacy & Security > Local Network, or approves the prompt. Never click it for him. Running the service as a system-domain daemon does not fix this. A durable fix must give the dialing process a stable identity across rebuilds, and has to be verified across an actual version bump before anyone calls it fixed.
+
 ## Reboot and service verification
 
 Before a reboot test:

@@ -53,6 +53,16 @@ Then place the reviewed package declaratively:
 
 If software has no Nixpkgs/Homebrew package and officially uses a managed user installation, do not force it into an activation script merely to appear declarative. Keep the supported install path, then decide separately whether Nix should manage its launchd/systemd supervision.
 
+## System upgrade readiness and post-upgrade verification
+
+`update-system` rebuilds the current flake inputs; `upgrade-system` runs `nix flake update` first, then rebuilds (both are Bryan's zsh functions; he runs them, never the agent). When Bryan asks whether it is a good time:
+
+1. Fetch and confirm `nix-configs` is clean and equal to `origin/main`.
+2. Build the host without activating (`nix build --no-link --print-out-paths '.#darwinConfigurations.<host>.system'`) and compare with `readlink /run/current-system`. Equal means `update-system` is a no-op and only `upgrade-system` changes anything.
+3. Report input ages (`nix flake metadata --json`, `locked.lastModified`), `brew outdated`, running builds and coding workers, and nightly job windows (Hermes NAS backup, the 04:00 Hermes updater).
+4. After he upgrades, confirm the updated `flake.lock` is committed and pushed (he may commit it himself) and that a fresh build of `origin/main` equals `/run/current-system`.
+5. Expect alerts after the upgrade: every new Nix-store binary that dials the LAN loses macOS Local Network access, even as a system-domain LaunchDaemon. Diagnose with the differential in `references/macos-native-integrations.md` (Local Network Privacy) before blaming the remote host.
+
 ## Local model inventory and pruning
 
 Treat local inference models as shared state with multiple consumers, not as isolated files:
@@ -194,6 +204,7 @@ For Bryan's environment:
 - Standing exception (Bryan, 2026-11-02): agents may read, write and verify inside `/Volumes/Bryan/Backups/hermes`, the Hermes NAS backup folder (nix-configs `services.hermes-nas-backup`). The rest of the Bryan share stays out of scope. `approvals.deny` encodes this as per-character globs that block every path leaving that folder (fnmatch has no exceptions). Agents can't edit `approvals.deny`; Bryan applies a list with `hermes config set approvals.deny "$(cat <json>)"`. Check a candidate list first with Hermes's own matcher (`tools.approval_floors._match_user_deny_rule`, `approval_context._get_approval_config` stubbed) against allow and block command strings, run from a script file so the command line never names the NAS.
 - Do not list, search, index, checksum, stat, write, move, delete, mount, or unmount NAS content merely to confirm a mount.
 - Use declarative configuration and mount-table output for discovery whenever possible.
+- To judge whether the NAS is reachable, read the monitoring stack's own evidence (Prometheus `/api/v1/targets` `lastError`, `probe_success` history) and probe other LAN hosts instead. When an `approvals.deny` rule blocks a command, never rephrase it or split the address to get around the glob. The rule is the boundary, not an obstacle.
 - A mounted share may live under a home-directory path rather than `/Volumes`; never conclude it is absent from Finder's `/Volumes` view alone.
 - Behavioral policy and command-deny rules are useful guardrails, but do not misrepresent same-user access as an OS-enforced sandbox.
 - If Bryan accepts the trusted-agent model, do not repeatedly push a homelab rearchitecture after the trade-off is understood.
@@ -270,7 +281,7 @@ The runbook must remain usable after Hermes/chat/browser access disappears; neve
 
 - `references/peer-git-workspace-migration.md` — staged Mac-to-Mac project replication, Git overlap classification, absolute linked-worktree paths, vault verification, Hermes Project selection, integrity gates, and precise cleanup semantics.
 - `references/hermes-macos-migration.md` — concrete laptop-to-Studio Hermes migration details, storage boundaries, command-denial aliases, and validated Nix locations from the July 2026 session. Revalidate the repository and live target before reuse.
-- `references/macos-native-integrations.md` — four-layer readiness audit for macOS native apps, TCC permissions, optional drivers, privacy-preserving probes, and reboot verification.
+- `references/macos-native-integrations.md` — four-layer readiness audit for macOS native apps, TCC permissions, optional drivers, privacy-preserving probes, reboot verification, and Local Network Privacy diagnosis for launchd services.
 - `references/apple-calendar-notes-cli-review.md` — July 2026 security and operability review of structured Calendar/Notes candidates, reconsideration gates, and safer helper design.
 - `references/third-party-package-review.md` — pre-recommendation review checklist for source, issues, adoption, dependencies, release provenance, permissions, telemetry, destructive behavior, and safer alternatives.
 - `references/local-model-pruning.md` — digest-aware Ollama pruning, Open WebUI usage evidence, Hermes consumer checks, structured-config pitfalls, and the July 2026 Studio example.
