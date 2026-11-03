@@ -195,7 +195,7 @@
     ],
     "room": "dependencies-test",
     "gates": {},
-    "accepted_replay": null,
+    "accepted_replay": "20261103T152933Z sha256:50b1ba8939a092cab42fe980dab90eddbcd007023e5f88da423ba715b8fdc61c",
     "lines": {
       "five_hour": 75,
       "weekly": 75
