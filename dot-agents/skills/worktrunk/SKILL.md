@@ -246,7 +246,10 @@ For a local-only repository, `wt merge <target>` is available after the user
 approves the merge and project hooks pass.
 
 After a remote PR is merged and the forge state is verified, clean up with
-`wt remove`. Never remove a worktree merely because its PR exists.
+`wt remove`. Never remove a worktree merely because its PR exists. In the same
+cleanup, close out the PR's linked issues: verify and tick their acceptance
+criteria, and warn Bryan about any unmet box or any issue that will stay open
+(procedure: `review-feedback-management`, section 8.1).
 
 ---
 
