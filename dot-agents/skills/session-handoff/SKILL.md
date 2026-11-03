@@ -47,16 +47,16 @@ problem rather than handing off anyway.
 
 ## The boundary this skill exists to hold
 
-> **Tripwire: this handoff-only route cannot call the helper's `prompt`,
-> `inspect`, `read`, `answer-blocked`, or `close`, or review, correct, or accept
+> **Tripwire: this handoff-only route cannot send the worker another turn,
+> read its pane, answer it, or close it, or review, correct, or accept
 > the candidate. Retain only the status watch and read its durable handback
 > artifact to communicate the result; neither grants acceptance authority.**
 
 Three engagement modes exist, and they never mix:
 
 - **status-only** (explicit handoff-only boundary): delegate, keep one bounded terminal-status watch,
-  notify Bryan once on done/idle, blocked, failed, timed out, disappeared, or
-  identity mismatch. No review or acceptance duty.
+  notify Bryan once when the turn settles, ends without a handback (possibly
+  blocked), or times out. No review or acceptance duty.
 - **fire-and-forget** (explicit only — Bryan says "fire and forget", "do not
   monitor", or equivalent): delegate and retain no watcher at all.
 - **supervised** (ordinary implementation default): `coding-agent-handoff-supervision`, with its
@@ -70,7 +70,7 @@ and next acceptance owner. After a status-only turn settles, read that handback
 (not the pane) and report its substantive outcome, labeling worker claims as
 unverified. A missing handback means result unavailable, not completion.
 Acceptance remains a **future invocation** only because Bryan chose that boundary.
-A "done/idle" state proves turn settlement, never task completion. A blocked
+A settled watch proves turn settlement, never task completion. A blocked
 notification names the pane and identity without scraping its prompt.
 
 If Bryan wants a supervised worker whose output he accepts in this session, that
@@ -166,43 +166,33 @@ it autoloads. A second copy of the specification is the copy that goes stale.
 ### On explicit handoff-only launch: status watch
 
 Only when Bryan asks for the worker to be started, **and** this runtime is
-sitting in a Herdr pane. Check first: `HERDR_ENV=1`, a non-empty `HERDR_PANE_ID`,
-and an executable `HERDR_BIN_PATH`. Without them there is no launch route — emit
-the prompt as above, say why, and stop. That is a normal outcome, not a failure:
-the prompt is the deliverable and the launch is only convenience.
+sitting in a Rex pane. Check first: non-empty `REX_BLOCK` and `REX_SESSION`
+(found as `coding-agent-handoff-supervision` describes when the tool shell
+lacks them). Without them there is no launch route — emit the prompt as above,
+say why, and stop. That is a normal outcome, not a failure: the prompt is the
+deliverable and the launch is only convenience.
 
 Write the prompt to **session scratch beside the identity file** — not the vault,
 not `.hermes/`. It is a disposable pointer with no independent content, so a
-vault copy would be exactly the second copy the pointer contract forbids. The
-helper requires the prompt file to sit inside the identity file's directory.
+vault copy would be exactly the second copy the pointer contract forbids.
 
-The helper lives in the dotfiles repo and is reached by its pool path, because
-`coding-agent-handoff-supervision` is not curated into every runtime's skills
-directory:
+The procedure lives in the dotfiles repo and is reached by its pool path,
+because `coding-agent-handoff-supervision` is not curated into every runtime's
+skills directory. Start the worker exactly as the "Start" section of
+`dot-agents/skills/coding-agent-handoff-supervision/references/rex-claude-handoff.md`
+describes: the capacity gate, a slot in this session's sub-agents tab, the
+prompt as Claude's first turn (so it is submitted exactly once), and the
+identity record. Add `engagement_mode: status-only` to that record.
 
-```sh
-python3 dot-agents/skills/coding-agent-handoff-supervision/scripts/herdr_worker.py handoff-status \
-  --worktree "$WORKTREE" \
-  --identity-file "$SCRATCH/worker-identity.json" \
-  --prompt-file "$SCRATCH/worker-prompt.md" \
-  --name "$AGENT_NAME" \
-  --claude-model claude-opus-5-5 \
-  --title "$TITLE"
-```
-
-`--claude-model` defaults to `claude-opus-5-5`. When Bryan explicitly selects another
+The default model is `claude-opus-5-5`. When Bryan explicitly selects another
 Claude model, pass its exact full model name and carry that choice in the prompt;
 never add a fallback model. Claude effort defaults to `medium`
 (Bryan, 2026-10-23); pass a higher value only when Bryan asks for one.
 
-`handoff-status` starts the worker, records `engagement_mode: status-only`
-before anything is sent, submits the prompt exactly once through Herdr's
-wait-capable path under the same turn lease and capacity gates as a supervised
-prompt, re-validates the worker identity after it settles, and prints one
-compact JSON result: `terminal_status` (`idle`, `done`, `blocked`, `failed`,
-`timed-out`, `disappeared`, or `identity-mismatch`), the pane, agent name,
-branch, identity path, and prompt path. It never returns worker output. The
-worker and pane are left intact for a future independent acceptance.
+The status watch is that skill's `scripts/rex_wait.sh <transcript> <handback>
+<cap seconds>`. It prints one line — `SETTLED` (exit 0), `ENDTURN-NO-HANDBACK`
+(exit 2), or `TIMEOUT` (exit 1) — and never returns worker output. The worker
+and pane are left intact for a future independent acceptance.
 
 **Run it as your runtime's tracked background process with completion
 notification** — the turn can outlast any foreground time budget. End your
@@ -214,30 +204,19 @@ arrange a completion event, either keep the wait attached until it settles or
 emit the pointer prompt and say plainly that automatic notification is
 unavailable — never claim a watch that does not exist.
 
-If the caller dies mid-wait, do **not** run `handoff-status` again — that would
-be a second prompt. The identity file's `status_phase` says where it stopped
-(`prompt-not-sent`, `turn-in-flight`, `settled`); `status-wait --identity-file
-…` waits for the already-submitted turn and never resends.
+If the caller dies mid-wait, do **not** start the worker again — that would be a
+second prompt. When the identity record exists, the prompt was already
+submitted with the start; rerun only `rex_wait.sh` against the recorded
+transcript and handback. It never resends.
 
 **Explicit fire-and-forget** (Bryan said "fire and forget", "do not monitor",
-or equivalent): use `handoff` with the same arguments minus `--timeout-ms`. It
-starts the worker, records `engagement_mode: fire-and-forget`, delivers the
-prompt once **without** `--wait`, and returns. It holds no turn lease and
-watches nothing. Then terminate: report what was handed off, where the record
-lives, and the identity path — and stop.
+or equivalent): start the worker the same way, record
+`engagement_mode: fire-and-forget`, and start no wait. Then terminate: report
+what was handed off, where the record lives, and the identity path — and stop.
 
-Consequences worth knowing rather than rediscovering:
-
-- The helper **refuses** `prompt` and `answer-blocked` on a fire-and-forget
-  record, and additionally refuses `read`, `inspect`, and `close` on a
-  status-only record. The boundary above is structural, not just prose. If you
-  find yourself hitting a refusal, re-read the tripwire.
-- If delivery fails, the pane is **kept** — startup already succeeded and the
-  send is the cheap, retryable step. The command exits non-zero and reports both
-  the identity path and the prompt path so Bryan can finish it by hand. Do not
-  close the pane and do not retry into a supervision loop.
-- Legacy identity records that carry only `supervised: false` are
-  fire-and-forget; nothing was ever watching them.
+Nothing in Rex refuses a later `send` to a handed-off worker, so the tripwire
+above is the whole boundary. Do not type into, read, or close a status-only or
+fire-and-forget worker's pane, and do not retry into a supervision loop.
 
 ## Completion
 

@@ -8,7 +8,7 @@ inline checkpoint, blocker report, review summary, or completion report.
 
 Arm attention notifications immediately before the first Phase 2-or-later
 delegated, background, or visible task or finite watcher is launched, including
-Phase 2 exploration, Herdr Claude/Hermes work, Qwen work, or the fresh review
+Phase 2 exploration, visible Rex Claude/Hermes work, Qwen work, or the fresh review
 worker. A short-lived Phase 1 intake child does not arm them. Keep notifications
 armed through the terminal end of the workflow. Record the armed timestamp and
 resolved target under `## Attention notifications` in `progress.md`.

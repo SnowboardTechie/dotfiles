@@ -28,13 +28,13 @@ the evidence-manifest SHA-256. The model-family orchestrator emits:
 - one advisory Markdown report using `templates/model-review.md`;
 - one JSON sidecar naming reviewer family, provider, primary model,
   `models_used`, candidate identity, manifest digest, exact required lanes,
-  lane artifact paths/hashes, report path/hash, and Herdr route evidence;
+  lane artifact paths/hashes, report path/hash, and Rex route evidence;
 - complete route identity: surface, agent name, pane ID, runtime session ID,
   launch route, canonical worktree root/common-dir/branch, and state root.
 
 Run `scripts/validate-review-artifacts.py` with caller-supplied model predicates.
 It validates paths, hashes, exact identities, deterministic lanes, advisory
-frontmatter, Herdr route completeness, and observed models. A missing, stale,
+frontmatter, Rex route completeness, and observed models. A missing, stale,
 model-mismatched, or malformed report yields `INCOMPLETE` and no verdict. Both
 Claude and GPT reports are required before root adjudication.
 

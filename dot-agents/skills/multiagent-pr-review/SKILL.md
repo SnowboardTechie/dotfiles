@@ -64,9 +64,9 @@ target-project vault.
    proven topology. Read vault-local `AGENTS.md` first. When discovery cannot
    prove one vault, require an explicit vault path. Never create or guess a
    vault.
-6. Require `HERDR_ENV=1`, exact `HERDR_PANE_ID`, executable injected
-   `HERDR_BIN_PATH`, running Herdr, and `compatible: yes`. Do this before any
-   split.
+6. Require non-empty injected `REX_SESSION` and `REX_BLOCK`, a runnable `rex`
+   binary, and `rex whoami --json` naming that same session and block. Do this
+   before starting either reviewer.
 7. Capture the instigating session's active GPT model, provider, base URL, and
    high-reasoning route. Reject any fallback chain or conflicting
    `delegation.model`, `delegation.provider`, or `delegation.base_url` override.
@@ -135,11 +135,10 @@ and evidence set.
 
 ## Phase 2 — Launch two visible isolated orchestrators
 
-Follow the [dual Herdr layout](references/herdr-dual-review-layout.md): split the
-instigating pane right for Claude, then split that returned pane down for GPT,
-using `--no-focus` both times. Confirm Claude is upper-right and GPT lower-right.
-Persist both pane/agent/runtime-session/worktree/state identities before any
-prompt.
+Follow the [dual Rex layout](references/rex-dual-review-layout.md): start Claude,
+then GPT, one at a time in the instigating session's sub-agents tab, never
+beside the instigating block, without taking focus. Persist both
+block/label/runtime-session/worktree/state identities as each start returns.
 
 Pass both reviewers the same candidate and manifest identity plus the same
 [reviewer-orchestrator contract](references/reviewer-orchestrator-contract.md).
@@ -149,10 +148,11 @@ instigating root's active GPT model/provider/base URL, high reasoning, smart
 approvals, no yolo, and leaves that inherit or exactly match that GPT route.
 There is no fallback or background substitution.
 
-Prompt only after both agents are ready and both identity records verify. Arm
+Each reviewer's first turn is its review prompt; write and verify both prompt
+files before the first start. Arm
 one bounded, silent completion supervisor for each. A reviewer-orchestrator can
-become Herdr-`idle` between asynchronous leaves, so the first settled `agent
-wait` is not completion: require that model family's final report sidecar plus a
+end a turn between asynchronous leaves, so the first settled turn is not
+completion: require that model family's final report sidecar plus a
 settled matching agent before releasing its supervisor. Use one root-owned
 process handle per family, never one notification process per lane/stage, and do
 not set terminal `notify=true` when the root will await completion in this same
@@ -168,7 +168,7 @@ adjudication. Do not issue a verdict until both settle.
 
 For each model-family report:
 
-1. Re-read Herdr agent identity and compare surface, name, pane, kind, runtime
+1. Re-read the Rex block identity and compare surface, name, pane, kind, runtime
    session, launch route, worktree identity, and state root.
 2. Recompute the reviewer worktree branch, clean tracked/untracked status, all
    candidate fields, expected PR head ref, evidence files, and manifest hash.

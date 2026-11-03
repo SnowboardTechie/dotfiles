@@ -386,7 +386,7 @@ decision, not him.
    session is done when it is not. The final report gives the next frontier
    ticket by title and link, and the prompt to start it: a pointer naming the
    map and that ticket, nothing the map already holds. If Bryan asks to launch
-   it, use `next-session`: it starts the new Hermes session in a Herdr split
+   it, use `next-session`: it starts the new Hermes session in a Rex split
    beside this one with that prompt as its first turn, and he closes this
    session himself. `next-session` is Hermes-only; elsewhere, give him the
    prompt to paste. Never launch unasked, because the new session claims its

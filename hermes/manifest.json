@@ -41,7 +41,6 @@
     "sgg-mail-messages.js",
     "sgg-pr-review-event.py",
     "check-mattpocock-skill-updates.py",
-    "check-herdr-homebrew-atuin-fix.py",
     "check-studio-services.py",
     "check-hermes-context-threshold.py",
     "yunohost_updates_lib.py",
@@ -56,6 +55,7 @@
   ],
   "removedCopiedScripts": {
     "check-hermes-status-fix.py": "7ba46fea9e116e34453c96f567601bc70ff0f7b6661100a9099d5e37d37b0dd4",
+    "check-herdr-homebrew-atuin-fix.py": "0bee8ab9c3abbb5c8ae2f5b824c6ea3ce56e7bc82e92c0ee7dc069714d802194",
     "sgg-granola-import.py": "6b0fe304239d04e87ddf088d8ddbc1530ae91f93d526e076de3706377f904988",
     "personal_notes.py": "f600286dd1e928fb466bc650828059626fc3d757e87fd8315d9a3beff6e00a36",
     "personal-morning-brief.py": "45a3c7125bec0f917b37727e94c613e26fe565428451ea2d77f23225d569db81",
@@ -73,7 +73,6 @@
     "sgg-pr-review-reminder.py",
     "sgg-pr-review-event.py",
     "check-mattpocock-skill-updates.py",
-    "check-herdr-homebrew-atuin-fix.py",
     "check-studio-services.py",
     "check-hermes-context-threshold.py",
     "yunohost_updates_lib.py",

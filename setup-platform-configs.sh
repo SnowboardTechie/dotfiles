@@ -27,23 +27,6 @@ resolve_path() {
     perl -MCwd -le 'print Cwd::abs_path($ARGV[0])' "$1"
 }
 
-# Alacritty configuration
-echo ""
-echo "Setting up Alacritty for $PLATFORM..."
-
-ALACRITTY_CONFIG="$HOME/.config/alacritty/alacritty.toml"
-
-if [[ "$PLATFORM" == "linux" ]]; then
-    # Create symlink to Linux-specific config
-    ln -sf alacritty-linux.toml "$ALACRITTY_CONFIG"
-    echo "  Linked alacritty.toml -> alacritty-linux.toml"
-    
-elif [[ "$PLATFORM" == "macos" ]]; then
-    # Create symlink to macOS-specific config
-    ln -sf alacritty-macos.toml "$ALACRITTY_CONFIG"
-    echo "  Linked alacritty.toml -> alacritty-macos.toml"
-fi
-
 # Retired tmux links from earlier stow deployments
 echo ""
 echo "Removing retired tmux links..."

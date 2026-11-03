@@ -17,7 +17,7 @@ metadata:
 Keep authority with the Codex-backed Hermes parent while using Claude Code as a
 subscription-backed background implementation worker. This wrapper is
 explicit-request-only; normal visible coding handoffs use
-`coding-agent-handoff-supervision` through Herdr.
+`coding-agent-handoff-supervision` through Rex.
 
 **Ownership:** Codex plans, reviews, independently tests, and decides whether work is complete. Claude implements, runs the first test pass, and revises its work when Codex returns concrete findings.
 
@@ -41,7 +41,7 @@ Use this skill when:
 
 Do not use for:
 
-- Automatic routing or as a fallback when a visible Herdr handoff is unavailable.
+- Automatic routing or as a fallback when a visible Rex handoff is unavailable.
 - Planning-only requests.
 - Read-only research or explanation.
 - Tiny edits where process overhead exceeds risk, unless the user explicitly requests the loop.

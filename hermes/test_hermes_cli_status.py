@@ -14,23 +14,13 @@ import ast
 import builtins
 import contextlib
 import hashlib
-import importlib
-import importlib.util
 import json
 import os
 import subprocess
-import sys
 import tempfile
 import types
 import unittest
 from pathlib import Path
-
-# The gateway's own status parser, loaded without running the package's registration code.
-PLUGIN_DIR = Path(__file__).with_name("plugins") / "herdr-gateway"
-_PKG = "herdr_gateway_status_check"
-sys.modules[_PKG] = importlib.util.module_from_spec(importlib.util.spec_from_file_location(
-    _PKG, PLUGIN_DIR / "__init__.py", submodule_search_locations=[str(PLUGIN_DIR)]))
-RUNTIME = importlib.import_module(f"{_PKG}.hermes_runtime")
 
 PATCHES = Path(__file__).with_name("runtime-patches")
 MANIFEST = json.loads((PATCHES / "cli-status-session.json").read_text(encoding="utf-8"))
@@ -227,76 +217,6 @@ class StatusSessionPatchTests(unittest.TestCase):
         source = self.original.decode("utf-8")
         fields, queried = render(source, {SESSION})
         self.assertEqual((fields["Approvals"], queried), ("smart", [""]))
-
-
-DISPATCH_SOURCES = ("cli.py", os.path.join("hermes_cli", "cli_tui_runtime_mixin.py"))
-
-
-def slash_dispatch(printed: list[str], hooks: list[dict]) -> dict:
-    """Compile exactly the REAL idle-CLI path from a submitted slash line to its handler: the
-    slash detector, the echo-then-dispatch input step, ``process_command`` and its table."""
-    trees = [ast.parse((HERMES_ROOT / path).read_text(encoding="utf-8")) for path in DISPATCH_SOURCES]
-
-    def only(name: str) -> ast.stmt:
-        [node] = [n for tree in trees for n in ast.walk(tree)
-                  if (isinstance(n, ast.FunctionDef) and n.name == name)
-                  or (isinstance(n, ast.AnnAssign) and ast.unparse(n.target) == name)]
-        return node
-
-    modules = {
-        "cli": types.SimpleNamespace(_cprint=printed.append),
-        "hermes_cli.commands": types.SimpleNamespace(
-            resolve_command=lambda word: types.SimpleNamespace(name=word) if word == "status" else None),
-        "hermes_cli.observability.shared_metrics_events": types.SimpleNamespace(
-            record_slash_command=lambda **_: None),
-        "hermes_cli.plugins": types.SimpleNamespace(fire_pre_command_hook=lambda **kw: hooks.append(kw)),
-    }
-    namespace = {"__builtins__": dict(vars(builtins), __import__=lambda name, *_: modules[name]),
-                 "t": translate}
-    body = [only(name) for name in ("_looks_like_slash_command", "_slash_args", "_SLASH_DISPATCH",
-                                    "_slash_handler", "process_command", "_tui_run_slash_input")]
-    exec(compile(ast.Module(body=body, type_ignores=[]), "cli", "exec"), namespace)
-    return namespace
-
-
-@unittest.skipUnless(all((HERMES_ROOT / p).is_file() for p in DISPATCH_SOURCES),
-                     "installed Hermes source not present")
-class TokenedStatusDispatchTests(unittest.TestCase):
-    """The gateway sends ``/status <token>`` and accepts only the report after that input's echo."""
-
-    def test_tokened_status_is_native_status_echoed_before_its_report(self) -> None:
-        printed: list[str] = []
-        hooks: list[dict] = []
-        real = slash_dispatch(printed, hooks)
-        report = ["Hermes CLI Status", "", f"Session ID: {SESSION}", "Approvals: smart",
-                  "Agent Running: No"]
-
-        class IdleCLI:
-            _SLASH_DISPATCH = real["_SLASH_DISPATCH"]
-            _slash_handler = real["_slash_handler"]
-            process_command = real["process_command"]
-            _tui_run_slash_input = real["_tui_run_slash_input"]
-            _slash_metrics_surface = "cli"
-            _pending_agent_seed = None
-            session_id = SESSION
-
-            def __init__(self) -> None:
-                self.status_calls: list[tuple] = []
-
-            def _show_session_status(self, *args) -> None:
-                self.status_calls.append(args)
-                printed.extend(report)  # ChatConsole paints each rendered line via _cprint
-
-        query = "/status " + "5e" * 16
-        self.assertTrue(real["_looks_like_slash_command"](query))
-        cli = IdleCLI()
-        self.assertIsNone(cli._tui_run_slash_input(query), "no agent seed, so no model turn")
-        self.assertEqual(cli.status_calls, [()], "native status ran once, without the token")
-        self.assertEqual(hooks[0]["command"], "status")
-        self.assertEqual(printed[0], "\n⚙️  " + query, "the whole input is echoed first")
-        screen = "".join(line + "\n" for line in printed)
-        self.assertEqual(RUNTIME.fenced_status(screen, query), report)
-        self.assertIsNone(RUNTIME.fenced_status(screen, "/status " + "6f" * 16))
 
 
 if __name__ == "__main__":

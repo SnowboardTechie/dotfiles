@@ -256,13 +256,13 @@ The recommendation is not authorization to edit or publish. Present the diagnosi
 If the user approves and the current host is a Codex-backed Hermes parent:
 
 1. Create or reuse an isolated worktree for the dependency PR; do not switch the trunk checkout in place.
-2. Load `coding-agent-handoff-supervision`, reuse or create the governing project-workspace ticket, and launch the normal visible Claude handoff through Herdr. Herdr unavailability stops the handoff; do not silently choose a background worker.
+2. Load `coding-agent-handoff-supervision`, reuse or create the governing project-workspace ticket, and launch the normal visible Claude handoff through Rex. An unavailable Rex route stops the handoff; do not silently choose a background worker.
 3. Give the worker the ticket/PR URLs, exact implementation repository and worktree, explicit authority boundaries, and this skill's Step 5 verification outcome. Do not duplicate a self-contained implementation plan into the prompt.
 4. Codex inspects the actual diff and independently reruns the affected lane's verification. Return to Step 6 and recompute the recommendation from the final evidence.
 
 Claude's local commit, push, and PR/issue permissions must each be stated explicitly; the normal route forbids all three and leaves local commit creation and the reviewed dependency-PR branch push parent-owned. The user's approval to implement the fix authorizes the parent to edit, verify, commit, and push that reviewed unit without a second prompt. Commenting, approving, closing, and merging each still require their own direct request under Hard Rules. On other hosts, use the approved host-native implementation workflow while preserving the same diagnosis, verification, and authorization contract.
 
-**Explicit background-only alternative.** Use `codex-claude-implementation-loop` only when Bryan explicitly requests a background wrapper for that same run. It is never an automatic substitute for the visible Herdr handoff, and wrapper unavailability stops rather than changing workers.
+**Explicit background-only alternative.** Use `codex-claude-implementation-loop` only when Bryan explicitly requests a background wrapper for that same run. It is never an automatic substitute for the visible Rex handoff, and wrapper unavailability stops rather than changing workers.
 
 ---
 

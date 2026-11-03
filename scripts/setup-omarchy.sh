@@ -73,7 +73,6 @@ RECONCILERS=(
     "$SCRIPT_DIR/reconcile-agent-skills.sh"
     "$SCRIPT_DIR/reconcile-shell-additions.sh"
     "$SCRIPT_DIR/reconcile-bash-enhancements.sh"
-    "$SCRIPT_DIR/reconcile-herdr-omarchy.sh"
     "$SCRIPT_DIR/reconcile-omarchy-auto-suspend.sh"
     "$SCRIPT_DIR/retire-agent-memory.py"
 )
@@ -90,8 +89,7 @@ Ownership summary:
   ~/.hermes/skills/personal, and appends one marked source line to an
   existing ~/.bashrc (Omarchy's designated personal-additions section)
   loading portable aliases from dot-config/shell/aliases.sh plus an optional,
-  guarded Ble.sh integration for inline suggestions/highlighting, manages the
-  Omarchy-specific Herdr configuration and Glyph Rail module links, enables a
+  guarded Ble.sh integration for inline suggestions/highlighting, enables a
   repository-owned 45-minute auto-suspend shell service, and removes only the
   retired Hindsight / context-mode / claude-mem entries from Claude, Pi, and
   OpenCode JSON settings (native memory and data untouched) — nothing else.

@@ -96,7 +96,7 @@ def select_worker(
         reason = "single-loop work stays with the parent"
     elif override == "auto":
         selected = "claude"
-        reason = "substantial work uses the visible Herdr handoff"
+        reason = "substantial work uses the visible Rex handoff"
     elif override == "claude":
         selected = "claude"
         reason = "explicit visible Claude selection"

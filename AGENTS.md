@@ -10,14 +10,13 @@ GNU Stow-managed dotfiles for macOS + NixOS, plus an additive-only deployment pr
 |------|----------|-------|
 | Add shell alias | `dot-config/shell/aliases.sh` if portable (bash+zsh, `command -v`-guarded); `dot-config/zsh/aliases.zsh` for zsh/mac/nix-only (eza ls-family, Nix, ssh) | Shared file is sourced by zsh config and by Omarchy's ~/.bashrc |
 | Add zsh plugin | `dot-config/zsh/plugins.zsh` | Must add 3-path fallback (Homebrew/NixOS/Linux) |
-| Change color theme | See "Nightfly Theme" section below | 2 files must stay in sync |
-| Herdr status rail (Glyph Rail) | `dot-config/herdr/` | Module gotchas, never-do rules, and test commands live in `dot-config/herdr/AGENTS.md` |
+| Change color theme | See "Nightfly Theme" section below | |
 | Omarchy auto suspend | `omarchy/plugins/snowboardtechie.auto-suspend/` + `scripts/reconcile-omarchy-auto-suspend.sh` | Service-only Quickshell plugin with a version-controlled 45-minute timeout. It watches Omarchy's `~/.local/state/omarchy/indicators/stay-awake` state (so the stock indicator and `omarchy toggle idle` apply), uses `IdleMonitor.respectInhibitors = true`, and delegates pre-sleep locking to `omarchy-sleep-lock.service`. Keep it additive: link the plugin and add only its service ID to the existing `shell.json`; never replace Omarchy's idle service or edit `/usr/share/omarchy/`. |
 | Add a shared agent skill | `dot-agents/skills/` | Pool shared by Claude/Pi/OpenCode/Hermes; curate which tool gets it in the `*_SKILLS` arrays in `scripts/reconcile-agent-skills.sh`. See `dot-agents/README.md` |
 | Worktree guard for work repos | `dot-claude/scripts/require-worktree.sh` + its `PreToolUse` entry in `dot-claude/settings.json` | Denies tracked-file edits, commits, in-place branch switches, and `gh pr checkout` in the main checkout of repos whose `origin` is GitHub `HHS/`, `common-grants/`, or `agilesix/` (`GUARDED_ORIGIN`). Gitignored files and linked worktrees pass. Keys off the edited file's repo, not the session cwd. Bash parsing is split-on-separators, not a shell parser. Claude Code only; other agents are unguarded. Tests: `bash tests/test-require-worktree.sh`. |
 | Hermes personal routines + Studio-native Matrix dependencies | `hermes/` | Details and tests live in `hermes/AGENTS.md` |
 | Retired agent memory (Hindsight, context-mode, claude-mem) | `scripts/retire-agent-memory.py` | Retired 2026-09-29; no replacement. Agents use harness-native memory (Claude auto-memory, Hermes `MEMORY.md`/`USER.md`) plus project vaults and the `~/second-brain` vault. The helper (`--check`/`--apply`, run by `setup-platform-configs.sh` and `setup-omarchy.sh`) removes only those tools' known hooks, plugins/marketplaces, MCP servers, and Pi/OpenCode entries from machine-local JSON; it never deletes data dirs or native memory and only reports leftovers. Tests: `python3 tests/test-retire-agent-memory.py`. Do not reintroduce a Hindsight installer or plan registry — exact plans stay in Git. |
-| Skill launches into Herdr or Rex | `dot-agents/lib/terminal_host.py` | Shared host detection for skill scripts that open panes for other agents: Herdr when `HERDR_ENV`/`HERDR_PANE_ID` are set (it wins, since Herdr can run inside a Rex pane and inherit `REX_*`), else Rex from `REX_BLOCK` + `REX_SESSION`, else none. Rex's `rex` isn't on PATH; the helper falls back to `$REX_BIN_DIR/rex`. `next-session` uses it; tests in `tests/test-next-session-launch.py`. |
+| Skill launches into Rex | `dot-agents/lib/terminal_host.py` | Shared host detection for skill scripts that open panes for other agents: Rex from `REX_BLOCK` + `REX_SESSION`, else none. Rex's `rex` isn't on PATH; the helper falls back to `$REX_BIN_DIR/rex`. `next-session` uses it; tests in `tests/test-next-session-launch.py`. Herdr was retired 2026-11-03; don't reintroduce a Herdr host. |
 | Hermes in Rex | `dot-agents/skills/rex/` (Hermes-only in `HERMES_SKILLS`) + `dot-config/zsh/env.zsh` | Rex Beta's `rex skill setup` hardcodes Claude/Codex/OpenCode/Pi, so Hermes gets a repo copy of Rex's thin skill stub. Hermes tools run under the gateway, so `REX_SESSION`/`REX_BLOCK`/`REX_SERVER`/`REX_BIN_DIR` reach them only via `terminal.client_env_passthrough` in `~/.hermes/config.yaml` (machine-local, set with `hermes config set`; `env_passthrough` is the wrong knob — it forwards the gateway's own env). `env.zsh` appends `$REX_BIN_DIR` to PATH in Rex panes so Claude's Rex hook finds `rex`; the gateway's tool PATH doesn't inherit it, so the skill falls back to `$REX_BIN_DIR/rex`. Tab activity/alerts come from the OSC 7501 runtime patch; tab names come from the `rex-tab-title` plugin; closing a tab archives its Hermes sessions via the `rex-tab-archive` plugin. See `hermes/AGENTS.md`. |
 | Adapt an upstream agent skill | `dot-agents/skills/<name>/` + `dot-agents/upstreams/<source>.json` | The ledger pins the upstream commit, maps upstream paths to local ones, records what diverged and which upstream rules were rejected, and lists the files worth watching. Updates are detected by `hermes/scripts/check-mattpocock-skill-updates.py`, never auto-applied; advancing a pin is a reviewed change. |
 
@@ -58,10 +57,8 @@ Platform detection: `[[ "$OSTYPE" == "darwin"* ]]`
 - First line: 50 chars max
 - Blank line then details if needed
 
-### Nightfly Theme (2-file sync)
-Colors are centralized but defined in two places that MUST stay in sync:
-1. **Neovim**: `dot-config/nvim/lua/bryan/core/colors.lua` (Lua table)
-2. **Alacritty**: `dot-config/alacritty/alacritty-base.toml` (`[colors.primary]`)
+### Nightfly Theme
+Colors are centralized in `dot-config/nvim/lua/bryan/core/colors.lua` (Lua table); gh-dash mirrors the palette in `dot-config/gh-dash/config.yml`.
 
 ## ANTI-PATTERNS
 
@@ -69,7 +66,6 @@ Colors are centralized but defined in two places that MUST stay in sync:
 |------|--------|
 | Never commit API keys/tokens/secrets | Use `~/.secrets/` + `{file:...}` references |
 | Never add plugin path without 3-path fallback | Breaks on the other platform |
-| Never edit `alacritty.toml` directly | Generated symlink; edit `alacritty-{macos,linux}.toml` or `alacritty-base.toml` |
 | Never stow `~/.gnupg/` directory | Contains sensitive unmanaged files; manual symlink only |
 | Never overwrite `dot-config/opencode/AGENTS.md` | Identity/behavioral file, not coding guidelines |
 | Never add to `.stow-local-ignore` without checking nested impact | Root AGENTS.md ignore also blocks opencode/AGENTS.md |
@@ -80,7 +76,6 @@ Colors are centralized but defined in two places that MUST stay in sync:
 - `.stow-local-ignore` blocks AGENTS.md at ALL levels (not just root)
 - `setup-platform-configs.sh` compensates by manually symlinking `opencode/AGENTS.md`
 - GPG config requires manual: `ln -s ~/code/dotfiles/dot-gnupg/gpg-agent.conf ~/.gnupg/gpg-agent.conf`
-- `alacritty.toml` is a generated platform-conditional symlink, gitignored
 - `~/.config` is one folded symlink to `dot-config/`, so `.gitignore` allowlists the managed tools (`dot-config/*` then `!dot-config/<tool>/`). Adopting a new tool needs its own `!` line; never switch back to per-tool deny lines
 - `setup-platform-configs.sh` removes symlinks to the retired tmux configuration while preserving foreign files and links
 
@@ -120,11 +115,6 @@ bash tests/test-reconcile-agent-skills.sh
 bash tests/test-reconcile-omarchy-auto-suspend.sh
 omarchy plugin validate omarchy/plugins/snowboardtechie.auto-suspend
 
-# Herdr config + module tests: see dot-config/herdr/AGENTS.md
-
-# SSH-first Studio workspace (use herdr-studio-remote for MBP-local image bridging)
-herdr-studio
-
 # Nix rebuild (auto-detects this machine's flake output and confirms it)
 update-system   # rebuild with current flake inputs
 upgrade-system  # flake update + rebuild
@@ -135,7 +125,6 @@ git diff --check                 # Trailing whitespace check
 
 ## NOTES
 
-- `herdr-studio` attaches over ordinary SSH to the persistent Studio server; `herdr-studio-remote` keeps Herdr's local-client remote mode for MBP-local image clipboard bridging. Both target the tailnet name only while `tailscale status` succeeds, otherwise the Bonjour name `bryans-mac-studio.local` (the work MBP has no Tailscale and is used only on the home LAN)
 - `gpg-agent.conf` hardcodes `pinentry-mac` — NixOS users must override manually
 - This repo syncs to 2 remotes: git.snowboardtechie.com (primary) and a GitHub push mirror
 - `AGENTS.md` is globally gitignored via `dot-config/git/ignore`. Repos that need to track it (dotfiles, nix-configs) use `!AGENTS.md` in their `.gitignore` to override.

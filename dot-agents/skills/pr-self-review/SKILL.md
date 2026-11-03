@@ -50,7 +50,7 @@ Independence is about authorship, not process count:
   review directly.
 - When the active parent wrote or changed candidate code, dispatch one fresh
   independent review context after the candidate is frozen. Use the host's
-  normal independent delegation surface; do not require Claude or Herdr.
+  normal independent delegation surface; do not require Claude or Rex.
 - A worker's self-review never satisfies acceptance.
 
 If no context independent of the candidate author is available, stop before
@@ -245,8 +245,9 @@ counter to `1` before submitting accepted input, and preserve the increment if
 the turn fails after submission. On a delegated implementation route, return it
 to the original worker:
 
-- visible Claude/Hermes uses the existing `worker-identity.json` with
-  `coding-agent-handoff-supervision/scripts/herdr_worker.py prompt`;
+- visible Claude/Hermes uses the existing `worker-identity.json` with the
+  correction steps in
+  `coding-agent-handoff-supervision/references/rex-claude-handoff.md`;
 - Qwen uses its original session ID;
 - a native parent correction follows normal host editing only when that parent
   remains the authorized editor.
@@ -274,8 +275,8 @@ no further correction. Any validated blocker sets the result to
 `Correction bound reached — do not merge.`
 
 Provider capacity is an independent hard gate. Before every Claude correction,
-the Herdr helper must verify capacity and acquire that worker runtime session's
-turn lease. Unrelated Claude sessions are not a concurrency blocker. Exhausted
+the coordinator must verify capacity and confirm no other turn is in flight in
+that worker runtime session. Unrelated Claude sessions are not a concurrency blocker. Exhausted
 or unverifiable capacity consumes no correction and never permits an automatic
 provider switch.
 

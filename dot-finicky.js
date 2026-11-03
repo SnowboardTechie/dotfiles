@@ -20,7 +20,6 @@ const WORK_SOURCE_BUNDLES = [
   "com.tinyspeck.slackmacgap",      // Slack
   "com.anthropic.claudefordesktop", // Claude desktop
   "us.zoom.xos",                    // Zoom
-  "org.alacritty",                  // Alacritty
   "com.apple.Terminal",
   "com.googlecode.iterm2",
   "com.mitchellh.ghostty",

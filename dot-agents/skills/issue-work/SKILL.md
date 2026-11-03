@@ -298,13 +298,11 @@ recorded task shape, and selects Claude unless Bryan explicitly chose otherwise.
 
 For a visible Claude or explicit Hermes route, load
 `coding-agent-handoff-supervision` and reuse this existing governing issue; do
-not call `issue-create`. Require compatible injected Herdr, or, when this
-session runs in a Rex pane, its Rex procedure
-(`references/rex-claude-handoff.md`). Agent View and background wrappers are
-not fallbacks for visible work.
+not call `issue-create`. Require this session's Rex pane and follow that
+skill's Rex procedure (`references/rex-claude-handoff.md`). Agent View and
+background wrappers are not fallbacks for visible work.
 
-In Herdr, use its deterministic `herdr_worker.py` operations; in Rex, do the
-same checks by hand as that reference describes. Persist
+Do the checks by hand as that reference describes. Persist
 `worker-identity.json`, which owns all six fields:
 
 - `worker_surface`;
@@ -314,12 +312,13 @@ same checks by hand as that reference describes. Persist
 - `worker_runtime_session_id`; and
 - `worker_worktree_identity`.
 
-The helper hard-gates Claude capacity before start and every prompt, atomically
-serializes provider turns within each worker runtime session, waits for settlement, and
-returns compact capacity/status data. Independent Claude sessions may work
-concurrently in separate worktrees; another task's active session is not a
-blocker. A 100% or unverifiable check stops before
-another turn, consumes no correction pass, and never authorizes an automatic
+The coordinator hard-gates Claude capacity (below 75%) before start and every
+prompt, serializes provider turns within each worker runtime session, waits for
+settlement (transcript plus handback), and records start/end capacity.
+Independent Claude sessions may work concurrently in separate worktrees; another
+task's active session is not a blocker. A check at or above the ceiling, or an
+unverifiable one, stops before another turn, consumes no correction pass, and
+never authorizes an automatic
 provider switch.
 
 Send one short artifact-backed implementation prompt. The ticket/plan is the
@@ -357,9 +356,9 @@ If targeted checks find blockers that prevent a candidate commit, write one
 consolidated correction contract and resume the same worker. This consumes the
 workflow's normal correction: require the global `correction_passes` counter to
 be `0`, increment it to `1` before submission, and preserve that value even when
-the turn fails after input is accepted. Use `herdr_worker.py prompt` for visible
-Claude/Hermes in Herdr so capacity, single-flight, and identity are checked
-atomically; in Rex, follow the Rex reference's correction steps.
+the turn fails after input is accepted. For visible Claude/Hermes, follow the
+Rex reference's correction steps, checking capacity, single-flight, and identity
+before the send.
 After the turn, inspect the real diff and rerun affected targeted checks.
 
 Otherwise defer validated findings to Phase 4's normal correction rather than
@@ -487,8 +486,8 @@ draft state. Close the reviewer promptly after collection when it has no concret
 next turn, and verify resource absence. Verify hosted checks for the current head;
 report pending/failed checks honestly rather than labeling them green.
 
-After readback, close the visible implementation pane (`herdr_worker.py
-close` in Herdr, the Rex reference's close steps in Rex) as soon as it has no concrete next turn. Publication, merge, and live
+After readback, close the visible implementation pane (the Rex reference's
+close steps) as soon as it has no concrete next turn. Publication, merge, and live
 verification do not justify retaining it. Clean disposable worktrees/branches
 only when repository policy permits and unrelated work is safe.
 

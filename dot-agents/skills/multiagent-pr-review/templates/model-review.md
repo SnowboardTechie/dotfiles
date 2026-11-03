@@ -16,8 +16,8 @@ reviewer_family: <claude|gpt>
 provider: <provider>
 primary_model: <model>
 models_used: <comma-separated-observed-models>
-agent_name: <herdr-agent-name>
-pane_id: <herdr-pane-id>
+agent_name: <rex-block-label>
+pane_id: <rex-block-id>
 runtime_session_id: <runtime-session-id>
 selected_lanes: <standards,spec,correctness[,risk],ponytail>
 risk_reason: <deterministic-selection-reason>

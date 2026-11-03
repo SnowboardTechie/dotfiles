@@ -1,12 +1,12 @@
 ---
 name: coding-agent-handoff-supervision
 description: Use for visible CLI or Matrix coding-agent handoffs.
-version: 2.3.0
+version: 3.0.0
 author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
   hermes:
-    tags: [coding-agents, handoff, supervision, claude, hermes, herdr]
+    tags: [coding-agents, handoff, supervision, claude, hermes, rex]
     related_skills: [issue-work, pr-self-review, subscription-coding-worker-governance]
 ---
 
@@ -25,35 +25,25 @@ integration/publication, and live verification. A worker produces a candidate,
 not an accepted deliverable.
 
 The workflow optimizes for one useful implementation turn and one bundled
-correction, not a prolonged conversation. Herdr mechanics are owned by
-`scripts/herdr_worker.py`; do not reconstruct its command choreography in chat.
+correction, not a prolonged conversation. Rex mechanics are owned by
+[references/rex-claude-handoff.md](references/rex-claude-handoff.md) and its
+scripts (`scripts/rex_subagent_slot.py`, `scripts/rex_wait.sh`); follow that
+procedure rather than improvising pane commands in chat.
 
 ## Select the execution surface first
 
-The helper procedure below is the CLI transport, not a universal prerequisite
-for visible workers. Select the transport before checking its environment.
+Visible workers run from an interactive Hermes CLI session in a Rex pane, using
+the Rex procedure below. Select the transport before checking its environment.
 
-In a Matrix conversation with the native `herdr` toolset available, load
-`herdr-gateway:workflow` and use `herdr_start`, `herdr_wait`, `herdr_read`,
-`herdr_prompt`, `herdr_status` and `herdr_close` for the request-bound worker.
-These plugin tools may be progressively deferred rather than directly declared:
-when `tool_describe` and `tool_call` are available, describe the six exact names,
-then invoke them through `tool_call(calls=[{name, arguments}])`. Describing does
-not make them first-class provider tools. Absence from the initial schema array
-is not proof of unavailability; an actual discovery or native-policy refusal is.
-Keep the same authorization, approval, identity and cleanup checks through the
-bridge. Correlate a nested `tool_call` / `herdr_start` result with its owned pane,
-not merely the outer recorded tool name.
-No injected caller pane is expected in Matrix. Do not run the CLI helper's
-`HERDR_ENV`/`HERDR_PANE_ID` gate there and do not offer a background fallback
-because those values are absent. Do not fabricate context bindings, caller-pane
-variables or authorization to make either transport work. The native gateway
-enforces the actual room/user/thread, permitted project and runtime policy.
+A gateway-only conversation (Matrix and similar) has no caller pane and no
+visible-worker transport. Report that blocker and the way to unblock it
+(continue from a Hermes CLI session in a Rex pane in the project); do not offer
+a background fallback. Do not fabricate context bindings, caller-pane variables
+or authorization to make a transport work.
 
 For a natural request such as "Have a worker take a look at the dotfiles README",
-resolve the project directory and configured preset from established context and
-the authorized gateway configuration; do not ask the user to supply internal
-task IDs, preset names or paths already known. For a bounded read-only review,
+resolve the project directory from established context; do not ask the user to
+supply internal task IDs or paths already known. For a bounded read-only review,
 the user's request is the brief authority: narrow the brief to inspection and
 reporting, prohibit edits/publication, and start the worker. Ask a question only
 when that changes the work or a required project/permission is genuinely unknown.
@@ -63,11 +53,6 @@ the implementation default; Hermes/high is the read-only-worker default.
 Bryan's explicit runtime selection overrides this
 policy. Do not expand a simple question into an audit: keep the brief and
 verification proportional to the requested answer.
-
-If native tools are unavailable or return a refusal, report that exact transport
-or policy blocker. Do not substitute a CLI caller-pane requirement or silently
-change execution surfaces. In an interactive CLI, continue with the deterministic
-helper procedure below and retain its injected-pane prerequisites.
 
 ## When to Use
 
@@ -104,9 +89,9 @@ in every contract's handback list. Check it against the diff and the contract
 rather than recording it; an unstated difference the diff shows is a finding.
 Read the report and the real candidate before reporting completion or answering
 what Claude said. A lifecycle `done` event is not a handback. If the report is
-absent, retrieve the final message using the supervised helper's identity-checked
-`read`, or request the missing report from the same worker within its capacity
-and turn boundary. Never substitute a runbook for an unread final message while
+absent, retrieve the final message by reading the recorded worker's pane after
+checking its identity, or request the missing report from the same worker
+within its capacity and turn boundary. Never substitute a runbook for an unread final message while
 implying that message was read.
 
 Disposition remaining items as parent verification/publication, worker
@@ -243,76 +228,54 @@ selects otherwise. Use a higher `--claude-effort` only when Bryan asks for it.
 
 Starting a worker in the inspected worktree created for Bryan's authorized task
 already authorizes Claude's ordinary **Yes, I trust this folder** startup step.
-Do not ask Bryan again. The helper accepts only that recognizable trust prompt
-for the exact worktree and recorded startup pane, then verifies readiness.
+Do not ask Bryan again. Accept only that recognizable trust prompt, after
+confirming the path it shows is the exact worktree in the recorded startup pane,
+then verify readiness.
 This is not blanket permission for unrelated paths, login prompts, destructive
 commands, broader permission modes, or new task decisions.
 
 Complete when the worker can identify the artifact, worktree, and authority
 boundary without a second copy of the plan.
 
-### 3. Start through the deterministic helper
+### 3. Start the worker in Rex
 
-In Herdr, require `HERDR_ENV=1`, the injected `HERDR_PANE_ID`, and compatible
-`HERDR_BIN_PATH`. In Rex, use the Rex procedure below instead of the helper.
+Require the caller's injected `REX_BLOCK` and `REX_SESSION`, and start the
+worker through the `rex` CLI as
+[references/rex-claude-handoff.md](references/rex-claude-handoff.md) describes.
 Visible work has no silent Agent View, print-mode, tmux, or background fallback.
 
-Hermes tool shells may not inherit the CLI's Herdr variables, so an empty
-`env | grep HERDR` there does not prove the session is outside Herdr. Before
-reporting a transport blocker, find this session's own Hermes process by walking
-the tool shell's ancestry (`p=$$; while [ $p -gt 1 ]; do ps -o command= -p $p;
-p=$(ps -o ppid= -p $p); done`), read its `HERDR_*` values with
-`python3 ~/code/dotfiles/dot-agents/lib/terminal_host.py PID` (exact JSON; never
-hand-parse `ps eww`, which joins variables with spaces and breaks any value
-that contains one), and export them. Never pick the process by matching
-cwd: several Hermes sessions often share a project cwd, and their panes belong to
-other conversations. An ancestry ending at `hermes gateway run` does NOT prove the
-session has no caller pane: with the Claude direct-SDK provider, a CLI session in a
-Herdr pane runs its tools under the gateway, so the walk never reaches the CLI
+Hermes usually passes the `REX_*` values straight into the tool shell
+(`terminal.client_env_passthrough`); check `echo $REX_SESSION $REX_BLOCK` first.
+An empty result there does not prove the session is outside Rex. Before
+reporting a transport blocker, find this session's own CLI process and read its
+`REX_*` values with `python3 ~/code/dotfiles/dot-agents/lib/terminal_host.py PID`
+(exact JSON; never hand-parse `ps eww`, which joins variables with spaces and
+breaks any value that contains one, such as Rex's `REX_BIN_DIR`), and export
+them. Never pick the process by matching cwd: several Hermes sessions often
+share a project cwd, and their panes belong to other conversations. An ancestry
+ending at `hermes gateway run` does NOT prove the session has no caller pane:
+with the Claude direct-SDK provider, a CLI session in a pane runs its tools
+under the gateway, so walking the tool shell's ancestry never reaches the CLI
 (Bryan corrected this repeatedly, 2026-10-28). Identify the session's own CLI
 process instead: find this conversation's session in `~/.hermes/state.db`
 (`select id, source, started_at from sessions where id in (select session_id from
 messages where content like '%<a unique phrase from this conversation>%')`); a
 `cli` source means a CLI session. Match its `started_at` to the one Hermes process
-with `HERDR_PANE_ID` in its environment whose `ps -o lstart=` agrees within a
-second or two, and export that process's `HERDR_*` values. If that process has only
-`REX_*` values, the session is in Rex: go to the Rex paragraph below. Only a
-gateway-sourced session (Matrix and similar) has no caller pane: use the native `herdr_*` tools from
-"Select the execution surface first". If they refuse too, report the exact
-refusal and the two ways to unblock it (relaunch from a Herdr pane in the
-project, or authorize the conversation for gateway workers). Check the transport
-before writing the contract so the blocker surfaces early; the worktree and
-contract stay useful for the resumed session.
-**A CLI session in a Rex pane** (its process carries `REX_BLOCK`/`REX_SESSION`
-and no `HERDR_*`; Hermes usually passes the `REX_*` values straight into the
-tool shell) starts its worker through the `rex` CLI instead. Follow
-[references/rex-claude-handoff.md](references/rex-claude-handoff.md): the worker
-opens in the orchestrator's "<tab label> Sub Agents" tab (then "... 2", "... 3"),
-at most four per tab in a 2x2 grid placed by `scripts/rex_subagent_slot.py`, a
-new tab's root block being the worker itself, never beside the coordinator's own
-block, with Claude given the prompt as its first turn and a fixed
-`--session-id`, and the helper's checks done by hand (identity record, the 75%
-capacity gate, one turn at a time, settlement from transcript plus handback,
-close). `herdr_worker.py` is Herdr-only, and the gateway's `herdr_*` tools
-refuse a CLI conversation (`origin_not_authorized`), so neither is the route
-here. Don't ask Bryan to relaunch in Herdr; Rex is a supported host.
-Background `terminal` processes do not inherit foreground exports: put the
-`export` inside every background `prompt` command, or the helper refuses
-before sending.
+with `REX_BLOCK` in its environment whose `ps -o lstart=` agrees within a
+second or two, and export that process's `REX_*` values. Only a gateway-sourced
+session (Matrix and similar) has no caller pane; see "Select the execution
+surface first". Check the transport before writing the contract so the blocker
+surfaces early; the worktree and contract stay useful for the resumed session.
 
-Use the helper from the canonical skill directory:
-
-```sh
-python3 scripts/herdr_worker.py start \
-  --worktree "$WORKTREE" \
-  --identity-file "$STATE_DIR/worker-identity.json" \
-  --name "$AGENT_NAME" \
-  --kind claude \
-  --title "$TITLE"
-```
-
-`--claude-effort` defaults to `medium`. Pass a higher value only when Bryan asks
-for one.
+The worker opens in the orchestrator's "<tab label> Sub Agents" tab (then
+"... 2", "... 3"), at most four per tab in a 2x2 grid placed by
+`scripts/rex_subagent_slot.py`, a new tab's root block being the worker itself,
+never beside the coordinator's own block. Claude gets the prompt as its first
+turn and a fixed `--session-id`. The coordinator does the checks by hand:
+identity record, the 75% capacity gate, one turn at a time, settlement from
+transcript plus handback, close. Background `terminal` processes do not inherit
+foreground exports: put the `export` (or the literal values) inside every
+background command.
 
 When an explicitly approved installation is misclassified, distinguish missing
 authorization from missing runtime configuration. Never retry a refused action
@@ -320,23 +283,23 @@ through another tool or infer permission from frustration. Investigate the
 supported consent/configuration path. Claude ignores `autoMode` in project-local
 settings; standalone `auto-mode config --settings FILE` can read a file that the
 interactive runtime ignores. Do not claim that test proves runtime activation.
-For a parent-reviewed, user-authorized source/action-scoped exception, `start
---claude-settings FILE` accepts only `{"autoMode":{"allow":[...]}}` and passes
-its contents as inline CLI JSON for that worker, retaining auto mode and recording
-the config hash. Preserve the existing effective allow rules; change no hard or
-soft deny rules, global settings, or unrelated permission controls. Keep the
-exception in scratch, never in tracked instructions or the worker's own edits.
-If the existing runtime cannot consume CLI overrides, collect its substantive
-handback, close it normally, and launch the continuation with the same approved
-model/effort and governing artifact. Verify startup arguments/hash and the next
-normal permission gate before claiming recovery. A still-refused action remains
-blocked; do not escalate to a broader mode or another execution route.
+For a parent-reviewed, user-authorized source/action-scoped exception, pass a
+file containing only `{"autoMode":{"allow":[...]}}` to that worker's `claude`
+command as inline `--settings` JSON, retaining auto mode, and record the config
+hash in the identity record. Preserve the existing effective allow rules; change
+no hard or soft deny rules, global settings, or unrelated permission controls.
+Keep the exception in scratch, never in tracked instructions or the worker's own
+edits. If the existing runtime cannot consume CLI overrides, collect its
+substantive handback, close it normally, and launch the continuation with the
+same approved model/effort and governing artifact. Verify startup arguments/hash
+and the next normal permission gate before claiming recovery. A still-refused
+action remains blocked; do not escalate to a broader mode or another execution
+route.
 
-For read-only work or explicit Hermes selection, use `--kind hermes` after independently checking
-its smart-approval prerequisites.
+For read-only work or explicit Hermes selection, start a Hermes worker after
+independently checking its smart-approval prerequisites.
 
-The helper checks Herdr compatibility, targets the injected caller pane, splits
-without focus, starts the worker, computes Git identity, and atomically records:
+After the start, the coordinator computes Git identity and records, once:
 
 - `worker_surface`;
 - `worker_agent_name`;
@@ -345,8 +308,9 @@ without focus, starts the worker, computes Git identity, and atomically records:
 - `worker_runtime_session_id`; and
 - `worker_worktree_identity`.
 
-For Claude it also runs the live capacity gate before pane creation. Any nonzero
-capacity result stops before a provider turn.
+For Claude, run the live capacity gate before the block is created. Any nonzero
+capacity result stops before a provider turn, and an empty reading is a stop,
+never a pass.
 
 **Bryan's capacity ceiling is 75% consumed of the 5-hour window.** Do not start
 or prompt a Claude turn at or above 75%. Below 75%, dispatch: the remaining 25%
@@ -354,95 +318,68 @@ is the buffer that absorbs a turn's overrun. Do not forecast whether the
 expected turn, a concurrent session or past-lane costs will push past 75%, and
 do not defer dispatch to wait for a reset while below it. A self-imposed lower
 threshold (say, "start once below 55%") idles ready lanes for hours. Reviewers
-are Claude turns too, and the same rule applies to them. The helper's own check
-refuses only at 100%, so read its percentage against 75% yourself. When usage
-really is at or above 75%, a background waiter may poll for it to drop below 75.
-Parse the reading as `references/herdr-claude-handoff.md` describes, and make an
-empty reading fail the waiter at once.
+are Claude turns too, and the same rule applies to them. When usage really is
+at or above 75%, a background waiter may poll for it to drop below 75. Parse the
+reading as `references/rex-claude-handoff.md` describes, and make an empty
+reading fail the waiter at once.
 
-Do not hand-edit or reconstruct an identity record. `start` exclusively reserves the identity path before any pane
-side effect while holding a per-identity start lock. It refuses every
-pre-existing record, including a closed one. If an interruption leaves
-`starting` or `cleanup_required`, run `recover-start`; it either validates the
-exact recorded worker into an active identity or closes recorded resources and
-terminalizes the record. A pre-split pane inventory plus caller tab/workspace
-identity closes the crash window before the returned pane ID is journaled. Use a
-new state path for a separately authorized new worker.
+Write the identity record once, from observed values only. Do not hand-edit or reconstruct an
+identity record afterwards, and never overwrite an existing identity path,
+including a closed one. Use a new state path for a separately authorized new
+worker.
 
-Complete when the identity file validates one ready worker in the intended
+Complete when the identity file records one ready worker in the intended
 worktree.
 
 ### 4. Submit one turn per Claude session
 
-Put the short brief in a state-root file, then run `prompt` as a tracked bounded
-background process so completion returns to the parent:
+Put the short brief in a state-root file. The first turn is that file, given to
+Claude as its start argument; a later turn (a correction) is typed into the same
+block only after settlement, as the Rex reference's "A second turn" section
+shows. Before every turn:
 
-```sh
-python3 scripts/herdr_worker.py prompt \
-  --identity-file "$STATE_DIR/worker-identity.json" \
-  --prompt-file "$STATE_DIR/worker-prompt.md" \
-  --timeout-ms 7200000
-```
+1. confirm no turn is in flight in that worker runtime session;
+2. perform a fresh provider-capacity check;
+3. check the recorded block still shows the recorded label and window; and
+4. send exactly one prompt.
 
-`prompt` atomically:
-
-1. acquires a Claude-turn lease keyed to the recorded worker runtime session;
-2. rejects an overlapping turn in that same session, not unrelated agents;
-3. performs a fresh provider-capacity check;
-4. validates all six worker and Git identity fields;
-5. submits exactly one prompt with Herdr `--wait`;
-6. revalidates identity after settlement; and
-7. returns compact start/end capacity and status data.
-
-A tracked process handle proves only that the helper started, not that Herdr
-accepted the prompt. Until acknowledgement is observed, report delivery as
-unconfirmed. A nonzero exit or rejected submission requires immediate inspection
-and authorized recovery; do not end with a delivery claim or an apology. Inspect
-the exact worker and the helper's documented recovery path before declaring a
-blocker. A verified `done` worker can accept its same-session correction through
-`prompt`; do not replace it merely because its previous turn completed. Never
-retry an uncertain submission until its delivery state is resolved, bypass
-identity/capacity/lease checks, or expand permissions to make recovery succeed.
+A command's exit status proves only that the keystrokes were sent, not that
+Claude accepted the prompt. Until a new `user` record appears in the
+transcript, report delivery as unconfirmed. A nonzero exit or rejected
+submission requires immediate inspection and authorized recovery; do not end
+with a delivery claim or an apology. A settled worker can accept its
+same-session correction; do not replace it merely because its previous turn
+completed. Never retry an uncertain submission until its delivery state is
+resolved, skip identity/capacity checks, or expand permissions to make recovery
+succeed.
 
 At most one Claude turn may be in flight **within each worker runtime session**.
 Independent sessions may run concurrently in their own worktrees, including
 when they share a subscription. Another agent working on another task is not a
 handoff blocker. Capacity and exact worker/worktree identity checks still apply.
-The helper derives its lock filename from `worker_runtime_session_id`; different
-identity files for the same runtime session still share the lock. Idle retained
-sessions do not own a lease. Process exit releases it, so no stale PID cleanup
-or bypass is allowed.
+One coordinator owns each worker, and nothing else sends to it.
 
-If the worker blocks on a question or approval, use the helper's identity-checked
-`read` operation and compare the request with the governing plan. Answer an
-already-settled question from that approved authority; ask Bryan only for a new
-decision or permission. Never treat worker-suggested input as approval, infer a
-new security approval from general task authorization, or weaken an explicit
-gate. Send only input covered by Bryan's approval through `answer-blocked`, not
-`prompt`; it
-requires recorded `blocked` state, acquires the same lease, reruns capacity,
-requires recorded `blocked` state, captures `state_change_seq`, retains the
-lease until a newer idle/done/blocked state exists, and revalidates all identity
-fields. Use `--text` for a literal answer or `--keys` for an interactive choice
-such as `down enter`.
+If the worker blocks on a question or approval, read its pane with `capture`
+and compare the request with the governing plan. Answer an already-settled
+question from that approved authority; ask Bryan only for a new decision or
+permission. Never treat worker-suggested input as approval (including a greyed
+predicted prompt in the input line), infer a new security approval from general
+task authorization, or weaken an explicit gate. Send only input covered by
+Bryan's approval, as literal text or an interactive key choice such as
+`down enter`, and confirm in the pane that it was accepted before reporting it
+delivered. If the prompt is gone when you look, inspect the live state before
+any retry: the user may have answered in the visible pane or the prompt may have
+timed out. Do not invent which actor resolved it.
 
-An `answer-blocked` process handle is not a confirmed approval. Report delivery
-only after its result verifies accepted input. If it returns `recorded worker
-is not blocked`, inspect the live state before any retry: the user may have
-answered in the visible pane or the prompt may have timed out. Do not invent
-which actor resolved it. For a worker still running after a lost answer race,
-reattach a read-only identity-checked wait to the existing state-change sequence;
-never send a duplicate prompt merely to regain completion notification.
+Wait on the handback, not on a turn's end alone. A Claude turn can end while its
+own background test shell is still running and its handback is unwritten. Run
+`scripts/rex_wait.sh` as a tracked background process, which settles only when
+the transcript shows the turn ended *and* the contract's handback section ends
+with its `Divergence:` line. Never re-send a prompt to recover a completion
+signal.
 
-Wait on the handback, not on `agent_status` alone. A Claude turn can settle as
-`done` while its own background test shell is still running and its handback is
-unwritten, and a `prompt` can return `agent_prompt_stalled` while the worker is in
-fact working. In both cases, inspect the worker, then poll until the contract's
-handback section ends with its `Divergence:` line *and* the worker is not
-`working`. Never re-send a prompt to recover a completion signal.
-
-Complete when the original worker settles and the helper returns a verified
-status.
+Complete when the original worker settles and its identity still matches the
+record.
 
 ### 5. Treat completion as a claim
 
@@ -486,18 +423,11 @@ Risk-lane or high-consequence candidate, keep the implementer's pane until the
 final review is dispositioned. A closed pane forces the correction into a new
 session that lacks the implementation context.
 
-```sh
-python3 scripts/herdr_worker.py close \
-  --identity-file "$STATE_DIR/worker-identity.json"
-```
+Close it with the Rex reference's "Close" steps: exit the worker, close only the
+recorded block, confirm the block is gone, and then mark the identity closed/non-resumable.
+Do not ask for cleanup approval and never close the caller or an unrelated pane.
 
-The helper validates the recorded agent and pane, closes only that pane, verifies
-both resources are absent, and marks the identity closed/non-resumable. It
-journals `closing` before the pane mutation, so a lost acknowledgement or
-readback failure resumes safely through the same `close` operation. Do not ask
-for cleanup approval and never close the caller or an unrelated pane.
-
-Complete when the recorded pane and agent are absent.
+Complete when the recorded block is absent.
 
 ## Running an unattended multi-lane batch
 
@@ -521,7 +451,7 @@ batch), follow this shape:
   prefix every new file with the lane name (`<lane>-contract.md`,
   `<lane>-handback.md`, `<lane>-worker-identity.json`), and make the contract
   name that exact handback path, because the worker writes wherever the contract
-  says. Run every `prompt` as a background terminal job with
+  says. Run every `scripts/rex_wait.sh` wait as a background terminal job with
   `notify=true`, so each settlement wakes the coordinator.
 - **Integrate before the gate.** Merge the current `origin/main` into the feature
   branch (a signed merge commit, never a rebase) before the canonical gate. The
@@ -638,14 +568,14 @@ batch), follow this shape:
 
 Only an explicit same-run background-only request may use Claude Agent View.
 Read `references/claude-agent-view.md`. It is a separate surface and cannot
-resume a Herdr identity.
+resume a visible Rex worker's identity.
 
 ## Common Pitfalls
 
 1. Keeping small edits, fixture/harness repairs, or implementation tooling with the parent to save worker startup cost.
 2. Confusing per-session turn serialization with a global ban on concurrent Claude work.
 3. Making the prompt a second plan.
-4. Rechecking identity with improvised shell commands instead of the helper.
+4. Sending to a worker without first checking that its block still matches the identity record.
 5. Treating worker tests, idle status, or prose as parent acceptance.
 6. Letting a worker-discovered adjacent defect expand the ticket or candidate without a new user decision.
 7. Using "all call sites" as permission for an exhaustive domain audit rather than bounded application of the selected mechanism.
@@ -667,9 +597,9 @@ resume a Herdr identity.
 - [ ] One verified ticket or approved plan governs the handoff
 - [ ] Brief contains locator, worktree, authority, and delivery permissions only
 - [ ] Destructive/history-rewriting Git operations remain prohibited
-- [ ] Visible path uses compatible injected Herdr, or a Rex sub-agents tab slot (max four, 2x2) per references/rex-claude-handoff.md, without stealing focus
-- [ ] The helper (Herdr) or the coordinator (Rex) persisted all six identity fields
-- [ ] Claude capacity passed and the worker runtime session's turn lease was held
+- [ ] Visible path uses a Rex sub-agents tab slot (max four, 2x2) per references/rex-claude-handoff.md, without stealing focus
+- [ ] The coordinator persisted all six identity fields
+- [ ] Claude capacity passed (below 75%) and no other turn was in flight in the worker runtime session
 - [ ] No overlapping turn targeted the same session; unrelated sessions were not blocked
 - [ ] Delivery claims have acknowledgement evidence, not merely a background process handle
 - [ ] Rejected or uncertain submissions were inspected and recovered without bypass or duplicate delivery
@@ -682,7 +612,6 @@ resume a Herdr identity.
 
 ## References
 
-- [Herdr helper operations](references/herdr-claude-handoff.md)
 - [Visible Claude workers in Rex](references/rex-claude-handoff.md)
 - [Design-preview promotion](references/design-preview-handoff.md)
 - [Explicit background Agent View](references/claude-agent-view.md)

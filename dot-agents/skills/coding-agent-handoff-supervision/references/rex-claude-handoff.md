@@ -1,34 +1,29 @@
 # Visible Claude workers in Rex
 
-`scripts/herdr_worker.py` drives Herdr only. When this CLI session runs in a Rex
-pane, start and supervise the worker with the `rex` CLI directly, and do by hand
-the checks the helper would do: identity record, capacity gate, one turn per
-session, settlement, close. Everything else in the skill (contract file,
+A CLI session in a Rex pane starts and supervises its worker with the `rex` CLI
+directly, and does these checks by hand: identity record, capacity gate, one
+turn per session, settlement, close. Everything else in the skill (contract file,
 one-line prompt, permissions, parent acceptance, correction bound) is unchanged.
 Verified end to end (start, settle, close) on durable-pi-workspace#278's
 layout prototype, 2026-11-02.
 
 ## Which host you are in
 
-Hermes tools run under the gateway, so the tool shell has no `HERDR_*` or
-`REX_*` of its own. Find this session's CLI process as SKILL.md describes and
-read it with `python3 ~/code/dotfiles/dot-agents/lib/terminal_host.py PID`:
-
-- `HERDR_PANE_ID` present: Herdr; use the helper.
-- only `REX_BLOCK` and `REX_SESSION`: Rex; use this page. Hermes's
-  `terminal.client_env_passthrough` usually puts the `REX_*` values in the tool
-  shell already; check `echo $REX_SESSION $REX_BLOCK` first.
-- the gateway's `herdr_*` tools refuse a CLI conversation
-  (`origin_not_authorized`); they are for Matrix, not a fallback here.
+Hermes tools run under the gateway, so the tool shell may have no `REX_*` of
+its own. Hermes's `terminal.client_env_passthrough` usually puts the `REX_*`
+values in the tool shell already; check `echo $REX_SESSION $REX_BLOCK` first.
+Otherwise find this session's CLI process as SKILL.md describes and read it with
+`python3 ~/code/dotfiles/dot-agents/lib/terminal_host.py PID`: `REX_BLOCK` and
+`REX_SESSION` present means Rex; use this page. Without them there is no caller
+pane and no visible-worker route.
 
 The binary is not on PATH: `REX="$REX_BIN_DIR/rex"`. `"$REX" whoami --json`
 confirms the session and block still exist.
 
 ## Start
 
-**Workers never open in the orchestrator's own tab** (the same rule as Herdr's,
-`herdr-claude-handoff.md`): a split beside the coordinator's block squeezes the
-chat Bryan reads. They open in the orchestrator's sub-agents tabs, in the same
+**Workers never open in the orchestrator's own tab**: a split beside the
+coordinator's block squeezes the chat Bryan reads. They open in the orchestrator's sub-agents tabs, in the same
 session, without taking focus:
 
 - **Tabs.** The first is the caller tab's label plus " Sub Agents" (for example
@@ -42,6 +37,9 @@ session, without taking focus:
 - **No empty shell.** A new tab is created *with the worker's command*, so its
   root block is the worker. Never `window new` without a command and then
   split: the tab's initial shell is left idle and the grid starts one short.
+- **One sub-agents tab set per orchestrator,** so many orchestrators can run at
+  once while Bryan talks only to them. Read-only research and briefing agents
+  also run as visible workers here, not as hidden background delegations.
 - **Never** `split -b "$REX_BLOCK"`. A worker started in the wrong place can be
   moved without stopping it: `"$REX" block move -s "$REX_SESSION" <block> right
   <a block in the sub-agents tab>`.
@@ -54,7 +52,7 @@ start, never from a cached layout:
 ```sh
 S=<ticket state dir>; W=<worktree>; NAME=<agent name, e.g. sgg-278-layout>
 SK=~/code/dotfiles/dot-agents/skills/coding-agent-handoff-supervision
-cap=$(~/.config/herdr/claude-usage.sh | grep -oE '[0-9]+%' | head -1 | tr -d %)
+cap=$("$SK/scripts/claude-usage.sh" | grep -oE '[0-9]+%' | head -1 | tr -d %)
 [ -n "$cap" ] && [ "$cap" -lt 75 ] || { echo "capacity $cap: stop"; exit 1; }
 UUID=$(uuidgen | tr A-Z a-z)
 WORKER=(claude --permission-mode auto --model claude-opus-5-5 --effort medium
@@ -90,7 +88,18 @@ worker removes the tab.
   abort before the identity record is written.
 - `--focus=false` keeps Bryan's focus; `--keep-open` keeps the pane readable
   after Claude exits. Record `worker_rex_window` as the sub-agents tab.
-- An empty capacity reading is a stop, never a pass.
+- An empty capacity reading is a stop, never a pass. The usage line begins
+  with a non-ASCII icon (e.g. `<icon> 72% ↻1:11`), so an anchored `^ *[0-9]+`
+  never matches; parse it with `grep -oE '[0-9]+%'` as above, and make any
+  capacity waiter fail at once on an empty reading instead of looping.
+- `claude-opus-5-5` at `medium` effort is the default (Bryan, 2026-10-23). Set
+  the exact full model name only when Bryan explicitly selects a different
+  Claude model, and a higher effort only when he asks; never add a fallback
+  model.
+- If the worker doesn't reach a running turn, `capture` its pane before doing
+  anything else, so an approval or login prompt isn't lost behind a generic
+  failure. Startup prompts other than folder trust remain blockers. Never
+  attribute a startup failure to unrelated active agents.
 - A new worktree may show Claude's "Yes, I trust this folder" prompt. Starting
   in the authorized worktree already covers it: confirm the shown path is the
   worktree in `capture`, then `"$REX" send-key -s "$REX_SESSION" -b <block> down enter`.
@@ -101,7 +110,15 @@ Then write `<lane>-worker-identity.json` yourself: `worker_surface: "rex"`,
 `.block_ids[0]`), `worker_rex_session`, `worker_rex_window`, `worker_kind`,
 model, effort, `worker_runtime_session_id` (the UUID, after checking the
 `.jsonl` exists), `worker_worktree_identity` (branch, git common dir, root),
-`capacity_start_percent`, `closed: false`.
+`capacity_start_percent`, `closed: false`. Use a fresh path: never overwrite an
+existing identity file, including a closed one.
+
+**A Hermes worker** (read-only work, or Bryan's explicit selection) uses the same
+placement with `hermes chat --query-file "$S/<lane>-prompt.md"` as the worker
+command, as `next-session` starts Hermes in Rex. It has no Claude transcript, so
+the transcript checks and `rex_wait.sh` below don't apply: settle it on the
+handback file plus `capture`. Independently check its smart approvals and no
+yolo mode first.
 
 ## Watch and settle
 
@@ -135,6 +152,12 @@ model, effort, `worker_runtime_session_id` (the UUID, after checking the
 - Background shells load the interactive profile: use `test -f`, never `ls`,
   to check a path there, because an alias can swap `ls` for a tool that rejects
   the argument and kills the waiter before it starts.
+- **A worker that backgrounds its own long check may not resume.** Claude can
+  start a long run (a full mutant search, a test suite) as a background shell,
+  end its turn and promise to finish "once it reports". Put "run long checks in
+  the foreground" in every contract. When it happens anyway (`rex_wait.sh` exits
+  2), send the same session one short continuation prompt to finish from the
+  run's output. That is not a correction pass.
 - **Text in the input line after a turn is often not Bryan's.** Claude Code
   greys in a predicted next prompt (prompt suggestion). Plain `capture` can't
   tell it from typed text; `capture --format=html` shows it inside
@@ -178,3 +201,13 @@ No turn lease or journal: two coordinators could both type into the block, so
 one coordinator owns each worker and nothing else sends to it. No automatic
 identity revalidation: before every `send`, `"$REX" block inspect <block>`
 must still show the recorded label and window.
+
+## Failure rules
+
+- Never edit an identity file to make a mismatch pass.
+- Never switch providers when capacity or identity fails.
+- Never target a globally focused pane when the caller's `REX_BLOCK` is
+  unavailable.
+- Preserve partial repository bytes before closing a capacity-blocked worker.
+- Ask Bryan before answering a blocked approval or question that the governing
+  plan doesn't already settle.

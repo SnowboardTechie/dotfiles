@@ -43,7 +43,7 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.skill = read(SKILL_PATH)
-        cls.layout = read(SKILL_ROOT / "references" / "herdr-dual-review-layout.md")
+        cls.layout = read(SKILL_ROOT / "references" / "rex-dual-review-layout.md")
         cls.orchestrator = read(
             SKILL_ROOT / "references" / "reviewer-orchestrator-contract.md"
         )
@@ -151,20 +151,25 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
             "model agreement must not be treated as proof",
         )
 
-    def test_herdr_layout_is_right_then_down_without_focus(self) -> None:
-        self.assertIn("herdr-claude-handoff.md", self.layout)
+    def test_rex_layout_uses_the_sub_agents_tab_without_focus(self) -> None:
+        self.assertIn("rex-claude-handoff.md", self.layout)
         self.assert_matches(
             self.layout,
-            r"split.*--pane.*HERDR_PANE_ID.*--direction right.*--ratio 0\.5.*--no-focus",
-            "the first split must target the caller and preserve focus",
+            r"REX_SESSION.*REX_BLOCK.*whoami --json",
+            "preflight must check the injected caller block",
         )
         self.assert_matches(
             self.layout,
-            r"split.*--pane.*claude.*pane.*--direction down.*--ratio 0\.5.*--no-focus",
-            "the second split must target the returned Claude pane",
+            r"sub-agents tab.*never beside.*instigating block.*without taking focus",
+            "reviewers open in the sub-agents tab and never steal focus",
         )
-        self.assert_matches(self.layout, r"Claude.*upper|top.*Claude", "Claude must be upper-right")
-        self.assert_matches(self.layout, r"GPT.*lower|bottom.*GPT", "GPT must be lower-right")
+        self.assert_matches(
+            self.layout,
+            r"one at a time.*rex_subagent_slot\.py.*Claude first, then GPT",
+            "reviewers are placed one at a time from the live layout",
+        )
+        self.assert_matches(self.layout, r"surface: rex", "identity records name the Rex surface")
+        self.assertNotIn('split -b "$REX_BLOCK"', self.layout)
         self.assert_matches(self.layout, r"two.*identity records|identity record.*each", "two identities are required")
         self.assert_matches(
             self.layout,
@@ -304,7 +309,7 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
     def test_expected_linked_files_exist_and_markdown_links_resolve(self) -> None:
         expected = (
             SKILL_ROOT / "references" / "reviewer-orchestrator-contract.md",
-            SKILL_ROOT / "references" / "herdr-dual-review-layout.md",
+            SKILL_ROOT / "references" / "rex-dual-review-layout.md",
             SKILL_ROOT / "references" / "artifact-contract.md",
             SKILL_ROOT / "templates" / "model-review.md",
             SKILL_ROOT / "templates" / "adjudication.md",
@@ -446,7 +451,7 @@ class ReviewArtifactValidatorTest(unittest.TestCase):
             "report_path": str(report_path.relative_to(self.root)),
             "report_sha256": self.sha256(report_path),
             "route_evidence": {
-                "surface": "herdr",
+                "surface": "rex",
                 "agent_name": f"review-{family}",
                 "pane_id": f"pane-{family}",
                 "runtime_session_id": f"session-{family}",
@@ -579,6 +584,12 @@ class ReviewArtifactValidatorTest(unittest.TestCase):
     def test_empty_route_identity_is_rejected(self) -> None:
         sidecar = self.load_sidecar("claude")
         sidecar["route_evidence"]["runtime_session_id"] = ""
+        self.save_sidecar("claude", sidecar)
+        self.assert_error("ROUTE_INCOMPLETE", families=("claude",), sidecar_families=("claude",))
+
+    def test_unknown_route_surface_is_rejected(self) -> None:
+        sidecar = self.load_sidecar("claude")
+        sidecar["route_evidence"]["surface"] = "tmux"
         self.save_sidecar("claude", sidecar)
         self.assert_error("ROUTE_INCOMPLETE", families=("claude",), sidecar_families=("claude",))
 

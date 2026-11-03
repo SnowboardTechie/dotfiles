@@ -290,14 +290,16 @@ class SessionHandoffEngagementContractTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.handoff = " ".join(read(REPO_ROOT / "dot-agents/skills/session-handoff/SKILL.md").split())
         cls.reference = " ".join(read(
-            REPO_ROOT / "dot-agents/skills/coding-agent-handoff-supervision/references/herdr-claude-handoff.md"
+            REPO_ROOT / "dot-agents/skills/coding-agent-handoff-supervision/references/rex-claude-handoff.md"
         ).split())
 
     def test_default_launch_is_status_only_and_fire_and_forget_is_explicit(self) -> None:
         for phrase in (
-            "default launch is status-tracked",
-            "herdr_worker.py handoff-status",
+            "sitting in a Rex pane",
+            "rex-claude-handoff.md",
+            "`engagement_mode: status-only`",
             "Explicit fire-and-forget",
+            "`engagement_mode: fire-and-forget`, and start no wait",
             "coding-agent-handoff-supervision",
             "never mix",
         ):
@@ -305,8 +307,9 @@ class SessionHandoffEngagementContractTest(unittest.TestCase):
                 self.assertIn(phrase, self.handoff)
 
     def test_tripwire_forbids_review_but_permits_the_tracked_wait(self) -> None:
-        for phrase in ("`prompt`, `inspect`, `read`,", "`answer-blocked`, or `close`",
-                       "status-only tracked wait", "Do not poll"):
+        for phrase in ("cannot send the worker another turn", "read its pane, answer it, or close it",
+                       "Retain only the status watch", "rex_wait.sh", "Do not poll",
+                       "do **not** start the worker again"):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, self.handoff)
 
@@ -317,9 +320,9 @@ class SessionHandoffEngagementContractTest(unittest.TestCase):
                 self.assertIn(phrase, self.handoff)
         self.assertIn("never add a fallback model", self.handoff)
 
-    def test_reference_documents_both_modes_and_recovery(self) -> None:
-        for phrase in ("handoff-status", "status-wait", "fire-and-forget, explicit only",
-                       "No worker output is ever returned", "can never double-submit"):
+    def test_reference_documents_start_watch_and_close(self) -> None:
+        for phrase in ("## Start", "## Watch and settle", "## Close", "rex_wait.sh",
+                       "Never resend a prompt to regain a completion signal"):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, self.reference)
 
@@ -561,8 +564,8 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
         self.assertIn("explicit same-run", self.body.lower())
         self.assertIn("Qwen is\nnever an automatic route", self.body)
 
-    def test_visible_worker_uses_one_helper_and_complete_identity(self) -> None:
-        self.assertIn("herdr_worker.py", self.body)
+    def test_visible_worker_uses_the_rex_procedure_and_complete_identity(self) -> None:
+        self.assertIn("references/rex-claude-handoff.md", self.body)
         for field in (
             "worker_surface",
             "worker_agent_name",
@@ -574,7 +577,7 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
             with self.subTest(field=field):
                 self.assertIn(field, self.body)
                 self.assertIn(field, self.handoff_supervision)
-        self.assertIn("atomically\nserializes provider turns", self.body)
+        self.assertIn("serializes provider turns within each worker runtime session", self.body)
         self.assertIn("never authorizes an automatic\nprovider switch", self.body)
 
     def test_destructive_git_remains_absolutely_prohibited(self) -> None:
@@ -618,23 +621,18 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.body = read(POOL / "coding-agent-handoff-supervision" / "SKILL.md")
-        cls.herdr = read(
+        cls.rex = read(
             POOL
             / "coding-agent-handoff-supervision"
             / "references"
-            / "herdr-claude-handoff.md"
+            / "rex-claude-handoff.md"
         )
-        cls.script = (
-            POOL
-            / "coding-agent-handoff-supervision"
-            / "scripts"
-            / "herdr_worker.py"
-        )
+        cls.scripts = POOL / "coding-agent-handoff-supervision" / "scripts"
         cls.tests = (
             POOL
             / "coding-agent-handoff-supervision"
             / "tests"
-            / "test_herdr_worker.py"
+            / "test_rex_subagent_slot.py"
         )
 
     def test_preparation_reuses_or_creates_one_ticket(self) -> None:
@@ -665,28 +663,28 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
             "worker authorship and Sol acceptance must stay distinct",
         )
 
-    def test_helper_and_tests_exist(self) -> None:
-        self.assertTrue(self.script.is_file())
+    def test_rex_scripts_and_tests_exist(self) -> None:
+        self.assertTrue((self.scripts / "rex_subagent_slot.py").is_file())
+        self.assertTrue((self.scripts / "rex_wait.sh").stat().st_mode & 0o111)
         self.assertTrue(self.tests.is_file())
-        self.assertTrue(self.script.stat().st_mode & 0o111)
-        self.assertIn("herdr_worker.py", self.body)
-        self.assertIn("herdr_worker.py", self.herdr)
+        for script in ("rex_subagent_slot.py", "rex_wait.sh"):
+            with self.subTest(script=script):
+                self.assertIn(script, self.body)
+                self.assertIn(script, self.rex)
 
-    def test_capacity_and_session_turn_lease_are_hard_gates(self) -> None:
+    def test_capacity_and_session_turn_serialization_are_hard_gates(self) -> None:
         for token in (
             "within each worker runtime session",
             "Independent sessions may run concurrently",
             "Any nonzero\ncapacity result stops",
             "never switch providers",
+            "75% consumed",
+            "An empty capacity reading is a stop, never a pass",
+            "One turn at a time per session",
         ):
             with self.subTest(token=token):
-                self.assertIn(token.lower(), (self.body + self.herdr).lower())
-        script = read(self.script)
-        self.assertIn("fcntl.LOCK_EX | fcntl.LOCK_NB", script)
-        self.assertIn('"--check-capacity"', script)
-        self.assertIn('"--wait"', script)
-        self.assertNotIn("working_claude_names", script)
-        self.assertIn('record.get("worker_runtime_session_id")', script)
+                self.assertIn(token.lower(), (self.body + self.rex).lower())
+        self.assertIn('[ "$cap" -lt 75 ]', self.rex)
 
     def test_visible_authority_and_identity_remain_fail_closed(self) -> None:
         for token in (
@@ -705,7 +703,7 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
     def test_pane_is_released_when_no_turn_remains(self) -> None:
         self.assertIn("Release the pane promptly", self.body)
         self.assertIn("Pending publication, merge, or live\nverification", self.body)
-        self.assertIn("marks the identity closed/non-resumable", self.body)
+        self.assertIn("mark the identity closed/non-resumable", self.body)
 
 
 class ReviewContractTest(_MatchMixin, unittest.TestCase):

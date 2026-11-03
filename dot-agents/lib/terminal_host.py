@@ -1,16 +1,10 @@
-"""Which terminal multiplexer, if any, the calling agent runs inside.
+"""Which terminal host, if any, the calling agent runs inside.
 
-Skills that open panes or tabs for other agents support Herdr and Rex:
-next-session through this module, and handoff supervision through its Herdr
-helper (scripts/herdr_worker.py, Herdr only) or, in Rex, the manual procedure in
-its references/rex-claude-handoff.md. Both inject identifying variables into
-every pane they start, and nothing else is trusted: not UI focus, not a running
+Skills that open panes or tabs for other agents support Rex: next-session
+through this module, and handoff supervision through the manual procedure in
+its references/rex-claude-handoff.md. Rex injects identifying variables into
+every pane it starts, and nothing else is trusted: not UI focus, not a running
 server, not a binary merely being on PATH.
-
-Herdr wins when both are present. Herdr can run inside a Rex pane, and then
-its panes inherit that Rex pane's REX_* variables, which name the pane hosting
-Herdr rather than the caller. The reverse doesn't happen: Rex panes are started
-by the Rex server, which is never itself inside Herdr.
 
 Import from a skill script with:
 
@@ -32,16 +26,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
 
-# The variable families that identify a host. Only these are ever adopted from
+# The variable family that identifies a host. Only these are ever adopted from
 # another process's environment.
-HOST_PREFIXES = ("HERDR_", "REX_")
+HOST_PREFIXES = ("REX_",)
 
 
 @dataclass(frozen=True)
 class Host:
-    kind: str  # "herdr" or "rex"
-    pane: str  # Herdr pane ID or Rex block ID of the caller
-    session: str  # Rex session ID; empty for Herdr
+    kind: str  # always "rex"
+    pane: str  # Rex block ID of the caller
+    session: str  # Rex session ID
     binary: str  # executable to run for this host
 
 
@@ -58,12 +52,8 @@ def _rex_binary(env: Mapping[str, str]) -> str:
 
 
 def detect(env: Mapping[str, str] | None = None) -> Host | None:
-    """The host this process runs in, or None outside both."""
+    """The host this process runs in, or None outside Rex."""
     env = os.environ if env is None else env
-    herdr_pane = env.get("HERDR_PANE_ID", "")
-    if env.get("HERDR_ENV") == "1" or herdr_pane:
-        binary = env.get("HERDR_BIN_PATH") or env.get("HERDR_BIN") or "herdr"
-        return Host("herdr", herdr_pane, "", binary)
     block, session = env.get("REX_BLOCK", ""), env.get("REX_SESSION", "")
     if block and session:
         return Host("rex", block, session, env.get("REX_BIN") or _rex_binary(env))
@@ -124,7 +114,7 @@ def _darwin_environment(pid: int) -> list[bytes]:
 
 
 if __name__ == "__main__":
-    # python3 terminal_host.py <pid>: that process's HERDR_* and REX_* values as
+    # python3 terminal_host.py <pid>: that process's REX_* values as
     # JSON, exact even when a value contains spaces. Use it instead of `ps eww`.
     import json
 

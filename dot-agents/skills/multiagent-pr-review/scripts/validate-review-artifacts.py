@@ -158,7 +158,7 @@ def verify_route(sidecar: dict[str, Any]) -> None:
     for field in ROUTE_FIELDS:
         if not isinstance(route.get(field), str) or not route[field].strip():
             raise ValidationError("ROUTE_INCOMPLETE")
-    if route["surface"] != "herdr":
+    if route["surface"] != "rex":
         raise ValidationError("ROUTE_INCOMPLETE")
 
 

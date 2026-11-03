@@ -12,7 +12,7 @@ Lazy.nvim-managed config using modern Neovim 0.11+ APIs. Nightfly theme. No Maso
 | Add keybinding | `lua/bryan/core/keymaps.lua` | Or in plugin's config function if plugin-specific |
 | Change editor option | `lua/bryan/core/options.lua` | |
 | Add LSP server | `lua/bryan/plugins/lsp.lua` | Add to `vim.lsp.enable()` list; server must be on PATH via Nix |
-| Change colors | `lua/bryan/core/colors.lua` | Lualine + nvim-tree auto-inherit; also update Alacritty |
+| Change colors | `lua/bryan/core/colors.lua` | Lualine + nvim-tree auto-inherit; also update gh-dash |
 
 ## CONVENTIONS
 

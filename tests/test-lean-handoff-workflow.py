@@ -26,7 +26,7 @@ class LeanIssueWorkContractTests(unittest.TestCase):
         cls.lane_reviewer = read("dot-claude/agents/lane-reviewer.md")
         cls.helper_reference = read(
             "dot-agents/skills/coding-agent-handoff-supervision/"
-            "references/herdr-claude-handoff.md"
+            "references/rex-claude-handoff.md"
         )
 
     def test_exploration_is_conditional(self) -> None:
@@ -69,21 +69,17 @@ class LeanIssueWorkContractTests(unittest.TestCase):
         self.assertIn("`correction_passes_consumed`", self.review)
         self.assertIn("must not reset it", self.review)
 
-    def test_blocked_worker_has_validated_read_and_answer_operations(self) -> None:
-        helper = read(
-            "dot-agents/skills/coding-agent-handoff-supervision/"
-            "scripts/herdr_worker.py"
-        )
-        self.assertIn('subparsers.add_parser("read")', helper)
-        self.assertIn('subparsers.add_parser("answer-blocked")', helper)
-        self.assertIn('subparsers.add_parser("recover-start")', helper)
-        self.assertIn("state_change_seq", helper)
-        self.assertIn("agent_not_found", helper)
-        self.assertIn("pane_not_found", helper)
-        self.assertIn("pre_split_pane_ids", helper)
-        self.assertIn('record["closing"] = True', helper)
-        self.assertIn("answer-blocked", self.helper_reference)
-        self.assertNotIn("--caller-pane", helper)
+    def test_blocked_worker_is_read_checked_and_answered_only_from_authority(self) -> None:
+        ref = " ".join(self.helper_reference.split())
+        self.assertIn("A worker blocked on a permission or question shows it in `capture`", ref)
+        self.assertIn("Answer only what the governing plan already settles", ref)
+        self.assertIn("anything new goes to Bryan", ref)
+        self.assertIn("before every `send`", ref)
+        self.assertIn("block inspect", ref)
+        self.assertIn("Confirm a new `user` record in the transcript", ref)
+        self.assertIn("Never resend a prompt to regain a completion signal", ref)
+        self.assertIn("close only the recorded block", ref)
+        self.assertIn("expect 0", ref)
 
     def test_cross_repository_reviewer_admits_validated_ticket_state(self) -> None:
         for field in (
@@ -120,15 +116,22 @@ class LeanIssueWorkContractTests(unittest.TestCase):
         self.assertIn("issue-work-efficiency-pilot.json", self.issue_work)
         self.assertIn("record_efficiency.py", self.issue_work)
 
-    def test_herdr_mechanics_have_one_script_owner(self) -> None:
-        helper = POOL / "coding-agent-handoff-supervision" / "scripts" / "herdr_worker.py"
-        tests = POOL / "coding-agent-handoff-supervision" / "tests" / "test_herdr_worker.py"
-        self.assertTrue(helper.is_file())
-        self.assertTrue(tests.is_file())
-        self.assertIn("herdr_worker.py", self.handoff)
-        self.assertIn("herdr_worker.py", read(
-            "dot-agents/skills/coding-agent-handoff-supervision/references/herdr-claude-handoff.md"
-        ))
+    def test_rex_mechanics_have_script_owners(self) -> None:
+        skill = POOL / "coding-agent-handoff-supervision"
+        self.assertEqual(
+            sorted(p.name for p in (skill / "scripts").iterdir() if p.suffix in (".py", ".sh")),
+            ["rex_subagent_slot.py", "rex_wait.sh"],
+        )
+        self.assertEqual(
+            sorted(p.name for p in (skill / "tests").glob("test_*.py")),
+            ["test_rex_subagent_slot.py"],
+        )
+        self.assertTrue((skill / "scripts" / "rex_wait.sh").stat().st_mode & 0o111)
+        self.assertIn("references/rex-claude-handoff.md", self.handoff)
+        for script in ("rex_subagent_slot.py", "rex_wait.sh"):
+            with self.subTest(script=script):
+                self.assertIn(script, self.handoff)
+                self.assertIn(script, self.helper_reference)
 
 
 if __name__ == "__main__":

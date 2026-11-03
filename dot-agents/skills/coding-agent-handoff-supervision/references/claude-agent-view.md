@@ -3,9 +3,9 @@
 ## When to use it
 
 Use this path only when Bryan explicitly requests background-only Claude work
-for the current run. It is not a fallback for unavailable Herdr and cannot
-satisfy a persisted visible-worker correction contract. Do not start it after a
-Herdr worker was successfully created.
+for the current run. It is not a fallback for an unavailable Rex route and
+cannot satisfy a persisted visible-worker correction contract. Do not start it
+after a visible Rex worker was successfully created.
 
 ## Dispatch a background worker
 
