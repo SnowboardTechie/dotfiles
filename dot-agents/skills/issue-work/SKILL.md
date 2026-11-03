@@ -589,6 +589,12 @@ interruptions, and later escaped Critical/Major findings. Improvement means
 fewer turns and shorter delivery with no increase in escaped blockers; do not
 optimize for low counts by weakening a gate.
 
+**A blocked tool call blocks that call, not the lane.** When an approval gate refuses or times out on one command,
+don't retry it or reach the same result another way, but keep doing every authorized step that doesn't need it. Never
+turn it into a question that reconfirms work the run already covers: a defect found in verification is fixed in-lane
+under the same authority. Mention the blocked call in the next report. (Bryan, 2026-11-03: a timed-out read of a
+replay log became an hour-long "go?" card for an obvious in-scope fix the diagnosis didn't even need.)
+
 ## Hard stops
 
 Stop when:
