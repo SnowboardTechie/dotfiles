@@ -66,6 +66,15 @@ Establish what is actually being decided, and which downstream artifact fits:
   already chosen design*. If architecture is still open, use this skill to
   settle it first, then route the decision record to `plan` in Phase 5.
 
+Also name the **audiences** for the decisions. For an API contract that usually
+means consumers (clients calling the API) and implementers (servers providing
+it). Maintainer and tooling concerns, such as code generation, schema tooling,
+mocks, CLI checks, and framework reference code, are not ADR decisions. Capture
+them in a separate notes section, reference tab, or implementation issues so
+they stay findable without crowding the decision. Why: mixing audiences makes
+every reader wade through obligations that aren't theirs, and that's how an ADR
+grows past what anyone will review.
+
 Teach the distinction the first time it comes up — the author is often new.
 If it's an ADR, you're filling MADR anatomy (see `references/adr-anatomy.md`).
 If it's a tech spec, you're filling the spec skeleton (see
@@ -99,6 +108,18 @@ discovery, I own the request mechanism"), map every agenda item to an owner.
 Items nobody owns default to the author you are helping, absorbed into their
 lane. Do not turn the gap into critique of the collaborator's split unless the
 author asks for that.
+
+Before the authors split up the drafting, recommend that they agree in **one
+shared document** on two things: a headings-only outline organized by audience,
+with each section framed as a question that audience needs answered, and a
+succinct decision list. Each author then drafts into that outline. Why:
+separate full drafts merged afterward duplicate the shared sections (criteria,
+requirements, test cases), mix audiences, and bury the decisions. The merge then
+produces a document too large to review. If parallel drafts already exist,
+recommend restructuring them into the outline rather than concatenating them.
+Restructuring or trimming a collaborator's sections changes how persuasive the
+document is and how it reads as shared work, even when no decision changes.
+Say that plainly, and leave the timing to the author and their co-author.
 
 ### Phase 2b — Research fan-out (when evidence is thin)
 
@@ -166,6 +187,22 @@ Before drafting, show a compact decision summary that distinguishes:
 
 If any load-bearing choice remains open, return to Phase 3. Do not bury it in
 an "open questions" section of a polished plan.
+
+For an ADR that settles several related decisions, or that reviewers will read
+together, also produce a **decision summary**: each decision in one or two
+lines, grouped by decision point (for an API, things like headers, endpoints,
+and lifecycle), with any open item marked inline where it applies. Keep it to
+one or two rendered pages. Verify the page count by exporting or rendering it,
+not by estimating. This summary is what reviewers align on before the full
+prose. Reviewers should be able to see the whole decision and every open
+question without reading the evaluation.
+
+Size check before assembling: compare the draft's word count against the
+repository's existing ADRs. If it's larger than the largest, look for mixed
+audiences, implementation detail, and duplicated sections before proposing to
+split decisions. Split only along a seam where the decisions are independent,
+such as a lifecycle policy a server can adopt later, and name what the split
+defers.
 
 Populate the right anatomy from the settled decisions:
 
@@ -277,6 +314,8 @@ the author chooses.
 
 - [ ] The downstream artifact is explicit: ADR, tech spec, or implementation plan/handoff.
 - [ ] The ranked agenda accounts for every surfaced decision.
+- [ ] Decisions are organized by audience, and implementation or maintenance notes sit outside the decision text.
+- [ ] A multi-decision ADR has a decision summary verified at one or two rendered pages.
 - [ ] Every load-bearing decision was clarified interactively and chosen by the author.
 - [ ] Each chosen option records the driver that decided it.
 - [ ] Verified constraints, inferences, proposals, and author decisions are distinguishable.

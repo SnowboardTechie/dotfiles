@@ -47,6 +47,14 @@ sentences. "We will use Redis, because horizontal scaling (the dominant
 driver) requires shared session state and Redis is already operated by the
 platform team."
 
+When one ADR settles several related decisions, organize the Decision section
+by audience rather than by drafting history. Group what consumers must know,
+then what implementers must do, and phrase each subsection as the question that
+audience is asking ("How do I ask for a version?", "How do I retire one?").
+Open with a short decision summary that lists every decision in a line or two.
+Implementation and maintenance notes (tooling, mocks, generated code, framework
+examples) live outside the ADR or in a clearly separated reference.
+
 ### Consequences
 What gets better, what gets worse, and what you now have to live with. Honest
 ADRs name the *negative* consequences too — the new operational dependency,
@@ -60,3 +68,9 @@ the failure mode you've accepted. This is what makes the record trustworthy.
 - Context reads as justification for the Decision → reorder your thinking;
   context comes first and is neutral.
 - The Decision restates the Title with no driver named → say *why*.
+- The Decision mixes the consumer contract, implementer obligations, and
+  tooling or mock support → split by audience and move maintenance notes out.
+- Nobody can see every decision without reading the evaluation → add a
+  one-to-two page decision summary.
+- Two co-authors' sections each carry their own criteria, requirements, or
+  test table → merge them into one before review.
