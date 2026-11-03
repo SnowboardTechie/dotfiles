@@ -46,7 +46,7 @@ Present the placement and its reason; let him decide. When he asks for ideas, re
 
 1. Build the profile, persona, memory and skills per `hermes-agent` → `references/bot-profiles.md`.
 2. Prove one routine end to end: a one-shot test that lands in the Bot Chat and reaches his **locked** phone. Remove the test job and script afterwards.
-3. When it replaces an older routine (Grok Bot, a Matrix brief), turn the old one off first, then turn the new one on, one bot at a time, so nothing runs twice.
+3. When it replaces an older routine (Grok Bot, a Matrix brief), the new routine still goes live as part of the build. Tell Bryan exactly which old routine to switch off so nothing runs twice. Don't quietly leave the new one paused until "cutover": he expects a migrated bot's check-ins and recaps to be running, and finding them paused reads as unfinished work.
 4. Record the bot in the decision note `~/second-brain/Decisions/2026-11-02-decision-move-personal-agents-from-grok-bot-to-hermes.md` (roster and routines), committed and pushed.
 
 ## 4. After it's live
