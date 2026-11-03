@@ -137,6 +137,36 @@
             "step": "Audit all workspace packages",
             "command": "pnpm audit --audit-level=high"
           }
+        ],
+        "proving": [
+          {
+            "id": "catalog-deps",
+            "command": "./.github/scripts/validate-catalog-deps.sh"
+          },
+          {
+            "id": "install",
+            "command": "pnpm install --frozen-lockfile"
+          },
+          {
+            "id": "ci-core",
+            "command": "pnpm run ci:core"
+          },
+          {
+            "id": "ci-changelog-emitter",
+            "command": "pnpm run ci:changelog-emitter"
+          },
+          {
+            "id": "ci-cli",
+            "command": "pnpm run ci:cli"
+          },
+          {
+            "id": "ci-sdk",
+            "command": "pnpm run ci:sdk"
+          },
+          {
+            "id": "ci-website",
+            "command": "pnpm run ci:website"
+          }
         ]
       },
       {
@@ -149,6 +179,16 @@
             "job": "audit",
             "step": "Run pnpm audit",
             "command": "pnpm audit"
+          }
+        ],
+        "proving": [
+          {
+            "id": "install",
+            "command": "pnpm install --frozen-lockfile"
+          },
+          {
+            "id": "ci-code",
+            "command": "pnpm run ci:code"
           }
         ]
       }
