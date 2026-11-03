@@ -22,7 +22,9 @@ m=(last or {}).get("message") or {}
 print(last and last["type"], m.get("stop_reason"))')
   fi
   if [ "$st" = "assistant end_turn" ]; then
-    if [ -f "$H" ] && tail -3 "$H" | grep -q '^Divergence:' && { [ -z "$M" ] || grep -q "$M" "$H"; }; then
+    # The handback's last paragraph starts with `Divergence:`; a long one wraps over several lines, so look at the
+    # last non-blank paragraph rather than the last few lines.
+    if [ -f "$H" ] && awk 'NF{p=(p==""||blank)?$0:p; blank=0; next} {blank=1} END{exit !(p ~ /^Divergence:/)}' "$H" && { [ -z "$M" ] || grep -q "$M" "$H"; }; then
       echo "SETTLED $H $(date)"; exit 0
     fi
     n=$((n+1)); [ $n -ge 10 ] && { echo "ENDTURN-NO-HANDBACK $H $(date)"; exit 2; }
