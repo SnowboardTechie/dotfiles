@@ -3,7 +3,10 @@
 
 Called from a thin per-profile wrapper:
 
-    run(bot="Home", lists=["Home ToDos", "Honey Do"], profile_dir=...)
+    run(bot="Home", profile_dir=...)
+
+The lists come from <profile>/workspace/reminder-lists.json (SKILL.md section 1).
+A missing file or an empty list means the bot has no connections: silent.
 
 Prints a "Routine:" message only when a marked, non-repeating, open reminder is
 due (all-day: today or earlier; timed: already past) and hasn't been asked about
@@ -16,6 +19,7 @@ import subprocess
 import sys
 
 STATE_NAME = "reminders-state.json"
+LISTS_NAME = "reminder-lists.json"
 
 
 def _marker(bot):
@@ -88,12 +92,29 @@ def collect(bot, lists, state, now):
     return to_ask, new_state
 
 
-def run(bot, lists, profile_dir, now=None):
+def connected_lists(profile_dir):
+    """Names from the bot's reminder-lists.json; [] when it has none. Raises on a bad file."""
+    path = os.path.join(profile_dir, "workspace", LISTS_NAME)
+    try:
+        with open(path) as fh:
+            data = json.load(fh)
+    except FileNotFoundError:
+        return []
+    except Exception as exc:
+        raise RuntimeError(f"{LISTS_NAME} is unreadable ({exc.__class__.__name__}: {str(exc)[:120]})")
+    return [entry["name"] for entry in data.get("lists", []) if entry.get("name")]
+
+
+def run(bot, profile_dir, lists=None, now=None):
     now = now or dt.datetime.now().astimezone()
     workspace = os.path.join(profile_dir, "workspace")
     os.makedirs(workspace, exist_ok=True)
     state_path = os.path.join(workspace, STATE_NAME)
     try:
+        if lists is None:
+            lists = connected_lists(profile_dir)
+        if not lists:
+            return
         to_ask, new_state = collect(bot, lists, _load_state(state_path), now)
     except Exception as exc:  # one line to the bot, never a silent failure
         print(f"Routine: evening reminder check. {exc}. Tell Bryan in one line that "

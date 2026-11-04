@@ -16,19 +16,37 @@ Bryan's bots use Apple Reminders for nudges, so chat stays quiet. Reminders give
 
 ## 1. Connections (Bryan approves each one)
 
-A bot touches only the lists listed here for it. Every other list is off limits: don't read it, don't write it. Adding a row, changing access, or creating a list needs Bryan's approval first, then an update here and in the bot's SOUL.
+Each bot's approved lists are recorded in its own `<profile>/workspace/reminder-lists.json`. That file is the source of truth; the evening check reads it too. A bot touches only the lists in its file. Every other list is off limits: don't read it, don't write it.
 
-| Bot | List | Access | Notes |
-|---|---|---|---|
-| home | Home ToDos | write | House upkeep and projects |
-| home | Honey Do | read | Shared with Traci. Write only when Bryan asks for that exact reminder there |
-| gear | RV Fix | write | RV jobs |
-| gear | Garage | write | Bikes, motorcycles, vehicles, snowboard gear, the garage (created 2026-11-04) |
-| gear | Home ToDos | read | Machine jobs that land there (existing weekend-check behavior) |
+```json
+{"lists": [
+  {"name": "Home ToDos", "access": "write", "approved": "2026-11-04", "why": "House upkeep and projects"},
+  {"name": "Honey Do", "access": "read", "approved": "2026-11-04", "why": "Shared with Traci; write only when he asks for that exact reminder there"}
+]}
+```
 
-"Write" means add, change the due date, title or notes, and complete or delete when he says so. It never means completing something on his behalf.
+- "write" means add, change the due date, title or notes, and complete or delete when he says so. It never means completing something on his behalf.
+- "read" means read only. A read list can hold a reminder of yours only when he asked for that exact reminder there.
+- A bot with no file, or an empty `lists`, has no connections yet.
 
-Approved for later, not built yet: a Ledger "Taxes" list for deadline reminders.
+Starting map (2026-11-04): Home writes Home ToDos and reads Honey Do; Gear writes RV Fix and Garage and reads Home ToDos. Approved for later: a Ledger "Taxes" list. Every other bot started with none.
+
+## 1a. When no connected list fits
+
+When he asks to be reminded about something and none of your lists fits, don't fall back to a chat ping or a new routine. Offer one of these in one short message, with your recommendation first:
+
+1. **A new list**, named plainly for the job ("Training", "Taxes", "Writing"). Check `remindctl list` first so you don't create a duplicate of one he already has.
+2. **An existing list he names.** Suggest one only if its name clearly fits. If it might be shared with Traci (Honey Do, Shopping, Traci, the wishlists), say so and ask whether it should be read-only.
+3. **No reminder**, if he'd rather skip it.
+
+Change nothing until he says yes to a specific list. Then, in this order:
+
+1. For a new list: `remindctl list "<name>" --create`.
+2. Add the entry to your `reminder-lists.json`: name, access, today's date, and why. Write the file whole and keep the JSON valid.
+3. Add the reminder he asked for (section 2).
+4. Confirm in one line: the list is connected, and the reminder is on it.
+
+The evening check picks up the new list on its next run. Never create, rename or delete a list, or widen access, without his yes in this conversation.
 
 ## 2. Adding a reminder
 
@@ -47,7 +65,8 @@ remindctl add "Vacuum the house" --list "Home ToDos" --due 2026-11-06 \
 - **Repeating chores** (`--repeat weekly`): add ` · repeats` to the end of the mark line, for example `Added by Home bot (Hermes) · repeats`. Reminders handles repeating chores itself, so the evening check skips them.
 - **Location** ("when I get to Home Depot"): `--location "<address>"`, plus `--leaving` when the reminder should fire on leaving.
 - **Adopting one of his reminders**, when he asks you to look after it: add the mark line with `remindctl edit <id> --notes`. That command replaces all of the notes, so keep the existing text and append the mark.
-- A request for a list you have no write access to: say which list it would go on and that it isn't connected yet. Offer the closest connected list. Never write there anyway.
+- He names a list you have no write access to: say it isn't connected yet and offer to connect it (section 1a). Never write there anyway.
+- **Routine vs reminder.** A one-off or personal "remind me" is a reminder. Your own scheduled routines (check-ins, recaps, deadline warnings) stay routines; don't turn them into reminders unless he asks.
 
 ## 3. Changing reminders
 
@@ -62,9 +81,9 @@ Check the JSON output for the new due date or the completed state before you tel
 
 ## 4. The evening check
 
-Each bot with write lists has a script-only routine at 19:15 (`[bot:<name>] Evening reminder check`). The script is `scripts/evening_check.py` in this skill, run through a small wrapper in `<profile>/scripts/reminders_evening.py`.
+Every bot has a script-only routine at 19:15 (`[bot:<name>] Evening reminder check`). The script is `scripts/evening_check.py` in this skill, run through a small wrapper in `<profile>/scripts/reminders_evening.py`. A bot with no lists costs nothing: the script reads an empty file and prints nothing.
 
-- It reads the bot's write lists (and Honey Do for Home, which only holds marked reminders if Bryan asked for them there). It takes the marked, non-repeating reminders that are still open and due today or earlier.
+- It reads every list in the bot's `reminder-lists.json`. Read lists only hold the bot's marked reminders when Bryan asked for one there. It takes the marked, non-repeating reminders that are still open and due today or earlier.
 - It asks about each reminder once for each due date. If he doesn't answer, the reminder stays overdue and the weekend sweep names it, but the evening check doesn't ask about it again until its due date changes.
 - It counts moves: each time a reminder's due date moves later, its count goes up. The state is kept in `<profile>/workspace/reminders-state.json`.
 - Nothing to ask means no output, so no model use and no message.
