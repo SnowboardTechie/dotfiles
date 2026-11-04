@@ -134,7 +134,11 @@ existing identity file, including a closed one.
 placement with `hermes chat --query-file "$S/<lane>-prompt.md"` as the worker
 command, as `next-session` starts Hermes in Rex. It has no Claude transcript, so
 the transcript checks and `rex_wait.sh` below don't apply: settle it on the
-handback file plus `capture`. Independently check its smart approvals and no
+handback file plus `capture`. Wait on the handback's last paragraph, read in
+paragraph mode, as a background job with `notify=true`:
+`until test -f "$H" && awk 'BEGIN{RS=""} {p=$0} END{exit !(p ~ /^Divergence:/)}' "$H"; do sleep 60; done`
+(add a cap). A byte-window check such as `tail -c 600` misses a long final
+paragraph, so a finished worker sits unnoticed until the waiter's cap. Independently check its smart approvals and no
 yolo mode first. A Hermes worker still notifies Bryan: it sends OSC 7501 while
 `TERM_PROGRAM=rex`, and the bell plus an OSC 9 desktop notification at turn end
 and on prompts (`display.bell_on_complete` and `bell_on_prompt`, which are on).
@@ -166,16 +170,28 @@ Hermes patch unless he says the notifications have become a nuisance.
   [marker]`, run with `terminal(background=true, notify=true)` so settlement
   wakes the coordinator. It polls every 60 s and also exits (code 2) when
   `end_turn` has held about ten minutes with no handback: a worker waiting on a
-  question or one that stopped early, so read the pane. Never resend a prompt to
-  regain a completion signal.
+  question or one that stopped early, so read the pane. It exits 3 when the
+  last record is an unanswered `user` record and the transcript has been silent
+  about eight minutes: the turn halted without `end_turn` and the pane sits idle
+  at its prompt. A model safety-filter stop ("…safeguards stopped the response")
+  looks like this. A waiter keyed only on `end_turn` sits until its cap while
+  Bryan wonders why nothing moves. Read the pane, then send the same session one
+  short continuation (not a correction pass). If exploit-style wording in the
+  contract tripped the filter, restate the work as defensive checks and tests.
+  Never resend a prompt merely to regain a completion signal.
+- **Watch a read-only reviewer the same way.** Its "handback" is the summary
+  file its contract names; pass that path to `rex_wait.sh`, so exit 3 covers a
+  halted review too.
 - **Keep `Divergence:` one paragraph, last.** `rex_wait.sh` settles only when
   the handback's last paragraph begins with `Divergence:`. Wrapped lines, or a
   list directly under it, still pass. A blank line before that list, or
   anything written after the line, makes the last paragraph start with
   something else. The wait then exits 2 "no handback" though the report is
-  complete. Say "one line, last, no blank line after it" in every contract's
-  and correction's handback list. When it happens anyway, read the handback by
-  hand rather than resending.
+  complete. A `Divergence:` line glued to the paragraph above it (no blank line
+  before it) fails the same way. Say "on its own line, last, with a blank line
+  before it and nothing after it" in every contract's and correction's handback
+  list, reviewer summaries included. When it happens anyway, read the handback
+  by hand rather than resending.
 - **A correction turn needs the marker** (its new section's heading, such as
   `"Correction 1"`): the handback already ends with the first turn's
   `Divergence:` line, so without it the wait settles on the old turn.
@@ -195,11 +211,20 @@ Hermes patch unless he says the notifications have become a nuisance.
 - A worker blocked on a permission or question shows it in `capture`. Answer
   only what the governing plan already settles, through `rex send` and
   `rex send-key`; anything new goes to Bryan.
+- **"Read outside the working directories."** The ticket state directory sits
+  in the canonical checkout, outside the worker's worktree, so Claude asks before
+  reading the handback it must append to. The contract already authorizes that
+  path: choose the narrowest yes, "Yes, but ask again next time" (`down down
+  down enter`, after `capture` shows the path is the state dir). Never choose
+  "keep allowing any reads".
 
 ## A second turn (correction)
 
 One turn at a time per session: only after settlement, rerun the capacity
-check, then type into the same block and submit:
+check, then type into the same block and submit. Clear the input line first
+(`"$REX" send-key -s "$REX_SESSION" -b <block> ctrl+u`): a predicted prompt may
+be sitting there, and typed text would join it. Afterwards, read the newest
+string `user` record in the transcript and check it is exactly your prompt.
 
 ```sh
 "$REX" send -s "$REX_SESSION" -b <block> "$(cat "$S/<lane>-correction-1-prompt.md")"

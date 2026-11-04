@@ -162,6 +162,10 @@ probes when already authorized. Preserve the candidate and return a concrete,
 evidence-backed decision only where implementation would cross the boundary.
 Do not ask permission merely to investigate the next recovery step.
 
+When Bryan asks for follow-up issues to be filed, filing includes handing each
+one to a worker and supervising it through merge and live verification. A
+filed-but-undelivered issue is not the deliverable.
+
 Keep an authorized multi-issue outcome moving: dispatch ready independent work
 within the governing concurrency limit, collect handbacks, accept prerequisites,
 and advance their consumers. Routine in-scope implementation and fixture repairs
@@ -506,6 +510,10 @@ batch), follow this shape:
   real room can still merge as source. Hold its live uptake, and record the hold
   and why for Bryan's morning. Its PR says `Refs #N`, not `Closes #N`, so the
   merge doesn't close an issue whose live acceptance item is still open.
+- **Don't restart a shared service under another coordinator's run.** Rebuilding the shared deployment or restarting a
+  proxy cuts the in-flight model turns and replays of any other lane using it. Before a live uptake, check the
+  service's own records for running case VMs and recent requests. If either shows activity, start a background waiter
+  that settles once the service has been idle for about ten minutes, and do the uptake then.
 - **Conflicts with a sibling lane are a worker turn, not a correction.** When
   `git merge origin/main` stops on conflicts because another lane landed first,
   write an `integration.md` (what landed, which files conflict, keep both sides'
@@ -544,9 +552,20 @@ batch), follow this shape:
   approval (laws, a config file, a decision), put what he is approving in the message itself, in plain words. A link
   is welcome for the web UI, but only to the exact file at an exact commit
   (`https://<forge>/<owner>/<repo>/src/commit/<sha>/<path>`), one link per file, never a PR page.
-- **Every ask is self-contained.** When Bryan has something to do, restate the exact steps or commands in that message.
-  Never point him at "my earlier message" or "the commands above". This holds for every status update that ends on
-  his pending action, and for a "where is it now?" answer: give the state table, then the full current ask.
+- **Every message stands alone.** When Bryan has something to do, restate the exact steps or commands in that message.
+  Never point him at "my earlier message", "the commands above" or "the three items I listed". This holds for every
+  status update that ends on his pending action, every summary, and a "where is it now?" answer: give the state, then
+  the full current ask.
+- **Re-raising a pending question means re-explaining it.** Never write "my question is still open" or a one-line
+  pointer to it: by the next update he has lost the context. Each time it appears, say what it is, why it exists, what
+  each answer does, and your recommendation, in plain words.
+- **Don't flip-flop.** Change a recommendation only with named new evidence, and say what that evidence is. Before
+  contradicting what he says you said or decided, check the record first; never correct him and reverse your own
+  recommendation in the same message. Don't keep tacking a standing proposal ("want me to chart the map?") onto every
+  report; re-check that it still fits before offering it again, or drop it.
+- **Finish the assigned outcome in one pass.** When he approves a move or migration, do every item the approved scope
+  covers. Don't stage it into a first slice he didn't ask for, don't keep the old path as a quiet fallback that defeats
+  the purpose, and don't spend his resources on baselines he didn't ask for. Staging is a choice to offer, not a default.
 - **Before you say something waits on him, check its evidence by metadata.** Look for the files his step would create,
   or the comment it would post. Then say whether it has happened, rather than repeating the ask blind.
 - **Every issue and PR named in a message gets its title and full URL, every time.** A bare `#246` or "PR 2" makes
