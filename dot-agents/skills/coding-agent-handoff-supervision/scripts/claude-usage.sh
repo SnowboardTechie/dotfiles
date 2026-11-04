@@ -26,9 +26,20 @@ usage_unavailable() {
 command -v jq >/dev/null 2>&1 || usage_unavailable
 command -v curl >/dev/null 2>&1 || usage_unavailable
 
-CREDS_FILE="$HOME/.claude/.credentials.json"
+# Follows CLAUDE_CONFIG_DIR, as Claude Code does: unset reads the default login (on Studio,
+# the work seat); CLAUDE_CONFIG_DIR=~/.claude-personal reads the personal subscription. An
+# explicit directory's Keychain item is suffixed with the first 8 hex of sha256(path).
+CONFIG_DIR="${CLAUDE_CONFIG_DIR:-}"
+KEYCHAIN_SERVICE="Claude Code-credentials"
+if [[ -n "$CONFIG_DIR" ]]; then
+    CREDS_FILE="$CONFIG_DIR/.credentials.json"
+    KEYCHAIN_SERVICE="$KEYCHAIN_SERVICE-$(printf '%s' "$CONFIG_DIR" | shasum -a 256 | cut -c1-8)"
+    CACHE_FILE="${CACHE_FILE}-$(printf '%s' "$CONFIG_DIR" | shasum -a 256 | cut -c1-8)"
+else
+    CREDS_FILE="$HOME/.claude/.credentials.json"
+fi
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    CREDS_JSON=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null)
+    CREDS_JSON=$(security find-generic-password -s "$KEYCHAIN_SERVICE" -w 2>/dev/null)
     if [[ -z "$CREDS_JSON" ]]; then
         [[ -f "$CREDS_FILE" ]] || usage_unavailable
         CREDS_JSON=$(<"$CREDS_FILE")

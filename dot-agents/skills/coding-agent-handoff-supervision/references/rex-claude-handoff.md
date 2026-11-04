@@ -52,10 +52,14 @@ start, never from a cached layout:
 ```sh
 S=<ticket state dir>; W=<worktree>; NAME=<agent name, e.g. sgg-278-layout>
 SK=~/code/dotfiles/dot-agents/skills/coding-agent-handoff-supervision
-cap=$("$SK/scripts/claude-usage.sh" | grep -oE '[0-9]+%' | head -1 | tr -d %)
+# Who pays follows the worktree (Bryan, 2026-11-03): SGG repos under ~/code/sgg use the
+# work seat (the default login); everything else, durable-pi-workspace included, the
+# personal subscription in ~/.claude-personal.
+case "$W/" in "$HOME/code/sgg/"*) CCD= ;; *) CCD="$HOME/.claude-personal" ;; esac
+cap=$(env ${CCD:+CLAUDE_CONFIG_DIR="$CCD"} "$SK/scripts/claude-usage.sh" | grep -oE '[0-9]+%' | head -1 | tr -d %)
 [ -n "$cap" ] && [ "$cap" -lt 75 ] || { echo "capacity $cap: stop"; exit 1; }
 UUID=$(uuidgen | tr A-Z a-z)
-WORKER=(claude --permission-mode auto --model claude-opus-5-5 --effort medium
+WORKER=(env ${CCD:+CLAUDE_CONFIG_DIR="$CCD"} claude --permission-mode auto --model claude-opus-5-5 --effort medium
   --name "$NAME" --session-id "$UUID" "$(cat "$S/<lane>-prompt.md")")
 SLOT=$("$REX" window ls -s "$REX_SESSION" --json |
   python3 "$SK/scripts/rex_subagent_slot.py" --caller-block "$REX_BLOCK")
@@ -82,7 +86,9 @@ worker removes the tab.
 - The prompt is the positional argument, so the first turn starts with the
   pane; no typing into it.  `--session-id` fixes the runtime session ID up front,
   and the transcript lands at
-  `~/.claude/projects/<worktree path with / and . as ->/<UUID>.jsonl`. That
+  `${CCD:-~/.claude}/projects/<worktree path with / and . as ->/<UUID>.jsonl`
+  (the login directory chosen above; record it in the identity file, because a
+  later `claude --resume` must run under the same `CLAUDE_CONFIG_DIR`). That
   file appears only once Claude writes its first record (about 20 s), so check
   it after `capture` shows the turn running, and don't let a `set -e` script
   abort before the identity record is written.
@@ -193,7 +199,8 @@ block, then confirm it is gone:
 ```
 
 Mark the identity file `closed: true` with the end capacity. The transcript
-stays at its path; `claude --resume <UUID>` in the worktree reopens it later.
+stays at its path; `claude --resume <UUID>` in the worktree, under the same `CLAUDE_CONFIG_DIR`
+as the worker (`claude-personal --resume <UUID>` outside ~/code/sgg), reopens it later.
 
 ## What this does not give you
 
