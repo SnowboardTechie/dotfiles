@@ -36,6 +36,13 @@
     "subscriptions": [
       {
         "id": "work"
+      },
+      {
+        "id": "personal",
+        "lines": {
+          "five_hour": 50,
+          "weekly": 50
+        }
       }
     ]
   },
