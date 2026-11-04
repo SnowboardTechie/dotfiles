@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "plugins": {
+    "sgg": {
+      "module": "~/.local/share/pi-durable/sgg-deployment/dist/workspaces/sgg/src/proxy-policy.js",
+      "files": { "config": "~/.config/pi-durable/sgg.json" }
+    }
+  },
+  "accounts": {
+    "github-bryan": { "author": { "name": "Bryan Thompson", "email": "bryan@snowboardtechie.com" } }
+  },
+  "agents": {
+    "bot-prs": { "plugin": "sgg", "workspace": "sgg", "account": "github-bryan" },
+    "audit-fixer": { "plugin": "sgg", "workspace": "sgg", "account": "github-bryan" }
+  },
+  "push": { "listen": { "host": "192.168.128.1", "port": 8893 } }
+}

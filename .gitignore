@@ -77,3 +77,4 @@ dot-config/pi-durable/*
 !dot-config/pi-durable/subscriptions.json
 !dot-config/pi-durable/sampler.json
 !dot-config/pi-durable/model-proxy.json
+!dot-config/pi-durable/github-proxy.json
