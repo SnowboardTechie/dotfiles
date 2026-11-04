@@ -39,8 +39,20 @@ else
 fi
 if [[ "$_local_hostname" == "Bryans-Mac-Studio" ]] && command -v claude >/dev/null 2>&1; then
   alias hermes-claude='CLAUDE_CONFIG_DIR="$HOME/.hermes/claude-code-worker" claude agents'
-  # Claude Code on Bryan's personal Max subscription; plain `claude` stays on the work seat.
+  # Claude Code on Bryan's personal Max subscription, from any directory.
   alias claude-personal='CLAUDE_CONFIG_DIR="$HOME/.claude-personal" claude'
+  # Same split as hermes below: under ~/code/sgg plain `claude` uses the default login
+  # (the Agile Six work seat); everywhere else it uses the personal subscription. An
+  # explicit CLAUDE_CONFIG_DIR always wins; `command claude` reaches the work seat anywhere.
+  claude() {
+    if [[ -z "$CLAUDE_CONFIG_DIR" ]]; then
+      case "$PWD/" in
+        "$HOME/code/sgg/"*) ;;
+        *) CLAUDE_CONFIG_DIR="$HOME/.claude-personal" command claude "$@"; return ;;
+      esac
+    fi
+    command claude "$@"
+  }
 fi
 if [[ "$_local_hostname" == "Bryans-Mac-Studio" ]] && command -v hermes >/dev/null 2>&1; then
   # Work sessions under ~/code/sgg open the sgg profile (work subscription); everywhere
