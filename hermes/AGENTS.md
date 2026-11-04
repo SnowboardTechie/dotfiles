@@ -38,3 +38,14 @@ Paths are relative to the dotfiles repo root.
 - Un-hide is Hermes's: mounting/resuming is a read; the first sent message calls `reopen_session` (which drops sweep archives) only when `ended_at` is set, i.e. after the gateway's `orphan_end_grace_s` (default 300 s) has ended the closed CLI. Measured: a resume inside the grace keeps working but stays hidden.
 - A session's `client_env` (all `REX_*`) is frozen at `session.create`; resume never refreshes it. A session resumed in a new tab still names its first tab's block, so neither this plugin nor `rex-tab-title` can see the new tab.
 - Watchers re-arm from the registry on the first agent turn after a gateway restart. Activate or reload with `hermes plugins disable/enable rex-tab-archive` after `install.py` copies it (hot reload, no restart).
+
+## SGG provider lock (check script)
+
+`hermes/scripts/check-sgg-providers.py` + `hermes/test_check_sgg_providers.py`
+
+- SGG may use only Anthropic, OpenAI direct, Jev and local Studio models (durable-pi-workspace decision 2026-10-28, "SGG's model providers"; #337). The approved Hermes providers are one constant at the top of the script.
+- Fails, naming each violation, when the `sgg` profile's config (model, fallbacks, `auxiliary.*`, `delegation`, `cron.model_provider`, enabled `providers.*`, plugin presets) or an `sgg` cron job names another provider, or when a registry provider or alias outside the set lacks `providers.<name>.enabled: false`. A `local-*` provider must point at loopback or `Bryans-Mac-Studio.local`. A `base_url`/`api`/`url` beside an approved provider (in any of those places, a `providers.<approved>` block, or a cron job) must be that provider's own host from Hermes's registry (the Claude plugin's `process://` URL); one with no provider named must be an approved provider's host or local. An alias is approved only when everything it resolves to is approved. Unreadable config or registry fails.
+- Hermes checks the disable switch against the name as requested, before alias resolution, so each alias needs its own entry (`go` otherwise reaches `opencode-go`). The registry and aliases are read from the installed Hermes under `HERMES_HOME=<sgg>`, so a provider a Hermes update adds fails the check.
+- `--live` also resolves `opencode-go` and its aliases under `sgg` and requires the disabled-provider error. `--print-disables` prints the missing entries for the coordinator to apply; the script never writes to `~/.hermes`. `--cron` is silent when clean and prints one Matrix message otherwise (no-agent delivery).
+- Run with the Hermes venv's python (needs PyYAML): `python hermes/test_check_sgg_providers.py`.
+- Deployed: both scripts and `check-sgg-providers-cron.py` (runs `--cron --live`; Hermes passes no script arguments) in `~/.hermes/scripts/`. The default profile's hourly no-agent cron "Check SGG provider lock" runs the wrapper and posts to Matrix only on a violation.
