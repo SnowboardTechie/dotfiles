@@ -6,7 +6,7 @@
 		"config_dir": "~/.config/pi-durable/planning/claude",
 		"subscriptions": [
 			{
-				"id": "work"
+				"id": "personal"
 			}
 		]
 	}
