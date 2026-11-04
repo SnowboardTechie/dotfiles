@@ -74,7 +74,9 @@ def collect(bot, lists, state, now):
             due = _parse(r.get("dueDate") or "")
             if due is None:
                 continue
-            local_due = due.astimezone(now.tzinfo)
+            # System local zone with DST rules for that instant; now.tzinfo is a fixed
+            # offset and would shift all-day dates across a DST change by a day.
+            local_due = due.astimezone()
             due_day = local_due.date().isoformat()
             rid = r["id"]
             prev = state.get(rid, {})

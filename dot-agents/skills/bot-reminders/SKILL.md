@@ -29,7 +29,7 @@ Each bot's approved lists are recorded in its own `<profile>/workspace/reminder-
 - "read" means read only. A read list can hold a reminder of yours only when he asked for that exact reminder there.
 - A bot with no file, or an empty `lists`, has no connections yet.
 
-Starting map (2026-11-04): Home writes Home ToDos and reads Honey Do; Gear writes RV Fix and Garage and reads Home ToDos. Approved for later: a Ledger "Taxes" list. Every other bot started with none.
+Starting map (2026-11-04): Home writes Home ToDos and reads Honey Do; Gear writes RV Fix and Garage and reads Home ToDos. Ledger writes "Taxes" (created the same day). It holds one reminder per deadline, due on the deadline with its alarm at the 6-week heads-up, plus monthly bookkeeping. Ledger's chat routine keeps the 2-week and 3-day "nothing logged" checks. Every other bot started with none.
 
 ## 1a. When no connected list fits
 
