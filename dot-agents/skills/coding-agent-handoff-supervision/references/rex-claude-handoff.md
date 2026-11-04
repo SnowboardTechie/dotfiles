@@ -139,7 +139,8 @@ yolo mode first. A Hermes worker still notifies Bryan: it sends OSC 7501 while
 `TERM_PROGRAM=rex`, and the bell plus an OSC 9 desktop notification at turn end
 and on prompts (`display.bell_on_complete` and `bell_on_prompt`, which are on).
 Rex turns OSC 9 into a macOS notification. No per-process switch for the bell
-exists yet.
+exists yet. Bryan accepted that (2026-11-03): Hermes workers are rare, so no
+Hermes patch unless he says the notifications have become a nuisance.
 
 ## Watch and settle
 
