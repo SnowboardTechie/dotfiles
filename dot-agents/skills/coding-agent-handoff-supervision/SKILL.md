@@ -598,6 +598,7 @@ resume a visible Rex worker's identity.
 - [ ] Brief contains locator, worktree, authority, and delivery permissions only
 - [ ] Destructive/history-rewriting Git operations remain prohibited
 - [ ] Visible path uses a Rex sub-agents tab slot (max four, 2x2) per references/rex-claude-handoff.md, without stealing focus
+- [ ] The Claude worker command sets `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`, so Rex raises no alerts for it
 - [ ] The coordinator persisted all six identity fields
 - [ ] Claude capacity passed (below 75%) and no other turn was in flight in the worker runtime session
 - [ ] No overlapping turn targeted the same session; unrelated sessions were not blocked

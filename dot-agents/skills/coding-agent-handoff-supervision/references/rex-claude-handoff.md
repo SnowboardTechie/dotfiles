@@ -59,7 +59,8 @@ case "$W/" in "$HOME/code/sgg/"*) CCD= ;; *) CCD="$HOME/.claude-personal" ;; esa
 cap=$(env ${CCD:+CLAUDE_CONFIG_DIR="$CCD"} "$SK/scripts/claude-usage.sh" | grep -oE '[0-9]+%' | head -1 | tr -d %)
 [ -n "$cap" ] && [ "$cap" -lt 75 ] || { echo "capacity $cap: stop"; exit 1; }
 UUID=$(uuidgen | tr A-Z a-z)
-WORKER=(env ${CCD:+CLAUDE_CONFIG_DIR="$CCD"} claude --permission-mode auto --model claude-opus-5-5 --effort medium
+WORKER=(env ${CCD:+CLAUDE_CONFIG_DIR="$CCD"} CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1
+  claude --permission-mode auto --model claude-opus-5-5 --effort medium
   --name "$NAME" --session-id "$UUID" "$(cat "$S/<lane>-prompt.md")")
 SLOT=$("$REX" window ls -s "$REX_SESSION" --json |
   python3 "$SK/scripts/rex_subagent_slot.py" --caller-block "$REX_BLOCK")
@@ -92,6 +93,16 @@ worker removes the tab.
   file appears only once Claude writes its first record (about 20 s), so check
   it after `capture` shows the turn running, and don't let a `set -e` script
   abort before the identity record is written.
+- **Workers don't notify Bryan** (Bryan, 2026-11-03). Rex raises its "done" and
+  "needs attention" alerts from OSC 7501 status reports, and
+  `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1` is what stops Claude Code sending them
+  (it also leaves the pane title alone, and the sub-agents tab shows no working
+  dots). Keep it in every worker command. Claude sends no other notification in
+  Rex: its `auto` channel has no method for `TERM_PROGRAM=rex`. The coordinator
+  watches workers through the transcript and handback, never Rex's alerts.
+  Checked 2026-11-03 with Claude Code 2.1.318: with the variable, a finished
+  turn left `program_status` empty and the Rex app recorded no alert; without
+  it, `done` and an alert.
 - `--focus=false` keeps Bryan's focus; `--keep-open` keeps the pane readable
   after Claude exits. Record `worker_rex_window` as the sub-agents tab.
 - An empty capacity reading is a stop, never a pass. The usage line begins
@@ -124,7 +135,11 @@ placement with `hermes chat --query-file "$S/<lane>-prompt.md"` as the worker
 command, as `next-session` starts Hermes in Rex. It has no Claude transcript, so
 the transcript checks and `rex_wait.sh` below don't apply: settle it on the
 handback file plus `capture`. Independently check its smart approvals and no
-yolo mode first.
+yolo mode first. A Hermes worker still notifies Bryan: it sends OSC 7501 while
+`TERM_PROGRAM=rex`, and the bell plus an OSC 9 desktop notification at turn end
+and on prompts (`display.bell_on_complete` and `bell_on_prompt`, which are on).
+Rex turns OSC 9 into a macOS notification. No per-process switch for the bell
+exists yet.
 
 ## Watch and settle
 
