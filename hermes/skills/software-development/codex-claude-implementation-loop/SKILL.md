@@ -71,6 +71,8 @@ claude auth status --text
 
 The login method must be a Claude subscription account such as Pro, Max, Team, or Enterprise. If `ANTHROPIC_API_KEY` is set, stop and tell the user the worker would risk API billing.
 
+**Who pays follows the repository (Bryan, 2026-11-03).** The worker's default login directory, `~/.hermes/claude-code-worker`, is the Agile Six work seat: use it for SGG repositories under `~/code/sgg`. For every other repository (durable-pi-workspace, dotfiles, nix-configs and other personal work), run each worker command with `HERMES_CLAUDE_WORKER_CONFIG_DIR=$HOME/.claude-personal`, Bryan's personal Max login, and check `CLAUDE_CONFIG_DIR=$HOME/.claude-personal claude auth status --text` reports a Max account instead of the plain status above.
+
 The wrapper also runs Claude's local `/usage` command with zero tools and verifies that it consumed zero turns and zero reported cost. Its normalized `usage_preflight` field includes every reported usage window. A `warning` verdict above 75% is visible but does not stop the handoff. Usage above 85% fails closed; only explicit same-run user approval permits rerunning with `--allow-high-usage`. Treat an unavailable or unparsable usage result the same way rather than silently skipping the gate. The thresholds are strict `>` comparisons, so exactly 75% is normal and exactly 85% warns without blocking.
 
 If the user says one model must be used "throughout," forbids helper or fallback models, or otherwise requires literal model purity, load `coding-agent-model-purity` before execution. Record raw model-usage metadata and treat any observed nonconforming model as non-compliant, independently of code quality.
