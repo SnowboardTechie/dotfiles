@@ -39,6 +39,35 @@ else
 fi
 if [[ "$_local_hostname" == "Bryans-Mac-Studio" ]] && command -v claude >/dev/null 2>&1; then
   alias hermes-claude='CLAUDE_CONFIG_DIR="$HOME/.hermes/claude-code-worker" claude agents'
+  # Claude Code on Bryan's personal Max subscription; plain `claude` stays on the work seat.
+  alias claude-personal='CLAUDE_CONFIG_DIR="$HOME/.claude-personal" claude'
+fi
+if [[ "$_local_hostname" == "Bryans-Mac-Studio" ]] && command -v hermes >/dev/null 2>&1; then
+  # Work sessions under ~/code/sgg open the sgg profile (work subscription); everywhere
+  # else Hermes keeps its default profile (personal). Only chat-style starts are routed:
+  # no subcommand, a leading flag or `chat`, and no explicit profile or HERMES_HOME.
+  hermes() {
+    local _arg _route=1
+    case "$PWD/" in
+      "$HOME/code/sgg/"*) ;;
+      *) _route=0 ;;
+    esac
+    [[ -n "$HERMES_HOME" ]] && _route=0
+    case "${1:-}" in
+      ""|-*|chat) ;;
+      *) _route=0 ;;
+    esac
+    for _arg in "$@"; do
+      case "$_arg" in
+        -p|--profile|--profile=*) _route=0 ;;
+      esac
+    done
+    if [[ $_route -eq 1 ]]; then
+      command hermes -p sgg "$@"
+    else
+      command hermes "$@"
+    fi
+  }
 fi
 unset _local_hostname
 
