@@ -88,7 +88,7 @@
     "repos": [
       "HHS/simpler-grants-protocol"
     ],
-    "room": null,
+    "room": "dependencies-test",
     "gates": {}
   },
   "timezone": "America/Los_Angeles",
