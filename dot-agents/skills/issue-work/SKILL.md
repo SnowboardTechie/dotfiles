@@ -352,6 +352,15 @@ drive that interface in isolation with contract-derived expectations, instead of
 rediscovering how to run the application. It supplies evidence to this step and
 Phase 4; it adds no gate for internal logic, documentation, or trivial changes.
 
+When the change is to a model's instructions (a skill, prompt or result schema)
+and the issue names the real case that motivated it, acceptance is one rerun of
+that case through the real model on the current build, with scratch state and
+every outward write (posting, comments, notices) disabled. Put the rerun in the
+worker's contract or correction. A test that pins the instruction text proves
+only the text. Report the rerun's output against each criterion, and name how
+its conditions differed from the original run (missing tokens or tools, the
+upstream's state having moved), since those can explain a better result.
+
 If targeted checks find blockers that prevent a candidate commit, write one
 consolidated correction contract and resume the same worker. This consumes the
 workflow's normal correction: require the global `correction_passes` counter to
