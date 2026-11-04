@@ -152,6 +152,14 @@ yolo mode first.
   `end_turn` has held about ten minutes with no handback: a worker waiting on a
   question or one that stopped early, so read the pane. Never resend a prompt to
   regain a completion signal.
+- **Keep `Divergence:` one paragraph, last.** `rex_wait.sh` settles only when
+  the handback's last paragraph begins with `Divergence:`. Wrapped lines, or a
+  list directly under it, still pass. A blank line before that list, or
+  anything written after the line, makes the last paragraph start with
+  something else. The wait then exits 2 "no handback" though the report is
+  complete. Say "one line, last, no blank line after it" in every contract's
+  and correction's handback list. When it happens anyway, read the handback by
+  hand rather than resending.
 - **A correction turn needs the marker** (its new section's heading, such as
   `"Correction 1"`): the handback already ends with the first turn's
   `Divergence:` line, so without it the wait settles on the old turn.
