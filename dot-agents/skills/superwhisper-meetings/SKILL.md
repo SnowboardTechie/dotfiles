@@ -17,8 +17,8 @@ newer meeting use Hex: `/Applications/Hex.app/Contents/MacOS/hex meetings list
 --json`, then the meeting's `manifest.json` `notes.summary`; the SGG profile's
 `sgg-meeting-prep` skill has the full reference (`references/hex-meetings.md`).
 The transcript-privacy rules below apply to Hex too: `hex meetings show`, the
-transcript files and the exports carry the full transcript. Hex trashes its own
-meetings 24 hours after they finish under its default retention.
+transcript files and the exports carry the full transcript. Hex keeps meetings for a
+month (`meetings.retention`), then moves them to the Trash.
 
 ## Access
 
