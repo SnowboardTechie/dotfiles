@@ -226,8 +226,13 @@ check, then type into the same block and submit. Clear the input line first
 be sitting there, and typed text would join it. Afterwards, read the newest
 string `user` record in the transcript and check it is exactly your prompt.
 
+Send a one-line pointer to the correction file, never the file's text. A long
+multi-line `rex send` arrives truncated: on 2026-11-06 a 1.9 KB correction
+reached Claude as only its last ~500 characters, and the worker (rightly) asked
+for a resend instead of acting.
+
 ```sh
-"$REX" send -s "$REX_SESSION" -b <block> "$(cat "$S/<lane>-correction-1-prompt.md")"
+"$REX" send -s "$REX_SESSION" -b <block> "Read $S/<lane>-correction-1-prompt.md in full and carry out Correction 1 exactly as written there."
 "$REX" send-key -s "$REX_SESSION" -b <block> enter
 ```
 
