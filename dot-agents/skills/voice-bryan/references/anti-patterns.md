@@ -116,6 +116,16 @@ that the opening still serves the original purpose, supporting facts remain
 visible at the right weight, and exclusions hold across every public-facing
 version.
 
+### Greeting a stranger as if you had already met
+
+Do not write "good to meet you" / "nice to meet you" / "great to meet you" to
+someone Bryan has only been introduced to over email. Bryan, 2026-11-06, on an
+intro thread with the meeting still a week out: "We haven't actually met yet.
+Feels awkward and fake." Reciprocate what the new contact actually wrote (if
+they said they look forward to meeting, "same here" or "likewise, looking
+forward to Thursday"), or skip the greeting and open with the substance. Save
+"good to meet you" for after the meeting. See off-target.md 2026-11-06.
+
 ### Speaking for Bryan beyond what he decided
 
 Never put a commitment, deadline, deliverable, or ownership claim in a draft

@@ -440,6 +440,11 @@ formal end and Slack channel posts on the casual end. Confirm against samples
 when available.*
 
 ### Register
+
+- Intro threads: no "good to meet you" to someone Bryan has not met yet
+  (2026-11-06: "We haven't actually met yet. Feels awkward and fake.").
+  Reciprocate what the new contact wrote, or open with the substance.
+
 ### Structure
 ### Audience modifiers
 ### Examples in samples.md

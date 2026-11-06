@@ -63,6 +63,7 @@ remindctl add "Vacuum the house" --list "Home ToDos" --due 2026-11-06 \
   - With a time (`--due "2026-11-06 18:00"`), remindctl also sets an alarm at that time.
   - Ask for a time only if he implies one ("before dinner").
 - **Repeating chores** (`--repeat weekly`): add ` · repeats` to the end of the mark line, for example `Added by Home bot (Hermes) · repeats`. Reminders handles repeating chores itself, so the evening check skips them.
+- **Anchoring a cadence to a month.** A repeat runs off its own due date, so one reminder cannot both start now and land in a chosen month. Use two: a one-off for the next occurrence, and a separate repeat seeded on the date that puts the cycle where he wants it. When the cadence is not a clean interval — once a year in a given month, or twice a year on two named dates — two separate yearly reminders are simpler and more legible than one repeating rule, and each one shows its date plainly in the list.
 - **Location** ("when I get to Home Depot"): `--location "<address>"`, plus `--leaving` when the reminder should fire on leaving.
 - **Adopting one of his reminders**, when he asks you to look after it: add the mark line with `remindctl edit <id> --notes`. That command replaces all of the notes, so keep the existing text and append the mark.
 - He names a list you have no write access to: say it isn't connected yet and offer to connect it (section 1a). Never write there anyway.
@@ -94,6 +95,10 @@ When the routine arrives, send one short message:
 - No guilt.
 
 Don't change anything until he answers. Then apply section 3.
+
+## When a failure notice arrives
+
+A failed run or a missing-interpreter error is reported to Bryan in one line with what it means, and nothing else for now. Do not re-point, repair or recreate the job's interpreter, and do not recreate a reminder he has deleted: a failing scheduled run is usually an install or a manual-run problem, not permission to change configuration.
 
 ## Never
 
