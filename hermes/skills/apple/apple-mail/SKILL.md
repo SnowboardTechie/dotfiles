@@ -73,6 +73,8 @@ The global `inbox` and `sent mailbox` are convenient but may aggregate accounts.
 
 ## Reliability pitfalls
 
+- **Setting `content` on a `reply` can produce an empty draft.** On macOS 27 Mail (2026-11-06), `reply latestMsg with reply to all` (with or without `opening window`) returned an outgoing message whose `content` read back as 0 chars before and after `set content`, and `save` filed a draft carrying the headers (In-Reply-To, References, recipients, sender) but no body. Rule: one attempt, then read the saved draft's `source` for a body line. If it is missing, delete the empty draft, close the compose window, and hand Bryan the paste-ready text; he would rather paste than watch AppleScript retries. `make new outgoing message` with `content` in the properties record is the known-good path for fresh messages, but it does not thread a reply.
+
 - **First match is not latest.** Mail does not promise useful ordering for `every message ... whose ...`; compare dates explicitly.
 - **Historical Sent false positive.** A prior forward with the same subject does not verify the new send. Compare timestamps and recipients after a short sync delay.
 - **Sender display names vary.** Search a stable domain/address fragment where available, then inspect the selected sender.
