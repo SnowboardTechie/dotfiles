@@ -296,7 +296,8 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
     def test_claude_lane_agent_is_opus_and_confined(self) -> None:
         self.assertTrue(CLAUDE_AGENT.is_file())
         fields = frontmatter(self.agent)
-        self.assertEqual(fields.get("model"), "opus")
+        # Pinned to the exact model since d23a229 ("Pin Opus handoffs to Claude 5.5").
+        self.assertEqual(fields.get("model"), "claude-opus-5-5")
         self.assertIn("Write", fields.get("tools", ""))
         for lane in ("standards", "spec", "correctness", "risk", "ponytail"):
             self.assertIn(f"`{lane}`", self.agent)

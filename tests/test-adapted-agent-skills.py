@@ -322,7 +322,7 @@ class SessionHandoffEngagementContractTest(unittest.TestCase):
 
     def test_reference_documents_start_watch_and_close(self) -> None:
         for phrase in ("## Start", "## Watch and settle", "## Close", "rex_wait.sh",
-                       "Never resend a prompt to regain a completion signal"):
+                       "Never resend a prompt merely to regain a completion signal"):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, self.reference)
 
@@ -556,13 +556,24 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
             with self.subTest(token=token):
                 self.assertIn(token, self.body)
                 self.assertIn(token.replace("--", ""), self.router)
+        # Since d426970 (2026-10-19) task shape right-sizes the handoff, not the
+        # implementer: Claude implements both shapes unless Bryan selects otherwise.
         self.assert_matches(
             self.body,
-            r"(?is)`auto` keeps a\s+single-loop task with the parent.*substantial work to visible Claude",
-            "auto routing must be proportional to task shape",
+            r"(?is)Bryan's standing\s+selection is Claude for both shapes",
+            "Claude must implement both task shapes by default",
         )
-        self.assertIn("explicit same-run", self.body.lower())
-        self.assertIn("Qwen is\nnever an automatic route", self.body)
+        self.assert_matches(
+            self.body,
+            r"(?is)legacy `auto` single-loop route does not supersede that instruction",
+            "the router's legacy auto route must not override the standing selection",
+        )
+        self.assert_matches(
+            self.body,
+            r"(?is)another implementation route only when Bryan explicitly selects it",
+            "only Bryan's explicit selection changes the route",
+        )
+        self.assert_matches(self.body, r"Qwen is\s+never an automatic route", "Qwen is never automatic")
 
     def test_visible_worker_uses_the_rex_procedure_and_complete_identity(self) -> None:
         self.assertIn("references/rex-claude-handoff.md", self.body)
@@ -654,13 +665,20 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
         )
 
     def test_sol_claude_boundary_is_explicit(self) -> None:
-        for token in ("decision-complete", "Sol remains the pairing", "single-loop"):
+        # The Sol pairing was replaced by the Hermes-parent/Claude-worker split in
+        # d426970 (2026-10-19); authorship and acceptance must still stay distinct.
+        for token in ("decision-complete", "single-loop", "independent acceptance"):
             with self.subTest(token=token):
                 self.assertIn(token.lower(), self.body.lower())
         self.assert_matches(
             self.body,
-            r"(?is)the worker produces a\s+candidate; Sol independently accepts",
-            "worker authorship and Sol acceptance must stay distinct",
+            r"(?is)The Hermes parent orchestrates; a Claude worker implements",
+            "the parent/worker roles must be explicit",
+        )
+        self.assert_matches(
+            self.body,
+            r"(?is)a worker produces a\s+candidate,\s+not an accepted deliverable",
+            "worker authorship and parent acceptance must stay distinct",
         )
 
     def test_rex_scripts_and_tests_exist(self) -> None:
