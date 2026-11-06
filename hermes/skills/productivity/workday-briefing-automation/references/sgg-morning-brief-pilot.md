@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Prepare Bryan for SGG work by reconstructing the previous business day's resting point, showing work constraints, and recommending one concrete work outcome. Personal projects, personal reminders, and personal calendar events are handled by the separate Second Brain morning brief. The SGG brief reads work mail, the work calendar, GitHub, Superwhisper meeting notes, canonical SGG notes, and project repositories without mutating those sources.
+Prepare Bryan for SGG work by reconstructing the previous business day's resting point, showing work constraints, and recommending one concrete work outcome. Personal projects, personal reminders, and personal calendar events are handled by the separate Second Brain morning brief. The SGG brief reads work mail, the work calendar, GitHub, Hex meeting notes, canonical SGG notes, and project repositories without mutating those sources.
 
 ## Operational contract
 
@@ -13,7 +13,7 @@ Prepare Bryan for SGG work by reconstructing the previous business day's resting
   session so replies retain the brief as context.
 - Retain local cron output for audit/troubleshooting.
 - Use an LLM-driven job with a deterministic bounded pre-run collector.
-- The job may read notes, Superwhisper meetings (summaries and private notes only), Calendar, Mail, and GitHub. It never writes notes, mutates those sources, or creates scheduled jobs.
+- The job may read notes, Hex meetings (manifest summaries only), Calendar, Mail, and GitHub. It never writes notes, mutates those sources, or creates scheduled jobs.
 
 ## Notes scope and authority
 
@@ -41,32 +41,39 @@ The collector reads its previous-workday Git history; canonical surfaces and
 live systems, not any external memory service, ground the brief. The job must
 not bulk-ingest the vault or meeting notes anywhere.
 
-#### Superwhisper meeting review
+#### Hex meeting review
 
 On 2026-10-27 Bryan moved meeting notes from Granola to Superwhisper and set a
-standing rule: full meeting transcripts are never sent over networks. The brief
-therefore has no Granola toolset and reads meetings through the local
-read-only CLI (`/Users/bryan/.local/bin/superwhisper`), never with
-`--transcript`. Granola keeps recording until the cancelled subscription
-lapses, for Bryan's own comparison only; it is not a brief source.
+standing rule: full meeting transcripts are never sent over networks. In early
+November 2026 Hex replaced Superwhisper as the meeting recorder (first Hex
+meeting 2026-11-03; Superwhisper's last is 2026-10-29). The brief, Friday
+Recap and Meeting Prep jobs (sgg profile) kept the Superwhisper instructions
+until 2026-11-06, so they listed an empty Superwhisper and missed Hex meetings.
 
-The morning agent lists Superwhisper meetings from the previous-business-day
-boundary through briefing time, excludes every meeting that is not demonstrably
-SGG/CommonGrants/P&D work from list metadata alone, then reads summary and
-`privateNotes` for at most ten. It never reads an ambiguous meeting to decide
-whether that meeting is relevant.
+The agent lists with `/Applications/Hex.app/Contents/MacOS/hex meetings list
+--json --since <boundary>` (metadata only), drops in-progress, incomplete and
+Granola-import (`-granola`) entries, excludes non-SGG meetings by title alone,
+then reads only `manifest.json` (`title`, `created_at_ms`, `calendar.attendees`,
+`notes.summary`, `notes_error`, error fields) for at most ten. `hex meetings
+show`/`search`/`copy-last`, `transcript.*`, audio and the exports in
+`~/Documents/Hex Meetings` all carry the full transcript and are forbidden.
+A set `notes_error` or "No speech was transcribed" is a failed transcription,
+not an empty meeting.
 
-Superwhisper summaries come from a local model chosen for privacy. A
-2026-10-27 comparison against Granola found invented decisions, every action
-assigned to one person, and collapsed speakers. Bryan's `privateNotes` are the
-strongest meeting evidence; summary-only decisions and owners are labeled
-unconfirmed and never become Bryan's task without corroboration.
+Hex summaries come from Apple Intelligence on-device over a machine transcript
+that mishears names and PR numbers; Hex has no private-notes field.
+Summary-only decisions and owners are labeled "unconfirmed (Hex summary)" and
+never become Bryan's task without corroboration.
+
+Hex's default retention kept meetings only 24 hours, so Monday's brief could
+not have seen Friday's meetings. Bryan set `meetings.retention` to `month` on
+2026-11-06.
 
 Meeting-derived claims preserve title, Pacific date, meeting ID prefix,
-explicit owner, action verb/object, and epistemic status. Superwhisper has no
-web URL. Meeting notes cannot silently override canonical vault or live GitHub
-state. The agent never retains meeting content; a CLI failure stays visible and
-never falls back to Granola or old exports.
+explicit owner, action verb/object, and epistemic status. Hex has no web URL.
+Meeting notes cannot silently override canonical vault or live GitHub state.
+The agent never retains meeting content; a CLI failure stays visible and never
+falls back to Superwhisper, Granola or old exports.
 
 The `granola` and `granola_full` MCP aliases remain configured for interactive
 use until the subscription lapses; the reconciler still verifies them.
@@ -118,7 +125,7 @@ Check authored PRs, assigned reviews, actionable comments/requested changes, mea
 ## Output contract
 
 1. **Where work left off** — 1–4 grounded bullets covering work that actually changed or remained active since the previous workday.
-2. **Recent meeting context** — at most 3 relevant Superwhisper-derived actions, decisions, status changes, or contradictions with meeting provenance; omit when empty.
+2. **Recent meeting context** — at most 3 relevant Hex-derived actions, decisions, status changes, or contradictions with meeting provenance; omit when empty.
 3. **Today's work calendar** — commitments, verified preparation, conflicts, and focus windows.
 4. **Work email requiring attention** — at most 3 actionable messages; omit when empty.
 5. **GitHub watch list** — at most 3 genuinely actionable or materially changed items.

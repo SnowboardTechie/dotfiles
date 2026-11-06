@@ -77,7 +77,7 @@ class LeanIssueWorkContractTests(unittest.TestCase):
         self.assertIn("before every `send`", ref)
         self.assertIn("block inspect", ref)
         self.assertIn("Confirm a new `user` record in the transcript", ref)
-        self.assertIn("Never resend a prompt to regain a completion signal", ref)
+        self.assertIn("Never resend a prompt merely to regain a completion signal", ref)
         self.assertIn("close only the recorded block", ref)
         self.assertIn("expect 0", ref)
 
@@ -120,7 +120,7 @@ class LeanIssueWorkContractTests(unittest.TestCase):
         skill = POOL / "coding-agent-handoff-supervision"
         self.assertEqual(
             sorted(p.name for p in (skill / "scripts").iterdir() if p.suffix in (".py", ".sh")),
-            ["rex_subagent_slot.py", "rex_wait.sh"],
+            ["claude-usage.sh", "rex_subagent_slot.py", "rex_wait.sh"],
         )
         self.assertEqual(
             sorted(p.name for p in (skill / "tests").glob("test_*.py")),

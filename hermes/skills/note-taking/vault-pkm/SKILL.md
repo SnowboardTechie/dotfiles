@@ -97,6 +97,12 @@ Do not turn every exchange into a note. Work the problem conversationally first.
 
 If local instructions define note types, use them. If capture type remains genuinely ambiguous and changes the destination or shape, ask one concise question.
 
+When Bryan invites clarifying questions before a capture:
+
+- **Ask in the final message, not with context on a clarify card.** Text written before a tool call never reaches him, and a card carrying the explanation renders as an unreadable orange block. Put two or three sentences of context, the options and the recommendation in a final message and end the turn; a card, if used at all, holds only a one-line question with short choices.
+- **One question per turn**, the one whose answer most changes the note's shape or destination first (for example, scope: does this govern only the workloads, or also the agents that build them).
+- **Anchor on machinery already in place before proposing any.** When his principle overlaps something the project already builds (ratings, grading, replay sets, metrics, gates), record that existing machinery as the answer. Proposing a new test or procedure for it reads as not listening.
+
 **Completion criterion:** the intended artifact type and purpose are clear.
 
 ### 5. Name the artifact before writing
@@ -151,6 +157,7 @@ Use a stricter source → compile → reconcile → verify loop:
 - Distinguish observed current state, accepted decisions, proposals, historical state, and unverified inference.
 - Classify each vault as active, dormant, or historical before normalizing it; do not cosmetically revive archived projects.
 - Exclude unpromoted drafts and agent scratch from canonical lint.
+- **A standing philosophy or direction meant to guide future agents** gets one canonical decision record: his words, the principles, "reference points for decisions" an agent can apply, where it is already true, and a scope/authority section saying it authorizes nothing new. Route to it from the index's opening paragraph and its decision list, add a dated clarification to the parent direction record instead of duplicating it, and add a short pointer section to the repository's `AGENTS.md`, because agents read that file every session and may never open the vault. Keep derived reference points to direct consequences of what he confirmed.
 - Keep cross-vault references explicit because local wikilinks do not resolve across vault boundaries.
 - During vault-only work, inspect paired code repositories as read-only sources and preserve all pre-existing changes across repositories.
 - For a transferred archive or machine migration, receive outside the active vault, inspect for unsafe members and expansion risk, extract to staging, reconcile imported and destination instructions, merge with explicit exclusions, and verify imported files by path and checksum. If the project workspace and notes vault are separate trees, inspect both destination paths first, migrate the large workspace resumably, and reconnect the one canonical vault by symlink. The detailed procedures are in `references/agent-compiled-project-vaults.md` under **Safe snapshot migration** and **Multi-repository workspace migration with an external vault**.
@@ -176,7 +183,7 @@ Bryan treats Git synchronization as part of completing a non-draft vault update,
 
 1. Fetch and confirm the vault branch can be updated safely; preserve unrelated tracked and untracked work.
 2. Stage only the exact note paths authorized for the task.
-3. Run `git diff --cached --check`, commit with a concise vault-scoped message, and push. Vault-only commits go directly to the default branch with no PR, unless another agent will review them (Bryan, 2026-10-28).
+3. Run `git diff --cached --check`, commit with a concise vault-scoped message, and push. Vault-only commits go directly to the default branch with no PR, unless another agent will review them. A file outside the vault touched by the same task (such as the repository's `AGENTS.md`) follows the repository's own change path: check `git log -- <path>` for precedent, and where it went through PRs, open one from its own worktree and merge it the sanctioned way (`manual-merge` on Forgejo), keeping the branch.
 4. Fetch again and verify local `HEAD` equals the remote branch SHA.
 5. During ordinary note work, leave `drafts/` uncommitted unless Bryan explicitly promotes or asks to commit the draft.
 
