@@ -104,6 +104,10 @@ def monitor_script_value(definition: dict) -> str | None:
 
 
 CLAUDE_PROVIDER = "claude-subscription-directsdk-experimental"
+# Bryan, 2026-11-04: personal unattended jobs may run on his OpenCode Go
+# subscription; SGG work stays on Anthropic and lives in the sgg profile, never
+# in this default-profile manifest (check-sgg-providers.py enforces that side).
+OPENCODE_GO_PROVIDER = "opencode-go"
 
 
 def values_match(key: str, expected: object, actual: object) -> bool:
@@ -114,7 +118,7 @@ def values_match(key: str, expected: object, actual: object) -> bool:
 
 
 def verify_inference_route(definition: dict) -> None:
-    """Keep unattended inference on the Claude subscription unless the manifest policy changes."""
+    """Keep unattended inference on an approved subscription: Claude or OpenCode Go."""
     name = definition["name"]
     model = definition.get("model")
     provider = definition.get("provider")
@@ -123,12 +127,19 @@ def verify_inference_route(definition: dict) -> None:
         if model is not None or provider is not None or base_url is not None:
             fail(f"{name!r} is noAgent and must remain model-free")
         return
-    if not isinstance(model, str) or not model.startswith("claude-"):
-        fail(f"{name!r} must use an explicit Claude model through the Claude subscription")
-    if provider != CLAUDE_PROVIDER:
-        fail(f"{name!r} must use provider {CLAUDE_PROVIDER!r}, got {provider!r}")
+    if provider == OPENCODE_GO_PROVIDER:
+        if not isinstance(model, str) or not model:
+            fail(f"{name!r} must name an explicit OpenCode Go model")
+    elif provider == CLAUDE_PROVIDER:
+        if not isinstance(model, str) or not model.startswith("claude-"):
+            fail(f"{name!r} must use an explicit Claude model through the Claude subscription")
+    else:
+        fail(
+            f"{name!r} must use provider {CLAUDE_PROVIDER!r} or {OPENCODE_GO_PROVIDER!r}, "
+            f"got {provider!r}"
+        )
     if base_url is not None:
-        fail(f"{name!r} must not override the Claude subscription provider base URL")
+        fail(f"{name!r} must not override the subscription provider base URL")
 
 
 def verify_mcp_requirements(manifest: dict) -> None:

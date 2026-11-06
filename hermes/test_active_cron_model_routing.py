@@ -5,12 +5,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 PROVIDER = "claude-subscription-directsdk-experimental"
+GO = "opencode-go"
 ROUTES = {
-    "SGG Morning Brief": "claude-sonnet-5-5",
-    "SGG PR Review Reminder": "claude-sonnet-5-5",
-    "SGG Dependency Triage": "claude-sonnet-5-5",
-    "Watch Matt Pocock skill updates": "claude-opus-5-5",
-    "SGG Friday Recap": "claude-opus-5-5"
+    "SGG Morning Brief": ("claude-sonnet-5-5", PROVIDER),
+    "SGG PR Review Reminder": ("claude-sonnet-5-5", PROVIDER),
+    "SGG Dependency Triage": ("claude-sonnet-5-5", PROVIDER),
+    "SGG Friday Recap": ("claude-opus-5-5", PROVIDER),
+    "Watch Matt Pocock skill updates": ("gemini-4-argon", GO),
+    "YunoHost update report": ("deepseek-v4.1-flash", GO),
 }
 ACTIVE_NAMES = set(ROUTES)
 STANDALONE = (
@@ -34,8 +36,7 @@ class ActiveCronModelRoutingTest(unittest.TestCase):
         self.assertEqual(set(jobs), ACTIVE_NAMES)
         for name, job in jobs.items():
             with self.subTest(job=name):
-                self.assertEqual(job["model"], ROUTES[name])
-                self.assertEqual(job["provider"], PROVIDER)
+                self.assertEqual((job["model"], job["provider"]), ROUTES[name])
                 self.assertIsNone(job.get("baseUrl"))
                 self.assertIsNone(job.get("base_url"))
                 self.assertNotIn("reasoning_effort", job)

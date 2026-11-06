@@ -1,16 +1,19 @@
 # Scheduled-agent inference routing
 
-Bryan is retiring his OpenAI subscription, so unattended inference runs on his
-Claude subscription through the `claude-subscription-directsdk-experimental`
-provider. Do not route jobs back to GPT unless no Claude route can do the work.
+Unattended inference runs on one of two approved subscriptions. SGG work stays
+on Anthropic (`claude-subscription-directsdk-experimental`, the Agile Six seat);
+OpenCode Go is kept out of the `sgg` profile entirely. Since 2026-11-04 Bryan's
+personal unattended jobs may run on his OpenCode Go subscription (`opencode-go`).
+The reconciler accepts only these two providers. Do not route jobs back to GPT.
 
-| Job | Model |
-| --- | --- |
-| SGG Morning Brief | `claude-sonnet-5-5` |
-| SGG PR Review Reminder | `claude-sonnet-5-5` |
-| SGG Dependency Triage | `claude-sonnet-5-5` |
-| Watch Matt Pocock skill updates | `claude-opus-5-5` |
-| SGG Friday Recap | `claude-opus-5-5` |
+| Job | Model | Provider |
+| --- | --- | --- |
+| SGG Morning Brief | `claude-sonnet-5-5` | Claude |
+| SGG PR Review Reminder | `claude-sonnet-5-5` | Claude |
+| SGG Dependency Triage | `claude-sonnet-5-5` | Claude |
+| SGG Friday Recap | `claude-opus-5-5` | Claude |
+| Watch Matt Pocock skill updates | `gemini-4-argon` | OpenCode Go |
+| YunoHost update report | `deepseek-v4.1-flash` | OpenCode Go |
 
 Sonnet covers collection-and-summary jobs; Opus covers weekly jobs where
 judgment or Bryan's voice matters most. Move a Sonnet job to Opus if its output
@@ -22,7 +25,7 @@ dormant.
 
 - The default profile's jobs are in `hermes/manifest.json`, reconciled by
   `hermes/reconcile_cron.py`, which refuses any agent job that is not a `claude-`
-  model on the Claude subscription provider.
+  model on the Claude subscription provider or a named model on `opencode-go`.
 - The four SGG routines (morning brief, dependency triage, PR review reminder,
   Friday recap) moved to the `sgg` profile on 2026-11-03 and deliver to its Bot
   Chat. They have standalone `job.json` and `prompt.md` definitions under

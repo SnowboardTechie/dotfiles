@@ -52,13 +52,15 @@ class MorningBriefSplitContractTest(unittest.TestCase):
                     self.assertFalse(job["attachToSession"])
                     self.assertNotIn("continuation", job)
 
-    def test_every_agent_job_uses_the_claude_subscription(self) -> None:
+    def test_every_agent_job_uses_an_approved_subscription(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         for job in manifest["cronJobs"]:
             with self.subTest(job=job["name"]):
                 if job["noAgent"]:
                     self.assertIsNone(job["model"])
                     self.assertIsNone(job["provider"])
+                elif job["provider"] == "opencode-go":
+                    self.assertTrue(job["model"])
                 else:
                     self.assertTrue(job["model"].startswith("claude-"))
                     self.assertEqual(job["provider"], "claude-subscription-directsdk-experimental")

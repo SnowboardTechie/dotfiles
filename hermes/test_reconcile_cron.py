@@ -157,6 +157,11 @@ class InferenceRouteTest(unittest.TestCase):
     def test_accepts_claude_subscription_route(self) -> None:
         MODULE.verify_inference_route(self.definition())
 
+    def test_accepts_opencode_go_route(self) -> None:
+        MODULE.verify_inference_route(
+            self.definition(model="deepseek-v4.1-flash", provider="opencode-go")
+        )
+
     def test_accepts_model_free_no_agent_job(self) -> None:
         MODULE.verify_inference_route(
             self.definition(model=None, provider=None, noAgent=True)
@@ -168,6 +173,10 @@ class InferenceRouteTest(unittest.TestCase):
             {"provider": "custom:local-gemma4", "model": "gemma4:31b-mlx"},
             {"baseUrl": "https://openrouter.ai/api/v1"},
             {"model": None},
+            {"model": "gpt-5.6-terra", "provider": "claude-subscription-directsdk-experimental"},
+            {"model": None, "provider": "opencode-go"},
+            {"model": "deepseek-v4.1-flash", "provider": "opencode-go",
+             "baseUrl": "https://opencode.ai/zen/go/v1"},
         )
         for overrides in cases:
             with self.subTest(overrides=overrides), self.assertRaises(SystemExit):
@@ -387,8 +396,9 @@ class MonitorScriptTest(unittest.TestCase):
         job = next(
             j for j in manifest["cronJobs"] if j["name"] == "Watch Matt Pocock skill updates"
         )
-        self.assertEqual(job["model"], "claude-opus-5-5")
-        self.assertEqual(job["provider"], "claude-subscription-directsdk-experimental")
+        # Moved to OpenCode Go with the other personal jobs on 2026-11-04.
+        self.assertEqual(job["model"], "gemini-4-argon")
+        self.assertEqual(job["provider"], "opencode-go")
         self.assertIsNone(job.get("baseUrl"), "a cloud route needs no base_url override")
 
     def test_prompt_file_for_every_cron_job_resolves(self) -> None:
