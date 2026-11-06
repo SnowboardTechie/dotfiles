@@ -6,17 +6,30 @@ adapted. The Hermes scheduler hashes these exact bytes and suppresses the agent
 run entirely when they are unchanged, so the output must be byte-identical
 across runs that observe the same upstream *content*.
 
-Two design decisions follow from that, and each one was a bug first:
+Three design decisions follow from that, and each one was a bug first:
 
 * **Identity is per-file, not per-commit.** The snapshot carries each watched
   file's Git **blob sha** and no repository tip. An upstream commit that touches
   nothing we watch therefore produces identical output and stays silent. Keying
   on `main` made every unrelated push look like a change.
-* **The assessment gets what it needs *here*.** The watcher runs with read-only
-  tools, so it cannot open the local ledger. The bounded context it needs —
-  which local skills each watched file feeds, what diverged locally, and which
-  upstream rules were explicitly rejected — travels in this output. A blob URL
-  pinned to the sha lets the agent fetch the exact bytes that were hashed.
+* **The hashed output carries upstream identity only.** Per watched path: the
+  path and its blob sha, plus the pin from the ledger. No blob URL: it is a
+  fixed prefix plus the sha, so it only doubled every diff line; the agent
+  builds it from the validated sha. Local adaptation context (local skill paths, `localChanges`,
+  `rejectedUpstreamRules`) is deliberately absent. Inside the hashed bytes it
+  made a local-only ledger edit wake the agent, and it grew the snapshot to
+  ~33 KB, four times the scheduler's 8,000-character output cap, so the agent
+  saw a truncated diff and snapshot. The assessing agent runs with the
+  dotfiles checkout as its workdir and reads that context itself, read-only,
+  from the ledger and the local skill files, for the paths that changed.
+* **One line per watched path.** The scheduler shows the agent a unified diff
+  with three lines of context. When each path's sha sat several lines below
+  its key, a hunk for one changed sha showed the *next* path's key as its
+  nearest visible name: on 2026-10-12 the `tdd/SKILL.md` sha change was read
+  as `tdd/mocking.md`, and the correctly pinned `tdd/SKILL.md` bytes were then
+  reported as the wrong blob. Keeping path and sha on one line makes every
+  changed diff line self-identifying, and keeps a diff in which *every*
+  watched path changed under the scheduler's 4,000-character diff cap.
 
 Shas come from **one** recursive Git Trees request, not one Contents request per
 watched file. That is not premature optimization: GitHub's unauthenticated limit
@@ -65,10 +78,6 @@ MAX_BYTES = 1_048_576  # 1 MiB per file; upstream skills are a few KiB.
 LEDGER_ENV = "MATTPOCOCK_SKILLS_LEDGER"
 LEDGER_RELATIVE = Path("dot-agents") / "upstreams" / "mattpocock-skills.json"
 
-# Kept short on purpose: an alert has to stay readable, and the agent can fetch
-# the full ledger entry from Git if it needs more than the gist.
-MAX_CONTEXT_ITEMS = 6
-
 
 class MonitorError(RuntimeError):
     """Any condition that must exit non-zero rather than report no change."""
@@ -109,33 +118,16 @@ def load_ledger(path: Path) -> dict:
         raise MonitorError(f"adaptation ledger is not valid JSON: {exc}") from None
 
 
-def _trimmed(values: Iterable[str]) -> list[str]:
-    """At most `MAX_CONTEXT_ITEMS` entries, sorted, with an honest tail marker."""
-    items = sorted(str(value) for value in values)
-    if len(items) <= MAX_CONTEXT_ITEMS:
-        return items
-    remaining = len(items) - MAX_CONTEXT_ITEMS
-    return items[:MAX_CONTEXT_ITEMS] + [f"… and {remaining} more (see the ledger in Git)"]
+def watched_paths(ledger: dict) -> list[str]:
+    """Every watched upstream path, sorted and de-duplicated.
 
-
-def watched_context(ledger: dict) -> dict[str, list[dict]]:
-    """Upstream path -> the adaptations it feeds, with their local divergence.
-
-    This is the bounded context the assessment needs and cannot read for itself:
-    which local skills a change would affect, what already diverges locally, and
-    which upstream rules were rejected on purpose — because upstream restating a
-    rejected rule is the same disagreement, not news.
+    A watched file must be one of its adaptation's declared `upstreamPaths`:
+    a watched file with no mapping could not be assessed for relevance.
     """
-    context: dict[str, list[dict]] = {}
+    paths: set[str] = set()
     for adaptation in ledger.get("adaptations", []):
         skill = adaptation.get("skill")
         declared = set(adaptation.get("upstreamPaths", []))
-        entry = {
-            "skill": skill,
-            "localPaths": sorted(adaptation.get("localPaths", [])),
-            "localChanges": _trimmed(adaptation.get("localChanges", [])),
-            "rejectedUpstreamRules": _trimmed(adaptation.get("rejectedUpstreamRules", [])),
-        }
         for path in adaptation.get("watchedFiles", []):
             if path not in declared:
                 raise MonitorError(
@@ -143,13 +135,10 @@ def watched_context(ledger: dict) -> dict[str, list[dict]]:
                     "upstreamPaths; a watched file with no mapping cannot be assessed "
                     "for relevance"
                 )
-            context.setdefault(path, []).append(entry)
-    if not context:
+            paths.add(path)
+    if not paths:
         raise MonitorError("adaptation ledger declares no watched files")
-    return {
-        path: sorted(entries, key=lambda item: item["skill"] or "")
-        for path, entries in sorted(context.items())
-    }
+    return sorted(paths)
 
 
 # --------------------------------------------------------------------------
@@ -259,27 +248,17 @@ class FixtureFetcher:
         return git_blob_sha(candidate.read_bytes())
 
 
-def blob_url(sha: str) -> str:
-    """A content-pinned URL for exactly the bytes that were hashed."""
-    return f"{API_BASE}/git/blobs/{sha}"
-
-
 # --------------------------------------------------------------------------
 # Snapshot
 # --------------------------------------------------------------------------
 
 
 def build_snapshot(ledger: dict, *, fetcher) -> dict:
-    """The deterministic document the scheduler hashes."""
-    watched = watched_context(ledger)
+    """The deterministic document the scheduler hashes: upstream identity only."""
     files: dict[str, dict] = {}
-    for path, adaptations in watched.items():
+    for path in watched_paths(ledger):
         sha = fetcher.blob_sha(path)
-        files[path] = {
-            "blobSha": sha,
-            "blobUrl": blob_url(sha),
-            "adaptations": adaptations,
-        }
+        files[path] = {"blobSha": sha}
     return {
         "upstream": UPSTREAM_URL,
         "pinnedCommit": ledger.get("commit", ""),
@@ -288,9 +267,36 @@ def build_snapshot(ledger: dict, *, fetcher) -> dict:
     }
 
 
+def _compact(value) -> str:
+    return json.dumps(value, sort_keys=True, ensure_ascii=True, separators=(", ", ": "))
+
+
 def render(snapshot: dict) -> str:
-    """Sorted, indented JSON with a trailing newline. No timestamp, ever."""
-    return json.dumps(snapshot, indent=2, sort_keys=True) + "\n"
+    """Valid, sorted JSON with one line per watched path. No timestamp, ever.
+
+    Each watched path's sha shares a line with the path itself, so a
+    unified diff of two snapshots names the right path on every changed line.
+    """
+    lines = ["{"]
+    keys = sorted(snapshot)
+    for index, key in enumerate(keys):
+        comma = "," if index < len(keys) - 1 else ""
+        value = snapshot[key]
+        if key == "watched" and isinstance(value, dict) and value:
+            lines.append(f"  {_compact(key)}: {{")
+            paths = sorted(value)
+            for inner, path in enumerate(paths):
+                inner_comma = "," if inner < len(paths) - 1 else ""
+                lines.append(f"    {_compact(path)}: {_compact(value[path])}{inner_comma}")
+            lines.append(f"  }}{comma}")
+        else:
+            lines.append(f"  {_compact(key)}: {_compact(value)}{comma}")
+    lines.append("}")
+    return "\n".join(lines) + "\n"
+
+
+def _one_line(text: str) -> str:
+    return " ".join(text.split())
 
 
 def main(argv: Iterable[str] | None = None) -> int:
@@ -317,7 +323,15 @@ def main(argv: Iterable[str] | None = None) -> int:
     except MonitorError as error:
         # Non-zero so the scheduler records an ERROR. A broken monitor must
         # alert, never quietly look like "nothing changed".
-        print(f"monitor failed: {error}", file=sys.stderr)
+        print(f"monitor failed: {_one_line(str(error))}", file=sys.stderr)
+        return 1
+    except Exception as error:  # noqa: BLE001 — the contract is one labeled line
+        # An unforeseen bug (say, a ledger of the wrong shape) must still reach
+        # the scheduler as one labeled failure line, not a multi-line traceback.
+        print(
+            f"monitor failed: unexpected {type(error).__name__}: {_one_line(str(error))}",
+            file=sys.stderr,
+        )
         return 1
     return 0
 

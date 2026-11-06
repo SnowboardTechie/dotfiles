@@ -102,7 +102,7 @@ exact stdout bytes and suppresses the whole run — no model call, no delivery �
 when they are unchanged. That makes a monitor job nearly free on quiet weeks and
 loud only when its source actually moves.
 
-Two rules follow, and both are enforced rather than documented and hoped for:
+Three rules follow; each monitor's tests enforce them rather than hoping:
 
 - **The output must be stable.** No timestamp, no dict-order leakage, no local
   path. Anything that varies run to run makes every tick look like a change and
@@ -110,6 +110,14 @@ Two rules follow, and both are enforced rather than documented and hoped for:
 - **A source failure must exit non-zero.** The scheduler records it as an error;
   a monitor that returns success after failing to reach its source reports
   "nothing changed", which is the one lie that matters here.
+- **The output must fit what the agent is shown.** On a change the agent gets a
+  unified diff capped at 4,000 characters and the current output capped at
+  8,000; past that it reads a truncated snapshot. Hash only the source's
+  identity, not context the agent can read for itself, and keep each item's
+  name and identity on one line so a three-line-context diff hunk always names
+  what changed. Leave out anything derivable from the identity (a URL that is a
+  fixed prefix plus the sha) so a change to every item still fits the diff cap. (The Matt Pocock watcher broke both ways: a 33 KB snapshot, and
+  a sha change read as belonging to the next file's key.)
 
 `reconcile_cron.py` validates `monitorScript` before calling the API — a bare
 filename, no path, never combined with `noAgent` — because the scheduler's own

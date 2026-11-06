@@ -2,7 +2,7 @@
 """Offline tests for the upstream skill-update monitor.
 
 The scheduler hashes this script's exact stdout bytes and suppresses the whole
-agent run when they are unchanged. Three properties follow, and all three are
+agent run when they are unchanged. These properties follow, and all of them are
 tested rather than trusted:
 
 * **Identical upstream content produces identical bytes.** Any instability — a
@@ -13,6 +13,10 @@ tested rather than trusted:
   Keying on the repository tip was the bug this replaces.
 * **A real change moves the output.** A watcher that cannot notice is worse than
   none, because it reports quiet.
+* **Local adaptation context alone does not.** The hashed output carries
+  upstream identity only; the agent reads the ledger itself for changed paths.
+* **The output and its diff fit the scheduler's prompt caps**, and every changed
+  diff line names its own path (the 2026-10-12 `tdd/mocking.md` misattribution).
 
 Everything runs against a fixture directory or an injected HTTP stub. No test
 reaches the network.
@@ -22,9 +26,11 @@ Run: python3 -m unittest hermes/test_check_mattpocock_skill_updates.py
 
 from __future__ import annotations
 
+import difflib
 import hashlib
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -40,6 +46,34 @@ SPEC.loader.exec_module(MON)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 REAL_LEDGER = REPO_ROOT / "dot-agents" / "upstreams" / "mattpocock-skills.json"
+
+# Mirrors of `cron/monitor.py` in the installed Hermes agent. The monitor block
+# shows the agent a unified diff capped at MAX_DIFF_CHARS and the current output
+# capped at MAX_OUTPUT_CHARS; anything longer is truncated mid-snapshot.
+# `HermesLimitsTest` asserts these still equal the installed values.
+HERMES_MONITOR = Path.home() / ".hermes" / "hermes-agent" / "cron" / "monitor.py"
+HERMES_PYTHON = Path.home() / ".hermes" / "hermes-agent" / "venv" / "bin" / "python"
+MAX_DIFF_CHARS = 4000
+MAX_OUTPUT_CHARS = 8000
+# The prompt builds each fetch URL as this prefix plus the validated sha.
+BLOB_URL_PREFIX = "https://api.github.com/repos/mattpocock/skills/git/blobs/"
+
+
+def monitor_diff(old: str, new: str) -> str:
+    """The scheduler's own diff construction (`build_monitor_diff`), uncapped."""
+    return "\n".join(
+        difflib.unified_diff(
+            old.splitlines(), new.splitlines(), fromfile="previous", tofile="current", lineterm=""
+        )
+    )
+
+
+def changed_lines(diff: str) -> list[str]:
+    return [
+        line
+        for line in diff.splitlines()
+        if line[:1] in "+-" and not line.startswith(("+++", "---"))
+    ]
 
 LEDGER = {
     "upstream": "https://github.com/mattpocock/skills",
@@ -128,67 +162,43 @@ class BlobIdentityTest(unittest.TestCase):
         self.assertEqual(MON.git_blob_sha(b"same"), MON.git_blob_sha(b"same"))
         self.assertNotEqual(MON.git_blob_sha(b"a"), MON.git_blob_sha(b"b"))
 
-    def test_the_blob_url_is_pinned_to_the_sha(self) -> None:
-        url = MON.blob_url("0" * 40)
-        self.assertTrue(url.endswith("/git/blobs/" + "0" * 40))
-        self.assertIn("mattpocock/skills", url)
+    def test_the_prompt_builds_the_blob_url_the_trees_api_points_at(self) -> None:
+        """The snapshot carries no URL; the prompt's prefix must be this repo's."""
+        prompt = (REPO_ROOT / "hermes" / "automations" / "mattpocock-skill-update-watch"
+                  / "prompt.md").read_text(encoding="utf-8")
+        self.assertIn(BLOB_URL_PREFIX + "<blobSha>", prompt)
+        self.assertEqual(BLOB_URL_PREFIX, f"{MON.API_BASE}/git/blobs/")
 
 
-class WatchContextTest(unittest.TestCase):
-    def test_context_is_sorted_and_maps_every_adaptation(self) -> None:
-        context = MON.watched_context(LEDGER)
-        self.assertEqual(list(context), sorted(context))
-        shared = context["skills/engineering/codebase-design/SKILL.md"]
+class WatchListTest(unittest.TestCase):
+    def test_paths_are_sorted_and_deduplicated(self) -> None:
+        """A path two adaptations share appears once."""
         self.assertEqual(
-            [entry["skill"] for entry in shared],
-            ["codebase-architecture", "tdd-vocabulary-consumer"],
+            MON.watched_paths(LEDGER),
+            [
+                "skills/engineering/codebase-design/SKILL.md",
+                "skills/engineering/tdd/SKILL.md",
+                "skills/engineering/tdd/tests.md",
+            ],
         )
-
-    def test_context_carries_local_divergence_and_rejected_rules(self) -> None:
-        """The watcher has no file tools; this is how relevance reaches it."""
-        entry = MON.watched_context(LEDGER)["skills/engineering/tdd/SKILL.md"][0]
-        self.assertEqual(entry["localPaths"], ["dot-agents/skills/tdd/SKILL.md"])
-        self.assertTrue(entry["localChanges"])
-        self.assertTrue(entry["rejectedUpstreamRules"])
-
-    def test_long_context_lists_are_trimmed_with_an_honest_tail(self) -> None:
-        """A silent truncation would read as a complete list."""
-        ledger = {
-            "adaptations": [
-                {
-                    "skill": "x",
-                    "upstreamPaths": ["a.md"],
-                    "watchedFiles": ["a.md"],
-                    "localPaths": [],
-                    "localChanges": [f"change {i}" for i in range(MON.MAX_CONTEXT_ITEMS + 4)],
-                    "rejectedUpstreamRules": [],
-                }
-            ]
-        }
-        changes = MON.watched_context(ledger)["a.md"][0]["localChanges"]
-        self.assertEqual(len(changes), MON.MAX_CONTEXT_ITEMS + 1)
-        self.assertIn("and 4 more", changes[-1])
 
     def test_a_watched_file_with_no_declared_source_is_refused(self) -> None:
         broken = {
             "adaptations": [{"skill": "x", "upstreamPaths": ["a.md"], "watchedFiles": ["b.md"]}]
         }
         with self.assertRaises(MON.MonitorError):
-            MON.watched_context(broken)
+            MON.watched_paths(broken)
 
     def test_an_empty_watch_list_is_refused(self) -> None:
         with self.assertRaises(MON.MonitorError):
-            MON.watched_context({"adaptations": []})
+            MON.watched_paths({"adaptations": []})
 
     def test_the_real_ledger_produces_a_watch_list(self) -> None:
-        context = MON.watched_context(json.loads(REAL_LEDGER.read_text(encoding="utf-8")))
-        self.assertTrue(context)
-        for path, entries in context.items():
+        paths = MON.watched_paths(json.loads(REAL_LEDGER.read_text(encoding="utf-8")))
+        self.assertTrue(paths)
+        for path in paths:
             with self.subTest(path=path):
                 self.assertTrue(path.startswith("skills/"))
-                self.assertTrue(entries)
-                for entry in entries:
-                    self.assertTrue(entry["localPaths"])
 
 
 class StabilityTest(unittest.TestCase):
@@ -243,12 +253,36 @@ class StabilityTest(unittest.TestCase):
         self.assertEqual(payload["pinnedCommit"], LEDGER["commit"])
         self.assertEqual(payload["pinnedVersion"], "1.2.3")
 
-    def test_every_watched_entry_carries_a_pinned_blob_url(self) -> None:
+    def test_every_watched_entry_carries_a_40_hex_blob_sha(self) -> None:
+        """The agent validates exactly this shape before building the URL."""
         with tempfile.TemporaryDirectory() as tmp:
             payload = json.loads(snapshot(write_fixture(Path(tmp))))
         for path, entry in payload["watched"].items():
             with self.subTest(path=path):
-                self.assertTrue(entry["blobUrl"].endswith(entry["blobSha"]))
+                self.assertRegex(entry["blobSha"], r"\A[0-9a-f]{40}\Z")
+
+    def test_watched_entries_carry_upstream_identity_only(self) -> None:
+        """No local skill paths, divergence, or rejected rules in the hashed bytes."""
+        with tempfile.TemporaryDirectory() as tmp:
+            output = snapshot(write_fixture(Path(tmp)))
+        payload = json.loads(output)
+        for path, entry in payload["watched"].items():
+            with self.subTest(path=path):
+                self.assertEqual(set(entry), {"blobSha"})
+        self.assertNotIn("blobUrl", output)
+        self.assertNotIn("/git/blobs/", output)
+        for local in ("adaptations", "localPaths", "localChanges", "rejectedUpstreamRules"):
+            self.assertNotIn(local, output)
+
+    def test_each_watched_path_is_one_line_carrying_its_own_sha(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            output = snapshot(write_fixture(Path(tmp)))
+        payload = json.loads(output)
+        for path, entry in payload["watched"].items():
+            with self.subTest(path=path):
+                lines = [line for line in output.splitlines() if json.dumps(path) in line]
+                self.assertEqual(len(lines), 1)
+                self.assertIn(entry["blobSha"], lines[0])
 
 
 class ChangeDetectionTest(unittest.TestCase):
@@ -290,15 +324,182 @@ class ChangeDetectionTest(unittest.TestCase):
             )
             self.assertEqual(before, snapshot(root))
 
-    def test_a_ledger_change_moves_the_output(self) -> None:
-        """Local divergence is part of relevance, so a ledger edit re-triggers."""
+    def test_local_adaptation_context_alone_does_not_move_the_output(self) -> None:
+        """A local-only ledger edit must not wake the agent (the 2026-10-19 noise)."""
         with tempfile.TemporaryDirectory() as tmp:
             root = write_fixture(Path(tmp))
             before = snapshot(root)
             edited = json.loads(json.dumps(LEDGER))
-            edited["adaptations"][0]["rejectedUpstreamRules"].append("Something new.")
+            for adaptation in edited["adaptations"]:
+                adaptation["localChanges"].append("A brand-new local divergence.")
+                adaptation["rejectedUpstreamRules"].append("Something newly rejected.")
+                adaptation["localPaths"].append("dot-agents/skills/new/SKILL.md")
+                adaptation["skill"] += "-renamed"
+            edited["adaptations"].append(
+                {
+                    "skill": "another-consumer",
+                    "upstreamPaths": ["skills/engineering/tdd/SKILL.md"],
+                    "watchedFiles": ["skills/engineering/tdd/SKILL.md"],
+                    "localPaths": ["dot-agents/skills/other/SKILL.md"],
+                    "localChanges": ["Other."],
+                    "rejectedUpstreamRules": [],
+                }
+            )
             after = MON.render(MON.build_snapshot(edited, fetcher=MON.FixtureFetcher(root)))
-        self.assertNotEqual(before, after)
+        self.assertEqual(before, after)
+
+    def test_local_context_in_the_real_ledger_does_not_move_the_output(self) -> None:
+        real = json.loads(REAL_LEDGER.read_text(encoding="utf-8"))
+        fetcher = StubFetcher()
+        before = MON.render(MON.build_snapshot(real, fetcher=fetcher))
+        for adaptation in real["adaptations"]:
+            adaptation["localChanges"] = adaptation.get("localChanges", []) + ["Edited."]
+            adaptation["rejectedUpstreamRules"] = []
+        self.assertEqual(before, MON.render(MON.build_snapshot(real, fetcher=fetcher)))
+
+
+class StubFetcher:
+    """Deterministic, distinct 40-hex shas per path — the real output width."""
+
+    def __init__(self, overrides: dict[str, str] | None = None) -> None:
+        self.overrides = overrides or {}
+
+    def blob_sha(self, path: str) -> str:
+        if path in self.overrides:
+            return self.overrides[path]
+        return hashlib.sha1(path.encode("utf-8")).hexdigest()  # noqa: S324
+
+
+# Upstream's real opening bytes for the two sibling files the 2026-10-12 run
+# confused (verified 2026-11-06 against the pinned blobs 01eadaa… and 71cbfee…).
+TDD_SKILL_BYTES = (
+    b"---\nname: tdd\ndescription: Test-driven development. Use when the user wants "
+    b"to build features or fix bugs test-first.\n---\n\n# Test-Driven Development\n"
+)
+TDD_MOCKING_BYTES = b"# When to Mock\n\nMock at **system boundaries** only:\n"
+TDD_SKILL = "skills/engineering/tdd/SKILL.md"
+TDD_MOCKING = "skills/engineering/tdd/mocking.md"
+TDD_LEDGER = {
+    "commit": "885e2ca4d842d139e9aef4e48d366c63cb1b8013",
+    "version": "1.2.3",
+    "adaptations": [
+        {
+            "skill": "tdd",
+            "upstreamPaths": [TDD_SKILL, TDD_MOCKING, "skills/engineering/tdd/tests.md"],
+            "watchedFiles": [TDD_SKILL, TDD_MOCKING, "skills/engineering/tdd/tests.md"],
+            "localPaths": ["dot-agents/skills/tdd/SKILL.md"],
+        }
+    ],
+}
+
+
+class BlobAttributionTest(unittest.TestCase):
+    """Regression for 2026-10-12: `tdd/mocking.md` 'returned the tdd SKILL'.
+
+    The collector had paired each path with its own sha. The scheduler's diff
+    showed the changed `tdd/SKILL.md` sha with `"…/tdd/mocking.md": {` as the
+    nearest visible key, because each sha sat below its own key at the end of a
+    multi-line object. The agent attributed the sha to `mocking.md`, fetched the
+    (correct) `SKILL.md` bytes, and called them the wrong blob.
+    """
+
+    def tree_fetcher(self, skill: bytes = TDD_SKILL_BYTES) -> object:
+        payload = tree_response(
+            {
+                TDD_SKILL: skill,
+                TDD_MOCKING: TDD_MOCKING_BYTES,
+                "skills/engineering/tdd/tests.md": b"# Tests\n",
+            }
+        )
+        return MON.TreeFetcher(http=lambda url, timeout=None: payload)
+
+    def test_each_watched_path_carries_its_own_bytes_sha(self) -> None:
+        payload = json.loads(
+            MON.render(MON.build_snapshot(TDD_LEDGER, fetcher=self.tree_fetcher()))
+        )
+        mocking = payload["watched"][TDD_MOCKING]
+        skill = payload["watched"][TDD_SKILL]
+        self.assertEqual(mocking["blobSha"], MON.git_blob_sha(TDD_MOCKING_BYTES))
+        self.assertEqual(skill["blobSha"], MON.git_blob_sha(TDD_SKILL_BYTES))
+        self.assertNotEqual(mocking["blobSha"], skill["blobSha"])
+
+    def test_a_changed_sha_is_named_by_its_own_diff_line(self) -> None:
+        before = MON.render(MON.build_snapshot(TDD_LEDGER, fetcher=self.tree_fetcher()))
+        after = MON.render(
+            MON.build_snapshot(
+                TDD_LEDGER, fetcher=self.tree_fetcher(TDD_SKILL_BYTES + b"\nA new rule.\n")
+            )
+        )
+        lines = changed_lines(monitor_diff(before, after))
+        self.assertEqual(len(lines), 2, lines)
+        for line in lines:
+            with self.subTest(line=line):
+                self.assertIn(json.dumps(TDD_SKILL), line)
+                self.assertNotIn("mocking.md", line)
+        self.assertIn(MON.git_blob_sha(TDD_SKILL_BYTES), lines[0])
+
+    def test_every_changed_line_names_its_path_with_the_real_ledger(self) -> None:
+        real = json.loads(REAL_LEDGER.read_text(encoding="utf-8"))
+        paths = MON.watched_paths(real)
+        before = MON.render(MON.build_snapshot(real, fetcher=StubFetcher()))
+        for path in paths:
+            with self.subTest(path=path):
+                after = MON.render(
+                    MON.build_snapshot(real, fetcher=StubFetcher({path: "f" * 40}))
+                )
+                lines = changed_lines(monitor_diff(before, after))
+                self.assertEqual(len(lines), 2)
+                for line in lines:
+                    self.assertTrue(line[1:].lstrip().startswith(json.dumps(path) + ":"), line)
+
+
+class HermesLimitsTest(unittest.TestCase):
+    """The real 17-path ledger must fit the scheduler's caps without truncation."""
+
+    def test_mirrored_limits_match_the_installed_hermes(self) -> None:
+        if not HERMES_MONITOR.is_file():
+            self.skipTest(f"{HERMES_MONITOR} not readable on this host")
+        body = HERMES_MONITOR.read_text(encoding="utf-8")
+        for name, mirrored in (
+            ("MAX_DIFF_CHARS", MAX_DIFF_CHARS),
+            ("MAX_OUTPUT_CHARS", MAX_OUTPUT_CHARS),
+        ):
+            with self.subTest(constant=name):
+                found = re.search(rf"^{name}\s*=\s*([0-9_]+)", body, re.MULTILINE)
+                self.assertIsNotNone(found, f"{name} not found in {HERMES_MONITOR}")
+                self.assertEqual(int(found.group(1).replace("_", "")), mirrored)
+
+    def real_output(self, overrides: dict[str, str] | None = None) -> str:
+        real = json.loads(REAL_LEDGER.read_text(encoding="utf-8"))
+        return MON.render(MON.build_snapshot(real, fetcher=StubFetcher(overrides)))
+
+    def test_the_real_ledger_snapshot_fits_with_room_to_grow(self) -> None:
+        output = self.real_output()
+        self.assertGreaterEqual(len(json.loads(output)["watched"]), 17)
+        # Half the cap: room to roughly double the watch list before truncation.
+        self.assertLess(len(output), MAX_OUTPUT_CHARS // 2, len(output))
+
+    def test_a_single_changed_path_diff_is_well_under_the_cap(self) -> None:
+        before = self.real_output()
+        for path in MON.watched_paths(json.loads(REAL_LEDGER.read_text(encoding="utf-8"))):
+            with self.subTest(path=path):
+                diff = monitor_diff(before, self.real_output({path: "f" * 40}))
+                self.assertLess(len(diff), MAX_DIFF_CHARS // 2, len(diff))
+
+    def test_every_watched_path_changing_at_once_fits_the_diff_cap(self) -> None:
+        """The worst case: an upstream release that touches every watched file."""
+        paths = MON.watched_paths(json.loads(REAL_LEDGER.read_text(encoding="utf-8")))
+        changed = {path: "e" * 40 for path in paths}
+        diff = monitor_diff(self.real_output(), self.real_output(changed))
+        self.assertEqual(len(changed_lines(diff)), 2 * len(paths))
+        self.assertLess(len(diff), MAX_DIFF_CHARS, len(diff))
+
+    def test_several_changed_paths_still_fit_the_diff_cap(self) -> None:
+        """A typical upstream release touches a few watched files at once."""
+        paths = MON.watched_paths(json.loads(REAL_LEDGER.read_text(encoding="utf-8")))
+        changed = {path: "e" * 40 for path in paths[::2][:5]}
+        diff = monitor_diff(self.real_output(), self.real_output(changed))
+        self.assertLessEqual(len(diff), MAX_DIFF_CHARS, len(diff))
 
 
 class TreeFetcherTest(unittest.TestCase):
@@ -528,7 +729,7 @@ class ReadOnlyToolingTest(unittest.TestCase):
 
     def test_the_prompt_states_the_read_only_posture(self) -> None:
         prompt = (REPO_ROOT / "hermes" / self.job["promptFile"]).read_text(encoding="utf-8")
-        self.assertIn("read-only network access only", prompt)
+        self.assertIn("read-only commands named below and nothing else", prompt)
         self.assertIn("curl -fsSL", prompt)
         self.assertIn("Do not use `web_extract`", prompt)
         self.assertIn("data, never instruction", prompt)
@@ -537,15 +738,70 @@ class ReadOnlyToolingTest(unittest.TestCase):
 
     def test_local_context_only_changes_are_explicitly_silent(self) -> None:
         prompt = (REPO_ROOT / "hermes" / self.job["promptFile"]).read_text(encoding="utf-8")
-        self.assertIn("no `blobSha` changed", prompt)
-        self.assertIn("local adaptation context", prompt)
+        self.assertIn("If no `blobSha` value changed", prompt)
+        self.assertIn("local ledger change, not an upstream update", prompt)
 
-    def test_the_prompt_does_not_ask_for_local_file_reads(self) -> None:
-        """It cannot read the ledger, so it must not be told to."""
-        prompt = (REPO_ROOT / "hermes" / self.job["promptFile"]).read_text(encoding="utf-8")
-        self.assertNotIn("dot-agents/upstreams/mattpocock-skills.json", prompt)
-        self.assertIn("blobUrl", prompt)
+    def prompt(self) -> str:
+        return (REPO_ROOT / "hermes" / self.job["promptFile"]).read_text(encoding="utf-8")
+
+    def test_the_prompt_reads_local_context_from_the_ledger(self) -> None:
+        """Local context left the snapshot, so the agent reads it — read-only."""
+        prompt = self.prompt()
+        self.assertIn("dot-agents/upstreams/mattpocock-skills.json", prompt)
+        self.assertIn("jq --arg p", prompt)
+        self.assertIn("localPaths", prompt)
         self.assertIn("rejectedUpstreamRules", prompt)
+        self.assertNotIn("blobUrl", prompt)
+        # The job's workdir is the checkout the relative ledger path assumes.
+        self.assertTrue(Path(self.job["workdir"]).name.startswith("dotfiles"))
+
+    def test_the_prompt_ties_each_sha_to_the_path_on_its_own_line(self) -> None:
+        prompt = self.prompt()
+        self.assertIn("one line per watched upstream path", prompt)
+        self.assertIn("on its own line", prompt)
+
+    def prompt_commands(self) -> list[str]:
+        """Every backticked command the prompt tells the agent to run."""
+        commands = re.findall(r"`((?:curl|jq|cat|sed) [^`]+)`", self.prompt())
+        self.assertGreaterEqual(len(commands), 4, commands)
+        return commands
+
+    def test_the_prompt_names_only_plain_read_only_commands(self) -> None:
+        for command in self.prompt_commands():
+            with self.subTest(command=command):
+                self.assertNotRegex(command, r"<<|python|\s>\s|\s>>|\bsed -i|\btee\b")
+
+    def test_the_prompt_commands_pass_the_installed_approval_guard(self) -> None:
+        """Cron denies flagged commands, so a flagged instruction would stall."""
+        agent_root = HERMES_MONITOR.parents[1]
+        if not HERMES_PYTHON.is_file() or not (agent_root / "tools").is_dir():
+            self.skipTest("installed Hermes agent not available on this host")
+        samples = [
+            command.replace("<blobSha>", "0" * 40)
+            .replace("<upstream path>", "skills/engineering/tdd/SKILL.md")
+            .replace("<local path>", "dot-agents/skills/tdd/SKILL.md")
+            .replace("<start>,<end>", "1,80")
+            for command in self.prompt_commands()
+        ]
+        code = (
+            "import json, sys\n"
+            "sys.path.insert(0, sys.argv[1])\n"
+            "from tools.approval_detection import detect_dangerous_command, detect_hardline_command\n"
+            "print(json.dumps([[bool(detect_dangerous_command(c)[0]), bool(detect_hardline_command(c)[0])]"
+            " for c in json.loads(sys.argv[2])]))\n"
+        )
+        result = subprocess.run(
+            [str(HERMES_PYTHON), "-I", "-c", code, str(agent_root), json.dumps(samples)],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=tempfile.gettempdir(),
+        )
+        if result.returncode != 0:
+            self.skipTest(f"approval guard not importable: {result.stderr.strip()[-200:]}")
+        for command, flags in zip(samples, json.loads(result.stdout)):
+            with self.subTest(command=command):
+                self.assertEqual(flags, [False, False])
 
 
 class FailureTest(unittest.TestCase):
@@ -614,18 +870,40 @@ class CliTest(unittest.TestCase):
             second = self.run_script(root, ledger).stdout
         self.assertEqual(first, second)
 
+    def test_a_failure_is_one_labeled_stderr_line(self) -> None:
+        """The scheduler delivers stderr as the source-failure alert, verbatim."""
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp) / "ledger.json"
+            ledger.write_text(json.dumps(LEDGER), encoding="utf-8")
+            result = self.run_script(Path(tmp) / "missing", ledger)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(len(result.stderr.strip().splitlines()), 1, result.stderr)
+        self.assertTrue(result.stderr.startswith("monitor failed: "))
+
+    def test_an_unexpected_error_is_still_one_labeled_line(self) -> None:
+        """A ledger of the wrong shape must not escape as a traceback."""
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp) / "ledger.json"
+            ledger.write_text(json.dumps(["not", "an", "object"]), encoding="utf-8")
+            result = self.run_script(Path(tmp), ledger)
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(len(result.stderr.strip().splitlines()), 1, result.stderr)
+        self.assertTrue(result.stderr.startswith("monitor failed: unexpected "))
+        self.assertNotIn("Traceback", result.stderr)
+
     def test_runs_against_the_real_ledger_offline(self) -> None:
         real = json.loads(REAL_LEDGER.read_text(encoding="utf-8"))
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            for path in MON.watched_context(real):
+            for path in MON.watched_paths(real):
                 target = root / path
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(f"stub for {path}\n", encoding="utf-8")
             result = self.run_script(root, REAL_LEDGER)
         self.assertEqual(result.returncode, 0, result.stderr)
         payload = json.loads(result.stdout)
-        self.assertEqual(set(payload["watched"]), set(MON.watched_context(real)))
+        self.assertEqual(set(payload["watched"]), set(MON.watched_paths(real)))
 
 
 if __name__ == "__main__":
