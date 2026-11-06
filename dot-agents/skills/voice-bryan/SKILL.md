@@ -93,6 +93,14 @@ For work-facing revisions, also show a separate, concise diff against the immedi
 
 Before sending a work-facing revision, verify both outputs are present: (1) the entire updated drafting unit with no placeholders or omitted unchanged paragraphs, and (2) the actual changes, with no unrelated rewrites hidden in the full draft. This applies even when the requested edit is tiny or the surrounding text appeared in the previous response. For personal-post drafting, verify the complete clean draft is present without an unsolicited diff.
 
+## Intro-thread email replies
+
+One accepted sample exists (samples.md 2026-11-06). The shape: one line to the
+introducer, one concrete line to the new contact (thanks for making the time,
+the slot confirmed), the link offered as optional with no pitch, a short close.
+No "good to meet you" before the meeting and no bare "same here"; see
+anti-patterns.md.
+
 ## When uncertain
 
 Present 2 drafts at different registers and ask Bryan to pick. Capture the
