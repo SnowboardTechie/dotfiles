@@ -25,6 +25,17 @@ check() {
     fi
 }
 
+# Portable across GNU (Omarchy) and BSD (macOS) userlands.
+file_mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }
+tree_snapshot() {
+    local root="$1" p
+    (cd "$root" && find . -mindepth 1 | sort | while IFS= read -r p; do
+        if [[ -L "$p" ]]; then printf '%s l %s\n' "$p" "$(readlink "$p")"
+        elif [[ -d "$p" ]]; then printf '%s d\n' "$p"
+        else printf '%s f %s\n' "$p" "$(wc -c < "$p" | tr -d ' ')"; fi
+    done)
+}
+
 run_reconciler() {
     local home="$1"; shift
     HOME="$home" OMARCHY_AUTO_SUSPEND_SKIP_RELOAD=1 "$RECONCILER" "$@"
@@ -58,15 +69,15 @@ check "plugin link resolves to repo source"    test "$(realpath "$H/.config/omar
 check "service entry is enabled once"          test "$(jq --arg id "$PLUGIN_ID" '[.plugins[] | select(.id == $id)] | length' "$H/.config/omarchy/shell.json")" -eq 1
 check "foreign plugin entry survives"          bash -c 'jq -e '\''.plugins[] | select(.id == "foreign.service" and .setting == 7)'\'' "$1" >/dev/null' _ "$H/.config/omarchy/shell.json"
 check "unrelated shell config survives"        bash -c 'jq -e '\''.bar.custom == "preserve-me" and .idle.lock == 300'\'' "$1" >/dev/null' _ "$H/.config/omarchy/shell.json"
-check "shell config mode is preserved"         test "$(stat -c %a "$H/.config/omarchy/shell.json")" = 600
+check "shell config mode is preserved"         test "$(file_mode "$H/.config/omarchy/shell.json")" = 600
 check "pre-change backup is exact"             test "$original" = "$(cat "$H/.config/omarchy/shell.json.pre-auto-suspend")"
 
 # --- Idempotence ----------------------------------------------------------------
-snapshot="$(find "$H/.config/omarchy" -printf '%P %y %l %s\n' | sort; sha256sum "$H/.config/omarchy/shell.json"*)"
+snapshot="$(tree_snapshot "$H/.config/omarchy"; sha256sum "$H/.config/omarchy/shell.json"*)"
 out="$(run_reconciler "$H" --apply 2>&1)"; rc=$?
 check "second apply exits 0"                   test "$rc" -eq 0
 check "second apply reports link and config ok" bash -c 'grep -q "ok: plugin link" <<<"$1" && grep -q "ok: service enabled" <<<"$1"' _ "$out"
-check "second apply changes nothing"           test "$snapshot" = "$(find "$H/.config/omarchy" -printf '%P %y %l %s\n' | sort; sha256sum "$H/.config/omarchy/shell.json"*)"
+check "second apply changes nothing"           test "$snapshot" = "$(tree_snapshot "$H/.config/omarchy"; sha256sum "$H/.config/omarchy/shell.json"*)"
 
 # --- Foreign plugin collision: preserve it and do not enable our id -------------
 H2="$TMP_ROOT/home-collision"

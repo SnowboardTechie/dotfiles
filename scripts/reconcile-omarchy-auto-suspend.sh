@@ -124,7 +124,9 @@ else
     TMP_CONFIG="$(mktemp "$SHELL_CONFIG.tmp.XXXXXX")"
     jq --arg id "$PLUGIN_ID" '.plugins = ((.plugins // []) + [{id: $id}])' \
         "$SHELL_CONFIG" > "$TMP_CONFIG"
-    chmod --reference="$SHELL_CONFIG" "$TMP_CONFIG"
+    # Preserve the config's mode. GNU stat/chmod on Omarchy, BSD stat when the
+    # test suite runs on macOS; `chmod --reference` exists only in GNU.
+    chmod "$(stat -c %a "$SHELL_CONFIG" 2>/dev/null || stat -f %Lp "$SHELL_CONFIG")" "$TMP_CONFIG"
     mv -f "$TMP_CONFIG" "$SHELL_CONFIG"
     TMP_CONFIG=""
     echo "  enabled: $PLUGIN_ID in shell.json"
