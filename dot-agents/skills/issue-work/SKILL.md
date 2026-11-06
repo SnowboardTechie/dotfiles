@@ -597,6 +597,12 @@ interruptions, and later escaped Critical/Major findings. Improvement means
 fewer turns and shorter delivery with no increase in escaped blockers; do not
 optimize for low counts by weakening a gate.
 
+**A decision Bryan makes is work to finish, not a new question.** When his answer settles how something must behave
+and the code doesn't match it yet, record the decision and start the change in the same turn, through the full delivery
+(worker, gate, final review, merge, redeploy). Don't ask whether to do it now or save it for a later slice. Do the
+complete work. (Bryan, 2026-11-05: after he ruled that bot approvals stay, the coordinator asked whether to start the
+code change. "We should be doing the complete work, not saving small pieces for later.")
+
 **A blocked tool call blocks that call, not the lane.** When an approval gate refuses or times out on one command,
 don't retry it or reach the same result another way, but keep doing every authorized step that doesn't need it. Never
 turn it into a question that reconfirms work the run already covers: a defect found in verification is fixed in-lane
