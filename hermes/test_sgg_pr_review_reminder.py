@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parent
 SCRIPT = ROOT / "scripts" / "sgg-pr-review-reminder.py"
 MANIFEST = ROOT / "manifest.json"
 PROMPT = ROOT / "automations" / "sgg-pr-review-reminder" / "prompt.md"
+JOB = ROOT / "automations" / "sgg-pr-review-reminder" / "job.json"
 SKILL = ROOT / "skills" / "productivity" / "sgg-pr-review-reminder" / "SKILL.md"
 
 SPEC = importlib.util.spec_from_file_location("sgg_pr_review_reminder", SCRIPT)
@@ -190,9 +191,7 @@ class PriorityOrderingTest(unittest.TestCase):
 class ContractTest(unittest.TestCase):
     def setUp(self) -> None:
         self.manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-        self.job = next(
-            job for job in self.manifest["cronJobs"] if job["name"] == "SGG PR Review Reminder"
-        )
+        self.job = json.loads(JOB.read_text(encoding="utf-8"))
 
     def test_scope_is_exactly_the_four_sgg_repositories(self) -> None:
         self.assertEqual(
@@ -206,26 +205,23 @@ class ContractTest(unittest.TestCase):
         )
         self.assertEqual(MODULE.AUTHOR, "SnowboardTechie")
 
-    def test_manifest_installs_assets_and_schedules_before_slack_prompt(self) -> None:
+    def test_assets_install_and_sgg_profile_job_schedules_before_slack_prompt(self) -> None:
         self.assertIn("sgg-pr-review-reminder.py", self.manifest["scripts"])
         self.assertIn("sgg-pr-review-reminder.py", self.manifest["copiedScripts"])
         self.assertIn("productivity/sgg-pr-review-reminder", self.manifest["skills"])
         self.assertEqual(self.job["schedule"], "0 8 * * 2,4")
         self.assertEqual(self.job["model"], "claude-sonnet-5-5")
         self.assertEqual(self.job["provider"], "claude-subscription-directsdk-experimental")
-        self.assertEqual(
-            self.job["deliver"],
-            "matrix:!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU",
+        self.assertEqual(self.job["profile"], "sgg")
+        self.assertEqual(self.job["deliver"], "bot-chat")
+        self.assertNotIn(
+            "SGG PR Review Reminder", {job["name"] for job in self.manifest["cronJobs"]}
         )
         self.assertEqual(
             self.job["skills"], ["sgg-pr-review-reminder", "voice-bryan"]
         )
         self.assertEqual(self.job["script"], "sgg-pr-review-reminder.py")
-        self.assertEqual(self.job["enabledToolsets"], ["safe"])
-        self.assertFalse(self.job["noAgent"])
-        self.assertEqual(self.job["deliveryIntent"], "briefing")
-        self.assertTrue(self.job["attachToSession"])
-        self.assertEqual(self.job["continuation"]["chatName"], "SGG")
+        self.assertEqual(self.job["enabled_toolsets"], ["safe"])
         self.assertTrue(PROMPT.is_file())
         self.assertTrue(SKILL.is_file())
 

@@ -13,7 +13,8 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 HOME = Path.home()
-HERMES_HOME = Path(os.environ.get("HERMES_HOME", HOME / ".hermes"))
+# Moved to the sgg profile (2026-11-03); its helpers stay in the main profile's scripts dir.
+HERMES_HOME = HOME / ".hermes"
 SGG_ROOT = HOME / "code" / "sgg"
 VAULT_ROOT = SGG_ROOT / "vault"
 PACIFIC = ZoneInfo("America/Los_Angeles")

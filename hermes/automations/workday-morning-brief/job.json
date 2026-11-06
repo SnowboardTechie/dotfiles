@@ -1,0 +1,23 @@
+{
+ "schemaVersion": 1,
+ "management": "standalone job in the sgg Hermes profile (hermes -p sgg cron ...); not the fleet reconciler",
+ "profile": "sgg",
+ "name": "SGG Morning Brief",
+ "schedule": "0 8 * * 1-5",
+ "timezoneRequirement": "America/Los_Angeles",
+ "promptFile": "prompt.md",
+ "repeat": null,
+ "deliver": "bot-chat",
+ "script": "sgg-morning-brief.py",
+ "skills": [
+  "vault-pkm"
+ ],
+ "enabled_toolsets": [
+  "file",
+  "terminal",
+  "no_mcp"
+ ],
+ "workdir": "/Users/bryan/code/sgg",
+ "model": "claude-sonnet-5-5",
+ "provider": "claude-subscription-directsdk-experimental"
+}

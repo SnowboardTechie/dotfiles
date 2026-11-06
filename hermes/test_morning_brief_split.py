@@ -15,21 +15,28 @@ class MorningBriefSplitContractTest(unittest.TestCase):
     # census here made every unrelated cron addition fail a morning-brief
     # test, which is test sensitivity, not coverage — each job family pins
     # its own models in its own tests.
+    # Since 2026-11-03 these run in the sgg Hermes profile and deliver to its
+    # Bot Chat. They are standalone definitions, not fleet-manifest entries,
+    # so the default-profile installer never recreates them.
     OWNED_JOBS = {
-        "Workday Morning Brief": ("claude-sonnet-5-5", "claude-subscription-directsdk-experimental", None),
-        "Workday Dependency Triage": ("claude-sonnet-5-5", "claude-subscription-directsdk-experimental", None),
+        "workday-morning-brief": ("SGG Morning Brief", "claude-sonnet-5-5"),
+        "workday-dependency-triage": ("SGG Dependency Triage", "claude-sonnet-5-5"),
     }
 
-    def test_manifest_pins_each_owned_job_to_its_intended_model(self) -> None:
+    def test_owned_jobs_are_sgg_profile_standalone_definitions(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-        jobs = {job["name"]: job for job in manifest["cronJobs"]}
-        missing = sorted(set(self.OWNED_JOBS) - set(jobs))
-        self.assertEqual(missing, [], f"manifest lost owned job(s): {missing}")
-        for name, (model, provider, base_url) in self.OWNED_JOBS.items():
+        names = {job["name"] for job in manifest["cronJobs"]}
+        for directory, (name, model) in self.OWNED_JOBS.items():
             with self.subTest(job=name):
-                self.assertEqual(jobs[name]["model"], model)
-                self.assertEqual(jobs[name]["provider"], provider)
-                self.assertEqual(jobs[name].get("baseUrl"), base_url)
+                job = json.loads((ROOT / "automations" / directory / "job.json").read_text(encoding="utf-8"))
+                self.assertEqual(job["name"], name)
+                self.assertEqual(job["profile"], "sgg")
+                self.assertEqual(job["deliver"], "bot-chat")
+                self.assertEqual(job["model"], model)
+                self.assertEqual(job["provider"], "claude-subscription-directsdk-experimental")
+                self.assertNotIn(name, names)
+        for retired in ("Workday Morning Brief", "Workday Dependency Triage"):
+            self.assertNotIn(retired, names)
 
     def test_every_human_briefing_is_threaded_and_continuable(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
@@ -101,19 +108,20 @@ class MorningBriefSplitContractTest(unittest.TestCase):
         self.assertIn('        "vault",', collector)
         self.assertNotIn("NOTES_ROOT", collector)
 
-    def test_work_brief_reviews_superwhisper_without_transcripts_or_granola(self) -> None:
+    def test_work_brief_reviews_hex_without_transcripts_or_granola(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-        job = next(job for job in manifest["cronJobs"] if job["name"] == "Workday Morning Brief")
+        job = json.loads((ROOT / "automations" / "workday-morning-brief" / "job.json").read_text(encoding="utf-8"))
         prompt = WORK_PROMPT.read_text(encoding="utf-8")
         collector = WORK_COLLECTOR.read_text(encoding="utf-8")
 
-        self.assertEqual(job["enabledToolsets"], ["file", "terminal", "no_mcp"])
-        self.assertNotIn("memory", job["enabledToolsets"])
+        self.assertEqual(job["enabled_toolsets"], ["file", "terminal", "no_mcp"])
+        self.assertNotIn("memory", job["enabled_toolsets"])
         self.assertNotIn("sgg-sync-workday-note.py", manifest["scripts"])
         self.assertIn("sgg-sync-workday-note.py", manifest["removedScripts"])
         self.assertEqual(job["schedule"], "0 8 * * 1-5")
         self.assertEqual(job["script"], "sgg-morning-brief.py")
-        self.assertTrue(job["deliver"].startswith("matrix:"))
+        self.assertEqual(job["deliver"], "bot-chat")
+        self.assertNotIn("Matrix", prompt)
         for text in (prompt, collector):
             self.assertNotRegex(text, r"(?i)hindsight")
             self.assertNotIn("sgg-granola-import.py", text)
@@ -132,18 +140,17 @@ class MorningBriefSplitContractTest(unittest.TestCase):
         self.assertEqual(
             manifest["mcpRequirements"]["granola_full"]["tools"]["exclude"], []
         )
-        # Bryan moved meeting notes to Superwhisper on 2026-10-27 and does not
-        # want full transcripts sent over networks.
-        self.assertIn("Review completed Superwhisper meetings", prompt)
-        self.assertIn("/Users/bryan/.local/bin/superwhisper", prompt)
-        self.assertIn("never pass `--transcript`", prompt)
-        self.assertIn("(no `--transcript`)", prompt)
+        # Hex replaced Superwhisper for meetings in early November 2026. Bryan
+        # does not want full transcripts sent over networks.
+        self.assertIn("Review completed Hex meetings", prompt)
+        self.assertIn("/Applications/Hex.app/Contents/MacOS/hex", prompt)
+        self.assertIn("Bryan does not want full meeting transcripts sent over networks", prompt)
         self.assertNotIn("get_meetings", prompt)
         self.assertNotIn("list_meetings", prompt)
-        self.assertIn("Do not use Granola", prompt)
-        self.assertIn("unconfirmed (Superwhisper summary)", prompt)
+        self.assertIn("Do not use Superwhisper or Granola", prompt)
+        self.assertIn("unconfirmed (Hex summary)", prompt)
         self.assertIn("not demonstrably about SGG", prompt)
-        self.assertIn("never read their details to decide relevance", prompt)
+        self.assertIn("never open a manifest to decide relevance", prompt)
         self.assertIn("meeting title, Pacific date, and meeting ID", prompt)
         self.assertIn("do not invent a link", prompt)
         self.assertIn("Never retain, archive, copy, or mirror meeting content", prompt)

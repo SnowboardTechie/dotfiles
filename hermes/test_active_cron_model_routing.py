@@ -6,18 +6,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 PROVIDER = "claude-subscription-directsdk-experimental"
 ROUTES = {
-    "Workday Morning Brief": "claude-sonnet-5-5",
+    "SGG Morning Brief": "claude-sonnet-5-5",
     "SGG PR Review Reminder": "claude-sonnet-5-5",
-    "Workday Dependency Triage": "claude-sonnet-5-5",
+    "SGG Dependency Triage": "claude-sonnet-5-5",
     "Watch Matt Pocock skill updates": "claude-opus-5-5",
-    "Watch Inkling-Small release": "claude-sonnet-5-5",
-    "Watch Colibri GLM-5.2 Studio readiness": "claude-sonnet-5-5",
     "SGG Friday Recap": "claude-opus-5-5"
 }
 ACTIVE_NAMES = set(ROUTES)
 STANDALONE = (
-    "inkling-small-release-watch",
-    "colibri-glm52-readiness-watch",
+    "workday-morning-brief",
+    "workday-dependency-triage",
+    "sgg-pr-review-reminder",
     "sgg-friday-recap",
 )
 

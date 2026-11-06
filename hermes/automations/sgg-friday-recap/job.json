@@ -1,26 +1,25 @@
 {
-  "schemaVersion": 1,
-  "management": "cronjob_manage; standalone ongoing job, not the fleet reconciler",
-  "name": "SGG Friday Recap",
-  "schedule": "0 11 * * 5",
-  "timezoneRequirement": "America/Los_Angeles",
-  "promptFile": "prompt.md",
-  "repeat": null,
-  "deliver": "matrix:!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU",
-  "skills": ["vault-pkm", "voice-bryan"],
-  "enabled_toolsets": ["file", "terminal", "skills", "no_mcp"],
-  "workdir": "/Users/bryan/code/sgg",
-  "attach_to_session": true,
-  "continuity": false,
-  "model": "claude-opus-5-5",
-  "provider": "claude-subscription-directsdk-experimental",
-  "inferencePolicy": "Claude Opus 5.5 via the Claude subscription (OpenAI subscription retired). Reasoning follows config/provider defaults.",
-  "initiallyPaused": true,
-  "continuationOrigin": {
-    "platform": "matrix",
-    "chat_id": "!USHKqGpzKJq-4PQkLs_aDY_PxB_7AvS-xLSQGcdXVGU",
-    "chat_name": "SGG",
-    "user_id": "@bryan:snowboardtechie.com",
-    "thread_id": null
-  }
+ "schemaVersion": 1,
+ "management": "standalone job in the sgg Hermes profile (hermes -p sgg cron ...); not the fleet reconciler",
+ "profile": "sgg",
+ "name": "SGG Friday Recap",
+ "schedule": "0 11 * * 5",
+ "timezoneRequirement": "America/Los_Angeles",
+ "promptFile": "prompt.md",
+ "repeat": null,
+ "deliver": "bot-chat",
+ "script": null,
+ "skills": [
+  "vault-pkm",
+  "voice-bryan"
+ ],
+ "enabled_toolsets": [
+  "file",
+  "terminal",
+  "skills",
+  "no_mcp"
+ ],
+ "workdir": "/Users/bryan/code/sgg",
+ "model": "claude-opus-5-5",
+ "provider": "claude-subscription-directsdk-experimental"
 }

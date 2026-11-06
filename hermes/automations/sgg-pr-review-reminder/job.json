@@ -1,0 +1,22 @@
+{
+ "schemaVersion": 1,
+ "management": "standalone job in the sgg Hermes profile (hermes -p sgg cron ...); not the fleet reconciler",
+ "profile": "sgg",
+ "name": "SGG PR Review Reminder",
+ "schedule": "0 8 * * 2,4",
+ "timezoneRequirement": "America/Los_Angeles",
+ "promptFile": "prompt.md",
+ "repeat": null,
+ "deliver": "bot-chat",
+ "script": "sgg-pr-review-reminder.py",
+ "skills": [
+  "sgg-pr-review-reminder",
+  "voice-bryan"
+ ],
+ "enabled_toolsets": [
+  "safe"
+ ],
+ "workdir": "/Users/bryan/code/sgg",
+ "model": "claude-sonnet-5-5",
+ "provider": "claude-subscription-directsdk-experimental"
+}

@@ -1,4 +1,4 @@
-Prepare Bryan's weekday SGG dependency-triage report and deliver only the final consolidated report to the configured Matrix room.
+Prepare Bryan's weekday SGG dependency-triage report and deliver only the final consolidated report to Bryan's SGG Bot Chat.
 
 Scope: scan all three dependency queues Bryan maintains, every run:
 - /Users/bryan/code/sgg/HHS/simpler-grants-protocol (HHS/simpler-grants-protocol)

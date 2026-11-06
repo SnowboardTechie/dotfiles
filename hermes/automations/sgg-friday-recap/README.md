@@ -2,6 +2,8 @@
 
 Accepted by Bryan on 2026-10-06: Fridays at 11 a.m. America/Los_Angeles, a Slack-ready weekly SGG recap delivered to the existing private SGG Matrix room for review. Never automatically post to Slack.
 
+Since 2026-11-03 the job runs in the `sgg` Hermes profile and delivers to its Bot Chat (`job.json`, `"profile": "sgg"`); manage it with `hermes -p sgg cron ...`. The Matrix delivery and continuation details below are historical.
+
 `prompt.md` is the versioned synthesis and source contract. `job.json` records the desired scheduler fields; it is a standalone ongoing job managed through `cronjob_manage`, deliberately not an entry in the fleet's pin-requiring `hermes/manifest.json`. No new inference pin was authorized. The job follows Hermes's configured cron default.
 
 Creation: list jobs first and require at most one exact name match. Create paused with the prompt bytes and matching schedule, delivery, skills, workdir, toolsets and continuation fields. Validate the scheduler timezone is America/Los_Angeles. Set explicit continuation origin to the room and Bryan's Matrix identity, using the supported cron.jobs update API if creation from CLI lacks origin context. Read back all fields before running.
