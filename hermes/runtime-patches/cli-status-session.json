@@ -1,13 +1,13 @@
 {
   "purpose": "Classic CLI /status must query the approval engine with the CLI session id that native /yolo toggles, not a nonexistent session_key attribute, so its YOLO-bypass suffix reflects the session's actual mode.",
   "upstream": "https://github.com/NousResearch/hermes-agent",
-  "base_commit": "4ed093cb6be8a2fadb39e770898f6989fc67201d",
+  "base_commit": "2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19",
   "path": "hermes_cli/cli_session_mixin.py",
-  "base_blob": "59371922babdfaf1fcc769d7f2fa4c8e5974c4ab",
-  "original_sha256": "a93564e09b8cace8bb69efc5a94f60dc76ecce13f3edfa31e4defec2ad6e76b6",
-  "patched_sha256": "eea8eb80f08d65ff341a74a727ea314b55142de22e23f7c497276bc321b61705",
+  "base_blob": "9e29d5294d6c2f5816be21012d6b47a5d3d1f25b",
+  "original_sha256": "dafddc1b7ad3e1fb11d9338b0bb89968421be42fe7fb3f3ac16486133412b720",
+  "patched_sha256": "0a965d1f75f74721e8bee8f5b426c5d5a7459eee276883853ff07d531cdd33b4",
   "patch": "cli-status-session.patch",
-  "patch_sha256": "37a7036cbad762cf625fc7740dff29349084cbc03b09743185937e864c01b0a4",
+  "patch_sha256": "6805dcf70aad5213fd16e9ceac6659ecbdaad86cd798db2401b8242f09fb5ed6",
   "apply": "In the Hermes source root, only when path's SHA256 is original_sha256: back up path, `git apply --check <patch>`, `git apply <patch>`, then require patched_sha256. Reverse with `git apply -R`.",
   "regression": "hermes/test_hermes_cli_status.py"
 }
