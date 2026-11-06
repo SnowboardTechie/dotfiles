@@ -121,10 +121,12 @@ version.
 Do not write "good to meet you" / "nice to meet you" / "great to meet you" to
 someone Bryan has only been introduced to over email. Bryan, 2026-11-06, on an
 intro thread with the meeting still a week out: "We haven't actually met yet.
-Feels awkward and fake." Reciprocate what the new contact actually wrote (if
-they said they look forward to meeting, "same here" or "likewise, looking
-forward to Thursday"), or skip the greeting and open with the substance. Save
-"good to meet you" for after the meeting. See off-target.md 2026-11-06.
+Feels awkward and fake." The fix is not a bare reciprocation either: "Shahin,
+same here" was rejected in the next pass as confusing (in a three-way thread
+it is unclear what "same" refers to). Greet the new contact with something
+concrete (thank them for making the time, confirm the slot), or let a callback
+to their own words do the work and skip a separate greeting. Save "good to meet
+you" for after the meeting. See off-target.md 2026-11-06.
 
 ### Speaking for Bryan beyond what he decided
 

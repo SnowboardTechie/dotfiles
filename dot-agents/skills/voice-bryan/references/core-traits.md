@@ -442,8 +442,10 @@ when available.*
 ### Register
 
 - Intro threads: no "good to meet you" to someone Bryan has not met yet
-  (2026-11-06: "We haven't actually met yet. Feels awkward and fake.").
-  Reciprocate what the new contact wrote, or open with the substance.
+  (2026-11-06: "We haven't actually met yet. Feels awkward and fake."), and
+  no bare "same here" / "likewise" as the replacement (rejected as confusing
+  the same day). Greet with something concrete ("thanks for making the time")
+  or let a callback to their own words carry it.
 
 ### Structure
 ### Audience modifiers
