@@ -31,5 +31,9 @@
   "weekly": {
     "room": "notify",
     "at": "00:15"
+  },
+  "opencode_go": {
+    "usage_file": "~/.local/state/hermes/opencode-go-usage.json",
+    "stale_after_minutes": 45
   }
 }

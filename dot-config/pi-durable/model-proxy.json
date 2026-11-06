@@ -1,8 +1,26 @@
 {
   "version": 1,
-  "listen": { "host": "192.168.128.1", "port": 8892 },
+  "listen": {
+    "host": "192.168.128.1",
+    "port": 8892
+  },
   "routes": {
     "anthropic": {},
-    "jev": { "keys": { "sgg": { "file": "~/.secrets/pi-durable/sgg.env", "name": "TYPESAFE_API_KEY" } } }
+    "jev": {
+      "keys": {
+        "sgg": {
+          "file": "~/.secrets/pi-durable/sgg.env",
+          "name": "TYPESAFE_API_KEY"
+        }
+      }
+    },
+    "opencode-go": {
+      "keys": {
+        "planning": {
+          "file": "~/.secrets/pi-durable/opencode-go.env",
+          "name": "OPENCODE_API_KEY"
+        }
+      }
+    }
   }
 }
