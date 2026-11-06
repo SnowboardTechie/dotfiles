@@ -34,7 +34,6 @@
     }
   },
   "scripts": [
-    "check-hermes-clarify-context-fix.py",
     "sgg-morning-brief.py",
     "sgg-pr-review-reminder.py",
     "sgg-calendar-events.swift",
@@ -42,11 +41,9 @@
     "sgg-pr-review-event.py",
     "check-mattpocock-skill-updates.py",
     "check-studio-services.py",
-    "check-hermes-context-threshold.py",
     "yunohost_updates_lib.py",
     "check-yunohost-updates.py",
-    "collect-yunohost-updates.py",
-    "check-cloudflared-homebrew-release.py"
+    "collect-yunohost-updates.py"
   ],
   "removedScripts": [
     "sgg-sync-workday-note.py",
@@ -61,24 +58,24 @@
     "personal-morning-brief.py": "45a3c7125bec0f917b37727e94c613e26fe565428451ea2d77f23225d569db81",
     "personal-weekly-orientation.py": "64c8a92f4ef661444876e4106848b57f30c870215cfce2283387d7b254a746e9",
     "personal-alignment-brief.py": "5dbcb2359b25b845502161f78b35db6ccc2f48f0473d85c897e6f271d91fe0d7",
-    "check-pi-durable-claude-provider.py": "43a8c455befd210df5d774266ad3e6c6bb0c29754aac9d7be3be24bc20237f89"
+    "check-pi-durable-claude-provider.py": "43a8c455befd210df5d774266ad3e6c6bb0c29754aac9d7be3be24bc20237f89",
+    "check-hermes-clarify-context-fix.py": "26eb2291602d6a9bae5ff4ce41c51435a16945886a7c3e6f21b00c88a0247d09",
+    "check-hermes-context-threshold.py": "3a9a88725f537f4164a7d2acdd223b70c39d4189f9e00eb4a7568d963a66c942",
+    "check-cloudflared-homebrew-release.py": "606e9ad52fc0ca0b674887e6c868f9935a2c909afc13cab2f7f85f584d55d9e8"
   },
   "removedLinks": [
     "hindsight/config.json",
     "skills/productivity/personal-routine-automation"
   ],
   "copiedScripts": [
-    "check-hermes-clarify-context-fix.py",
     "sgg-morning-brief.py",
     "sgg-pr-review-reminder.py",
     "sgg-pr-review-event.py",
     "check-mattpocock-skill-updates.py",
     "check-studio-services.py",
-    "check-hermes-context-threshold.py",
     "yunohost_updates_lib.py",
     "check-yunohost-updates.py",
-    "collect-yunohost-updates.py",
-    "check-cloudflared-homebrew-release.py"
+    "collect-yunohost-updates.py"
   ],
   "plugins": [
     "matrix-key-recovery",
@@ -103,21 +100,6 @@
     "software-development/upstream-contribution-assessment"
   ],
   "cronJobs": [
-    {
-      "name": "Watch Hermes clarify-context fix",
-      "deliveryIntent": "alert",
-      "schedule": "25 9 * * *",
-      "model": null,
-      "provider": null,
-      "promptFile": "automations/hermes-clarify-context-fix-watch/prompt.md",
-      "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
-      "skills": [],
-      "script": "check-hermes-clarify-context-fix.py",
-      "noAgent": true,
-      "enabledToolsets": [],
-      "workdir": "/Users/bryan",
-      "attachToSession": false
-    },
     {
       "name": "Workday Morning Brief",
       "deliveryIntent": "briefing",
@@ -210,21 +192,6 @@
       "attachToSession": false
     },
     {
-      "name": "Hermes context threshold watchdog",
-      "deliveryIntent": "alert",
-      "schedule": "17 3 * * *",
-      "model": null,
-      "provider": null,
-      "promptFile": "automations/hermes-context-threshold-watchdog/prompt.md",
-      "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
-      "skills": [],
-      "script": "check-hermes-context-threshold.py",
-      "noAgent": true,
-      "enabledToolsets": [],
-      "workdir": "/Users/bryan",
-      "attachToSession": false
-    },
-    {
       "name": "Watch Matt Pocock skill updates",
       "deliveryIntent": "alert",
       "schedule": "5 9 * * 1",
@@ -267,21 +234,6 @@
         "chatName": "Server Updates",
         "userEnv": "MATRIX_ALLOWED_USERS"
       }
-    },
-    {
-      "name": "Watch cloudflared Homebrew release",
-      "deliveryIntent": "alert",
-      "schedule": "17 */2 * * *",
-      "model": null,
-      "provider": null,
-      "promptFile": "automations/cloudflared-homebrew-release-watch/prompt.md",
-      "deliver": "matrix:!5hH-Wud0Gd7hS1Z214EwjEMUvqtH8FBVOZhIZj0sqR4",
-      "skills": [],
-      "script": "check-cloudflared-homebrew-release.py",
-      "noAgent": true,
-      "enabledToolsets": [],
-      "workdir": "/Users/bryan",
-      "attachToSession": false
     }
   ]
 }

@@ -20,7 +20,7 @@ Bryan's bots are Hermes profiles. Each is one continuous thread ("Bot Chat") for
 |---|---|
 | An area he regularly attends to and checks back on | Its own bot (or a new routine on the bot that already owns that area) |
 | A recurring brief or work update (morning brief, recap, triage) | The bot for that area, delivered into its Bot Chat |
-| Something that needs a reaction (a service down, a release landed, an approval) | A Matrix alert. Matrix is alerts only; he replies in the alert's thread when he wants to talk about it |
+| An alert or routine system announcement (a service down, an update starting or finished, a release landed, an approval) | Matrix. Matrix carries alerts and routine announcements, success notices included; don't propose muting them or moving them to a bot. He replies in the thread when he wants to talk about it |
 | A one-off question or deep work | Main Hermes (terminal, Rex). Not a bot |
 | Shared with Traci (Gratifood) | Wherever she can see it (the shared Matrix room) |
 

@@ -1,1 +1,0 @@
-Run the deterministic Hermes context-threshold watchdog. Empty stdout means the configured and effective compression thresholds are healthy. Deliver non-empty stdout verbatim; the script emits only after repairing drift. Script failure is actionable and must be delivered.
