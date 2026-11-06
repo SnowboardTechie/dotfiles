@@ -1,4 +1,6 @@
 {
+  "syncClaudeAiSkills": false,
+  "syncClaudeAiPlugins": false,
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_CODE_SUBAGENT_MODEL": "claude-opus-5-5"
@@ -141,10 +143,6 @@
     }
   },
   "effortLevel": "high",
-  "theme": "dark",
-  "skipAutoPermissionPrompt": true,
-  "syncClaudeAiSkills": false,
-  "syncClaudeAiPlugins": false,
   "modelSettings": {
     "claude-opus-5-5": {
       "effortLevel": "xhigh"
@@ -152,5 +150,8 @@
     "claude-fable-5-1": {
       "effortLevel": "xhigh"
     }
-  }
+  },
+  "theme": "dark",
+  "skipAutoPermissionPrompt": true,
+  "switchModelsOnFlag": false
 }
