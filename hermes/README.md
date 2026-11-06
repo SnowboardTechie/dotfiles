@@ -119,6 +119,12 @@ Three rules follow; each monitor's tests enforce them rather than hoping:
   fixed prefix plus the sha) so a change to every item still fits the diff cap. (The Matt Pocock watcher broke both ways: a 33 KB snapshot, and
   a sha change read as belonging to the next file's key.)
 
+When a deploy changes a monitor's output format, reset its baseline through the
+scheduler's own path (`cron.monitor.check_monitor` on the job) rather than by
+hashing the script's raw stdout: the script runner strips surrounding whitespace
+before hashing (`cron/scheduler_script.py`), so a hand-computed hash of output
+with its trailing newline never matches and the next run fires anyway.
+
 `reconcile_cron.py` validates `monitorScript` before calling the API — a bare
 filename, no path, never combined with `noAgent` — because the scheduler's own
 rejection arrives after the reconciler would have reported the job synchronized.
