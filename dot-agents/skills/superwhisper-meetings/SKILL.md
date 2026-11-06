@@ -2,13 +2,23 @@
 name: superwhisper-meetings
 author: Bryan
 description: >
-  Use when Bryan asks about a meeting recorded in Superwhisper: find a meeting,
+  Use when Bryan asks about a meeting recorded in Superwhisper (meetings
+  through 2026-10-29; Hex records everything since): find a meeting,
   answer questions about it, pull decisions and action items, compare meetings,
   or draft follow-ups. Reads meetings read-only through the local superwhisper
   CLI on Bryan's Mac; falls back to notes or transcripts Bryan pastes or shares.
 ---
 
 # Superwhisper Meetings
+
+Hex replaced Superwhisper as Bryan's meeting recorder in early November 2026
+(first Hex meeting 2026-11-03; Superwhisper's last is 2026-10-29). For any
+newer meeting use Hex: `/Applications/Hex.app/Contents/MacOS/hex meetings list
+--json`, then the meeting's `manifest.json` `notes.summary`; the SGG profile's
+`sgg-meeting-prep` skill has the full reference (`references/hex-meetings.md`).
+The transcript-privacy rules below apply to Hex too: `hex meetings show`, the
+transcript files and the exports carry the full transcript. Hex trashes its own
+meetings 24 hours after they finish under its default retention.
 
 ## Access
 
