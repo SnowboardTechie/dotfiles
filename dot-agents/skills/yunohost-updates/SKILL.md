@@ -42,9 +42,10 @@ Bryan's approval, and monitoring the upgrade he runs.
   - upgrades, one exact command per target with no extra flags:
     `/usr/bin/yunohost tools upgrade system` and
     `/usr/bin/yunohost app upgrade <app>` for element, synapse, forgejo,
-    cinny, prosody, coturn (the phanpy and gotosocial lines are stale since
-    their removal; my_webapp has no line until Bryan adds one). A newly
-    installed app needs Bryan to add its own line. Multi-app upgrades don't match, so upgrade
+    cinny, prosody, coturn (read back 2026-11-06 after Bryan removed the phanpy
+    and gotosocial lines). my_webapp has no line by choice: an upgrade
+    line is only needed for apps Bryan wants the agent to upgrade for him;
+    otherwise he runs that upgrade himself from the web admin. Multi-app upgrades don't match, so upgrade
     one app per command.
 - Having the rule is not approval. Run an upgrade only after Bryan's explicit
   yes for that item in the current conversation.
