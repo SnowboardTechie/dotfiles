@@ -443,7 +443,8 @@ public-contract, or deployment changes, add one targeted Risk reviewer after the
 ordinary parent gate has stabilized the candidate. It reviews only that boundary.
 
 During corrections run targeted checks. Run full repository verification once
-after the final candidate is stable. A candidate change invalidates current
+after the final candidate is stable: one gate per PR, on the reviewed final head,
+before merge. The final review reads the worker's targeted results, not a gate. A candidate change invalidates current
 review artifacts; replace them during the required integrated rereview.
 
 Complete when current artifacts, acceptance criteria, and final verification all
@@ -637,7 +638,14 @@ weaker review, or fabricated completion claim.
 3. Treating independent Claude issue sessions as a global concurrency conflict.
 4. Duplicating pre-publication acceptance through another generic reviewer.
    This warning does not apply to the required post-draft-PR SGG Claude final review.
-5. Running full CI after every correction.
+5. Running full CI after every correction. The full gate runs **once per PR**, on the final reviewed head, right
+   before merge (Bryan, 2026-11-07: "it was always supposed to be just one gate run at the end"; a gate takes 20+
+   minutes). Don't start it on the first candidate beside the final review, or again after each correction: the
+   review and corrections use the worker's targeted checks, and the contract's checks must already include every
+   suite the change can break (for SGG grant builders, `packages/foundation/test`), so the one gate rarely fails.
+   On #243 slice 3 the coordinator ran 11 gates for 4 PRs. For a small PR in durable-pi-workspace (Bryan,
+   2026-11-07): one review, Minor findings recorded in the PR body rather than corrected in another round, a
+   correction only for a real blocker, then the one gate.
 6. Asking for plan or PR permission already carried by an imperative work command.
 7. Treating a worker report or green focused test as final acceptance.
 8. Keeping panes open through publication or merge.
