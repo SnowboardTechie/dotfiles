@@ -14,7 +14,10 @@ metadata:
 
 Bryan's YunoHost server (`snowboardtechie`, Debian 12 bookworm, Hostinger VPS
 at the public IP behind `snowboardtechie.com`) hosts Forgejo, Synapse, Element,
-Cinny, GoToSocial, Phanpy, Prosody, Coturn and mail. It is deliberately NOT on
+Cinny, Prosody, Coturn, mail, and the static snowboardtechie.com homepage
+(My Webapp, app id `my_webapp`, web root `/var/www/my_webapp/www`; source and
+deploy script in `~/code/snowboardtechie-site`). GoToSocial and Phanpy were
+removed on 2026-11-06 when Bryan left the Fediverse. It is deliberately NOT on
 the home tailnet and its config is not in nix-configs. This skill covers:
 listing pending updates, reviewing release notes for breaking changes, getting
 Bryan's approval, and monitoring the upgrade he runs.
@@ -38,9 +41,10 @@ Bryan's approval, and monitoring the upgrade he runs.
     report's scripts);
   - upgrades, one exact command per target with no extra flags:
     `/usr/bin/yunohost tools upgrade system` and
-    `/usr/bin/yunohost app upgrade <app>` for element, phanpy, gotosocial,
-    synapse, forgejo, cinny, prosody, coturn. A newly installed app needs
-    Bryan to add its own line. Multi-app upgrades don't match, so upgrade
+    `/usr/bin/yunohost app upgrade <app>` for element, synapse, forgejo,
+    cinny, prosody, coturn (the phanpy and gotosocial lines are stale since
+    their removal; my_webapp has no line until Bryan adds one). A newly
+    installed app needs Bryan to add its own line. Multi-app upgrades don't match, so upgrade
     one app per command.
 - Having the rule is not approval. Run an upgrade only after Bryan's explicit
   yes for that item in the current conversation.
@@ -138,11 +142,13 @@ versions. Do not skim headlines; read upgrade/breaking sections in full.
    - Synapse: `docs/upgrade.md` on `element-hq/synapse` has one
      "Upgrading to vX" section per release that needs admin attention. Read
      every section in the range; GitHub release bodies are only links.
-   - Element / Phanpy: GitHub releases; grep for Security, ⚠️ Important,
+   - Element: GitHub releases; grep for Security, ⚠️ Important,
      Deprecations, removals.
-   - GoToSocial: Codeberg releases `superseriousbusiness/gotosocial`. The
-     "Migration notes", "config.yaml" and "Database Migrations" sections matter.
-     Note when the package lags upstream.
+   - My Webapp: the `my_webapp_ynh` package itself is the whole app; read its
+     commits and `doc/` notes. An upgrade re-runs its `chown`/`chmod` on
+     `/var/www/my_webapp`; afterwards confirm the site still answers 200 and
+     that `agent` can still write the web root (its ACL), or the next deploy
+     fails.
    - YunoHost core / major Debian jumps: YunoHost forum release announcements
      (forum.yunohost.org, "Announcement" category) and any `pending_migrations`.
 3. **Classify** each item as one of:
@@ -162,7 +168,7 @@ versions. Do not skim headlines; read upgrade/breaking sections in full.
 
 Present a per-item table: current → target, verdict, the reason with its
 source, and the exact command. Recommend an order. Run the lowest-risk items
-first and one consequential app (Forgejo, Synapse, GoToSocial) at a time.
+first and one consequential app (Forgejo, Synapse) at a time.
 Nothing gets upgraded without his explicit yes for each item.
 
 After approval, run each upgrade yourself, detached in `screen` (installed;
