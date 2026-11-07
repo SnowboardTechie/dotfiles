@@ -1,7 +1,7 @@
 ---
 name: manual-merge
 description: Use when an approved, CI-green Forgejo or Codeberg PR must be squash-merged locally to preserve commit signatures.
-version: 2.0.0
+version: 2.1.0
 author: Bryan Thompson
 license: MIT
 metadata:
@@ -60,6 +60,8 @@ Read back the PR and its current checks immediately before merging. Verify:
 - no unresolved review request or blocking conversation remains;
 - every required CI check is green;
 - head SHA matches the branch SHA being merged;
+- the default branch's own CI is green at its current head. A red default branch
+  blocks every merge except the fix for it: fix main first (see step 6a);
 - base branch is the repository's default branch;
 - the repository has Forgejo's `manually-merged` merge style enabled before the
   local squash changes the default branch. Forgejo 16.0.1 exposes
@@ -193,6 +195,17 @@ Run this from the same safe Tea context used for lookup. Read the PR back and
 require `state: closed`, `merged: true`, and the expected merge SHA before any
 branch deletion.
 
+### 6a. Wait for the default branch's own run, and fix it if red
+
+Where pushes to the default branch run CI (a full suite, a deploy check), the merge
+is not finished until that run is green on the commit you pushed. Wait for it to
+finish and read it. If it is red, fixing it is the next work, ahead of cleanup
+reports and any other merge, whatever the failure looks like: read the log, find
+the cause, fix it on a branch through the same gate, merge, and wait again.
+"Flaky" or "not this change's code" is a diagnosis to prove and fix, never a
+reason to move on or to hand the failure to the user as a proposal. Never end a
+session, or report a merge as done, on a red or still-running default branch.
+
 ### 7. Clean up
 
 Only after the forge record is correct, and only where the repository's own
@@ -224,7 +237,10 @@ state, and any retained worktree/branch.
 4. **Deleting the branch before the API call.** Forgejo may reject the manual
    merge record after branch deletion.
 5. **Forcing branch deletion automatically.** Keep it when safe deletion fails.
-6. **Parallel base-branch merges.** Serialize them; concurrent pushes can leave
+6. **Ending on a red default branch.** A green PR check is not a green main: the
+   push run can fail on what the PR's gate never ran (other tiers, load, merge
+   effects). Read main's run every time.
+7. **Parallel base-branch merges.** Serialize them; concurrent pushes can leave
    a false forge merge record.
 
 ## Verification Checklist
@@ -237,6 +253,7 @@ state, and any retained worktree/branch.
 - [ ] Squash diff inspected before commit
 - [ ] Commit signature verified
 - [ ] Remote default branch verified after push
+- [ ] Default branch's own CI run on the merged commit finished green (red: fixed first, before anything else)
 - [ ] PR read back as manually merged with expected SHA
 - [ ] Remote branch deleted only after merge record succeeded
 - [ ] Local branch/worktree cleanup reported accurately
