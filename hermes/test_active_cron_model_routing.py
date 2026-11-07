@@ -9,7 +9,6 @@ GO = "opencode-go"
 ROUTES = {
     "SGG Morning Brief": ("claude-sonnet-5-5", PROVIDER),
     "SGG PR Review Reminder": ("claude-sonnet-5-5", PROVIDER),
-    "SGG Dependency Triage": ("claude-sonnet-5-5", PROVIDER),
     "SGG Friday Recap": ("claude-opus-5-5", PROVIDER),
     "Watch Matt Pocock skill updates": ("gemini-4-argon", GO),
     "YunoHost update report": ("deepseek-v4.1-flash", GO),
@@ -17,7 +16,6 @@ ROUTES = {
 ACTIVE_NAMES = set(ROUTES)
 STANDALONE = (
     "workday-morning-brief",
-    "workday-dependency-triage",
     "sgg-pr-review-reminder",
     "sgg-friday-recap",
 )

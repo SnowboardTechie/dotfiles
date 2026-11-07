@@ -20,7 +20,6 @@ class MorningBriefSplitContractTest(unittest.TestCase):
     # so the default-profile installer never recreates them.
     OWNED_JOBS = {
         "workday-morning-brief": ("SGG Morning Brief", "claude-sonnet-5-5"),
-        "workday-dependency-triage": ("SGG Dependency Triage", "claude-sonnet-5-5"),
     }
 
     def test_owned_jobs_are_sgg_profile_standalone_definitions(self) -> None:
@@ -35,7 +34,7 @@ class MorningBriefSplitContractTest(unittest.TestCase):
                 self.assertEqual(job["model"], model)
                 self.assertEqual(job["provider"], "claude-subscription-directsdk-experimental")
                 self.assertNotIn(name, names)
-        for retired in ("Workday Morning Brief", "Workday Dependency Triage"):
+        for retired in ("Workday Morning Brief", "Workday Dependency Triage", "SGG Dependency Triage"):
             self.assertNotIn(retired, names)
 
     def test_every_human_briefing_is_threaded_and_continuable(self) -> None:

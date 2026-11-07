@@ -10,7 +10,6 @@ The reconciler accepts only these two providers. Do not route jobs back to GPT.
 | --- | --- | --- |
 | SGG Morning Brief | `claude-sonnet-5-5` | Claude |
 | SGG PR Review Reminder | `claude-sonnet-5-5` | Claude |
-| SGG Dependency Triage | `claude-sonnet-5-5` | Claude |
 | SGG Friday Recap | `claude-opus-5-5` | Claude |
 | Watch Matt Pocock skill updates | `gemini-4-argon` | OpenCode Go |
 | YunoHost update report | `deepseek-v4.1-flash` | OpenCode Go |
@@ -26,8 +25,8 @@ dormant.
 - The default profile's jobs are in `hermes/manifest.json`, reconciled by
   `hermes/reconcile_cron.py`, which refuses any agent job that is not a `claude-`
   model on the Claude subscription provider or a named model on `opencode-go`.
-- The four SGG routines (morning brief, dependency triage, PR review reminder,
-  Friday recap) moved to the `sgg` profile on 2026-11-03 and deliver to its Bot
+- The SGG routines (morning brief, PR review reminder, Friday recap) moved to the
+  `sgg` profile on 2026-11-03 and deliver to its Bot
   Chat. They have standalone `job.json` and `prompt.md` definitions under
   `hermes/automations/` (`"profile": "sgg"`) and are managed with
   `hermes -p sgg cron ...`, never the fleet reconciler. The sgg profile runs its
@@ -36,6 +35,8 @@ dormant.
   (`sgg-calendar-events`, `sgg-mail-messages.js`) stay in the main profile's
   `~/.hermes/scripts/`.
 - The Inkling-Small and Colibri GLM-5.2 watches were retired on 2026-11-06.
+- SGG Dependency Triage was retired on 2026-11-07: the SGG service's daily triage
+  replaced it (durable-pi-workspace#256).
 - The default profile's `cron.model` is `claude-sonnet-5-5`, with
   `cron.model_provider: claude-subscription-directsdk-experimental`, for future
   jobs that inherit routing.

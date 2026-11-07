@@ -110,7 +110,7 @@
         "at": "10:00"
       },
       "deadline_hours": 2,
-      "room": "dependencies-test",
+      "room": "dependencies",
       "mention": "@bryan:snowboardtechie.com"
     }
   },
