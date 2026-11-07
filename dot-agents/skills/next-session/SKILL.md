@@ -32,6 +32,15 @@ Use the prompt you suggested, unchanged in meaning. It is a pointer, not a copy:
 name the map, ticket, plan or note by title and link, plus anything that doesn't
 autoload. Don't restate what the record already says.
 
+The next session reads the prompt as Bryan's own words, since he launched it. So
+never add a gate his rules don't have. Quote a standing rule exactly, or leave
+it out. His rule for new software is "security review **or** his approval
+first": a completed review clears it. On #357 a prompt that said "do its
+security review first and bring it to Bryan for approval before anything is
+installed" made the next session stop and ask him to approve the install that
+the ticket existed to do (Bryan, 2026-11-07: "why the fuck is that even a
+question").
+
 Write it to a file in session scratch (`$TMPDIR`), never into a repository or the
 vault. The file is read once, verbatim, at startup: nothing in it is
 shell-interpreted.
