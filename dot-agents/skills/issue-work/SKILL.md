@@ -645,7 +645,9 @@ weaker review, or fabricated completion claim.
    suite the change can break (for SGG grant builders, `packages/foundation/test`), so the one gate rarely fails.
    On #243 slice 3 the coordinator ran 11 gates for 4 PRs. For a small PR in durable-pi-workspace (Bryan,
    2026-11-07): one review, Minor findings recorded in the PR body rather than corrected in another round, a
-   correction only for a real blocker, then the one gate.
+   correction only for a real blocker, then the one gate. In durable-pi-workspace that gate is
+   `node tools/canonical-gate.ts --affected origin/main` (#356: only what the change can reach; it falls back to the
+   full suite itself when the import graph can't see a change); the full mode runs on main after merge.
 6. Asking for plan or PR permission already carried by an imperative work command.
 7. Treating a worker report or green focused test as final acceptance.
 8. Keeping panes open through publication or merge.
