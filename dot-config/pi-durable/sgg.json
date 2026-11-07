@@ -205,7 +205,7 @@
       "HHS/simpler-grants-protocol": { "open_draft": "Bryan, 2026-11-04: open drafts live (durable-pi-workspace#278 slice 3; the accepted replay and his sound protocol rating are the bar, and he rates the live drafts)" },
       "common-grants/ts-cg-grants-gov": { "open_draft": "Bryan, 2026-11-04: open drafts live (durable-pi-workspace#278 slice 3; the accepted replay and his sound protocol rating are the bar, and he rates the live drafts)" }
     },
-    "accepted_replay": "20261107T084852Z sha256:3c0176e336076a79c1c6a3d9d78a99a2acc3d266dd0d267a69cd9c17e3a09430",
+    "accepted_replay": "20261107T203325Z sha256:f049d580a26aa00cff77819ff7e4fbdee80b55f0e2354603e96ed529ece820be",
     "lines": {
       "five_hour": 75,
       "weekly": 75
