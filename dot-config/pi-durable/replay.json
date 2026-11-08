@@ -1,0 +1,8 @@
+{
+  "sandbox": null,
+  "claude": { "cli": ["claude"], "home": "/Users/bryan" },
+  "subscription": { "id": "work" },
+  "secrets_file": "/Users/bryan/.secrets/pi-durable/sgg.env",
+  "jev": true,
+  "orchestrator_commit": "b002349d585fca8a62c6983f72f58d928555e005"
+}
