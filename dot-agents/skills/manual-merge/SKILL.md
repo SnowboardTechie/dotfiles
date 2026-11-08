@@ -240,7 +240,13 @@ state, and any retained worktree/branch.
 6. **Ending on a red default branch.** A green PR check is not a green main: the
    push run can fail on what the PR's gate never ran (other tiers, load, merge
    effects). Read main's run every time.
-7. **Parallel base-branch merges.** Serialize them; concurrent pushes can leave
+7. **Chaining the push with the merge record.** Hermes flags `git push` as a
+   force push when any `-f` follows it on the same command line
+   (`\bgit\s+push\b.*-f\b`), and `tea api -X POST -f Do=manually-merged` has one.
+   The chained command can wait out the approval gate and be refused. Run
+   `git push origin <default-branch>` as its own command, then the `tea api`
+   call as another.
+8. **Parallel base-branch merges.** Serialize them; concurrent pushes can leave
    a false forge merge record.
 
 ## Verification Checklist
