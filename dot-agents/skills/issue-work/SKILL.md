@@ -611,6 +611,17 @@ and the code doesn't match it yet, record the decision and start the change in t
 complete work. (Bryan, 2026-11-05: after he ruled that bot approvals stay, the coordinator asked whether to start the
 code change. "We should be doing the complete work, not saving small pieces for later.")
 
+**An approved plan plus "proceed" authorizes every step in it.** A task the
+plan lists (creating a hold branch, opening a staging PR, a tracked follow-up)
+is not a separate permission just because it touches GitHub; do it and read it
+back. Likewise a rule stated in the draft the plan builds against is
+implementation authority, even when Bryan says not to treat the draft as
+settled: build to it, record the open point in the plan and PR body, and move
+on. Ask only for a decision the plan and its authorities leave open, or a real
+safety gate. (Bryan, 2026-11-09, #1387: the hold branch sat in Task 0 of an
+approved plan and was still held for a "go"; a Served/OkT choice the ADR draft
+already made was asked as a planning question.)
+
 **A blocked tool call blocks that call, not the lane.** When an approval gate refuses or times out on one command,
 don't retry it or reach the same result another way, but keep doing every authorized step that doesn't need it. Never
 turn it into a question that reconfirms work the run already covers: a defect found in verification is fixed in-lane

@@ -224,6 +224,17 @@ Routine findings do not go back to Bryan for individual disposition. Batch all
 validated fixes. Ask only for a material intent conflict, with one recommendation
 and the exact authority it would change.
 
+Before choosing `escalate`, test the recommended fix against the governing
+authority, including a draft the approved plan builds against: if the fix
+agrees with that text and a repo precedent exists, it is a `fix`, and the
+residual question (say, whether the rule should bind every model) goes in the
+PR body and the plan as a note for the owning decision, not to Bryan. "It
+touches a public contract" is a reason to run Risk, not a reason to ask.
+(Bryan, 2026-11-09: a sealed-schema Major on #1387 was escalated although the
+ADR draft stated the additive rule, `form.tsp` already used `...Record<unknown>`,
+and the recommendation was that fix. "How did six must-ask questions become
+one?")
+
 Run the acceptance-criteria sweep independently of reviewer findings. An omitted
 feature may have no diff line for Spec to flag.
 
