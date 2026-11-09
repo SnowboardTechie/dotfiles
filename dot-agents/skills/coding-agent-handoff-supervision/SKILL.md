@@ -540,6 +540,16 @@ batch), follow this shape:
   message, in chat, and wait for it to be settled before the next; while lanes
   report in between, end each status update by restating the one open question
   rather than queuing the next.
+- **Don't ask what you can already answer.** A call whose answer is obvious from
+  checked facts is yours to make, even where a design names Bryan as its owner
+  (residue rulings, labels, dispositions): make it, record it as yours with the
+  reason, and name it in the report. Ask him only a genuinely open call, one at a
+  time, with what it changes. Six questions that each came with a confident
+  recommendation read as manufactured blockers (Bryan, 2026-11-09, #21).
+- **Don't hold work for a date without a reason.** Run authorized work now
+  unless a concrete dependency or harm needs the wait. "Run after the window
+  closes" for experiments that needed nothing from the window cost a day of
+  back-and-forth before Bryan ended it (2026-11-09, #21).
 - **Absolute scratch paths across calls.** Write PR bodies and comment drafts to
   `~/.hermes/cache/scratch/<name>.md` with `write_file`, never `$TMPDIR`: tool
   calls can see different `TMPDIR` values, and a missing body file makes
