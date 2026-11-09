@@ -656,6 +656,13 @@ weaker review, or fabricated completion claim.
 3. Treating independent Claude issue sessions as a global concurrency conflict.
 4. Duplicating pre-publication acceptance through another generic reviewer.
    This warning does not apply to the required post-draft-PR SGG Claude final review.
+4b. Gating only the package you edited. Before the gate, read the `on.pull_request.paths` of every
+   workflow in `.github/workflows/` and run the local equivalent of each one the diff triggers; a
+   sibling package's tests can hard-code the current contract (the Python SDK's
+   `test_core_baseline_is_v0_5` fails the moment any `openapi.0.6.x.yaml` exists). Otherwise the
+   first PR into a hold branch arrives with an undisclosed red check and the body misstates CI.
+   (Bryan's #1399, 2026-11-09: both local gates ran core, website regen and quickstarts; the
+   fresh final reviewer found the Python SDK failure on GitHub.)
 5. Running full CI after every correction. The full gate runs **once per PR**, on the final reviewed head, right
    before merge (Bryan, 2026-11-07: "it was always supposed to be just one gate run at the end"; a gate takes 20+
    minutes). Don't start it on the first candidate beside the final review, or again after each correction: the
