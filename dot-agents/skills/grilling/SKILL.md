@@ -73,6 +73,19 @@ abdication. A recommendation is not a decision — see *Epistemic status*.
   that carries the explanation renders as an unreadable wall of text. Put the
   context, options, recommendation and the question in a readable final
   message and end the turn.
+- **Verify every detail of every option before asking.** An option's costs,
+  mechanics and limits are facts: check them (source, probe, API) first, and
+  never ship an option with a caveat like "I haven't checked whether…". Bryan
+  reads unverified options as a guessing game (2026-11-09, #268 slice 5: a
+  status-check claim about Forgejo went out unchecked).
+- **Name a component for what it is, not for the nearest existing word.** If a
+  new piece doesn't fit the project's term (a VM launcher is not a "proxy"),
+  find the established name with a source, or say it's a new kind. Stretching
+  a word to fit a rule's wording hides a real design change (2026-11-09).
+- **Don't reason from what's already built as if Bryan chose it.** "The live
+  service already does X" is a cost argument, not a principle; say which it is.
+- **Refer to past answers by content, not option letter.** "Your D" reads as a
+  joke two rounds later; say "service-in-VM".
 - **List every genuine option, including ones you recommend against.** Never
   silently drop an option because your recommendation makes it redundant. Show
   it, and say in one clause why it loses. Otherwise Bryan has to ask where it
