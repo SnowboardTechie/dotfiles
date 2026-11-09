@@ -230,6 +230,15 @@ agrees with that text and a repo precedent exists, it is a `fix`, and the
 residual question (say, whether the rule should bind every model) goes in the
 PR body and the plan as a note for the owning decision, not to Bryan. "It
 touches a public contract" is a reason to run Risk, not a reason to ask.
+The same test applies to `defer`: a red check or stale assertion the candidate
+itself causes in a sibling package is fixed in this PR when the fix is small
+and mechanical (a sentinel, a version string, a count), not handed to a new
+issue because the file lives in another package's directory. Directory is
+not ownership; the repo's AGENTS.md says follow-up issues are for decisions,
+not edits. State the release consequence (release-please bumps every package
+the squash touches) in the PR body instead of using it as a reason to defer.
+(Bryan, 2026-11-09, #1399: a three-line Python SDK sentinel move was drafted
+as a follow-up issue. "Why would you not fix it on your PR?")
 (Bryan, 2026-11-09: a sealed-schema Major on #1387 was escalated although the
 ADR draft stated the additive rule, `form.tsp` already used `...Record<unknown>`,
 and the recommendation was that fix. "How did six must-ask questions become
