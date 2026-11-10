@@ -60,8 +60,10 @@ Instead, deliver a local blocker or ready-to-publish report for Bryan.
 ## Procedure
 
 1. **Pick one issue.** Use an explicit issue reference when supplied. Otherwise,
-   query the current forge for the oldest open `ready-for-agent` issue. Use
-   `gh` on GitHub or authenticated `tea api` on Forgejo. Skip (or, if named
+   query the current forge for open `ready-for-agent` issues. Use `gh` on
+   GitHub or authenticated `tea api` on Forgejo. Do not trust the server-side
+   label filter: keep only issues whose own returned labels include
+   `ready-for-agent`, then choose the oldest. Skip (or, if named
    explicitly, refuse) any issue that carries a `wayfinder:` label, even when
    it also carries `ready-for-agent`:
    Wayfinder maps and tickets are decisions, not implementation work, so report
@@ -109,6 +111,9 @@ Return exactly one of:
 4. **Auto-commenting on failure.** Prepare the comment, but do not post it
    without authorization.
 5. **Merging.** Human review and merge remain outside this skill.
+6. **Trusting the label filter.** Forgejo's `issues?labels=ready-for-agent`
+   returns every open issue when the repository has no such label. Check each
+   issue's own labels before picking one.
 
 ## Verification Checklist
 
