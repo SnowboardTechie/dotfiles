@@ -19,11 +19,15 @@ first message. ``--seat personal`` runs it on the personal Claude plan
 (``PI_CLAUDE_CODE_CONFIG_DIR=~/.claude-personal``); ``--seat work`` unsets that
 variable so the default login is used. Without ``--seat`` the pane's shell
 decides. Pi finds its own skills, so ``--skills`` is not passed on.
+``--fork <session file>`` starts the new Pi on a copy of that session
+(``pi --fork``), so it carries the conversation so far. For Pi the prompt file is
+optional: without one the new session waits for input.
 
 Commands:
   whoami                       print this session's id and Rex block
-  launch --prompt-file F --name N [--cwd D] [--skills S] [--focus] [--dry-run]
+  launch [--prompt-file F] --name N [--cwd D] [--skills S] [--focus] [--dry-run]
          [--agent hermes|pi] [--model M] [--thinking T] [--seat personal|work]
+         [--fork SESSION_FILE]
 
 Gateway: when this process has no REX_* variables (the agent's commands run
 under the Hermes gateway, not in the pane), they are adopted from the one
@@ -184,17 +188,27 @@ def is_pi(process: dict | None) -> bool:
     return any(Path(n).name == "pi" for n in names if n)
 
 
-def agent_argv(args: argparse.Namespace, prompt: Path) -> list[str]:
+def fork_source(path: str) -> Path:
+    source = Path(path).expanduser().resolve()
+    if not source.is_file() or source.suffix != ".jsonl":
+        raise Refused("session to fork is not a Pi session file", fork=str(source))
+    return source
+
+
+def agent_argv(args: argparse.Namespace, prompt: Path | None) -> list[str]:
     if args.agent == "hermes":
-        if args.model or args.thinking or args.seat:
-            raise Refused("--model, --thinking and --seat apply only to a Pi session")
+        if args.model or args.thinking or args.seat or args.fork:
+            raise Refused("--model, --thinking, --seat and --fork apply only to a Pi session")
         return ["hermes", "chat", "--query-file", str(prompt)] + (["--skills", args.skills] if args.skills else [])
     argv = ["pi", "--name", args.name]
+    if args.fork:
+        argv += ["--fork", str(fork_source(args.fork))]
     if args.model:
         argv += ["--model", args.model]
     if args.thinking:
         argv += ["--thinking", args.thinking]
-    argv.append(f"@{prompt}")
+    if prompt is not None:
+        argv.append(f"@{prompt}")
     if args.seat == "personal":
         return ["env", f"PI_CLAUDE_CODE_CONFIG_DIR={Path.home() / '.claude-personal'}"] + argv
     if args.seat == "work":
@@ -218,7 +232,9 @@ def rex_caller(session: str, host: terminal_host.Host) -> dict:
 def rex_launch(args: argparse.Namespace, session: str, host: terminal_host.Host) -> dict:
     if not NAME.match(args.name):
         raise Refused("agent name must match [a-z][a-z0-9_-]{0,31}", name=args.name)
-    prompt = read_prompt(args.prompt_file)
+    if args.prompt_file is None and args.agent == "hermes":
+        raise Refused("--prompt-file is required for a Hermes session")
+    prompt = read_prompt(args.prompt_file) if args.prompt_file is not None else None
     me = rex_caller(session, host)
     cwd = str(Path(args.cwd).expanduser().resolve()) if args.cwd else me["cwd"]
     if not cwd or not Path(cwd).is_dir():
@@ -226,7 +242,7 @@ def rex_launch(args: argparse.Namespace, session: str, host: terminal_host.Host)
     argv = agent_argv(args, prompt)
     started = is_hermes if args.agent == "hermes" else is_pi
     plan = {"host": "rex", "agent": args.agent, "caller_pane": me["pane_id"], "cwd": cwd, "name": args.name,
-            "prompt_file": str(prompt), "argv": argv}
+            "prompt_file": str(prompt) if prompt else None, "argv": argv}
     if args.dry_run:
         return {"launched": False, "dry_run": True, **plan}
 
@@ -266,7 +282,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("whoami")
     start = sub.add_parser("launch")
-    start.add_argument("--prompt-file", required=True)
+    start.add_argument("--prompt-file")
     start.add_argument("--name", required=True)
     start.add_argument("--cwd")
     start.add_argument("--skills")
@@ -276,6 +292,7 @@ def main(argv: list[str] | None = None) -> int:
     start.add_argument("--model")
     start.add_argument("--thinking")
     start.add_argument("--seat", choices=("personal", "work"))
+    start.add_argument("--fork")
     args = parser.parse_args(argv)
 
     hermes_session = os.environ.get("HERMES_SESSION_ID", "")

@@ -78,6 +78,9 @@ Pi-only flags:
   `PI_CLAUDE_CODE_CONFIG_DIR=~/.claude-personal`; `work` unsets it. Without the
   flag the pane's shell decides.
 - `--skills` is ignored: Pi finds its own skills, so name the skill in the prompt.
+- `--fork <session.jsonl>`: start on a copy of that Pi session instead of a
+  fresh one. For Pi `--prompt-file` is optional. Bryan's `/split` and
+  `/split-fork` commands (`dot-pi/agent/extensions/pi-split.ts`) use these.
 
 The helper finds the host from the pane's own environment (`dot-agents/lib/terminal_host.py`):
 Rex when `REX_BLOCK` and `REX_SESSION` are set. Outside Rex it refuses; give

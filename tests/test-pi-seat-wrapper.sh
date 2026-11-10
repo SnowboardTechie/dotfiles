@@ -76,6 +76,7 @@ check "reconcile: check does not create the link" "absent" "$([[ -e "$RH/.pi/age
 PI_EXTENSIONS_HOME="$RH" "$RECON" --apply >/dev/null; rc=$?
 check "reconcile: apply exits 0" "0" "$rc"
 check "reconcile: apply links the extension" "$EXT" "$(readlink "$RH/.pi/agent/extensions/pi-seat.ts")"
+check "reconcile: apply links pi-split" "$REPO_ROOT/dot-pi/agent/extensions/pi-split.ts" "$(readlink "$RH/.pi/agent/extensions/pi-split.ts")"
 PI_EXTENSIONS_HOME="$RH" "$RECON" --check >/dev/null; rc=$?
 check "reconcile: check is clean after apply" "0" "$rc"
 FH="$TMP/foreign-home"

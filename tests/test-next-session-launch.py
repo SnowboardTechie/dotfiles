@@ -141,11 +141,12 @@ class RexLaunchTest(unittest.TestCase):
         import shlex
         self.assertEqual(shlex.split(typed), ["hermes", "chat", "--query-file", str(self.prompt.resolve()), "--skills", "wayfinder"])
 
-    def pi_launch(self, *extra: str) -> tuple[int, dict, list[str]]:
+    def pi_launch(self, *extra: str, prompt: bool = True) -> tuple[int, dict, list[str]]:
         import shlex
         pi_fg = {"pid": 77, "name": "node", "argv0": "pi", "cwd": str(self.cwd)}
         self.state["blocks"]["block:new"] = [{"pid": 40, "name": "zsh", "argv0": "-zsh"}, pi_fg]
-        code, out = self.run_script("launch", "--prompt-file", str(self.prompt), "--name", "wf-9", *extra,
+        prompt_args = ["--prompt-file", str(self.prompt)] if prompt else []
+        code, out = self.run_script("launch", *prompt_args, "--name", "wf-9", *extra,
                                     env_extra={"HERMES_SESSION_ID": "", "PI_SESSION_ID": "pi-1"})
         typed = self.split_request()["layout"]["block"]["options"]["initial_input"] if code == 0 else ""
         return code, out, shlex.split(typed)
@@ -163,6 +164,35 @@ class RexLaunchTest(unittest.TestCase):
         self.log.unlink()
         _, _, typed = self.pi_launch("--seat", "work")
         self.assertEqual(typed[:3], ["env", "-u", "PI_CLAUDE_CODE_CONFIG_DIR"])
+
+    def test_pi_fork_starts_on_a_copy_of_the_session(self) -> None:
+        session = self.tmp / "sessions" / "2026_abc.jsonl"
+        session.parent.mkdir()
+        session.write_text('{"type":"session"}\n')
+        code, out, typed = self.pi_launch("--fork", str(session), "--model", "m/x")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(typed, ["pi", "--name", "wf-9", "--fork", str(session.resolve()), "--model", "m/x",
+                                 f"@{self.prompt.resolve()}"])
+
+    def test_pi_without_a_prompt_starts_empty(self) -> None:
+        code, out, typed = self.pi_launch(prompt=False)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(typed, ["pi", "--name", "wf-9"])
+        self.assertIsNone(out["prompt_file"])
+
+    def test_pi_fork_refuses_a_missing_session_before_splitting(self) -> None:
+        code, out, _ = self.pi_launch("--fork", str(self.tmp / "gone.jsonl"))
+        self.assertEqual(code, 1)
+        self.assertIn("not a Pi session file", out["reason"])
+        self.assertFalse(any(c[:3] == ["api", "call", "session.new_split"] for c in self.calls()))
+
+    def test_hermes_still_needs_a_prompt_and_refuses_fork(self) -> None:
+        code, out = self.run_script("launch", "--name", "wf-9")
+        self.assertEqual(code, 1)
+        self.assertIn("--prompt-file is required", out["reason"])
+        code, out = self.run_script("launch", "--prompt-file", str(self.prompt), "--name", "wf-9", "--fork", "x.jsonl")
+        self.assertEqual(code, 1)
+        self.assertIn("only to a Pi session", out["reason"])
 
     def test_pi_waits_for_pi_not_hermes(self) -> None:
         code, out = self.run_script("launch", "--prompt-file", str(self.prompt), "--name", "wf-9",
