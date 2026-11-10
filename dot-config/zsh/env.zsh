@@ -26,6 +26,13 @@ if [[ -n "${REX_BIN_DIR:-}" && -x "$REX_BIN_DIR/rex" ]] && (( ! ${path[(Ie)$REX_
   path+=("$REX_BIN_DIR")
 fi
 
+# A Rex pane may be served by another Mac's Rex server without SSH variables,
+# so Pi's selection copy otherwise reaches only the server's pasteboard. OSC 52
+# lets the attached Rex app update the viewer's clipboard too.
+if [[ -n "${REX_SESSION:-}" ]]; then
+  export PI_CLIPBOARD_OSC52=1
+fi
+
 # PostgreSQL - Add libpq binaries to PATH (macOS Homebrew only, NixOS handles via system packages)
 if [[ -d /opt/homebrew/opt/libpq/bin ]]; then
   export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
