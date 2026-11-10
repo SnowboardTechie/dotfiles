@@ -124,7 +124,7 @@ class LeanIssueWorkContractTests(unittest.TestCase):
         )
         self.assertEqual(
             sorted(p.name for p in (skill / "tests").glob("test_*.py")),
-            ["test_rex_subagent_slot.py"],
+            ["test_rex_subagent_slot.py", "test_rex_wait.py"],
         )
         self.assertTrue((skill / "scripts" / "rex_wait.sh").stat().st_mode & 0o111)
         self.assertIn("references/rex-claude-handoff.md", self.handoff)

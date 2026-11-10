@@ -562,11 +562,12 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
                 self.assertIn(token, self.body)
                 self.assertIn(token.replace("--", ""), self.router)
         # Since d426970 (2026-10-19) task shape right-sizes the handoff, not the
-        # implementer: Claude implements both shapes unless Bryan selects otherwise.
+                # implementer: a Pi worker implements both shapes unless Bryan selects
+        # otherwise (Claude until 2026-11-10).
         self.assert_matches(
             self.body,
-            r"(?is)Bryan's standing\s+selection is Claude for both shapes",
-            "Claude must implement both task shapes by default",
+            r"(?is)Bryan's standing\s+selection is Pi for both shapes",
+            "a Pi worker must implement both task shapes by default",
         )
         self.assert_matches(
             self.body,
@@ -670,15 +671,16 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
         )
 
     def test_sol_claude_boundary_is_explicit(self) -> None:
-        # The Sol pairing was replaced by the parent/Claude-worker split in
-        # d426970 (2026-10-19); the parent is Pi or Hermes since 4ea4140.
+                # The Sol pairing was replaced by the parent/Claude-worker split in
+        # d426970 (2026-10-19); the parent is Pi or Hermes since 4ea4140, and
+        # the worker is Pi since 2026-11-10.
         # Authorship and acceptance must still stay distinct.
         for token in ("decision-complete", "single-loop", "independent acceptance"):
             with self.subTest(token=token):
                 self.assertIn(token.lower(), self.body.lower())
         self.assert_matches(
             self.body,
-            r"(?is)The parent \(a Pi or Hermes session\) orchestrates; a Claude worker implements",
+            r"(?is)The parent \(a Pi or Hermes session\) orchestrates; a Pi worker implements",
             "the parent/worker roles must be explicit",
         )
         self.assert_matches(

@@ -178,7 +178,7 @@ Revision results replace `plan_deviations` with `findings_addressed` and `unreso
 
 1. **Treating approved `issue-work` as Qwen authorization.** It is not. Route to
    Qwen only after Bryan explicitly selects it for the current run; automatic
-   issue-work routing uses the visible Claude handoff.
+   issue-work routing uses the visible Pi worker handoff.
 2. **Switching to Qwen after another worker fails.** Unavailability or a failed
    correction stops the run; it does not create an implicit Qwen request.
 3. **Trusting the report.** Read the diff and rerun tests; structured output is not proof.

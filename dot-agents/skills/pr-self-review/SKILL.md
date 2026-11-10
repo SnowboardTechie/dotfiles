@@ -51,7 +51,7 @@ cross-repository work.
 
 Independence is about authorship, not process count:
 
-- When a Claude/Pi/Hermes/Qwen worker wrote the candidate and the parent (Pi or
+- When a Pi/Claude/Hermes/Qwen worker wrote the candidate and the parent (Pi or
   Hermes) did not edit it, the parent is the independent acceptance context and
   runs one integrated review directly.
 - When the active parent wrote or changed candidate code, dispatch one fresh
@@ -276,7 +276,7 @@ counter to `1` before submitting accepted input, and preserve the increment if
 the turn fails after submission. On a delegated implementation route, return it
 to the original worker:
 
-- visible Claude/Pi/Hermes uses the existing `worker-identity.json` with the
+- visible Pi/Claude/Hermes uses the existing `worker-identity.json` with the
   correction steps in
   `coding-agent-handoff-supervision/references/rex-claude-handoff.md`;
 - Qwen uses its original session ID;
@@ -305,9 +305,9 @@ freeze the resulting candidate and run one complete integrated rereview. Apply
 no further correction. Any validated blocker sets the result to
 `Correction bound reached — do not merge.`
 
-Provider capacity is an independent hard gate. Before every Claude correction,
+Provider capacity is an independent hard gate. Before every worker correction,
 the coordinator must verify capacity and confirm no other turn is in flight in
-that worker runtime session. Unrelated Claude sessions are not a concurrency blocker. Exhausted
+that worker runtime session. Unrelated worker sessions are not a concurrency blocker. Exhausted
 or unverifiable capacity consumes no correction and never permits an automatic
 provider switch.
 
@@ -372,8 +372,8 @@ merge.
 
 ## Common Pitfalls
 
-1. Launching a fresh Claude reviewer after the parent already independently
-   reviewed Claude's candidate.
+1. Launching a fresh worker reviewer after the parent already independently
+   reviewed the worker's candidate.
 2. Paying for one reviewer per dimension instead of one integrated context.
 3. Running final full CI after every correction instead of once when stable.
 4. Rebuilding acceptance criteria from a body excerpt or memory.

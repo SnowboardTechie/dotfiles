@@ -95,8 +95,8 @@ def select_worker(
         selected = "gpt"
         reason = "single-loop work stays with the parent"
     elif override == "auto":
-        selected = "claude"
-        reason = "substantial work uses the visible Rex handoff"
+        selected = "pi"
+        reason = "substantial work uses the visible Rex Pi handoff"
     elif override == "claude":
         selected = "claude"
         reason = "explicit visible Claude selection"

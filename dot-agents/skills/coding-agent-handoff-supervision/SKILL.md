@@ -6,7 +6,7 @@ author: Bryan Thompson + Hermes Agent
 license: MIT
 metadata:
   hermes:
-    tags: [coding-agents, handoff, supervision, claude, hermes, rex]
+    tags: [coding-agents, handoff, supervision, pi, hermes, rex]
     related_skills: [issue-work, pr-self-review, subscription-coding-worker-governance]
 ---
 
@@ -14,13 +14,13 @@ metadata:
 
 ## Overview
 
-The parent (a Pi or Hermes session) orchestrates; a Claude worker implements. Hand decision-complete
-implementation to a visible Claude worker, including small changes, fixtures, harnesses, tooling,
+The parent (a Pi or Hermes session) orchestrates; a Pi worker implements. Hand decision-complete
+implementation to a visible Pi worker, including small changes, fixtures, harnesses, tooling,
 and repairs discovered during verification. Task size and worker startup cost
-are not exceptions. Use a visible read-only worker for requested read-only work
-(Pi from a Pi parent, Hermes from a Hermes parent); simple questions stay with the
-parent unless Bryan asks for a worker. Only Bryan's explicit selection changes the
-implementation role or runtime. The parent owns scope,
+are not exceptions. Pi is the worker for everything (Bryan, 2026-11-10):
+implementers, reviewers and requested read-only work alike; simple questions
+stay with the parent unless Bryan asks for a worker. Only Bryan's explicit
+selection changes the implementation role or runtime (Claude or Hermes). The parent owns scope,
 dependencies, handoffs, supervision, independent acceptance, authorized Git
 integration/publication, and live verification. A worker produces a candidate,
 not an accepted deliverable.
@@ -49,10 +49,10 @@ the user's request is the brief authority: narrow the brief to inspection and
 reporting, prohibit edits/publication, and start the worker. Ask a question only
 when that changes the work or a required project/permission is genuinely unknown.
 Implementation still needs the governing ticket/approved plan and the role,
-acceptance, correction, capacity and cleanup rules below. Claude Opus/medium is
-the implementation default for either parent. The read-only-worker default is a
-visible Pi worker (Opus 5.5, medium thinking, seat by worktree) for a Pi parent
-and Hermes/high for a Hermes parent.
+acceptance, correction, capacity and cleanup rules below. The default worker,
+for either parent and every role, is a visible Pi worker on
+`claude-code/claude-opus-5-5` with medium thinking, its seat following the
+worktree.
 Bryan's explicit runtime selection overrides this
 policy. Do not expand a simple question into an audit: keep the brief and
 verification proportional to the requested answer.
@@ -68,7 +68,7 @@ Use for repository implementation of any size when all of these are true:
 
 Delegate a `single-loop` change too; right-size its brief and verification, not
 its implementation owner. For ticket work, use `issue-work`'s router with the
-standing Claude selection. Do not turn a fixture or tooling repair into parent
+standing Pi selection. Do not turn a fixture or tooling repair into parent
 implementation by calling it verification.
 
 Do not use this workflow for open architecture, live incident diagnosis,
@@ -76,8 +76,7 @@ voice-heavy writing, or exploratory research. Resolve those in the parent conver
 
 ## Delivery boundary and substantive handback
 
-Default ordinary implementation handoffs to supervised delivery. "Hand it to
-Claude" does not authorize dropping parent acceptance/publication or inventing
+Default ordinary implementation handoffs to supervised delivery. "Hand it to a worker" does not authorize dropping parent acceptance/publication or inventing
 a separate future review invocation. Use `session-handoff` status-only or
 fire-and-forget only when Bryan explicitly chooses that boundary. Preserve
 installation, download, activation and other real safety gates without turning
@@ -90,8 +89,7 @@ one `Divergence:` line: how the result differs from the task as given (another
 approach, changed scope, a new agreement), or `Divergence: None`. Put that line
 in every contract's handback list. Check it against the diff and the contract
 rather than recording it; an unstated difference the diff shows is a finding.
-Read the report and the real candidate before reporting completion or answering
-what Claude said. A lifecycle `done` event is not a handback. If the report is
+Read the report and the real candidate before reporting completion or answering what the worker said. A lifecycle `done` event is not a handback. If the report is
 absent, retrieve the final message by reading the recorded worker's pane after
 checking its identity, or request the missing report from the same worker
 within its capacity and turn boundary. Never substitute a runbook for an unread final message while
@@ -129,17 +127,15 @@ The worker owns:
 
 The parent may inspect source, run existing checks, maintain plans/review artifacts and
 perform authorized integration. Sustained prerequisite investigation that needs
-new code or a repaired harness belongs in a bounded Claude handoff; do not build
+new code or a repaired harness belongs in a bounded worker handoff; do not build
 it in the coordinator while the implementer waits. A worker's failure, capacity
 limit or closed session does not transfer implementation ownership to the parent.
 Recover the permitted worker route or report its concrete blocker.
 
-Do not spend a parent implementation session before handoff and then use Claude
-only as reviewer. Do not use a second Claude session to review the first
+Do not spend a parent implementation session before handoff and then use a worker only as reviewer. Do not use a second worker session to review the first
 by default outside Bryan's SGG closeout; the parent is already the independent
 pre-publication acceptance context. For SGG issue implementation, `issue-work`
-owns the required sequence: parent acceptance, verified draft PR, fresh Claude
-final PR self-review, parent disposition, and cleanup. That post-publication final
+owns the required sequence: parent acceptance, verified draft PR, fresh worker final PR self-review, parent disposition, and cleanup. That post-publication final
 gate is required, not an optional redundant pre-publication reviewer.
 
 ## Procedure
@@ -153,7 +149,7 @@ justifies stopping at text. A planning artifact's earlier execution-disabled
 status must not erase a later explicit implementation instruction.
 
 For Bryan's SGG issue-implementation handoffs, "proceed" executes the established
-complete closeout through the draft PR and fresh Claude final self-review, unless
+complete closeout through the draft PR and fresh worker final self-review, unless
 he explicitly sets an earlier stopping boundary. Record that delivery authority
 and continue under `issue-work`; do not return "done" at worker settlement or a
 pushed branch. Plan-only and prompt-only requests remain non-execution requests.
@@ -172,7 +168,7 @@ filed-but-undelivered issue is not the deliverable.
 Keep an authorized multi-issue outcome moving: dispatch ready independent work
 within the governing concurrency limit, collect handbacks, accept prerequisites,
 and advance their consumers. Routine in-scope implementation and fixture repairs
-remain Claude's work under the existing completion authority, not another
+remain the worker's under the existing completion authority, not another
 "may I proceed?" gate. Preserve actual correction counts and quality stops; ask
 Bryan only for a genuinely new decision, permission or applicable safety gate.
 
@@ -222,28 +218,24 @@ approval-eligible: forbid `git reset`, `git clean`, checkout-discard operations,
 rebase, amend, every other history rewrite, force-push, delete or overwrite any
 local ref or branch, branch deletion, and update-ref deletion.
 
-Visible workers are approval-gated, not sandbox-confined. Claude uses
-`--permission-mode auto`; Hermes requires `approvals.mode: smart`, no
-`HERMES_YOLO_MODE`, and no `--yolo`. Pi has no approval gate: it runs every tool
-call, so a Pi worker's read-only limit rests on its contract's prohibitions only.
-That fits read-only work in Bryan's own repositories; when hard confinement or an
-approval gate is required, use a Claude worker. Stop when hard confinement is
-required but cannot be proved.
+Pi workers are not approval-gated and not sandbox-confined: Pi runs every tool
+call, so a worker's limits rest on its contract's prohibitions only. That fits
+work in Bryan's own repositories. When a task requires an approval gate or hard
+confinement, stop and ask Bryan; he may select a Claude worker
+(`--permission-mode auto`) or a Hermes one (`approvals.mode: smart`, no
+`HERMES_YOLO_MODE`, no `--yolo`) for it. Stop when hard confinement is required
+but cannot be proved.
 
-When Claude is selected, use `claude-opus-5-5` at `medium` effort, for
-implementers and reviewers alike (Bryan, 2026-10-23). The coordinator's own
-effort setting does not carry over to workers. Lightweight implementation still
-belongs to Claude; a Pi or Hermes worker (matching the parent) is the
-read-only-worker route unless Bryan explicitly selects otherwise. Use a higher
-`--claude-effort` only when Bryan asks for it.
+Use `claude-code/claude-opus-5-5` at `medium` thinking for implementers and
+reviewers alike (Bryan, 2026-10-23). The coordinator's own thinking level does
+not carry over to workers. Use a higher level only when Bryan asks for it.
 
-Starting a worker in the inspected worktree created for Bryan's authorized task
-already authorizes Claude's ordinary **Yes, I trust this folder** startup step.
-Do not ask Bryan again. Accept only that recognizable trust prompt, after
-confirming the path it shows is the exact worktree in the recorded startup pane,
-then verify readiness.
-This is not blanket permission for unrelated paths, login prompts, destructive
-commands, broader permission modes, or new task decisions.
+For an explicitly selected Claude worker, starting it in the inspected worktree
+created for Bryan's authorized task already authorizes Claude's ordinary **Yes,
+I trust this folder** startup step. Accept only that recognizable trust prompt,
+after confirming the path it shows is the exact worktree in the recorded startup
+pane. This is not blanket permission for unrelated paths, login prompts,
+destructive commands, broader permission modes, or new task decisions.
 
 Complete when the worker can identify the artifact, worktree, and authority
 boundary without a second copy of the plan.
@@ -285,36 +277,23 @@ surfaces early; the worktree and contract stay useful for the resumed session.
 The worker opens in the orchestrator's "<tab label> Sub Agents" tab (then
 "... 2", "... 3"), at most four per tab in a 2x2 grid placed by
 `scripts/rex_subagent_slot.py`, a new tab's root block being the worker itself,
-never beside the coordinator's own block. Claude gets the prompt as its first
-turn and a fixed `--session-id`. The coordinator does the checks by hand:
+never beside the coordinator's own block. The worker gets the prompt file as
+its first turn and a fixed `--session-id`. The coordinator does the checks by hand:
 identity record, the 75% capacity gate, one turn at a time, settlement from
 transcript plus handback, close. Background `terminal` processes do not inherit
 foreground exports: put the `export` (or the literal values) inside every
 background command.
 
-When an explicitly approved installation is misclassified, distinguish missing
-authorization from missing runtime configuration. Never retry a refused action
-through another tool or infer permission from frustration. Investigate the
-supported consent/configuration path. Claude ignores `autoMode` in project-local
-settings; standalone `auto-mode config --settings FILE` can read a file that the
-interactive runtime ignores. Do not claim that test proves runtime activation.
-For a parent-reviewed, user-authorized source/action-scoped exception, pass a
-file containing only `{"autoMode":{"allow":[...]}}` to that worker's `claude`
-command as inline `--settings` JSON, retaining auto mode, and record the config
-hash in the identity record. Preserve the existing effective allow rules; change
-no hard or soft deny rules, global settings, or unrelated permission controls.
-Keep the exception in scratch, never in tracked instructions or the worker's own
-edits. If the existing runtime cannot consume CLI overrides, collect its
-substantive handback, close it normally, and launch the continuation with the
-same approved model/effort and governing artifact. Verify startup arguments/hash
-and the next normal permission gate before claiming recovery. A still-refused
-action remains blocked; do not escalate to a broader mode or another execution
-route.
+Never retry a refused action through another tool or infer permission from
+frustration. A still-refused action remains blocked; do not escalate to a
+broader mode or another execution route. (For an explicitly selected Claude
+worker whose approved installation auto mode misclassifies, pass a scratch file
+of only `{"autoMode":{"allow":[...]}}` as inline `--settings`, keep auto mode,
+change no deny rules, and record its hash in the identity record.)
 
-For read-only work from a Pi parent, or explicit Pi selection, start a Pi worker
-as the reference describes. For read-only work from a Hermes parent, or explicit
-Hermes selection, start a Hermes worker after independently checking its
-smart-approval prerequisites.
+Start Claude or Hermes workers only on Bryan's explicit selection, as the
+reference's "Other worker runtimes" describes; check a Hermes worker's
+smart-approval prerequisites independently first.
 
 After the start, the coordinator computes Git identity and records, once:
 
@@ -325,19 +304,19 @@ After the start, the coordinator computes Git identity and records, once:
 - `worker_runtime_session_id`; and
 - `worker_worktree_identity`.
 
-For Claude, run the live capacity gate before the block is created. Any nonzero
-capacity result stops before a provider turn, and an empty reading is a stop,
-never a pass. A Pi worker on `claude-code/...` spends the same Claude seat, so the
-same gate and ceiling apply to it, measured on the seat it uses: `CLAUDE_CONFIG_DIR`
-set to the worker's `PI_CLAUDE_CODE_CONFIG_DIR`, unset for the work seat.
+Run the live capacity gate before the block is created. A Pi worker on
+`claude-code/...` spends a Claude seat, so the gate reads the seat it uses:
+`CLAUDE_CONFIG_DIR` set to the worker's `PI_CLAUDE_CODE_CONFIG_DIR`, unset for the
+work seat. Any nonzero
+capacity result stops before a provider turn. An empty capacity reading is a stop, never a pass.
 
 **Bryan's capacity ceiling is 75% consumed of the 5-hour window.** Do not start
-or prompt a Claude turn at or above 75%. Below 75%, dispatch: the remaining 25%
+or prompt a worker turn at or above 75%. Below 75%, dispatch: the remaining 25%
 is the buffer that absorbs a turn's overrun. Do not forecast whether the
 expected turn, a concurrent session or past-lane costs will push past 75%, and
 do not defer dispatch to wait for a reset while below it. A self-imposed lower
 threshold (say, "start once below 55%") idles ready lanes for hours. Reviewers
-are Claude turns too, and the same rule applies to them. When usage really is
+are worker turns too, and the same rule applies to them. When usage really is
 at or above 75%, a background waiter may poll for it to drop below 75. Parse the
 reading as `references/rex-claude-handoff.md` describes, and make an empty
 reading fail the waiter at once.
@@ -350,10 +329,10 @@ worker.
 Complete when the identity file records one ready worker in the intended
 worktree.
 
-### 4. Submit one turn per Claude session
+### 4. Submit one turn per worker session
 
 Put the short brief in a state-root file. The first turn is that file, given to
-Claude as its start argument; a later turn (a correction) is typed into the same
+the worker as its start argument; a later turn (a correction) is typed into the same
 block only after settlement, as the Rex reference's "A second turn" section
 shows. Before every turn:
 
@@ -363,7 +342,7 @@ shows. Before every turn:
 4. send exactly one prompt.
 
 A command's exit status proves only that the keystrokes were sent, not that
-Claude accepted the prompt. Until a new `user` record appears in the
+the worker accepted the prompt. Until a new `user` record appears in the
 transcript, report delivery as unconfirmed. A nonzero exit or rejected
 submission requires immediate inspection and authorized recovery; do not end
 with a delivery claim or an apology. A settled worker can accept its
@@ -372,7 +351,7 @@ completed. Never retry an uncertain submission until its delivery state is
 resolved, skip identity/capacity checks, or expand permissions to make recovery
 succeed.
 
-At most one Claude turn may be in flight **within each worker runtime session**.
+At most one turn may be in flight **within each worker runtime session**.
 Independent sessions may run concurrently in their own worktrees, including
 when they share a subscription. Another agent working on another task is not a
 handoff blocker. Capacity and exact worker/worktree identity checks still apply.
@@ -390,7 +369,7 @@ delivered. If the prompt is gone when you look, inspect the live state before
 any retry: the user may have answered in the visible pane or the prompt may have
 timed out. Do not invent which actor resolved it.
 
-Wait on the handback, not on a turn's end alone. A Claude turn can end while its
+Wait on the handback, not on a turn's end alone. A worker turn can end while its
 own background test shell is still running and its handback is unwritten. Run
 `scripts/rex_wait.sh` as a tracked background process, which settles only when
 the transcript shows the turn ended *and* the contract's handback section ends
@@ -459,7 +438,7 @@ batch), follow this shape:
   mid-run.
 - **Lanes by shared files.** Issues that touch the same files run serially in one
   lane. Independent lanes all run in parallel. Bryan sets no cap on how many
-  builders run at once (2026-10-23); only the Claude capacity ceiling above limits
+  builders run at once (2026-10-23); only the capacity ceiling above limits
   dispatch. Don't hold a ready lane because other builders are busy.
 - **The brief is a contract file.** Write it in the ticket state
   directory: authority links, settled open questions, required behaviour, tests,
@@ -575,7 +554,7 @@ batch), follow this shape:
 
 ## Reporting to Bryan
 
-- **Bryan doesn't do PR reviews.** PRs are for the coordinator and the Claude reviewers. When something needs his
+- **Bryan doesn't do PR reviews.** PRs are for the coordinator and the worker reviewers. When something needs his
   approval (laws, a config file, a decision), put what he is approving in the message itself, in plain words. A link
   is welcome for the web UI, but only to the exact file at an exact commit
   (`https://<forge>/<owner>/<repo>/src/commit/<sha>/<path>`), one link per file, never a PR page.
@@ -619,7 +598,7 @@ resume a visible Rex worker's identity.
 ## Common Pitfalls
 
 1. Keeping small edits, fixture/harness repairs, or implementation tooling with the parent to save worker startup cost.
-2. Confusing per-session turn serialization with a global ban on concurrent Claude work.
+2. Confusing per-session turn serialization with a global ban on concurrent worker sessions.
 3. Making the prompt a second plan.
 4. Sending to a worker without first checking that its block still matches the identity record.
 5. Treating worker tests, idle status, or prose as parent acceptance.
@@ -627,7 +606,7 @@ resume a visible Rex worker's identity.
 7. Using "all call sites" as permission for an exhaustive domain audit rather than bounded application of the selected mechanism.
 8. Starting a fresh worker for corrections instead of resuming the recorded one.
 9. Duplicating the parent's pre-publication acceptance through a generic fresh reviewer.
-   Bryan's required post-draft-PR SGG Claude final review is not this pitfall.
+   Bryan's required post-draft-PR SGG final review is not this pitfall.
 10. Leaving a settled pane open as a status marker.
 11. Confusing correction allowance with provider capacity.
 12. Reading "hand it off to a subagent" as a hidden sub-agent mechanism
@@ -648,14 +627,14 @@ resume a visible Rex worker's identity.
 
 ## Verification Checklist
 
-- [ ] Claude owns implementation regardless of task size; any alternate owner has Bryan's explicit selection
+- [ ] A Pi worker owns implementation regardless of task size; any alternate runtime has Bryan's explicit selection
 - [ ] One verified ticket or approved plan governs the handoff
 - [ ] Brief contains locator, worktree, authority, and delivery permissions only
 - [ ] Destructive/history-rewriting Git operations remain prohibited
 - [ ] Visible path uses a Rex sub-agents tab slot (max four, 2x2) per references/rex-claude-handoff.md, without stealing focus
-- [ ] The Claude worker command sets `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`, so Rex raises no alerts for it
+- [ ] The worker command sets `PI_PROGRAM_STATUS=0` (Claude: `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`), so Rex raises no alerts for it
 - [ ] The coordinator persisted all six identity fields
-- [ ] Claude capacity passed (below 75%) and no other turn was in flight in the worker runtime session
+- [ ] Seat capacity passed (below 75%) and no other turn was in flight in the worker runtime session
 - [ ] No overlapping turn targeted the same session; unrelated sessions were not blocked
 - [ ] Delivery claims have acknowledgement evidence, not merely a background process handle
 - [ ] Rejected or uncertain submissions were inspected and recovered without bypass or duplicate delivery
@@ -668,6 +647,6 @@ resume a visible Rex worker's identity.
 
 ## References
 
-- [Visible Claude workers in Rex](references/rex-claude-handoff.md)
+- [Visible Pi workers in Rex](references/rex-claude-handoff.md)
 - [Design-preview promotion](references/design-preview-handoff.md)
 - [Explicit background Agent View](references/claude-agent-view.md)

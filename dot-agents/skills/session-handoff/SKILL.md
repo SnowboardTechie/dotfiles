@@ -16,7 +16,7 @@ description: >
 
 Slice untracked implementation work out of this session's head and into fresh
 contexts. First select the delivery boundary: ordinary requests to implement or
-hand work to Claude route to `coding-agent-handoff-supervision`, retaining parent
+hand work to a worker route to `coding-agent-handoff-supervision`, retaining parent
 review, correction and authorized publication. Use the handoff-only procedure
 below only when Bryan explicitly chooses separate acceptance, status-only
 notification, or fire-and-forget. Do not infer that stopping boundary from
@@ -182,13 +182,13 @@ because `coding-agent-handoff-supervision` is not curated into every runtime's
 skills directory. Start the worker exactly as the "Start" section of
 `dot-agents/skills/coding-agent-handoff-supervision/references/rex-claude-handoff.md`
 describes: the capacity gate, a slot in this session's sub-agents tab, the
-prompt as Claude's first turn (so it is submitted exactly once), and the
+prompt file as the Pi worker's first turn (so it is submitted exactly once), and the
 identity record. Add `engagement_mode: status-only` to that record.
 
-The default model is `claude-opus-5-5`. When Bryan explicitly selects another
-Claude model, pass its exact full model name and carry that choice in the prompt;
-never add a fallback model. Claude effort defaults to `medium`
-(Bryan, 2026-10-23); pass a higher value only when Bryan asks for one.
+The worker is Pi (Bryan, 2026-11-10) on `claude-code/claude-opus-5-5`. When
+Bryan explicitly selects another model or runtime, pass its exact full name and
+carry that choice in the prompt; never add a fallback model. Thinking defaults
+to `medium` (Bryan, 2026-10-23); pass a higher value only when Bryan asks for one.
 
 The status watch is that skill's `scripts/rex_wait.sh <transcript> <handback>
 <cap seconds>`. It prints one line — `SETTLED` (exit 0), `ENDTURN-NO-HANDBACK`

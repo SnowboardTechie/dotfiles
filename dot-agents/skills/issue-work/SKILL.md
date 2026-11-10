@@ -18,12 +18,12 @@ Take one GitHub or Forgejo issue from current authority to a verified reviewable
 PR through Intake → Plan → Implement → Accept → Publish. Keep durable state under
 the ticket workspace and code in an isolated implementation worktree.
 
-The lean path is deliberate: the parent orchestrates and Claude implements, including
+The lean path is deliberate: the parent orchestrates and a Pi worker implements, including
 single-loop changes, fixtures, harnesses, and tooling repairs. Investigate only
 unresolved questions, use one implementation context per bounded assignment,
 run independent parent acceptance, batch corrections,
 and run full verification once when stable. For Bryan's SGG issue implementation,
-closeout then includes a verified draft PR and a fresh Claude final PR self-review;
+closeout then includes a verified draft PR and a fresh worker final PR self-review;
 that required final gate is not a redundant pre-publication reviewer fan-out.
 
 ## Inputs and authority
@@ -78,8 +78,7 @@ Questions and corrections are not authorization. Record the authority mode in
 `progress.md` so resume does not invent or discard it.
 
 Track the complete delivery shape, not only the current phase. Bryan's established
-SGG issue-implementation closeout is parent review → verified draft PR → fresh
-Claude final PR self-review → parent validation of findings → resource cleanup.
+SGG issue-implementation closeout is parent review → verified draft PR → fresh worker final PR self-review → parent validation of findings → resource cleanup.
 Apply it when Bryan authorizes working the issue or executing its approved
 implementation handoff; he need not restate the closeout steps each time. Record
 that workflow and its draft-PR authority at intake. A pushed branch, a completed
@@ -283,7 +282,7 @@ Complete when the plan is decision-complete and authority permits execution.
 
 ## Phase 3 — Implement once
 
-### 1. Route implementation to Claude
+### 1. Route implementation to a Pi worker
 
 Classify task shape to right-size the handoff and checks, not to transfer
 implementation to the parent:
@@ -304,25 +303,24 @@ python3 dot-agents/skills/issue-work/scripts/select_issue_worker.py \
   --implementation-host "$IMPLEMENTATION_HOST" \
   --implementation-repo "$IMPLEMENTATION_REPO" \
   --task-shape single-loop \
-  --override claude
+  --override pi
 ```
 
 Use `--task-shape substantial` when the criteria require it. Bryan's standing
-selection is Claude for both shapes: pass `--override claude` explicitly. The
+selection is Pi for both shapes (Bryan, 2026-11-10): pass `--override pi` explicitly. The
 router's legacy `auto` single-loop route does not supersede that instruction.
 Use another implementation route only when Bryan explicitly selects it; task
 size, startup cost, fixture ownership and exhausted worker capacity do not
 authorize parent implementation. Qwen is never an automatic route.
 
 Complete when the routing result matches verified repository identity and the
-recorded task shape, and selects Claude unless Bryan explicitly chose otherwise.
+recorded task shape, and selects Pi unless Bryan explicitly chose otherwise.
 
 ### 2. Execute the selected route
 
-For a visible Claude route, or an explicit Pi or Hermes route, load
+For the visible Pi route, or an explicit Claude or Hermes route, load
 `coding-agent-handoff-supervision` and reuse this existing governing issue; do
-not call `issue-create`. The parent may be a Pi or Hermes session; a Pi parent
-starts a Pi worker for an explicit Pi route. Require this session's Rex pane and
+not call `issue-create`. The parent may be a Pi or Hermes session; either starts a Pi worker. Require this session's Rex pane and
 follow that skill's Rex procedure (`references/rex-claude-handoff.md`). Agent View and
 background wrappers are not fallbacks for visible work.
 
@@ -336,10 +334,10 @@ Do the checks by hand as that reference describes. Persist
 - `worker_runtime_session_id`; and
 - `worker_worktree_identity`.
 
-The coordinator hard-gates Claude capacity (below 75%) before start and every
+The coordinator hard-gates the worker's Claude-seat capacity (below 75%) before start and every
 prompt, serializes provider turns within each worker runtime session, waits for
 settlement (transcript plus handback), and records start/end capacity.
-Independent Claude sessions may work concurrently in separate worktrees; another
+Independent worker sessions may work concurrently in separate worktrees; another
 task's active session is not a blocker. A check at or above the ceiling, or an
 unverifiable one, stops before another turn, consumes no correction pass, and
 never authorizes an automatic
@@ -357,9 +355,9 @@ rebase, amend, history rewrite, force-push, and local-ref/branch deletion.
 
 For an explicit Qwen route, use its original model-pure worker and session. A
 host-native implementation route requires Bryan's explicit selection; it is not
-a fallback when Claude is unavailable. The parent runs existing checks and independently
+a fallback when the worker is unavailable. The parent runs existing checks and independently
 accepts results, but sends required code, fixture, harness and tooling repairs
-back through a bounded Claude contract under the current authority.
+back through a bounded worker contract under the current authority.
 
 Complete when the authorized implementation owner has produced a candidate and
 settled; worker settlement alone is not acceptance or delivery.
@@ -389,7 +387,7 @@ If targeted checks find blockers that prevent a candidate commit, write one
 consolidated correction contract and resume the same worker. This consumes the
 workflow's normal correction: require the global `correction_passes` counter to
 be `0`, increment it to `1` before submission, and preserve that value even when
-the turn fails after input is accepted. For visible Claude/Pi/Hermes, follow the
+the turn fails after input is accepted. For visible Pi/Claude/Hermes, follow the
 Rex reference's correction steps, checking capacity, single-flight, and identity
 before the send.
 After the turn, inspect the real diff and rerun affected targeted checks.
@@ -445,7 +443,7 @@ Load `pr-self-review` in `pre-pr` mode and pass
 must continue from this value rather than initializing a new allowance. When a
 delegated worker authored the candidate and the parent did not edit it, review directly.
 The parent is the independent acceptance context. Do not launch a generic
-fresh Claude reviewer in this pre-publication phase. Bryan's SGG final Claude
+fresh worker reviewer in this pre-publication phase. Bryan's SGG final worker
 review occurs after draft PR publication in Phase 5 and remains required.
 
 The parent runs one integrated review through Standards, Spec, conditional Risk,
@@ -503,7 +501,7 @@ delivery authority rather than demanding an exact `work <URL>` command token.
 Publish one draft PR under `ship`; draft publication is part of that established
 handoff workflow unless Bryan explicitly withheld it.
 
-After verifying the draft PR, start one fresh visible Claude Opus/medium session
+After verifying the draft PR, start one fresh visible Pi worker (Opus 5.5, medium thinking)
 for final `pr-self-review` in `pr-url` mode. Its authority is read-only review,
 not edits or live GitHub review submission. Pass the exact PR/base/head/diff
 identity, accepted outcomes, existing verification artifacts, and consumed global
@@ -529,7 +527,7 @@ Send the terminal-completion notification from
 `references/matrix-attention-notifications.md` when that workflow was armed.
 
 Complete when the draft PR is remotely verifiable, the candidate SHA matches,
-Bryan's required final Claude review is collected and dispositioned, current
+Bryan's required final worker review is collected and dispositioned, current
 verification is accurately recorded, and handoff-owned resources are closed.
 Update and synchronize the canonical vault status/index/handoff at that boundary.
 
@@ -578,7 +576,7 @@ At terminal completion, write one machine-readable JSON object to
 ```
 
 Counts are factual totals, not estimates. Capacity values come from the helper;
-leave them null when Claude was not used or the end probe was unavailable. Do
+leave them null when no Claude seat was used or the end probe was unavailable. Do
 not store prompts, transcripts, credentials, or private issue content in this
 record.
 
@@ -605,7 +603,8 @@ python3 dot-agents/skills/issue-work/scripts/record_efficiency.py record \
 ```
 
 `quota_interruptions` counts provider-capacity failures that prevented an
-otherwise eligible Claude turn. `escaped_critical_major` is owned by the
+otherwise eligible worker turn. (`claude_prompts` keeps its name for the
+recorded history; it counts worker prompts.) `escaped_critical_major` is owned by the
 aggregator and starts empty. If later PR feedback, CI, merge preparation, or
 live verification proves an escaped Critical/Major defect, the issue-work owner
 must run `record-escape` with the severity, evidence reference, and assessment
@@ -617,7 +616,7 @@ After five records are present, run `report`. The pilot is evaluation-ready only
 when all five have `escaped_assessed_at`; until then, report escaped-defect data
 as pending rather than zero.
 
-Compare time to reviewable PR, Claude prompts, review invocations, quota
+Compare time to reviewable PR, worker prompts, review invocations, quota
 interruptions, and later escaped Critical/Major findings. Improvement means
 fewer turns and shorter delivery with no increase in escaped blockers; do not
 optimize for low counts by weakening a gate.
@@ -669,10 +668,10 @@ weaker review, or fabricated completion claim.
 
 1. Spawning exploration because the phase exists rather than because a question
    exists.
-2. Letting the legacy single-loop router default override Bryan's standing Claude implementation role.
-3. Treating independent Claude issue sessions as a global concurrency conflict.
+2. Letting the legacy single-loop router default override Bryan's standing Pi implementation role.
+3. Treating independent worker issue sessions as a global concurrency conflict.
 4. Duplicating pre-publication acceptance through another generic reviewer.
-   This warning does not apply to the required post-draft-PR SGG Claude final review.
+   This warning does not apply to the required post-draft-PR SGG final worker review.
 4b. Gating only the package you edited. Before the gate, read the `on.pull_request.paths` of every
    workflow in `.github/workflows/` and run the local equivalent of each one the diff triggers; a
    sibling package's tests can hard-code the current contract (the Python SDK's
@@ -729,8 +728,8 @@ weaker review, or fabricated completion claim.
 - [ ] Imperative/advisory authority recorded exactly
 - [ ] Exploration count follows unresolved questions, including zero
 - [ ] Task shape and router output preserved
-- [ ] Claude authored implementation, fixtures and tooling repairs unless Bryan explicitly selected otherwise
-- [ ] At most one turn targeted each Claude runtime session; independent sessions may overlap
+- [ ] A Pi worker authored implementation, fixtures and tooling repairs unless Bryan explicitly selected otherwise
+- [ ] At most one turn targeted each worker runtime session; independent sessions may overlap
 - [ ] Worker identity remained complete and unchanged
 - [ ] Parent inspected actual bytes and ran targeted checks
 - [ ] Repository planning closeout completed
@@ -740,7 +739,7 @@ weaker review, or fabricated completion claim.
 - [ ] Full verification ran once on the stable candidate
 - [ ] Review artifacts match exact candidate identity
 - [ ] Reviewable PR pushed and read back without a redundant approval
-- [ ] SGG closeout includes collected, parent-dispositioned fresh Claude final PR self-review
+- [ ] SGG closeout includes collected, parent-dispositioned fresh worker final PR self-review
 - [ ] No merge or unapproved issue/deployment mutation occurred
 - [ ] Worker pane and watcher were released
 - [ ] Private-repo issues worked are closed, or wait only on a named person's review or action
