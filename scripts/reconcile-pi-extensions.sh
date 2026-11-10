@@ -11,6 +11,7 @@ MODE="${1:-}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HOME_DIR="${PI_EXTENSIONS_HOME:-$HOME}"
 PI_EXTENSIONS=(
+    pi-rex.ts
     pi-seat.ts
     pi-split.ts
 )
