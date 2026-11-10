@@ -129,7 +129,23 @@ git rev-parse <default-branch>
 git rev-parse origin/<default-branch>
 ```
 
-Abort unless the worktree is clean and local default exactly matches origin.
+Abort unless the worktree is clean and local default exactly matches origin,
+with one exception: when that checkout holds unrelated work you must not stash
+or reset, or automation commits in it, leave it alone and merge in a throwaway
+detached worktree instead:
+
+```bash
+git fetch origin <default-branch>
+merge_wt=$(mktemp -d)/merge
+git worktree add --detach "$merge_wt" origin/<default-branch>
+```
+
+Record the rollback point below in `$merge_wt`, then run steps 5 and 6 there,
+pushing with `git push origin HEAD:<default-branch>`.
+Afterwards remove it with `git worktree remove "$merge_wt"` and fast-forward the
+primary checkout with `git pull --ff-only` when its unrelated changes allow;
+otherwise report that its local default branch trails origin.
+
 Record the rollback point:
 
 ```bash
@@ -170,7 +186,7 @@ configuration, then verify the signature locally.
 Push the default branch first:
 
 ```bash
-git push origin <default-branch>
+git push origin <default-branch>   # detached merge worktree: HEAD:<default-branch>
 ```
 
 Verify the remote now points at the new commit. While the feature branch still
@@ -240,12 +256,12 @@ state, and any retained worktree/branch.
 6. **Ending on a red default branch.** A green PR check is not a green main: the
    push run can fail on what the PR's gate never ran (other tiers, load, merge
    effects). Read main's run every time.
-7. **Chaining the push with the merge record.** Hermes flags `git push` as a
-   force push when any `-f` follows it on the same command line
-   (`\bgit\s+push\b.*-f\b`), and `tea api -X POST -f Do=manually-merged` has one.
-   The chained command can wait out the approval gate and be refused. Run
-   `git push origin <default-branch>` as its own command, then the `tea api`
-   call as another.
+7. **Chaining the push with the merge record.** Run `git push` as its own
+   command, then the `tea api` call as another, on every host: a separate push
+   keeps the rollback point clear. On Hermes it also avoids a refusal: its
+   approval gate flags `git push` as a force push when any `-f` follows it on
+   the same command line (`\bgit\s+push\b.*-f\b`), and
+   `tea api -X POST -f Do=manually-merged` has one.
 8. **Parallel base-branch merges.** Serialize them; concurrent pushes can leave
    a false forge merge record.
 
@@ -255,7 +271,7 @@ state, and any retained worktree/branch.
 - [ ] Required CI (or the local full gate) green at the current head SHA
 - [ ] Project planning-closeout requirements satisfied
 - [ ] Explicit merge approval obtained, or the recorded standing authority cited
-- [ ] Default worktree clean and synchronized with origin
+- [ ] Default worktree clean and synchronized with origin, or a detached merge worktree at origin used and removed
 - [ ] Squash diff inspected before commit
 - [ ] Commit signature verified
 - [ ] Remote default branch verified after push

@@ -51,12 +51,16 @@ cross-repository work.
 
 Independence is about authorship, not process count:
 
-- When a Claude/Hermes/Qwen worker wrote the candidate and Sol did not edit it,
-  the Sol parent is the independent acceptance context and runs one integrated
-  review directly.
+- When a Claude/Pi/Hermes/Qwen worker wrote the candidate and the parent (Pi or
+  Hermes) did not edit it, the parent is the independent acceptance context and
+  runs one integrated review directly.
 - When the active parent wrote or changed candidate code, dispatch one fresh
   independent review context after the candidate is frozen. Use the host's
-  normal independent delegation surface; do not require Claude or Rex.
+  normal independent delegation surface; do not require Claude or Rex. Pi has
+  no hidden sub-agent, so on Pi that surface is a visible read-only Pi worker
+  started through `coding-agent-handoff-supervision`, given the same
+  exact-candidate inputs, and allowed to write only its review artifacts and
+  handback into the given state directory.
 - A worker's self-review never satisfies acceptance.
 
 If no context independent of the candidate author is available, stop before
@@ -181,7 +185,7 @@ Complete when every criterion has a candidate-bound verdict and evidence.
 
 ## 4. Run one integrated review
 
-Load `code-review`. Use its `scripts/select_review_lanes.py` classifier, then run
+Load `code-review`. Use this skill's `scripts/select_review_lanes.py` classifier, then run
 one integrated review in this order:
 
 ```sh
@@ -271,7 +275,7 @@ counter to `1` before submitting accepted input, and preserve the increment if
 the turn fails after submission. On a delegated implementation route, return it
 to the original worker:
 
-- visible Claude/Hermes uses the existing `worker-identity.json` with the
+- visible Claude/Pi/Hermes uses the existing `worker-identity.json` with the
   correction steps in
   `coding-agent-handoff-supervision/references/rex-claude-handoff.md`;
 - Qwen uses its original session ID;
@@ -333,7 +337,7 @@ expected_head_branch: {expected_head_branch}
 base_sha: {base_sha}
 merge_base_sha: {merge_base_sha}
 diff_sha256: {diff_sha256}
-review_context: {sol-parent | independent-delegate}
+review_context: {parent | independent-delegate}
 dimensions: [standards, spec, risk?]
 quality_gates: [ponytail]
 review_invocations: {N}
@@ -367,8 +371,8 @@ merge.
 
 ## Common Pitfalls
 
-1. Launching a fresh Claude reviewer after Sol already independently reviewed
-   Claude's candidate.
+1. Launching a fresh Claude reviewer after the parent already independently
+   reviewed Claude's candidate.
 2. Paying for one reviewer per dimension instead of one integrated context.
 3. Running final full CI after every correction instead of once when stable.
 4. Rebuilding acceptance criteria from a body excerpt or memory.

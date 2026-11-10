@@ -125,8 +125,8 @@ does not cover comments, issue edits, review requests, merges, or new claims
 outside the approved work.
 
 Otherwise, present the complete generated description inline and ask for explicit
-approval using interactive clarification (Hermes: `clarify`) or the host's
-conversational equivalent. Iterate on requested edits and re-present. **Do not call
+approval using interactive clarification (Hermes: `clarify`; Pi and others: a
+plain question in chat). Iterate on requested edits and re-present. **Do not call
 `gh pr edit`, `tea api`, or the Forgejo REST API until the user approves the exact
 body.** Silence and ambiguity are not approval. In unattended runs without the
 standing authorization above, write/report the proposed body and stop without

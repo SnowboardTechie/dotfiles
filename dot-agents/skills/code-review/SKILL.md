@@ -32,8 +32,9 @@ Use for branch, PR, or pre-publication review after the candidate is stable.
 
 Do not use an implementation worker's self-review as independent acceptance. If
 the active parent wrote the candidate, run this contract in one independent
-review context. If Claude wrote it and Sol only supervised, the Sol parent is the
-independent acceptance context and should run it directly.
+review context (on Pi, a visible read-only Pi worker; see `pr-self-review` §1).
+If a worker wrote it and the parent (Pi or Hermes) only supervised, the parent is
+the independent acceptance context and should run it directly.
 
 ## 1. Freeze the candidate
 
@@ -52,15 +53,17 @@ review. Recompute the same identity immediately before writing artifacts.
 
 ## 2. Select dimensions deterministically
 
-Standards and Spec always run. Use
-`pr-self-review/scripts/select_review_lanes.py` with both authoritative inputs:
+Standards and Spec always run. Use `pr-self-review`'s
+`scripts/select_review_lanes.py` with both authoritative inputs. Resolve it from
+this skill's directory (`../pr-self-review/scripts/`), not the current
+repository, so it works from any checkout:
 
 ```sh
 git diff --name-status -z -M -C --find-copies-harder \
   "$base_sha...$head_sha" -- > "$name_status_file"
 git diff -M -C --find-copies-harder \
   "$base_sha...$head_sha" -- > "$unified_diff_file"
-python3 dot-agents/skills/pr-self-review/scripts/select_review_lanes.py \
+python3 <code-review-skill-dir>/../pr-self-review/scripts/select_review_lanes.py \
   --repo "$OWNER_REPO" \
   --name-status-from "$name_status_file" \
   --diff-from "$unified_diff_file" --json

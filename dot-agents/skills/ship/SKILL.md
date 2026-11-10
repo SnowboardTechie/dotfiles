@@ -83,9 +83,10 @@ A spec that lists the edits (`with a comment recording why`) pre-approves their
 form and blinds Ponytail to it.
 
 A worker's self-check, an unstructured skim, build output, or an artifact that
-omits Ponytail never satisfies this gate. A systematic Sol-parent review of a
+omits Ponytail never satisfies this gate. A systematic parent review of a
 worker-authored candidate does satisfy independence; a parent-authored candidate
-requires an independent review context. Missing or stale Ponytail evidence blocks
+requires an independent review context (on Pi, a visible read-only Pi worker;
+see `pr-self-review` §1). Missing or stale Ponytail evidence blocks
 publication.
 
 If a caller supplies already-current verification and review artifacts, inspect

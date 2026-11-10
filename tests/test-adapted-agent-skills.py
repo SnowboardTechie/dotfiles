@@ -665,14 +665,15 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
         )
 
     def test_sol_claude_boundary_is_explicit(self) -> None:
-        # The Sol pairing was replaced by the Hermes-parent/Claude-worker split in
-        # d426970 (2026-10-19); authorship and acceptance must still stay distinct.
+        # The Sol pairing was replaced by the parent/Claude-worker split in
+        # d426970 (2026-10-19); the parent is Pi or Hermes since 4ea4140.
+        # Authorship and acceptance must still stay distinct.
         for token in ("decision-complete", "single-loop", "independent acceptance"):
             with self.subTest(token=token):
                 self.assertIn(token.lower(), self.body.lower())
         self.assert_matches(
             self.body,
-            r"(?is)The Hermes parent orchestrates; a Claude worker implements",
+            r"(?is)The parent \(a Pi or Hermes session\) orchestrates; a Claude worker implements",
             "the parent/worker roles must be explicit",
         )
         self.assert_matches(
@@ -762,7 +763,8 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
 
     def test_parent_is_independent_for_worker_authored_candidate(self) -> None:
         self.assertIn("Sol parent is the independent acceptance", self.issue_work)
-        self.assertIn("systematic Sol-parent review", self.ship)
+        self.assertIn("systematic parent review", self.ship)
+        self.assertIn("the parent is the independent acceptance context", self.body)
         self.assertIn("parent-authored candidate\nrequires an independent review context", self.ship)
         self.assertNotIn("must launch a fresh visible Claude reviewer", self.issue_work)
 

@@ -109,9 +109,10 @@ ADAPTED_CORES=(grilling wayfinder tdd diagnosing-bugs codebase-architecture)
 # the common core as each workflow is made to run from Pi.
 # next-session: Pi launches the next Pi in a Rex pane.
 # Delivery skills: a Pi coordinator runs the issue workflows, the visible
-# handoff they delegate through, and the DX planning step issue-plan loads.
+# handoff they delegate through, and the DX planning step issue-plan loads,
+# then reviews, publishes and merges (manual-merge).
 PI_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}" next-session
-    issue-create issue-plan issue-work loop-issue
+    manual-merge issue-create issue-plan issue-work loop-issue
     coding-agent-handoff-supervision dx-target)
 
 # Codex uses the supported user scope (~/.agents/skills), not its bundled
