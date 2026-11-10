@@ -107,6 +107,12 @@ worker removes the tab.
   Checked 2026-11-03 with Claude Code 2.1.318: with the variable, a finished
   turn left `program_status` empty and the Rex app recorded no alert; without
   it, `done` and an alert.
+- **Silence the worker, not the tab.** Rex's per-tab mute exists only in the
+  Mac app (right-click a tab); there is no CLI or API for it, and writing its
+  `Workspace.mutedTabs` preference while the app runs has no effect (checked
+  2026-11-10). Each worker command therefore carries its own switch:
+  `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1` for Claude, `PI_PROGRAM_STATUS=0` for
+  Pi. Bryan wants sub-agents silent unless he goes to look (2026-11-10).
 - `--focus=false` keeps Bryan's focus; `--keep-open` keeps the pane readable
   after Claude exits. Record `worker_rex_window` as the sub-agents tab.
 - An empty capacity reading is a stop, never a pass. The usage line begins
@@ -157,7 +163,7 @@ the same worktree rule as `CCD` above:
 ```sh
 case "$W/" in "$HOME/code/sgg/"*) SEAT=(env -u PI_CLAUDE_CODE_CONFIG_DIR) ;;
   *) SEAT=(env PI_CLAUDE_CODE_CONFIG_DIR="$HOME/.claude-personal") ;; esac
-WORKER=("${SEAT[@]}" pi --name "$NAME" --model claude-code/claude-opus-5-5
+WORKER=("${SEAT[@]}" PI_PROGRAM_STATUS=0 pi --name "$NAME" --model claude-code/claude-opus-5-5
   --thinking medium "@$S/<lane>-prompt.md")
 ```
 
@@ -170,9 +176,10 @@ confinement is required, use a Claude worker.
 Settle it like a Hermes worker: the handback file plus `capture`, with the same
 `awk` waiter (`rex_wait.sh` reads Claude transcripts only). Its transcript is
 its session file under `~/.pi/agent/sessions/`; record that path in the
-identity file once it appears. Pi reports its own status to Rex,
-so a Pi worker may raise Rex's "done" and "needs attention" alerts like a
-Hermes one.
+identity file once it appears. `PI_PROGRAM_STATUS=0` stops it reporting OSC
+7501, Pi's only Rex signal, so it raises no "done" or "needs attention" alert
+and shows no working dots. Keep it in every Pi worker command. Checked
+2026-11-10: a finished Pi turn with the variable left `program_status` empty.
 
 ## Watch and settle
 
