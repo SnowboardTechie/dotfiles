@@ -82,6 +82,23 @@ if [[ "$_local_hostname" == "Bryans-Mac-Studio" ]] && command -v hermes >/dev/nu
   }
 fi
 unset _local_hostname
+# Pi follows the claude rule above: under ~/code/sgg plain `pi` uses the default Claude
+# login (the work seat); everywhere else the personal plan. pi-claude-code passes
+# PI_CLAUDE_CODE_CONFIG_DIR on as CLAUDE_CONFIG_DIR; the work seat means leaving it
+# unset. An explicit PI_CLAUDE_CODE_CONFIG_DIR or CLAUDE_CONFIG_DIR wins, and
+# `command pi` reaches the work seat anywhere. `/seat` inside Pi shows the seat in use.
+# Only defined where the personal login exists.
+if [[ -d "$HOME/.claude-personal" ]] && command -v pi >/dev/null 2>&1; then
+  pi() {
+    if [[ -z "$PI_CLAUDE_CODE_CONFIG_DIR" && -z "$CLAUDE_CONFIG_DIR" ]]; then
+      case "$PWD/" in
+        "$HOME/code/sgg/"*) ;;
+        *) PI_CLAUDE_CODE_CONFIG_DIR="$HOME/.claude-personal" command pi "$@"; return ;;
+      esac
+    fi
+    command pi "$@"
+  }
+fi
 
 # Git aliases
 alias ga="git add"

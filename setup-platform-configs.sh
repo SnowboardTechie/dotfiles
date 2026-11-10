@@ -150,6 +150,12 @@ echo "Setting up Rex agent-session restore..."
 "$REPO_ROOT/scripts/reconcile-rex-agent-sessions.sh" --apply || \
     echo "  (Rex agent-session restore incomplete; resolve the reported file and re-run)"
 
+# Pi extensions owned by this repository (e.g. /seat, the Claude seat in use).
+echo ""
+echo "Setting up Pi extensions..."
+"$REPO_ROOT/scripts/reconcile-pi-extensions.sh" --apply || \
+    echo "  (Pi extensions incomplete; resolve the reported file and re-run)"
+
 # Retired third-party agent memory (Hindsight, context-mode, claude-mem):
 # remove only their known entries from machine-local Claude/Pi/OpenCode JSON.
 echo ""
