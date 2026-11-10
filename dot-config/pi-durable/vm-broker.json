@@ -6,7 +6,7 @@
     ],
     "port": 8895
   },
-  "image": "pi-durable-planning-agent:a127b20",
+  "image": "pi-durable-planning-agent:30bade4",
   "build": "~/.local/share/pi-durable/sgg-deployment",
   "sandbox": {
     "network": "pi-durable-sgg",
