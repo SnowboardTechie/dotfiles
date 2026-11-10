@@ -151,6 +151,18 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
             "model agreement must not be treated as proof",
         )
 
+    def test_pi_root_names_and_probes_its_gpt_route(self) -> None:
+        self.assert_matches(
+            self.skill,
+            r"Pi root.*openai-codex/gpt-[0-9.]+-\w+.*--thinking high.*message_end",
+            "a Pi root must name its GPT route and prove it with a probe",
+        )
+        self.assert_matches(
+            self.layout,
+            r"pi -p --mode json --no-session --model \"\$GPT_ROUTE\" --thinking high.*--tools read,grep,find,ls",
+            "a Pi GPT worker's leaves are read-only headless Pi runs on the same route",
+        )
+
     def test_rex_layout_uses_the_sub_agents_tab_without_focus(self) -> None:
         self.assertIn("rex-claude-handoff.md", self.layout)
         self.assert_matches(
@@ -332,7 +344,7 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
                 with self.subTest(source=source.name, target=target):
                     self.assertTrue(resolved.exists(), f"broken link {source}: {target}")
 
-    def test_root_skill_is_curated_for_hermes_only(self) -> None:
+    def test_root_skill_is_curated_for_pi_and_hermes_only(self) -> None:
         reconciler = read(RECONCILER)
         arrays = {}
         for name in ("COMMON_SKILLS", "ADAPTED_CORES", "PI_SKILLS", "CLAUDE_SKILLS", "OPENCODE_SKILLS", "HERMES_SKILLS"):
@@ -340,8 +352,11 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
                 rf"^{name}=\((.*?)\)\s*$", reconciler, re.DOTALL | re.MULTILINE
             )
             arrays[name] = match.group(1) if match else ""
-        self.assertIn("multiagent-pr-review", arrays["HERMES_SKILLS"])
-        for name in ("COMMON_SKILLS", "ADAPTED_CORES", "PI_SKILLS", "CLAUDE_SKILLS", "OPENCODE_SKILLS"):
+        # Pi became a root in W34.7 (dotfiles-workspace#34).
+        for name in ("PI_SKILLS", "HERMES_SKILLS"):
+            with self.subTest(array=name):
+                self.assertIn("multiagent-pr-review", arrays[name])
+        for name in ("COMMON_SKILLS", "ADAPTED_CORES", "CLAUDE_SKILLS", "OPENCODE_SKILLS"):
             with self.subTest(array=name):
                 self.assertNotIn("multiagent-pr-review", arrays[name])
 

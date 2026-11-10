@@ -16,10 +16,10 @@ Run this workflow by explicit invocation only:
 multiagent-pr-review <github-pr-url>
 ```
 
-Hermes does not enforce Claude's invocation-disabling frontmatter, so never
-start this expensive workflow from a broad review request. It reviews a
-teammate-authored GitHub PR through independent visible Claude Opus and active-
-GPT reviewer-orchestrators. The instigating Hermes root remains the authority.
+Run it from a Pi or Hermes root. Hermes does not enforce the invocation-disabling
+frontmatter, so never start this expensive workflow from a broad review request.
+It reviews a teammate-authored GitHub PR through independent visible Claude Opus
+and GPT reviewer-orchestrators. The instigating root remains the authority.
 
 Both the Claude and GPT reports are required for a verdict. Reviewer outputs
 remain isolated until both settle. Reports are leads: the root independently
@@ -43,7 +43,7 @@ The PR, teammate branch, and GitHub are read-only for the whole workflow:
 - Never commit on the teammate branch or any review worktree.
 - Never push any branch or ref.
 
-Do not fix findings. Do not mutate Hermes global model, provider, fallback,
+Do not fix findings. Do not mutate the host's global model, provider, fallback,
 delegation, or approval configuration. Reviewers write only isolated scratch
 artifacts. Only the instigating root may later write and synchronize the proven
 target-project vault.
@@ -67,10 +67,16 @@ target-project vault.
 6. Require non-empty injected `REX_SESSION` and `REX_BLOCK`, a runnable `rex`
    binary, and `rex whoami --json` naming that same session and block. Do this
    before starting either reviewer.
-7. Capture the instigating session's active GPT model, provider, base URL, and
-   high-reasoning route. Reject any fallback chain or conflicting
-   `delegation.model`, `delegation.provider`, or `delegation.base_url` override.
-   Do not repair configuration.
+7. Fix the GPT route. From a Hermes root, capture the instigating session's
+   active GPT model, provider, base URL, and high-reasoning route, and reject any
+   fallback chain or conflicting `delegation.model`, `delegation.provider`, or
+   `delegation.base_url` override. A Pi root usually runs on Claude, so the route
+   is named instead: `openai-codex/gpt-6.1-sol` at `--thinking high`, unless
+   Bryan names another `openai-codex` model. Confirm it is listed by
+   `pi --list-models openai-codex` and that a one-turn
+   `pi -p --mode json --no-session --model <route> --thinking high` probe reports
+   that provider and model on its `message_end` events. Do not repair
+   configuration.
 8. Verify Claude authentication and the Opus 5.5/medium-effort route without exposing
    credentials. No model-family fallback is allowed.
 
@@ -143,10 +149,11 @@ block/label/runtime-session/worktree/state identities as each start returns.
 Pass both reviewers the same candidate and manifest identity plus the same
 [reviewer-orchestrator contract](references/reviewer-orchestrator-contract.md).
 Pass distinct worktrees, state roots, and output paths. Claude uses Opus 5.5/medium
-effort in auto permission mode and Opus 5.5 leaves. Hermes uses the
-instigating root's active GPT model/provider/base URL, high reasoning, smart
-approvals, no yolo, and leaves that inherit or exactly match that GPT route.
-There is no fallback or background substitution.
+effort in auto permission mode and Opus 5.5 leaves. GPT uses the route fixed in
+Phase 0 at high reasoning: from a Hermes root, a Hermes worker with smart
+approvals, no yolo, and leaves that inherit or exactly match that route; from a
+Pi root, a Pi worker whose leaves are headless `pi -p` runs pinned to the same
+route (see the layout). There is no fallback or background substitution.
 
 Each reviewer's first turn is its review prompt; write and verify both prompt
 files before the first start. Arm
@@ -279,7 +286,7 @@ ownership-verified action with its own authorization and retention rules.
 - [ ] PR/GitHub/teammate branch remained read-only
 - [ ] Three isolated exact-head worktrees and confined state roots
 - [ ] Four-field candidate plus expected head ref and manifest digest
-- [ ] Claude Opus and active GPT routes verified with no fallback
+- [ ] Claude Opus and the fixed GPT route verified with no fallback
 - [ ] Same required lanes and evidence, isolated outputs, one retry maximum
 - [ ] Validator admitted both exact reports
 - [ ] Root independently dispositioned every lead and swept criteria/paths

@@ -167,7 +167,7 @@ If two PRs overlap the same dependency lane, prefer the newer PR and note when t
 
 ## Step 3b: Fan out parallel review (all reviewable lanes)
 
-Once the queue is classified (Step 2) and ordered (Step 3), review **every PR worth reviewing in parallel** rather than serially. Dispatch one read-only review task per PR through the runtime's native delegation mechanism, routed to the right reviewer skill. In Hermes, use `delegate_task` in foreground batches of **at most three concurrent tasks**. Wait for all three before dispatching the next batch; never use background tasks that emit per-review commentary. The fan-out parallelizes the slow, context-heavy *investigation* (reading CI logs, diffs, changelogs); it never runs builds.
+Once the queue is classified (Step 2) and ordered (Step 3), review **every PR worth reviewing in parallel** rather than serially. Dispatch one read-only review task per PR through the runtime's native delegation mechanism, routed to the right reviewer skill. In Hermes, use `delegate_task` in foreground batches of **at most three concurrent tasks**. Wait for all three before dispatching the next batch; never use background tasks that emit per-review commentary. Pi has no sub-agent: run each review as a headless `pi -p --no-session` process that loads the reviewer skill and is told it may not mutate anything, in the same batches of three, and wait for the batch before the next. The fan-out parallelizes the slow, context-heavy *investigation* (reading CI logs, diffs, changelogs); it never runs builds.
 
 ### What to review
 
@@ -176,7 +176,7 @@ Review every open PR **except** those whose fate is already decided by inspectio
 - **Skip** explicitly-held PRs: `DO NOT MERGE` / hold branches, and PRs already marked superseded in Step 2b. Their disposition is settled — a review adds nothing. Say in the report that you skipped them and why.
 - **Review everything else**, *including green isolated PRs*. A green PR is exactly where a consumer-facing dep bump slips through with no release behind it, so it still gets a (light) read-only pass — for a green PR there are no failing checks to diagnose, so the review is mostly the release-attribution check.
 
-Cap **concurrency, not coverage**. Hermes delegation is capped at three concurrent tasks, so run `ceil(reviewable / 3)` batches — do not drop the tail. If you defer any reviewable PR, name it in the report; never silently truncate.
+Cap **concurrency, not coverage**. Delegation is capped at three concurrent tasks, so run `ceil(reviewable / 3)` batches — do not drop the tail. If you defer any reviewable PR, name it in the report; never silently truncate.
 
 ### Routing
 

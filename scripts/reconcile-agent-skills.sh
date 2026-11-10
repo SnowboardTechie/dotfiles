@@ -100,9 +100,11 @@ NON_CLAUDE_COMMON=(skill-retrospective obsidian)
 
 # Planning and delivery cores adapted from an upstream suite (see
 # dot-agents/upstreams/mattpocock-skills.json). Curated for the implementation runtimes
-# Bryan actually plans and implements on. `guided-learning` is Hermes-only until
-# real use earns wider distribution. Pi receives `code-review` through
-# COMMON_SKILLS because its shared `pr-self-review` workflow requires it.
+# Bryan actually plans and implements on. `guided-learning` goes only to Pi and
+# Hermes until real use earns wider distribution. Pi receives `code-review`
+# through COMMON_SKILLS because its shared `pr-self-review` workflow requires it,
+# and the other cores through Codex's ~/.agents/skills, which Pi also reads
+# (a second link would be a name collision).
 ADAPTED_CORES=(grilling wayfinder tdd diagnosing-bugs codebase-architecture)
 
 # Pi is becoming the primary harness (dotfiles-workspace#34), so it grows past
@@ -111,9 +113,15 @@ ADAPTED_CORES=(grilling wayfinder tdd diagnosing-bugs codebase-architecture)
 # Delivery skills: a Pi coordinator runs the issue workflows, the visible
 # handoff they delegate through, and the DX planning step issue-plan loads,
 # then reviews, publishes and merges (manual-merge).
+# Desk skills that were Hermes-only, so no shared desk workflow needs a Hermes
+# session: dual-model teammate review, DX preview, proven cores, sprint updates,
+# guided learning. Hermes's own bots and cron (bot-planning, bot-reminders,
+# yunohost-updates) stay with Hermes until the bot service replaces them.
 PI_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}" next-session
     manual-merge issue-create issue-plan issue-work loop-issue
-    coding-agent-handoff-supervision dx-target)
+    coding-agent-handoff-supervision dx-target
+    multiagent-pr-review dx-preview proven-cores sprint-deliverable-update
+    guided-learning)
 
 # Codex uses the supported user scope (~/.agents/skills), not its bundled
 # ~/.codex/skills/.system directory. Share the portable coding/planning core;

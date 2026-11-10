@@ -18,7 +18,7 @@ Take one GitHub or Forgejo issue from current authority to a verified reviewable
 PR through Intake → Plan → Implement → Accept → Publish. Keep durable state under
 the ticket workspace and code in an isolated implementation worktree.
 
-The lean path is deliberate: Sol orchestrates and Claude implements, including
+The lean path is deliberate: the parent orchestrates and Claude implements, including
 single-loop changes, fixtures, harnesses, and tooling repairs. Investigate only
 unresolved questions, use one implementation context per bounded assignment,
 run independent parent acceptance, batch corrections,
@@ -83,7 +83,7 @@ Claude final PR self-review → parent validation of findings → resource clean
 Apply it when Bryan authorizes working the issue or executing its approved
 implementation handoff; he need not restate the closeout steps each time. Record
 that workflow and its draft-PR authority at intake. A pushed branch, a completed
-worker turn, and Sol-parent review are intermediate states, not completion.
+worker turn, and parent review are intermediate states, not completion.
 Explicit plan-only, prompt-only, no-publication, or other stopping instructions
 override this workflow; outside SGG preserve the ordinary publication gate.
 Preserve the global correction count through final review and do not infer merge,
@@ -286,7 +286,7 @@ Complete when the plan is decision-complete and authority permits execution.
 ### 1. Route implementation to Claude
 
 Classify task shape to right-size the handoff and checks, not to transfer
-implementation to Sol:
+implementation to the parent:
 
 - `single-loop`: one coherent edit/test cycle, limited repository reading, and no
   security, persistence, migration, protocol, concurrency, public-contract, or
@@ -357,7 +357,7 @@ rebase, amend, history rewrite, force-push, and local-ref/branch deletion.
 
 For an explicit Qwen route, use its original model-pure worker and session. A
 host-native implementation route requires Bryan's explicit selection; it is not
-a fallback when Claude is unavailable. Sol runs existing checks and independently
+a fallback when Claude is unavailable. The parent runs existing checks and independently
 accepts results, but sends required code, fixture, harness and tooling repairs
 back through a bounded Claude contract under the current authority.
 
@@ -443,8 +443,8 @@ Complete when repository roles and exact candidate match direct Git state.
 Load `pr-self-review` in `pre-pr` mode and pass
 `correction_passes_consumed` from the global progress counter. That workflow
 must continue from this value rather than initializing a new allowance. When a
-delegated worker authored the candidate and Sol did not edit it, review directly.
-The Sol parent is the independent acceptance context. Do not launch a generic
+delegated worker authored the candidate and the parent did not edit it, review directly.
+The parent is the independent acceptance context. Do not launch a generic
 fresh Claude reviewer in this pre-publication phase. Bryan's SGG final Claude
 review occurs after draft PR publication in Phase 5 and remains required.
 
@@ -513,7 +513,7 @@ of rerunning it unnecessarily. Capacity/transport failure is an incomplete final
 gate: report the blocker, never silently substitute another provider or declare
 the delivery complete.
 
-Sol reads and validates the final artifacts. Route only concrete in-scope blockers
+The parent reads and validates the final artifacts. Route only concrete in-scope blockers
 through the remaining bounded correction allowance; a candidate change requires
 fresh exact-candidate review/verification and PR-body synchronization. Preserve
 draft state. Close the reviewer promptly after collection when it has no concrete

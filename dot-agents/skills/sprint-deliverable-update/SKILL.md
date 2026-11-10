@@ -116,8 +116,10 @@ section of `~/code/sgg/vault/technical/epic-and-deliverable-reporting.md`. If th
 is missing, stop and ask Bryan for the link rather than guessing or searching Drive.
 
 Fetch it through the active agent's authenticated Google Workspace integration. In
-Hermes, load `google-workspace` and use its Docs read command; save the JSON/text response
-to a temporary file rather than returning the whole document into context. **It is ~107k
+Hermes, load `google-workspace` and use its Docs read command. Elsewhere, Pi included, use
+the `gws` CLI with the file keyring backend:
+`GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND=file gws docs documents get --params '{"documentId":"<id>"}' > "$TMPDIR/sprint-doc.json"`.
+Either way, save the response to a temporary file rather than returning the whole document into context. **It is ~107k
 chars. Do not read it whole.** Extract only the current sprint's block — from
 `## **Sprint X.Y** (dates)` to the next `## ` heading — with a small script or delegate
 the saved file to a read-only subagent that returns only that block.

@@ -31,8 +31,9 @@ about structure rather than about naming:
 - **Optimize for the most common caller** — make the default case trivial.
 - **Ports and adapters** — when a cross-seam dependency dominates.
 
-Draft them in parallel where the host supports it (Hermes `delegate_task`,
-otherwise `Task`/`Agent`); on Hermes never exceed three active children. Serial
+Draft them in parallel where the host supports it (Hermes `delegate_task`, Pi
+headless `pi -p --no-session --tools read,grep,find,ls` processes, otherwise
+`Task`/`Agent`); on Hermes and Pi never exceed three active children. Serial
 drafting works, but write each one before reading back the last — the value is
 independence, and a serial pass tends to converge on the first design.
 

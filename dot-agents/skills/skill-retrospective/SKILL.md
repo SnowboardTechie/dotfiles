@@ -117,7 +117,8 @@ tool failures, successful results, and verification.
 When the user provides a transcript, URL, or session reference, inspect that
 direct source first. In Hermes, resolve `@session:<profile>/<id>` with
 `session_search`; use discovery search only for broad cross-session questions or
-to corroborate a borderline candidate. A search hit is not evidence until its
+to corroborate a borderline candidate. In Pi, sessions are JSONL files under
+`~/.pi/agent/sessions/`; this one is `$PI_SESSION_FILE`. A search hit is not evidence until its
 actual messages are read in context.
 
 If compression, missing tool output, or an unavailable source limits coverage,
@@ -298,7 +299,8 @@ For each approved ID:
    than adapting silently.
 2. Load the runtime's authoring workflow. In Hermes, use
    `hermes-agent-skill-authoring` and treat current Hermes documentation as the
-   source of truth.
+   source of truth. In Pi, read Pi's `docs/skills.md`. A pooled skill follows
+   `dot-agents/README.md` either way.
 3. Use host-native equivalents for session retrieval, skill discovery,
    mutation, and approval. If a host lacks durable memory or prior-session
    retrieval, report that route as unsupported rather than inventing storage.

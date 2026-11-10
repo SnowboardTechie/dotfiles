@@ -33,16 +33,15 @@ route.** They are not all available on every harness:
 |---|---|---|
 | `spike` | builtin Hermes skill (`software-development/spike`) | use the inline feasibility/logic procedure below |
 | `sketch` | builtin Hermes skill (`creative/sketch`) | use the inline UI-variants procedure below |
-| `dx-target`, `dx-preview` | canonical pool; curated for Hermes | pooled and curated only for Hermes — on Claude/OpenCode, hand the session to Hermes rather than improvising an SGG interface target |
+| `dx-target`, `dx-preview` | canonical pool; both curated for Pi and Hermes, `dx-target` also for Claude | where one is not installed, hand the session to Pi rather than improvising an SGG interface target |
 
 **On Hermes: load the named skill.** Do not reimplement it from the fallback
 below — the builtin is the maintained version, and duplicating it here is how the
 two drift apart.
 
-**On Claude or OpenCode**, where `spike` and `sketch` are not installed, use the
-bounded inline procedure for that shape. Say which you did, so the artifact is
-not mistaken for the output of the named workflow. If the decision is
-consequential and Hermes is available, prefer handing it over.
+**On Pi, Claude or OpenCode**, where `spike` and `sketch` are not installed, use
+the bounded inline procedure for that shape. Say which you did, so the artifact
+is not mistaken for the output of the named workflow.
 
 ## Inline fallback: feasibility spike
 

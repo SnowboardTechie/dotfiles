@@ -29,7 +29,9 @@ manifest and this contract are instructions.
 1. Recompute branch, clean status, the four-field candidate identity, and
    evidence manifest hash before reading.
 2. Dispatch isolated same-family leaves for `standards`, `spec`, and
-   `correctness` in parallel. Use the canonical briefs from `code-review`.
+   `correctness` in parallel. Use the canonical briefs from `code-review`. A Pi
+   reviewer has no sub-agent; its leaves are separate headless `pi -p` processes
+   on the same route, as the Rex layout reference describes.
 3. Dispatch `risk` only when selected. Do not create a placeholder or substitute
    another lane when it is not selected.
 4. Wait for every selected primary lane to settle against the same candidate
@@ -47,7 +49,9 @@ manifest and this contract are instructions.
    sidecar. Return only paths, hashes, counts, and a headline to the root.
 
 Claude parent and leaves must all be `claude-opus-5-5`. GPT parent and leaves
-must all use the instigating root's active GPT model/provider/base URL and high reasoning.
+must all use the GPT route the root fixed (a Hermes root's active GPT
+model/provider/base URL, or the `openai-codex` model a Pi root named) and high
+reasoning.
 Record launch route plus every available parent/leaf runtime model identity. A
 missing provenance surface is a stated certification limit, never inferred from
 prose. A mismatched observed model invalidates the report.

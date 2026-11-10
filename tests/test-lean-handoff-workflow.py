@@ -47,7 +47,7 @@ class LeanIssueWorkContractTests(unittest.TestCase):
     def test_parent_acceptance_is_the_normal_final_gate(self) -> None:
         self.assertRegex(
             self.issue_work,
-            r"(?is)the Sol parent\s+is the independent acceptance\s+context",
+            r"(?is)the parent\s+is the independent acceptance\s+context",
         )
         self.assertIn("one integrated review", self.review.lower())
         self.assertNotIn("must launch a fresh visible Claude reviewer", self.issue_work)

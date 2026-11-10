@@ -26,8 +26,9 @@ Instead, we:
 4. **Adapt** it into the canonical pool if the user wants to keep it
 
 **Adopted skills are authored in the canonical pool, never written straight into
-a runtime directory.** `~/.claude/skills/`, `~/.config/opencode/skills/`, and
-`~/.hermes/skills/personal/` are *outputs*: they hold per-skill symlinks that
+a runtime directory.** `~/.claude/skills/`, `~/.config/opencode/skills/`,
+`~/.pi/agent/skills/`, `~/.agents/skills/`, and `~/.hermes/skills/personal/` are
+*outputs*: they hold per-skill symlinks that
 `scripts/reconcile-agent-skills.sh` creates from `dot-agents/skills/`. A file
 written directly into one of them is unmanaged — untracked, absent on every
 other machine, invisible to the curation arrays, and liable to be pruned or to

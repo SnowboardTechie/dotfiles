@@ -23,10 +23,11 @@ substitution, Agent View substitution, model fallback, or focused-pane guess
 when this preflight fails.
 
 Before startup, verify Claude authentication and the Opus 5.5/medium-effort route.
-Capture the instigating Hermes session's active GPT model, provider, base URL,
-and high-reasoning setting. Reject any fallback chain or conflicting
-`delegation.model`, `delegation.provider`, or `delegation.base_url` override;
-never rewrite global configuration to make the route pass.
+Fix the GPT route as the skill's Phase 0 says: the Hermes root's active GPT
+model, provider, base URL, and high-reasoning setting, with no fallback chain or
+conflicting `delegation.*` override; or, from a Pi root, the named
+`openai-codex` model at high thinking, proven by a one-turn probe. Never rewrite
+global configuration to make the route pass.
 
 ## Place both reviewers in the sub-agents tab
 
@@ -43,16 +44,32 @@ reviewer blocks.
 
 Choose two unique block labels. Claude starts with the Rex reference's worker
 command (`--permission-mode auto --model claude-opus-5-5 --effort medium`, a
-fixed `--session-id`) in `$CLAUDE_WORKTREE`. GPT starts as a Hermes worker in
-`$GPT_WORKTREE`, as that reference's Hermes paragraph describes. Each worker's
+fixed `--session-id`) in `$CLAUDE_WORKTREE`. GPT starts in `$GPT_WORKTREE` as a
+worker of the root's own kind: a Hermes worker, as that reference's Hermes
+paragraph describes, or a Pi worker, as its Pi paragraph describes but with
+`--model <GPT route> --thinking high` and no Claude seat variable. A Pi GPT
+worker spends the Codex subscription, so the Claude capacity gate does not apply
+to it. Each worker's
 first turn is the review prompt, so write both prompt files and verify both
 worktrees before the first start.
 
 The dedicated `multiagent-pr-lane-reviewer` agent must be available to the
-Claude orchestrator. Hermes must use smart approvals, no `--yolo`, the root's
-active GPT model/provider/base URL, high reasoning, and delegation inherited or
-exactly pinned to that same GPT route. No fallback is allowed for either parent
-or any leaf.
+Claude orchestrator. A Hermes GPT worker must use smart approvals, no `--yolo`,
+the root's active GPT model/provider/base URL, high reasoning, and delegation
+inherited or exactly pinned to that same GPT route. A Pi GPT worker has no
+sub-agent, so each lane leaf is its own headless process in the worker's
+worktree, limited to read-only tools:
+
+```sh
+pi -p --mode json --no-session --model "$GPT_ROUTE" --thinking high \
+  --tools read,grep,find,ls "@$STATE/<lane>-prompt.md" > "$STATE/<lane>.jsonl"
+```
+
+The primary lanes run in parallel as background jobs the worker waits on, and
+`ponytail` runs after them. The worker takes each leaf's findings from its last
+`message_end` and records the provider and model those events report; a leaf
+that reports any other route invalidates the report. No fallback is allowed for
+either parent or any leaf.
 
 Persist two distinct identity records as each start returns. Each record
 includes:

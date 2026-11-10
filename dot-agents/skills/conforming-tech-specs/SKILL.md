@@ -109,7 +109,8 @@ artifact itself is unnecessary.
 
 **Scaling the gather (judgment call):** when the spec touches many shape
 categories across a large source tree, dispatch this gather via
-the runtime's native delegation mechanism — in Hermes, `delegate_task` — one
+the runtime's native delegation mechanism — in Hermes, `delegate_task`; on Pi,
+a headless `pi -p --no-session --tools read,grep,find,ls` process — one
 independent task per shape-category (routes / models / fields / prior-ADRs),
 in batches of at most three, each returning only
 its prior-art-table rows. This isn't about speed so much as **context
@@ -252,7 +253,8 @@ prevented), not a generic "more flexible."
 
 This pass re-greps the same shape-categories as Phase 1; the same scaling
 judgment applies — for a draft touching many shapes, dispatch the checklist
-through the runtime's native delegation mechanism (Hermes: `delegate_task`),
+through the runtime's native delegation mechanism (Hermes: `delegate_task`;
+Pi: a headless read-only `pi -p` process),
 one independent task per category in batches of at most three, each returning
 only its divergence flags, to keep the annotation pass out
 of the drafting context. For a small draft, inline greps are fine.

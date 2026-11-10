@@ -415,15 +415,20 @@ class CurationTest(unittest.TestCase):
                 with self.subTest(tool=tool, skill=name):
                     self.assertIn(name, self.arrays.get(tool, []))
 
-    def test_guided_learning_is_hermes_only(self) -> None:
-        self.assertIn("guided-learning", self.arrays.get("HERMES_SKILLS", []))
-        for tool in ("CLAUDE_SKILLS", "OPENCODE_SKILLS", "PI_SKILLS"):
+    def test_guided_learning_is_pi_and_hermes_only(self) -> None:
+        # Pi took Hermes's desk skills in W34.7 (dotfiles-workspace#34).
+        for tool in ("HERMES_SKILLS", "PI_SKILLS"):
+            with self.subTest(tool=tool):
+                self.assertIn("guided-learning", self.arrays.get(tool, []))
+        for tool in ("CLAUDE_SKILLS", "OPENCODE_SKILLS", "CODEX_SKILLS"):
             with self.subTest(tool=tool):
                 self.assertNotIn("guided-learning", self.arrays.get(tool, []))
 
     def test_pi_receives_only_the_review_dependency_from_new_scope(self) -> None:
+        # The adapted cores reach Pi through Codex's ~/.agents/skills; a second
+        # link would collide. guided-learning is not in Codex's set.
         self.assertIn("code-review", self.arrays.get("PI_SKILLS", []))
-        for name in set(ALL_NEW_SKILLS) - {"code-review"}:
+        for name in set(ALL_NEW_SKILLS) - {"code-review", "guided-learning"}:
             with self.subTest(skill=name):
                 self.assertNotIn(name, self.arrays.get("PI_SKILLS", []))
 
@@ -762,7 +767,8 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
         self.assertIn("Do not spend another subagent", self.reviewer)
 
     def test_parent_is_independent_for_worker_authored_candidate(self) -> None:
-        self.assertIn("Sol parent is the independent acceptance", self.issue_work)
+        self.assertIn("The parent is the independent acceptance context", self.issue_work)
+        self.assertNotRegex(self.issue_work, r"\bSol\b")
         self.assertIn("systematic parent review", self.ship)
         self.assertIn("the parent is the independent acceptance context", self.body)
         self.assertIn("parent-authored candidate\nrequires an independent review context", self.ship)

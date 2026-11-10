@@ -35,7 +35,9 @@ one-line change to a curation array.
 
 Not every tool gets every skill. Pi gets the common core plus the workflows
 made to run from it, a set that grows as Pi becomes the primary harness
-(dotfiles-workspace#34). Hermes gets adapted personal workflows but keeps its
+(dotfiles-workspace#34); no shared desk skill needs a Hermes session. Pi also
+reads Codex's `~/.agents/skills`, so a skill in both sets reaches Pi once,
+through that path. Hermes gets adapted personal workflows but keeps its
 bundled/local `obsidian` and `vault-pkm` implementations, so those names are
 intentionally excluded from its pool links. Personal knowledge lives in the
 `~/second-brain` Markdown vault (Forgejo Git), written through `vault-pkm` like
@@ -57,8 +59,8 @@ symlinked skill folders. Existing `~/.codex/skills` contents (including bundled
 `.system` skills) stay untouched. These local links do not install skills into
 native/cloud catalogs or prove that a running desktop task has refreshed them.
 
-Hermes-specific `coding-agent-handoff-supervision` and `multiagent-pr-review`
-are excluded from Codex. Specialist `dx-target`, `dx-preview`, `gamedev`,
+The Rex-supervised `coding-agent-handoff-supervision` and `multiagent-pr-review`
+run from a Pi or Hermes root and are excluded from Codex. Specialist `dx-target`, `dx-preview`, `gamedev`,
 `guided-learning`, `weekly-planning`, `sprint-deliverable-update`,
 `sync-hold-branch`, and `find-skills` remain outside its initial curation.
 Capability-dependent operations still require the tools and authorization
