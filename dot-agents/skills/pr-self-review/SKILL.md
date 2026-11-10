@@ -57,7 +57,8 @@ Independence is about authorship, not process count:
 - When the active parent wrote or changed candidate code, dispatch one fresh
   independent review context after the candidate is frozen. Use the host's
   normal independent delegation surface; do not require Claude or Rex. Pi has
-  no hidden sub-agent, so on Pi that surface is a visible read-only Pi worker
+  no hidden sub-agent, and acceptance rests on this review, so on Pi that
+  surface is a visible read-only Pi worker
   started through `coding-agent-handoff-supervision`, given the same
   exact-candidate inputs, and allowed to write only its review artifacts and
   handback into the given state directory.

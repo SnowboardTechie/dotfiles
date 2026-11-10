@@ -116,18 +116,27 @@ section of `~/code/sgg/vault/technical/epic-and-deliverable-reporting.md`. If th
 is missing, stop and ask Bryan for the link rather than guessing or searching Drive.
 
 Fetch it through the active agent's authenticated Google Workspace integration. In
-Hermes, load `google-workspace` and use its Docs read command. Elsewhere, Pi included, use
-the `gws` CLI with the file keyring backend:
-`GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND=file gws docs documents get --params '{"documentId":"<id>"}' > "$TMPDIR/sprint-doc.json"`.
-Either way, save the response to a temporary file rather than returning the whole document into context. **It is ~107k
-chars. Do not read it whole.** Extract only the current sprint's block — from
-`## **Sprint X.Y** (dates)` to the next `## ` heading — with a small script or delegate
-the saved file to a read-only subagent that returns only that block.
+Hermes, load `google-workspace` and use its Docs read command. Elsewhere, Pi included,
+export it as Markdown with the `gws` CLI, from inside an empty temporary directory
+(`gws` refuses an `--output` path outside the current directory):
+
+```sh
+cd "$(mktemp -d)"
+GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND=file gws drive files export \
+  --params '{"fileId":"<id>","mimeType":"text/markdown"}' --output sprint-doc.md
+```
+
+Either way, save the response to a temporary file rather than returning the whole
+document into context. **It is over 100k chars. Do not read it whole.** Extract only
+the current sprint's block — from its `## Sprint X.Y (dates)` heading (bold in some
+exports) to the next non-empty `## ` or `# ` heading — with a small script, or on
+Hermes delegate the saved file to a read-only subagent that returns only that block.
+The Markdown export escapes hyphens in the dates (`\-`).
 
 From the sprint block, pull (these OVERRIDE guesses — do not compute the sprint window
 from cadence math or lift the goal from last sprint's "Next sprint" section):
 
-- **Sprint number + date range** from the header (e.g. `## **Sprint 6.5** (Jun 24 - Jul 07)`)
+- **Sprint number + date range** from the header (e.g. `## Sprint 7.5 (Oct 28 \- Nov 10)` in the Markdown export)
   — this is the exact `SPRINT_START_DATE` for the sub-issue filter.
 - **The `### *Goal:*` line** — the one-sentence sprint goal → the "Sprint goal" section.
 - **The committed issue list under this deliverable** — the workstream-grouped bullets

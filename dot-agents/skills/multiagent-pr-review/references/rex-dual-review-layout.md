@@ -68,8 +68,9 @@ pi -p --mode json --no-session --model "$GPT_ROUTE" --thinking high \
 The primary lanes run in parallel as background jobs the worker waits on, and
 `ponytail` runs after them. The worker takes each leaf's findings from its last
 `message_end` and records the provider and model those events report; a leaf
-that reports any other route invalidates the report. No fallback is allowed for
-either parent or any leaf.
+that reports any other route invalidates the report. A Pi worker has no
+approval gate; the contract's prohibitions and the clean-worktree check are its
+only limits. No fallback is allowed for either parent or any leaf.
 
 Persist two distinct identity records as each start returns. Each record
 includes:

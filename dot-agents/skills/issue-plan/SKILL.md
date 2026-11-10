@@ -116,7 +116,9 @@ patterns, tests, and repository-owned specs/ADRs. Trace named symbols to their
 definitions and usages. Use one or two bounded exploration delegates when the
 issue spans distinct areas; delegates return findings only and must not write to
 the repository or vault. On Pi, a delegate is a visible Pi worker in a Rex pane
-(`coding-agent-handoff-supervision`), or do the exploration inline.
+(`coding-agent-handoff-supervision`), a headless read-only `pi -p --no-session
+--tools read,grep,find,ls` child that returns findings only, or do the
+exploration inline.
 
 Do not invent exact file paths or APIs. External research is conditional: use
 primary documentation only when the issue depends on an API or library that the

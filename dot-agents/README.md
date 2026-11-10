@@ -36,8 +36,8 @@ one-line change to a curation array.
 Not every tool gets every skill. Pi gets the common core plus the workflows
 made to run from it, a set that grows as Pi becomes the primary harness
 (dotfiles-workspace#34); no shared desk skill needs a Hermes session. Pi also
-reads Codex's `~/.agents/skills`, so a skill in both sets reaches Pi once,
-through that path. Hermes gets adapted personal workflows but keeps its
+reads Codex's `~/.agents/skills`, so Codex-set skills reach Pi without a
+`PI_SKILLS` entry; Pi skips a second link to the same pool file. Hermes gets adapted personal workflows but keeps its
 bundled/local `obsidian` and `vault-pkm` implementations, so those names are
 intentionally excluded from its pool links. Personal knowledge lives in the
 `~/second-brain` Markdown vault (Forgejo Git), written through `vault-pkm` like

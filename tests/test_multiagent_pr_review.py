@@ -154,7 +154,7 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
     def test_pi_root_names_and_probes_its_gpt_route(self) -> None:
         self.assert_matches(
             self.skill,
-            r"Pi root.*openai-codex/gpt-[0-9.]+-\w+.*--thinking high.*message_end",
+            r"7\. Fix the GPT route\.[^\n]*\n(?:   [^\n]*\n)*?   [^\n]*Pi root[^\n]*\n(?:   [^\n]*\n)*?   [^\n]*message_end",
             "a Pi root must name its GPT route and prove it with a probe",
         )
         self.assert_matches(

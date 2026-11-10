@@ -632,7 +632,15 @@ resume a visible Rex worker's identity.
 11. Confusing correction allowance with provider capacity.
 12. Reading "hand it off to a subagent" as a hidden sub-agent mechanism
     (Hermes's `delegate_task`, a cron-spawned subagent, or the like; Pi has
-    none). Bryan means this skill's normal visible handoff. A
+    none). Bryan means this skill's normal visible handoff. The one Pi
+    exception is read-only fan-out that a skill names: parallel research,
+    candidate drafts, or review lanes returning findings only may run as
+    headless `pi -p --no-session` children limited to
+    `--tools read,grep,find,ls`. A child that must run read-only commands
+    (`gh` reads, `git show`, `curl`) gets `--tools read,grep,find,ls,bash`
+    with its prompt naming the only commands it may run; Pi has no approval
+    gate, so any write it makes voids its result. Implementation, and any
+    independent review that acceptance rests on, stays a visible worker. A
     deferred start ("after usage resets") changes only when the handoff
     starts. Defer it with a reminder or a check-in back to the parent, never
     by delegating the work itself from a cron job. A hidden subagent also

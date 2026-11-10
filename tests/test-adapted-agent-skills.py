@@ -29,8 +29,8 @@ LEDGER_PATH = UPSTREAMS / "mattpocock-skills.json"
 LICENSE_PATH = UPSTREAMS / "mattpocock-skills-LICENSE"
 RECONCILER = REPO_ROOT / "scripts" / "reconcile-agent-skills.sh"
 
-# The cores this plan adds. `guided-learning` is deliberately Hermes-only
-# until real use earns wider distribution.
+# The cores this plan adds. `guided-learning` deliberately goes only to Pi and
+# Hermes until real use earns wider distribution.
 ADAPTED_CORES = (
     "grilling",
     "wayfinder",
@@ -39,8 +39,8 @@ ADAPTED_CORES = (
     "code-review",
     "codebase-architecture",
 )
-HERMES_ONLY_CORES = ("guided-learning",)
-ALL_NEW_SKILLS = ADAPTED_CORES + HERMES_ONLY_CORES
+PI_HERMES_ONLY_CORES = ("guided-learning",)
+ALL_NEW_SKILLS = ADAPTED_CORES + PI_HERMES_ONLY_CORES
 
 # Routes retired by this plan. A name may still appear in prose that
 # explicitly marks it as history; see `_HISTORICAL_MARKERS`.
@@ -425,8 +425,8 @@ class CurationTest(unittest.TestCase):
                 self.assertNotIn("guided-learning", self.arrays.get(tool, []))
 
     def test_pi_receives_only_the_review_dependency_from_new_scope(self) -> None:
-        # The adapted cores reach Pi through Codex's ~/.agents/skills; a second
-        # link would collide. guided-learning is not in Codex's set.
+        # The adapted cores reach Pi through Codex's ~/.agents/skills, which Pi
+        # also reads. guided-learning is not in Codex's set.
         self.assertIn("code-review", self.arrays.get("PI_SKILLS", []))
         for name in set(ALL_NEW_SKILLS) - {"code-review", "guided-learning"}:
             with self.subTest(skill=name):

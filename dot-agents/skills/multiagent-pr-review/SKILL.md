@@ -16,8 +16,9 @@ Run this workflow by explicit invocation only:
 multiagent-pr-review <github-pr-url>
 ```
 
-Run it from a Pi or Hermes root. Hermes does not enforce the invocation-disabling
-frontmatter, so never start this expensive workflow from a broad review request.
+Run it from a Pi or Hermes root. Pi honours the invocation-disabling
+frontmatter; Hermes does not, so never start this expensive workflow from a
+broad review request.
 It reviews a teammate-authored GitHub PR through independent visible Claude Opus
 and GPT reviewer-orchestrators. The instigating root remains the authority.
 
@@ -74,8 +75,8 @@ target-project vault.
    is named instead: `openai-codex/gpt-6.1-sol` at `--thinking high`, unless
    Bryan names another `openai-codex` model. Confirm it is listed by
    `pi --list-models openai-codex` and that a one-turn
-   `pi -p --mode json --no-session --model <route> --thinking high` probe reports
-   that provider and model on its `message_end` events. Do not repair
+   `pi -p --mode json --no-session --no-tools --model <route> --thinking high "Reply OK"`
+   probe reports that provider and model on its `message_end` events. Do not repair
    configuration.
 8. Verify Claude authentication and the Opus 5.5/medium-effort route without exposing
    credentials. No model-family fallback is allowed.
@@ -153,7 +154,9 @@ effort in auto permission mode and Opus 5.5 leaves. GPT uses the route fixed in
 Phase 0 at high reasoning: from a Hermes root, a Hermes worker with smart
 approvals, no yolo, and leaves that inherit or exactly match that route; from a
 Pi root, a Pi worker whose leaves are headless `pi -p` runs pinned to the same
-route (see the layout). There is no fallback or background substitution.
+route (see the layout). Pi has no approval gate, so a Pi reviewer is held only by
+the contract's prohibitions; the clean-worktree and dirty-bundle checks in Phase 3
+are what catch a breach. There is no fallback or background substitution.
 
 Each reviewer's first turn is its review prompt; write and verify both prompt
 files before the first start. Arm

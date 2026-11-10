@@ -125,7 +125,10 @@ Say that plainly, and leave the timing to the author and their co-author.
 
 If several load-bearing decisions need fresh evidence (precedents, source
 constraints, standards), dispatch parallel **read-only** research subagents
-before Phase 3. Split them by decision cluster, not by source. Each child
+before Phase 3 (on Pi, headless `pi -p --no-session` children under the
+read-only-command exception in `coding-agent-handoff-supervision` pitfall 12,
+so they can run `git show` and fetch sources; each returns its draft in its
+final message and you write the file). Split them by decision cluster, not by source. Each child
 returns options, trade-offs, a recommendation, and the exact question the
 author must answer, and writes one draft file. Dispatch needs the author's go
 ahead ("get to work" counts). Verify consequential claims yourself before
@@ -145,8 +148,8 @@ Top of the agenda first. For **each** decision, in its own turn:
    the author learns judgment from seeing *why* you'd lean a way. Make clear
    it's their call.
 5. Ask the author to choose through a tool-neutral interactive clarification.
-   In Hermes, use the native `clarify` tool when available; otherwise ask one
-   focused question in plain prose. Keep discrete options selectable and leave
+   In Hermes, use the native `clarify` tool when available; Pi has no choice
+   tool. Otherwise ask one focused question in plain prose. Keep discrete options selectable and leave
    an open-ended path when the listed options are incomplete.
 
    **Visibility gate:** put the decision context, options, trade-offs, and

@@ -102,9 +102,9 @@ NON_CLAUDE_COMMON=(skill-retrospective obsidian)
 # dot-agents/upstreams/mattpocock-skills.json). Curated for the implementation runtimes
 # Bryan actually plans and implements on. `guided-learning` goes only to Pi and
 # Hermes until real use earns wider distribution. Pi receives `code-review`
-# through COMMON_SKILLS because its shared `pr-self-review` workflow requires it,
-# and the other cores through Codex's ~/.agents/skills, which Pi also reads
-# (a second link would be a name collision).
+# through COMMON_SKILLS because its shared `pr-self-review` workflow requires it.
+# Pi also reads Codex's ~/.agents/skills, so the other cores reach it without a
+# PI_SKILLS entry (Pi skips a second link to the same pool file).
 ADAPTED_CORES=(grilling wayfinder tdd diagnosing-bugs codebase-architecture)
 
 # Pi is becoming the primary harness (dotfiles-workspace#34), so it grows past
