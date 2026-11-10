@@ -144,6 +144,12 @@ else
     "$REPO_ROOT/scripts/reconcile-agent-skills.sh" --apply
 fi
 
+# Rex agent sessions: resume Claude/Hermes/Pi in their panes after a Rex server restart.
+echo ""
+echo "Setting up Rex agent-session restore..."
+"$REPO_ROOT/scripts/reconcile-rex-agent-sessions.sh" --apply || \
+    echo "  (Rex agent-session restore incomplete; resolve the reported file and re-run)"
+
 # Retired third-party agent memory (Hindsight, context-mode, claude-mem):
 # remove only their known entries from machine-local Claude/Pi/OpenCode JSON.
 echo ""
