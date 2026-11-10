@@ -19,6 +19,9 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from select_issue_worker import identity_from_remote, normalize_repo  # noqa: E402
 
+sys.path.insert(0, str(SCRIPT_DIR.parents[2] / "lib"))
+import agent_state  # noqa: E402
+
 
 class ContextError(RuntimeError):
     """Cross-repository context is missing, inconsistent, or unsafe."""
@@ -158,15 +161,15 @@ def validate_context(
         fail("implementation origin repository does not match implementation_repo")
 
     state = state_dir.expanduser().resolve()
-    authorized_state_root = (ticket_root / ".hermes" / "issue-work").resolve()
     if not state.is_dir():
         fail(f"state directory does not exist: {state}")
-    try:
-        relative_state = state.relative_to(authorized_state_root)
-    except ValueError:
-        fail(f"state directory escapes ticket state root: {state}")
-    if not relative_state.parts:
-        fail("state directory must be a per-ticket child of the ticket state root")
+    # New state lives under .agent-work/issue-work; state started under
+    # .hermes/issue-work is still resumed in place.
+    if not agent_state.is_state_path(ticket_root, "issue-work", state):
+        fail(
+            "state directory must be a per-ticket child of the ticket state root "
+            f"(.agent-work/issue-work or legacy .hermes/issue-work): {state}"
+        )
 
     progress = read_frontmatter(state / "progress.md")
     worktree_root = implementation["top"].resolve()

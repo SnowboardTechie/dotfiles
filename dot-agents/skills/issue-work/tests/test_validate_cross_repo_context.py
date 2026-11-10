@@ -73,7 +73,7 @@ class CrossRepoContextTests(unittest.TestCase):
                 cwd=implementation_trunk,
                 check=True,
             )
-            state = ticket / ".hermes" / "issue-work" / "example-workspace-7"
+            state = ticket / ".agent-work" / "issue-work" / "example-workspace-7"
             url = "https://private.example/example/workspace/issues/7"
             self.write_progress(
                 state,
@@ -135,7 +135,7 @@ class CrossRepoContextTests(unittest.TestCase):
                 cwd=implementation_trunk,
                 check=True,
             )
-            state = ticket / ".hermes" / "issue-work" / "example-workspace-7"
+            state = ticket / ".agent-work" / "issue-work" / "example-workspace-7"
             url = "https://private.example/example/workspace/issues/7"
             self.write_progress(
                 state,
@@ -206,7 +206,7 @@ class CrossRepoContextTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             repo = self.make_repo(root, "project", "git@forge.example:example/project.git")
-            state = repo / ".hermes" / "issue-work" / "example-project-4"
+            state = repo / ".agent-work" / "issue-work" / "example-project-4"
             url = "https://forge.example/example/project/issues/4"
             self.write_progress(
                 state,
@@ -236,7 +236,7 @@ class CrossRepoContextTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             repo = self.make_repo(root, "project", "git@github.com:example/project.git")
-            state = repo / ".hermes" / "issue-work" / "example-project-4"
+            state = repo / ".agent-work" / "issue-work" / "example-project-4"
             url = "https://github.com/example/project/issues/4"
             self.write_progress(
                 state,
@@ -266,7 +266,7 @@ class CrossRepoContextTests(unittest.TestCase):
             root = Path(temp)
             ticket = self.make_repo(root, "private-workspace", "git@private.example:example/workspace.git")
             implementation = self.make_repo(root, "public-project", "git@public.example:example/project.git")
-            state = ticket / ".hermes" / "issue-work" / "example-workspace-7"
+            state = ticket / ".agent-work" / "issue-work" / "example-workspace-7"
             url = "https://private.example/example/workspace/issues/7"
             self.write_progress(
                 state,
@@ -295,7 +295,7 @@ class CrossRepoContextTests(unittest.TestCase):
             root = Path(temp)
             ticket = self.make_repo(root, "private-workspace", "git@private.example:example/workspace.git")
             implementation = self.make_repo(root, "public-project", "git@public.example:example/project.git")
-            state = ticket / ".hermes" / "issue-work" / "example-workspace-7"
+            state = ticket / ".agent-work" / "issue-work" / "example-workspace-7"
             wrong_url = "https://private.example/example/other/issues/7"
             self.write_progress(
                 state,
@@ -318,6 +318,54 @@ class CrossRepoContextTests(unittest.TestCase):
                     implementation_host="public.example",
                     implementation_repo="example/project",
                 )
+
+    def test_legacy_hermes_state_is_still_resumed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo = self.make_repo(root, "project", "git@forge.example:example/project.git")
+            state = repo / ".hermes" / "issue-work" / "example-project-4"
+            url = "https://forge.example/example/project/issues/4"
+            self.write_progress(
+                state,
+                ticket_url=url,
+                worktree=repo,
+                ticket_repo="example/project",
+                implementation_host="forge.example",
+                implementation_repo="example/project",
+                implementation_trunk=repo,
+            )
+
+            result = validator.validate_context(
+                ticket_trunk=repo,
+                state_dir=state,
+                worktree=repo,
+                ticket_url=url,
+                ticket_host="forge.example",
+                ticket_repo="example/project",
+                implementation_host="forge.example",
+                implementation_repo="example/project",
+            )
+
+            self.assertEqual(result["state_dir"], str(state.resolve()))
+
+    def test_state_root_itself_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo = self.make_repo(root, "project", "git@forge.example:example/project.git")
+            for name in (".agent-work", ".hermes"):
+                state_root = repo / name / "issue-work"
+                state_root.mkdir(parents=True)
+                with self.assertRaisesRegex(validator.ContextError, "per-ticket child"):
+                    validator.validate_context(
+                        ticket_trunk=repo,
+                        state_dir=state_root,
+                        worktree=repo,
+                        ticket_url="https://forge.example/example/project/issues/4",
+                        ticket_host="forge.example",
+                        ticket_repo="example/project",
+                        implementation_host="forge.example",
+                        implementation_repo="example/project",
+                    )
 
     def test_state_dir_must_stay_under_ticket_state_root(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

@@ -106,7 +106,7 @@ and clean status.
 Create only this ignored, confined state root:
 
 ```text
-<TRUNK_ROOT>/.hermes/multiagent-pr-review/<owner>-<repo>-pr-<number>/<head-sha8>/
+<TRUNK_ROOT>/.agent-work/multiagent-pr-review/<owner>-<repo>-pr-<number>/<head-sha8>/
   claude/
   gpt/
   root/

@@ -114,7 +114,8 @@ On no, stop and report: "Cannot proceed without a local clone."
 The explicit approved handoff supplies the implementation forge and
 owner/repository. Verify both against the candidate clone's `origin` before
 binding `{IMPLEMENTATION_TRUNK_ROOT}`. The ticket clone remains
-`{TICKET_TRUNK_ROOT}` and owns `.hermes/issue-work/`; the implementation clone
+`{TICKET_TRUNK_ROOT}` and owns `.agent-work/issue-work/` (and any legacy
+`.hermes/issue-work/` state); the implementation clone
 owns the feature worktree. A missing implementation clone follows the same
 clone-if-missing approval rule. Legacy `Repository` handoffs may resolve only a
 same-repository target.
@@ -154,7 +155,7 @@ base, and publication remotes; until then, stop rather than guessing.
 ## Cache (optional future work)
 
 If resolution becomes slow, consider a cache at
-`{TICKET_TRUNK_ROOT}/.hermes/issue-work/.repo-cache.json` keyed by forge host and
+`{TICKET_TRUNK_ROOT}/.agent-work/issue-work/.repo-cache.json` keyed by forge host and
 owner/repository:
 
 ```json

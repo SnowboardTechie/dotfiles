@@ -9,6 +9,7 @@ dot-gitconfig.snowboardtechie
 
 # Workspace-owned state that must never land here, even on hosts (Omarchy)
 # where the global ignore file is not deployed
+.agent-work/
 .hermes/
 /vault
 

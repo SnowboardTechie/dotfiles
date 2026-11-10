@@ -173,8 +173,9 @@ say why, and stop. That is a normal outcome, not a failure: the prompt is the
 deliverable and the launch is only convenience.
 
 Write the prompt to **session scratch beside the identity file** — not the vault,
-not `.hermes/`. It is a disposable pointer with no independent content, so a
-vault copy would be exactly the second copy the pointer contract forbids.
+not `.agent-work/` (or legacy `.hermes/`). It is a disposable pointer with no
+independent content, so a vault copy would be exactly the second copy the
+pointer contract forbids.
 
 The procedure lives in the dotfiles repo and is reached by its pool path,
 because `coding-agent-handoff-supervision` is not curated into every runtime's

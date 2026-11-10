@@ -399,15 +399,20 @@ for line in sys.stdin:
         break
 ')
 [[ -n "$TRUNK_ROOT" ]] || { echo "Could not resolve trunk worktree" >&2; exit 1; }
-DRAFTS_DIR="$TRUNK_ROOT/.hermes/issue-create/drafts"
+DRAFTS_DIR="$TRUNK_ROOT/.agent-work/issue-create/drafts"
+LEGACY_DRAFTS_DIR="$TRUNK_ROOT/.hermes/issue-create/drafts"
 mkdir -p "$DRAFTS_DIR"
 ```
 
+New drafts go in `$DRAFTS_DIR`. When resuming, list both `$DRAFTS_DIR` and
+`$LEGACY_DRAFTS_DIR` (if it exists); a legacy draft is edited and archived
+where it is.
+
 Do not create `.notes`, `.agents`, or modify `.gitignore` for this workflow.
-Workspace `.hermes/` is resumable agent state, not a knowledge-vault note.
+Workspace `.agent-work/` (formerly `.hermes/`) is resumable agent state, not a knowledge-vault note.
 
 If the user chose a **target repo that differs from cwd** in Stage 1, still use
-the current workspace's `.hermes/issue-create/` directory. Record the target
+the current workspace's `.agent-work/issue-create/` directory. Record the target
 `{owner}/{repo}` in frontmatter so a resumed draft remains attributable.
 
 ### 3.2 Render the draft
@@ -620,7 +625,8 @@ If the resolved template has a `type:` field (e.g., `type: Task`), set it via Gr
 
 #### 4.3.1 Resolve the issue-type ID
 
-Lazy cache at `$TRUNK_ROOT/.hermes/issue-create/type-ids.md`:
+Lazy cache at `$TRUNK_ROOT/.agent-work/issue-create/type-ids.md` (read the legacy
+`$TRUNK_ROOT/.hermes/issue-create/type-ids.md` when the new one is missing):
 
 ```markdown
 ---
@@ -799,7 +805,7 @@ verified_parent=$(gh api graphql \
 On successful post — i.e., the issue was created in 4.2, regardless of whether 4.3 (type-set), 4.4 (type-verify), and 4.5 (parent-link + verify) all succeeded. The issue exists; archival is unconditional once 4.2 returns a URL:
 
 ```bash
-ARCHIVE_DIR="$TRUNK_ROOT/.hermes/issue-create/archive"
+ARCHIVE_DIR="$TRUNK_ROOT/.agent-work/issue-create/archive"
 mkdir -p "$ARCHIVE_DIR"
 DATE=$(date +%Y-%m-%d)
 mv "$DRAFT_PATH" "$ARCHIVE_DIR/${DATE}-${slug}.md"
@@ -842,7 +848,7 @@ Archived draft: {archive path}
 |---|---|
 | `cwd` isn't a git repo | Ask user for `{owner}/{repo}` |
 | Multiple remotes (`origin` + `upstream`) | Default to `origin`; confirm with user |
-| Target repo differs from cwd | Use the current workspace's `.hermes/issue-create/` state; record target in frontmatter |
+| Target repo differs from cwd | Use the current workspace's `.agent-work/issue-create/` state; record target in frontmatter |
 | Template has `title:` prefix | Pre-fill user's title suggestion with the prefix |
 | Template has required fields | Don't post with empty answers; re-ask |
 | `gh auth status` fails | Stop. Tell user to `gh auth login` |
@@ -876,5 +882,5 @@ Archived draft: {archive path}
 
 - [issue-plan/SKILL.md](../issue-plan/SKILL.md) — optional pre-implementation deliberation and vault-backed planning for the posted issue
 - [issue-work/SKILL.md](../issue-work/SKILL.md) — the implementation half; consumes an approved vault plan or requires the issue itself to be plan-ready
-- [worktrunk/SKILL.md](../worktrunk/SKILL.md) — canonical trunk resolution for the trunk-scoped `.hermes/issue-create/drafts` directory
+- [worktrunk/SKILL.md](../worktrunk/SKILL.md) — canonical trunk resolution for the trunk-scoped `.agent-work/issue-create/drafts` directory
 - [ship/SKILL.md](../ship/SKILL.md) — source of the forge-detection pattern reused here

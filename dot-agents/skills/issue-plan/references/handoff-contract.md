@@ -1,7 +1,7 @@
 # Issue-plan handoff contract
 
 This is the shared boundary between `issue-plan` and `issue-work`. The vault note
-is the durable planning authority; `.hermes/issue-work/.../plan.md` is a derived
+is the durable planning authority; `.agent-work/issue-work/.../plan.md` is a derived
 execution snapshot.
 
 ## Repository roles
@@ -101,8 +101,11 @@ is the code authority. A dirty checkout is never used as planning provenance.
 `issue-work` resolves the ticket trunk first and stores state under:
 
 ```text
-{TICKET_TRUNK_ROOT}/.hermes/issue-work/{ticket-owner}-{ticket-repo}-{N}/
+{TICKET_TRUNK_ROOT}/.agent-work/issue-work/{ticket-owner}-{ticket-repo}-{N}/
 ```
+
+An existing legacy `.hermes/issue-work/...` directory for the same ticket is
+resumed in place (`dot-agents/lib/agent_state.py`).
 
 It checks project-vault candidates in order:
 

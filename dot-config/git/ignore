@@ -29,6 +29,8 @@ CLAUDE.local.md
 # Superpowers working docs - plans/specs, local context only
 docs/superpowers/
 
-# Hermes per-project plans and resumable workflow state - local context only
-# To track selected artifacts in a repo, add a narrower !.hermes/... exception there
+# Agent skills' per-project plans and resumable workflow state - local context only
+# (.agent-work/ is current; .hermes/ is the legacy place, still read on resume).
+# To track selected artifacts in a repo, add a narrower !.agent-work/... exception there
+.agent-work/
 .hermes/

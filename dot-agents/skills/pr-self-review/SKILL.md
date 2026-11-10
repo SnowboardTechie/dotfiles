@@ -34,12 +34,18 @@ For someone else's PR use `code-review`, not this correction workflow.
 Standalone state lives at:
 
 ```text
-{TRUNK_ROOT}/.hermes/pr-self-review/{owner}-{repo}-{pr-or-branch}/
+{TRUNK_ROOT}/.agent-work/pr-self-review/{owner}-{repo}-{pr-or-branch}/
 ```
 
-`pre-pr` reuses the caller's existing ticket-root
-`.hermes/issue-work/{owner}-{repo}-{N}/` directory. Never create a second review
-state root in the implementation repository for cross-repository work.
+Resolve it with `python3 ~/code/dotfiles/dot-agents/lib/agent_state.py dir
+--create --trunk "$TRUNK_ROOT" --skill pr-self-review --key
+"{owner}-{repo}-{pr-or-branch}"` (a `/` in a branch name becomes `-`). It
+resumes an existing legacy `.hermes/pr-self-review/...` directory in place.
+
+`pre-pr` reuses the caller's existing ticket-root `issue-work` state directory
+(`.agent-work/issue-work/{owner}-{repo}-{N}/`, or its legacy `.hermes/` one).
+Never create a second review state root in the implementation repository for
+cross-repository work.
 
 ## 1. Establish independent acceptance
 

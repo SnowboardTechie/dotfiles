@@ -113,11 +113,26 @@ boundary; a concrete source blocker still requires repair before the full run.
 
 ## State and repository roles
 
-Ticket state:
+Ticket state (`{TICKET_STATE_DIR}`):
 
 ```text
-{TICKET_TRUNK_ROOT}/.hermes/issue-work/{ticket-owner}-{ticket-repo}-{N}/
+{TICKET_TRUNK_ROOT}/.agent-work/issue-work/{ticket-owner}-{ticket-repo}-{N}/
 ```
+
+State started before 2026-11-09 may sit at the legacy
+`{TICKET_TRUNK_ROOT}/.hermes/issue-work/{ticket-owner}-{ticket-repo}-{N}/`. Resume
+it where it is; never move or copy it, because `progress.md` and
+`context-validation.json` record absolute paths into it. Resolve the directory
+once at intake, before reading or writing anything:
+
+```bash
+python3 ~/code/dotfiles/dot-agents/lib/agent_state.py dir --create \
+  --trunk "$TICKET_TRUNK_ROOT" --skill issue-work --key "{ticket-owner}-{ticket-repo}-{N}"
+```
+
+Its `path` is `{TICKET_STATE_DIR}`: the existing `.agent-work/` directory, else an
+existing legacy `.hermes/` one (`legacy: true`), else a new `.agent-work/` one.
+The context validator admits either root.
 
 The ticket workspace owns issue context, plans, progress, and private evidence.
 The implementation repository owns worktrees, code, tests, commits, and PRs. They
@@ -174,7 +189,8 @@ new product decision.
 
 ### 3. Resume safely
 
-If `progress.md` exists, refresh issue/comments and fetched base before reuse.
+If `{TICKET_STATE_DIR}/progress.md` exists (in either root, as resolved above),
+refresh issue/comments and fetched base before reuse.
 Compare ticket URL, source plan, repository roles, branch, worktree, authority
 mode, and checkpoints. Immaterial drift is recorded; material drift stops.
 
