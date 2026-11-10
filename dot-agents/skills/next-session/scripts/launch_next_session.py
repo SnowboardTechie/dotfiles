@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Start the next Hermes session in a split beside the calling session.
+"""Start the next Hermes or Pi session in a split beside the calling session.
 
 Works inside Rex; ``dot-agents/lib/terminal_host.py`` detects it.
 
@@ -13,9 +13,17 @@ seeds the interactive session as its first turn, verbatim. Only the file's path
 reaches a shell, quoted. The pane is split to the right (a vertical divider) and
 focus stays where it was unless ``--focus`` is given.
 
+From a Pi session (``PI_SESSION_ID`` set, no ``HERMES_SESSION_ID``) the new
+session is ``pi --name N [--model M] [--thinking T] @<prompt>``: the file is the
+first message. ``--seat personal`` runs it on the personal Claude plan
+(``PI_CLAUDE_CODE_CONFIG_DIR=~/.claude-personal``); ``--seat work`` unsets that
+variable so the default login is used. Without ``--seat`` the pane's shell
+decides. Pi finds its own skills, so ``--skills`` is not passed on.
+
 Commands:
   whoami                       print this session's id and Rex block
   launch --prompt-file F --name N [--cwd D] [--skills S] [--focus] [--dry-run]
+         [--agent hermes|pi] [--model M] [--thinking T] [--seat personal|work]
 
 Gateway: when this process has no REX_* variables (the agent's commands run
 under the Hermes gateway, not in the pane), they are adopted from the one
@@ -23,7 +31,7 @@ Hermes process on this session's recorded TTY (``$HERMES_HOME/terminal-sessions`
 read exactly from the kernel. ``host_env_from`` in the output names that TTY and
 pid.
 
-Environment: HERMES_SESSION_ID (required), HERMES_HOME (default ~/.hermes),
+Environment: HERMES_SESSION_ID or PI_SESSION_ID (one required), HERMES_HOME (default ~/.hermes),
 REX_BIN (default ``rex`` on PATH, then ``$REX_BIN_DIR/rex``). Exit 0 on success,
 1 on a refusal or a failed step, with one JSON object on stdout either way.
 """
@@ -168,6 +176,32 @@ def is_hermes(process: dict | None) -> bool:
     return any(Path(n).name == "hermes" or "/.hermes/" in n for n in names if n)
 
 
+def is_pi(process: dict | None) -> bool:
+    """Pi runs as Node with ``pi`` as its argv0."""
+    if not process:
+        return False
+    names = (process.get("name", ""), process.get("argv0", ""), process.get("invoked_path", ""))
+    return any(Path(n).name == "pi" for n in names if n)
+
+
+def agent_argv(args: argparse.Namespace, prompt: Path) -> list[str]:
+    if args.agent == "hermes":
+        if args.model or args.thinking or args.seat:
+            raise Refused("--model, --thinking and --seat apply only to a Pi session")
+        return ["hermes", "chat", "--query-file", str(prompt)] + (["--skills", args.skills] if args.skills else [])
+    argv = ["pi", "--name", args.name]
+    if args.model:
+        argv += ["--model", args.model]
+    if args.thinking:
+        argv += ["--thinking", args.thinking]
+    argv.append(f"@{prompt}")
+    if args.seat == "personal":
+        return ["env", f"PI_CLAUDE_CODE_CONFIG_DIR={Path.home() / '.claude-personal'}"] + argv
+    if args.seat == "work":
+        return ["env", "-u", "PI_CLAUDE_CODE_CONFIG_DIR"] + argv
+    return argv
+
+
 def rex_caller(session: str, host: terminal_host.Host) -> dict:
     try:
         info = rex_process(host, host.pane)
@@ -189,10 +223,9 @@ def rex_launch(args: argparse.Namespace, session: str, host: terminal_host.Host)
     cwd = str(Path(args.cwd).expanduser().resolve()) if args.cwd else me["cwd"]
     if not cwd or not Path(cwd).is_dir():
         raise Refused("working directory does not exist", cwd=cwd)
-    argv = ["hermes", "chat", "--query-file", str(prompt)]
-    if args.skills:
-        argv += ["--skills", args.skills]
-    plan = {"host": "rex", "caller_pane": me["pane_id"], "cwd": cwd, "name": args.name,
+    argv = agent_argv(args, prompt)
+    started = is_hermes if args.agent == "hermes" else is_pi
+    plan = {"host": "rex", "agent": args.agent, "caller_pane": me["pane_id"], "cwd": cwd, "name": args.name,
             "prompt_file": str(prompt), "argv": argv}
     if args.dry_run:
         return {"launched": False, "dry_run": True, **plan}
@@ -218,18 +251,18 @@ def rex_launch(args: argparse.Namespace, session: str, host: terminal_host.Host)
             foreground = rex_process(host, pane).get("foreground") or {}
         except Refused:
             foreground = {}
-        if is_hermes(foreground):
+        if started(foreground):
             break
         if time.monotonic() >= deadline:
             # The split pane is left open: it is visible and the start is the retryable step.
-            raise Refused("Hermes did not start in the new pane", pane=pane, foreground=foreground,
+            raise Refused(f"{args.agent.capitalize()} did not start in the new pane", pane=pane, foreground=foreground,
                           manual=shlex.join(argv))
         time.sleep(0.5)
     return {"launched": True, **plan, "pane": pane, "foreground_pid": foreground.get("pid")}
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Start the next Hermes session in a Rex split.")
+    parser = argparse.ArgumentParser(description="Start the next Hermes or Pi session in a Rex split.")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("whoami")
     start = sub.add_parser("launch")
@@ -239,16 +272,27 @@ def main(argv: list[str] | None = None) -> int:
     start.add_argument("--skills")
     start.add_argument("--focus", action="store_true")
     start.add_argument("--dry-run", action="store_true")
+    start.add_argument("--agent", choices=("hermes", "pi"))
+    start.add_argument("--model")
+    start.add_argument("--thinking")
+    start.add_argument("--seat", choices=("personal", "work"))
     args = parser.parse_args(argv)
 
-    session = os.environ.get("HERMES_SESSION_ID", "")
+    hermes_session = os.environ.get("HERMES_SESSION_ID", "")
+    pi_session = os.environ.get("PI_SESSION_ID", "")
+    agent = getattr(args, "agent", None) or ("hermes" if hermes_session or not pi_session else "pi")
+    args.agent = agent
+    session = hermes_session or pi_session
     home = Path(os.environ.get("HERMES_HOME") or Path.home() / ".hermes")
     try:
         if not session:
-            raise Refused("HERMES_SESSION_ID is not set: not running inside a Hermes session")
+            raise Refused("HERMES_SESSION_ID is not set: not running inside a Hermes session"
+                          if agent == "hermes" else "PI_SESSION_ID is not set: not running inside a Pi session")
         host = terminal_host.detect()
         adopted = None
         if host is None:
+            if not hermes_session:
+                raise Refused("not running inside Rex: no pane to split")
             try:
                 adopted = adopt_session_host(session, home)
             except Refused as exc:

@@ -74,7 +74,7 @@ class RexLaunchTest(unittest.TestCase):
     def run_script(self, *args: str, env_extra: dict | None = None) -> tuple[int, dict]:
         state = self.tmp / "state.json"
         state.write_text(json.dumps(self.state))
-        env = {k: v for k, v in os.environ.items() if not k.startswith("REX_")}
+        env = {k: v for k, v in os.environ.items() if not k.startswith(("REX_", "PI_"))}
         env.update({
             # Not on PATH: found through REX_BIN_DIR, as the Rex app sets it up.
             "PATH": "/usr/bin:/bin",
@@ -140,6 +140,40 @@ class RexLaunchTest(unittest.TestCase):
         self.assertTrue(typed.endswith("\n"))
         import shlex
         self.assertEqual(shlex.split(typed), ["hermes", "chat", "--query-file", str(self.prompt.resolve()), "--skills", "wayfinder"])
+
+    def pi_launch(self, *extra: str) -> tuple[int, dict, list[str]]:
+        import shlex
+        pi_fg = {"pid": 77, "name": "node", "argv0": "pi", "cwd": str(self.cwd)}
+        self.state["blocks"]["block:new"] = [{"pid": 40, "name": "zsh", "argv0": "-zsh"}, pi_fg]
+        code, out = self.run_script("launch", "--prompt-file", str(self.prompt), "--name", "wf-9", *extra,
+                                    env_extra={"HERMES_SESSION_ID": "", "PI_SESSION_ID": "pi-1"})
+        typed = self.split_request()["layout"]["block"]["options"]["initial_input"] if code == 0 else ""
+        return code, out, shlex.split(typed)
+
+    def test_a_pi_session_launches_pi_with_the_prompt_as_its_first_message(self) -> None:
+        code, out, typed = self.pi_launch("--model", "claude-code/claude-opus-5-5", "--thinking", "medium", "--skills", "wayfinder")
+        self.assertEqual(code, 0, out)
+        self.assertEqual((out["agent"], out["foreground_pid"]), ("pi", 77))
+        self.assertEqual(typed, ["pi", "--name", "wf-9", "--model", "claude-code/claude-opus-5-5", "--thinking", "medium",
+                                 f"@{self.prompt.resolve()}"])
+
+    def test_pi_seat_selects_the_subscription(self) -> None:
+        _, _, typed = self.pi_launch("--seat", "personal")
+        self.assertEqual(typed[:2], ["env", f"PI_CLAUDE_CODE_CONFIG_DIR={Path.home() / '.claude-personal'}"])
+        self.log.unlink()
+        _, _, typed = self.pi_launch("--seat", "work")
+        self.assertEqual(typed[:3], ["env", "-u", "PI_CLAUDE_CODE_CONFIG_DIR"])
+
+    def test_pi_waits_for_pi_not_hermes(self) -> None:
+        code, out = self.run_script("launch", "--prompt-file", str(self.prompt), "--name", "wf-9",
+                                    env_extra={"HERMES_SESSION_ID": "", "PI_SESSION_ID": "pi-1"})
+        self.assertEqual(code, 1)
+        self.assertIn("Pi did not start", out["reason"])
+
+    def test_hermes_refuses_pi_only_flags(self) -> None:
+        code, out = self.run_script("launch", "--prompt-file", str(self.prompt), "--name", "wf-9", "--seat", "personal")
+        self.assertEqual(code, 1)
+        self.assertIn("only to a Pi session", out["reason"])
 
     def test_focus_flag(self) -> None:
         self.run_script("launch", "--prompt-file", str(self.prompt), "--name", "wf-9", "--focus")

@@ -8,7 +8,7 @@ description: Use when Bryan asks to launch the next session you suggested. Start
 Many sessions end by suggesting what Bryan should say to the next agent. A
 Wayfinder ticket, for example, names the next decision on the map. This skill
 does that handoff for him: it splits this session's Rex pane to the right
-(a vertical divider), starts a fresh Hermes session in the new pane, and seeds
+(a vertical divider), starts a fresh Hermes or Pi session in the new pane, and seeds
 it with the suggested prompt as its first turn. Bryan then closes this session
 and carries on in the new one.
 
@@ -22,7 +22,7 @@ implementation slices use `session-handoff`.
 - Only when Bryan asks for it ("launch it", "start the next one", "split and
   start it"). Suggesting the prompt is the default ending; launching is his call,
   because the new session starts working (and, on a map, claims a ticket) at once.
-- Only from a Hermes CLI session inside Rex. If the helper can't find this
+- Only from a Hermes CLI or Pi session inside Rex. If the helper can't find this
   session's pane, give him the prompt to paste and say why. That is a normal
   outcome, not a failure to work around.
 
@@ -65,6 +65,19 @@ python3 "$S" launch --prompt-file "$TMPDIR/next-session-<name>.md" --name <name>
 - `--skills a,b` preloads skills when the prompt names one to use.
 - Focus stays in this pane so Bryan can read the final report. Pass `--focus`
   only if he asks.
+
+**From Pi** the script lives at
+`~/code/dotfiles/dot-agents/skills/next-session/scripts/launch_next_session.py`
+and starts `pi` with the prompt file as its first message. It picks Pi when
+`PI_SESSION_ID` is set and `HERMES_SESSION_ID` is not; `--agent pi` forces it.
+Pi-only flags:
+
+- `--model <provider/model>` and `--thinking <level>`: the new session's model.
+  Without them it starts on Pi's defaults.
+- `--seat personal|work`: which Claude subscription pays. `personal` sets
+  `PI_CLAUDE_CODE_CONFIG_DIR=~/.claude-personal`; `work` unsets it. Without the
+  flag the pane's shell decides.
+- `--skills` is ignored: Pi finds its own skills, so name the skill in the prompt.
 
 The helper finds the host from the pane's own environment (`dot-agents/lib/terminal_host.py`):
 Rex when `REX_BLOCK` and `REX_SESSION` are set. Outside Rex it refuses; give

@@ -105,7 +105,8 @@ NON_CLAUDE_COMMON=(skill-retrospective obsidian)
 # through COMMON_SKILLS because its shared `pr-self-review` workflow requires it.
 ADAPTED_CORES=(grilling wayfinder tdd diagnosing-bugs codebase-architecture)
 
-PI_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}")
+# next-session: Pi launches the next Pi in a Rex pane (dotfiles-workspace#34).
+PI_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}" next-session)
 
 # Codex uses the supported user scope (~/.agents/skills), not its bundled
 # ~/.codex/skills/.system directory. Share the portable coding/planning core;
