@@ -14,12 +14,13 @@ metadata:
 
 ## Overview
 
-The Hermes parent orchestrates; a Claude worker implements. Hand decision-complete implementation to a
-visible Claude worker, including small changes, fixtures, harnesses, tooling,
+The parent (a Pi or Hermes session) orchestrates; a Claude worker implements. Hand decision-complete
+implementation to a visible Claude worker, including small changes, fixtures, harnesses, tooling,
 and repairs discovered during verification. Task size and worker startup cost
-are not exceptions. Use a visible Hermes worker for requested read-only work;
-simple questions stay with the parent unless Bryan asks for a worker. Only Bryan's
-explicit selection changes the implementation role or runtime. The parent owns scope,
+are not exceptions. Use a visible read-only worker for requested read-only work
+(Pi from a Pi parent, Hermes from a Hermes parent); simple questions stay with the
+parent unless Bryan asks for a worker. Only Bryan's explicit selection changes the
+implementation role or runtime. The parent owns scope,
 dependencies, handoffs, supervision, independent acceptance, authorized Git
 integration/publication, and live verification. A worker produces a candidate,
 not an accepted deliverable.
@@ -32,12 +33,12 @@ procedure rather than improvising pane commands in chat.
 
 ## Select the execution surface first
 
-Visible workers run from an interactive Hermes CLI session in a Rex pane, using
+Visible workers run from an interactive Pi or Hermes CLI session in a Rex pane, using
 the Rex procedure below. Select the transport before checking its environment.
 
 A gateway-only conversation (Matrix and similar) has no caller pane and no
 visible-worker transport. Report that blocker and the way to unblock it
-(continue from a Hermes CLI session in a Rex pane in the project); do not offer
+(continue from a Pi or Hermes CLI session in a Rex pane in the project); do not offer
 a background fallback. Do not fabricate context bindings, caller-pane variables
 or authorization to make a transport work.
 
@@ -49,7 +50,9 @@ reporting, prohibit edits/publication, and start the worker. Ask a question only
 when that changes the work or a required project/permission is genuinely unknown.
 Implementation still needs the governing ticket/approved plan and the role,
 acceptance, correction, capacity and cleanup rules below. Claude Opus/medium is
-the implementation default; Hermes/high is the read-only-worker default.
+the implementation default for either parent. The read-only-worker default is a
+visible Pi worker (Opus 5.5, medium thinking, seat by worktree) for a Pi parent
+and Hermes/high for a Hermes parent.
 Bryan's explicit runtime selection overrides this
 policy. Do not expand a simple question into an audit: keep the brief and
 verification proportional to the requested answer.
@@ -221,14 +224,18 @@ local ref or branch, branch deletion, and update-ref deletion.
 
 Visible workers are approval-gated, not sandbox-confined. Claude uses
 `--permission-mode auto`; Hermes requires `approvals.mode: smart`, no
-`HERMES_YOLO_MODE`, and no `--yolo`. Stop when hard confinement is required but
-cannot be proved.
+`HERMES_YOLO_MODE`, and no `--yolo`. Pi has no approval gate: it runs every tool
+call, so a Pi worker's read-only limit rests on its contract's prohibitions only.
+That fits read-only work in Bryan's own repositories; when hard confinement or an
+approval gate is required, use a Claude worker. Stop when hard confinement is
+required but cannot be proved.
 
 When Claude is selected, use `claude-opus-5-5` at `medium` effort, for
 implementers and reviewers alike (Bryan, 2026-10-23). The coordinator's own
 effort setting does not carry over to workers. Lightweight implementation still
-belongs to Claude; Hermes is the read-only-worker route unless Bryan explicitly
-selects otherwise. Use a higher `--claude-effort` only when Bryan asks for it.
+belongs to Claude; a Pi or Hermes worker (matching the parent) is the
+read-only-worker route unless Bryan explicitly selects otherwise. Use a higher
+`--claude-effort` only when Bryan asks for it.
 
 Starting a worker in the inspected worktree created for Bryan's authorized task
 already authorizes Claude's ordinary **Yes, I trust this folder** startup step.
@@ -248,9 +255,13 @@ worker through the `rex` CLI as
 [references/rex-claude-handoff.md](references/rex-claude-handoff.md) describes.
 Visible work has no silent Agent View, print-mode, tmux, or background fallback.
 
+Pi's tool shell carries `REX_SESSION`, `REX_BLOCK` and `REX_BIN_DIR` directly:
+on Pi, `echo $REX_SESSION $REX_BLOCK` settles it, and an empty result means the
+session is outside Rex. The process recovery below applies only to Hermes.
+
 Hermes usually passes the `REX_*` values straight into the tool shell
 (`terminal.client_env_passthrough`); check `echo $REX_SESSION $REX_BLOCK` first.
-An empty result there does not prove the session is outside Rex. Before
+On Hermes, an empty result there does not prove the session is outside Rex. Before
 reporting a transport blocker, find this session's own CLI process and read its
 `REX_*` values with `python3 ~/code/dotfiles/dot-agents/lib/terminal_host.py PID`
 (exact JSON; never hand-parse `ps eww`, which joins variables with spaces and
@@ -300,8 +311,10 @@ and the next normal permission gate before claiming recovery. A still-refused
 action remains blocked; do not escalate to a broader mode or another execution
 route.
 
-For read-only work or explicit Hermes selection, start a Hermes worker after
-independently checking its smart-approval prerequisites.
+For read-only work from a Pi parent, or explicit Pi selection, start a Pi worker
+as the reference describes. For read-only work from a Hermes parent, or explicit
+Hermes selection, start a Hermes worker after independently checking its
+smart-approval prerequisites.
 
 After the start, the coordinator computes Git identity and records, once:
 
@@ -314,7 +327,9 @@ After the start, the coordinator computes Git identity and records, once:
 
 For Claude, run the live capacity gate before the block is created. Any nonzero
 capacity result stops before a provider turn, and an empty reading is a stop,
-never a pass.
+never a pass. A Pi worker on `claude-code/...` spends the same Claude seat, so the
+same gate and ceiling apply to it, measured on the seat it uses: `CLAUDE_CONFIG_DIR`
+set to the worker's `PI_CLAUDE_CODE_CONFIG_DIR`, unset for the work seat.
 
 **Bryan's capacity ceiling is 75% consumed of the 5-hour window.** Do not start
 or prompt a Claude turn at or above 75%. Below 75%, dispatch: the remaining 25%
@@ -551,7 +566,9 @@ batch), follow this shape:
   closes" for experiments that needed nothing from the window cost a day of
   back-and-forth before Bryan ended it (2026-11-09, #21).
 - **Absolute scratch paths across calls.** Write PR bodies and comment drafts to
-  `~/.hermes/cache/scratch/<name>.md` with `write_file`, never `$TMPDIR`: tool
+  an absolute path, never `$TMPDIR`: on Pi, with the `write` tool into the ticket
+  state directory (`<state dir>/<name>.md`); on Hermes, to
+  `~/.hermes/cache/scratch/<name>.md` with `write_file`. Tool
   calls can see different `TMPDIR` values, and a missing body file makes
   `tea pr create` publish an empty description silently. Read the body back
   after creating the PR.
@@ -613,8 +630,9 @@ resume a visible Rex worker's identity.
    Bryan's required post-draft-PR SGG Claude final review is not this pitfall.
 10. Leaving a settled pane open as a status marker.
 11. Confusing correction allowance with provider capacity.
-12. Reading "hand it off to a subagent" as `delegate_task` or a cron-spawned
-    hidden subagent. Bryan means this skill's normal visible handoff. A
+12. Reading "hand it off to a subagent" as a hidden sub-agent mechanism
+    (Hermes's `delegate_task`, a cron-spawned subagent, or the like; Pi has
+    none). Bryan means this skill's normal visible handoff. A
     deferred start ("after usage resets") changes only when the handoff
     starts. Defer it with a reminder or a check-in back to the parent, never
     by delegating the work itself from a cron job. A hidden subagent also

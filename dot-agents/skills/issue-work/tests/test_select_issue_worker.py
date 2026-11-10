@@ -148,6 +148,20 @@ class SelectIssueWorkerTests(unittest.TestCase):
             "coding-agent-handoff-supervision",
         )
 
+    def test_explicit_pi_uses_visible_handoff(self) -> None:
+        result = select_issue_worker.select_worker(
+            ticket_repo="bryan/cairn-os",
+            remote_url="git@git.snowboardtechie.com:bryan/cairn-os.git",
+            override="pi",
+        )
+
+        self.assertEqual(result["selected_worker"], "pi")
+        self.assertEqual(result["reason"], "explicit visible Pi selection")
+        self.assertEqual(
+            result["implementation_loop"],
+            "coding-agent-handoff-supervision",
+        )
+
     def test_ticket_and_remote_must_match_without_explicit_implementation_repo(self) -> None:
         with self.assertRaisesRegex(
             select_issue_worker.RoutingError,

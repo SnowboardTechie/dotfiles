@@ -33,14 +33,15 @@ one-line change to a curation array.
 
 ## Curation
 
-Not every tool gets every skill. Pi is kept lean (the common core only). Hermes
-gets adapted personal workflows but keeps its bundled/local `obsidian` and
-`vault-pkm` implementations, so those names are intentionally excluded from its
-pool links. Personal knowledge lives in the `~/second-brain` Markdown vault
-(Forgejo Git), written through `vault-pkm` like any other vault, with
-`knowledge-capture` routing resting-point captures between it and project
-vaults. `apple-notes-pkm` (2026-10-31) and `vault-capture` are retired and removed; the
-reconciler prunes their stale links.
+Not every tool gets every skill. Pi gets the common core plus the workflows
+made to run from it, a set that grows as Pi becomes the primary harness
+(dotfiles-workspace#34). Hermes gets adapted personal workflows but keeps its
+bundled/local `obsidian` and `vault-pkm` implementations, so those names are
+intentionally excluded from its pool links. Personal knowledge lives in the
+`~/second-brain` Markdown vault (Forgejo Git), written through `vault-pkm` like
+any other vault, with `knowledge-capture` routing resting-point captures between
+it and project vaults. `apple-notes-pkm` (2026-10-31) and `vault-capture` are
+retired and removed; the reconciler prunes their stale links.
 
 The **single authoritative curation source** is the set of `*_SKILLS` Bash arrays
 in [`../scripts/reconcile-agent-skills.sh`](../scripts/reconcile-agent-skills.sh):

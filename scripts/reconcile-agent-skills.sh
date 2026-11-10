@@ -90,7 +90,7 @@ fi
 # and knowledge-capture (the router that decides personal vs. project).
 # apple-notes-pkm was removed 2026-10-31.
 # black-box-verification is a shared verification method (see
-# dot-agents/upstreams/pstack-claude.json), so even lean Pi receives it.
+# dot-agents/upstreams/pstack-claude.json), so every tool, Pi included, receives it.
 COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review code-review
     vault-pkm knowledge-capture session-handoff
     black-box-verification)
@@ -101,12 +101,18 @@ NON_CLAUDE_COMMON=(skill-retrospective obsidian)
 # Planning and delivery cores adapted from an upstream suite (see
 # dot-agents/upstreams/mattpocock-skills.json). Curated for the implementation runtimes
 # Bryan actually plans and implements on. `guided-learning` is Hermes-only until
-# real use earns wider distribution; Pi stays lean but receives `code-review`
-# through COMMON_SKILLS because its shared `pr-self-review` workflow requires it.
+# real use earns wider distribution. Pi receives `code-review` through
+# COMMON_SKILLS because its shared `pr-self-review` workflow requires it.
 ADAPTED_CORES=(grilling wayfinder tdd diagnosing-bugs codebase-architecture)
 
-# next-session: Pi launches the next Pi in a Rex pane (dotfiles-workspace#34).
-PI_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}" next-session)
+# Pi is becoming the primary harness (dotfiles-workspace#34), so it grows past
+# the common core as each workflow is made to run from Pi.
+# next-session: Pi launches the next Pi in a Rex pane.
+# Delivery skills: a Pi coordinator runs the issue workflows, the visible
+# handoff they delegate through, and the DX planning step issue-plan loads.
+PI_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}" next-session
+    issue-create issue-plan issue-work loop-issue
+    coding-agent-handoff-supervision dx-target)
 
 # Codex uses the supported user scope (~/.agents/skills), not its bundled
 # ~/.codex/skills/.system directory. Share the portable coding/planning core;

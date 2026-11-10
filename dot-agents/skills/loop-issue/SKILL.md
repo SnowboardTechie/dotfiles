@@ -19,15 +19,16 @@ successful supervised run may leave a draft PR for human review. This skill
 never merges and never recursively schedules itself.
 
 The wake mechanism is separate: a user invocation, an external loop, or a
-Hermes cron job can start a run. Keeping one issue per run bounds failures and
-makes every result attributable.
+scheduled job (Hermes cron today; the bot service's clock later) can start a
+run, for example as a headless `pi -p` run. Keeping one issue per run bounds
+failures and makes every result attributable.
 
 ## When to Use
 
 - Work a named queued issue under the repository's autonomous-work policy.
 - Select the oldest open `ready-for-agent` issue in the current repository.
-- Use as a self-contained Hermes cron prompt after publication permissions are
-  explicitly chosen.
+- Use as a self-contained prompt for a scheduled job (a Hermes cron job, or a
+  headless `pi -p` run) after publication permissions are explicitly chosen.
 
 Run inside the target repository so its context instructions and gate are
 available.

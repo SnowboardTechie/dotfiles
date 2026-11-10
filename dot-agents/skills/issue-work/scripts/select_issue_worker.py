@@ -103,6 +103,9 @@ def select_worker(
     elif override == "hermes":
         selected = "hermes"
         reason = "explicit visible Hermes selection"
+    elif override == "pi":
+        selected = "pi"
+        reason = "explicit visible Pi selection"
     elif override == "qwen":
         selected = "qwen"
         reason = "explicit local Qwen selection"
@@ -115,6 +118,7 @@ def select_worker(
     loops = {
         "claude": "coding-agent-handoff-supervision",
         "hermes": "coding-agent-handoff-supervision",
+        "pi": "coding-agent-handoff-supervision",
         "qwen": "codex-qwen-implementation-loop",
         "gpt": None,
     }
@@ -175,7 +179,7 @@ def main() -> int:
     parser.add_argument("--implementation-host")
     parser.add_argument(
         "--override",
-        choices=("auto", "gpt", "qwen", "claude", "hermes"),
+        choices=("auto", "gpt", "qwen", "claude", "hermes", "pi"),
         default="auto",
     )
     parser.add_argument(

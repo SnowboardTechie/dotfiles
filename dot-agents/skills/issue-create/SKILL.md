@@ -9,8 +9,8 @@ Turn a rough idea into a well-structured, template-faithful GitHub or Forgejo is
 
 ## Runtime mappings
 
-- Interactive choices: Hermes `clarify`; Claude/OpenCode/Pi `AskUserQuestion` or conversational equivalent.
-- File discovery: Hermes `search_files`; other hosts `Glob` or equivalent.
+- Interactive choices: Hermes `clarify`; Claude/OpenCode `AskUserQuestion` or conversational equivalent; Pi a plain question in chat (it has no choice tool).
+- File discovery: Hermes `search_files`; Pi `rg`/`find` through `bash`; other hosts `Glob` or equivalent.
 - Public mutation: always requires explicit user approval in the active run. Unattended execution may prepare a draft but must not post.
 
 Pairs with `issue-plan` and `issue-work`. After posting, use `issue-plan {url}` when implementation details or load-bearing decisions should be settled in the project vault before work starts. Use `issue-work {url}` directly when the issue is already clear enough to pass its plan-readiness gate.

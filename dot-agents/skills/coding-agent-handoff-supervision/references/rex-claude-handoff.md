@@ -9,6 +9,10 @@ layout prototype, 2026-11-02.
 
 ## Which host you are in
 
+Pi's tool shell carries `REX_SESSION`, `REX_BLOCK` and `REX_BIN_DIR` directly:
+`echo $REX_SESSION $REX_BLOCK` answers it, and empty means no caller pane. The
+rest of this section applies only to Hermes.
+
 Hermes tools run under the gateway, so the tool shell may have no `REX_*` of
 its own. Hermes's `terminal.client_env_passthrough` usually puts the `REX_*`
 values in the tool shell already; check `echo $REX_SESSION $REX_BLOCK` first.
@@ -145,6 +149,30 @@ and on prompts (`display.bell_on_complete` and `bell_on_prompt`, which are on).
 Rex turns OSC 9 into a macOS notification. No per-process switch for the bell
 exists yet. Bryan accepted that (2026-11-03): Hermes workers are rare, so no
 Hermes patch unless he says the notifications have become a nuisance.
+
+**A Pi worker** (read-only work from a Pi coordinator, or Bryan's explicit
+selection) uses the same placement with this worker command, the seat following
+the same worktree rule as `CCD` above:
+
+```sh
+case "$W/" in "$HOME/code/sgg/"*) SEAT=(env -u PI_CLAUDE_CODE_CONFIG_DIR) ;;
+  *) SEAT=(env PI_CLAUDE_CODE_CONFIG_DIR="$HOME/.claude-personal") ;; esac
+WORKER=("${SEAT[@]}" pi --name "$NAME" --model claude-code/claude-opus-5-5
+  --thinking medium "@$S/<lane>-prompt.md")
+```
+
+It spends the same Claude seat, so run the capacity gate above first, with
+`CLAUDE_CONFIG_DIR` set to the worker's `PI_CLAUDE_CODE_CONFIG_DIR` (unset for
+the work seat); an empty reading is a stop. Pi has no approval gate, so its read-only
+limit is the contract's prohibitions only; when an approval gate or hard
+confinement is required, use a Claude worker.
+
+Settle it like a Hermes worker: the handback file plus `capture`, with the same
+`awk` waiter (`rex_wait.sh` reads Claude transcripts only). Its transcript is
+its session file under `~/.pi/agent/sessions/`; record that path in the
+identity file once it appears. Pi reports its own status to Rex,
+so a Pi worker may raise Rex's "done" and "needs attention" alerts like a
+Hermes one.
 
 ## Watch and settle
 

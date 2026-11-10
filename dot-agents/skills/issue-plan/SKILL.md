@@ -115,7 +115,8 @@ Read implementation-repository instructions, manifests, relevant files, nearby
 patterns, tests, and repository-owned specs/ADRs. Trace named symbols to their
 definitions and usages. Use one or two bounded exploration delegates when the
 issue spans distinct areas; delegates return findings only and must not write to
-the repository or vault.
+the repository or vault. On Pi, a delegate is a visible Pi worker in a Rex pane
+(`coding-agent-handoff-supervision`), or do the exploration inline.
 
 Do not invent exact file paths or APIs. External research is conditional: use
 primary documentation only when the issue depends on an API or library that the
@@ -142,12 +143,12 @@ are composable, not mutually exclusive:
 
 Runtime mapping is explicit:
 
-| Capability | Hermes | Claude / OpenCode |
-|---|---|---|
-| Generic task-plan authoring | installed `plan` | none — draft directly to the Phase 3 contract |
-| DX target exploration | installed `dx-target` | use `dx-target` only when installed; otherwise stop and hand the session to Hermes |
-| Decision coaching | pooled `grilling` or `adr-and-spec-coach` | pooled `grilling` or `adr-and-spec-coach` |
-| Spec conformance | installed `conforming-tech-specs` | installed pooled `conforming-tech-specs` |
+| Capability | Pi | Hermes | Claude / OpenCode |
+|---|---|---|---|
+| Generic task-plan authoring | none — draft directly to the Phase 3 contract | installed `plan` | none — draft directly to the Phase 3 contract |
+| DX target exploration | installed `dx-target` | installed `dx-target` | use `dx-target` only when installed; otherwise stop and hand the session to Pi or Claude Code, which have it |
+| Decision coaching | pooled `grilling` or `adr-and-spec-coach` | pooled `grilling` or `adr-and-spec-coach` | pooled `grilling` or `adr-and-spec-coach` |
+| Spec conformance | pooled `conforming-tech-specs` through `~/.agents/skills` | installed `conforming-tech-specs` | installed pooled `conforming-tech-specs` |
 
 Do not silently replace a missing specialized workflow with generic drafting.
 

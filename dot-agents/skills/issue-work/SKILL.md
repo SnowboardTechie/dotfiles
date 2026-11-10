@@ -319,10 +319,11 @@ recorded task shape, and selects Claude unless Bryan explicitly chose otherwise.
 
 ### 2. Execute the selected route
 
-For a visible Claude or explicit Hermes route, load
+For a visible Claude route, or an explicit Pi or Hermes route, load
 `coding-agent-handoff-supervision` and reuse this existing governing issue; do
-not call `issue-create`. Require this session's Rex pane and follow that
-skill's Rex procedure (`references/rex-claude-handoff.md`). Agent View and
+not call `issue-create`. The parent may be a Pi or Hermes session; a Pi parent
+starts a Pi worker for an explicit Pi route. Require this session's Rex pane and
+follow that skill's Rex procedure (`references/rex-claude-handoff.md`). Agent View and
 background wrappers are not fallbacks for visible work.
 
 Do the checks by hand as that reference describes. Persist
@@ -388,7 +389,7 @@ If targeted checks find blockers that prevent a candidate commit, write one
 consolidated correction contract and resume the same worker. This consumes the
 workflow's normal correction: require the global `correction_passes` counter to
 be `0`, increment it to `1` before submission, and preserve that value even when
-the turn fails after input is accepted. For visible Claude/Hermes, follow the
+the turn fails after input is accepted. For visible Claude/Pi/Hermes, follow the
 Rex reference's correction steps, checking capacity, single-flight, and identity
 before the send.
 After the turn, inspect the real diff and rerun affected targeted checks.
