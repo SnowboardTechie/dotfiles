@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "image": "pi-durable-planning-agent:a127b20",
+  "build": "~/.local/share/pi-durable/sgg-deployment",
+  "network": "pi-durable-planning",
+  "gateway": "192.168.129.1",
+  "forge": {
+    "repo": "bryan/durable-pi-workspace"
+  }
+}

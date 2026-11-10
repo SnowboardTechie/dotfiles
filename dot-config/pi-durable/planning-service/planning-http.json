@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "listen": {
+    "socket": "/case/run/http.sock"
+  },
+  "public_origin": "https://bryans-mac-studio.tail5ba690.ts.net:8792",
+  "approved_login": "gczygkswsk@privaterelay.appleid.com",
+  "repositories": [
+    {
+      "name": "bryan/durable-pi-workspace",
+      "git_dir": "/case/repos/durable-pi-workspace.git",
+      "fetch": "forge"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "forgejo": "https://git.snowboardtechie.com",
+  "repos": [
+    "bryan/durable-pi-workspace"
+  ],
+  "listen": {
+    "hosts": [
+      "192.168.128.1",
+      "192.168.129.1"
+    ],
+    "port": 8894
+  },
+  "roles": {
+    "planner": {
+      "login": "pi-planner",
+      "author": {
+        "name": "Pi Planner",
+        "email": "pi-planner@noreply.git.snowboardtechie.com"
+      }
+    },
+    "builder": {
+      "login": "pi-builder",
+      "author": {
+        "name": "Pi Builder",
+        "email": "pi-builder@noreply.git.snowboardtechie.com"
+      }
+    },
+    "reviewer": {
+      "login": "pi-reviewer",
+      "author": {
+        "name": "Pi Reviewer",
+        "email": "pi-reviewer@noreply.git.snowboardtechie.com"
+      }
+    },
+    "service": {
+      "login": "pi-reviewer",
+      "author": {
+        "name": "Pi Reviewer",
+        "email": "pi-reviewer@noreply.git.snowboardtechie.com"
+      },
+      "token_file": "~/.secrets/pi-durable/forge/reviewer.token"
+    }
+  }
+}
