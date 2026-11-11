@@ -11,9 +11,12 @@
     "url": "https://bryans-mac-studio.tail5ba690.ts.net:8790/"
   },
   "notify": {
-    "hermes": [
-      "~/.local/bin/hermes"
-    ],
+    "pi_bots": {
+      "cli": [
+        "/run/current-system/sw/bin/pi-bots"
+      ],
+      "bot": "sgg-bot"
+    },
     "room": "matrix:!zqxJd5umpT7oFvgq5UCj5wZqwr8J6SfWi-2zaX-iYrs"
   },
   "publisher": {

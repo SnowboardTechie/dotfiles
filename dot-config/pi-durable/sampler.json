@@ -19,9 +19,12 @@
     "approved_login": "gczygkswsk@privaterelay.appleid.com"
   },
   "notify": {
-    "hermes": [
-      "~/.local/bin/hermes"
-    ],
+    "pi_bots": {
+      "cli": [
+        "/run/current-system/sw/bin/pi-bots"
+      ],
+      "bot": "steve-bot"
+    },
     "room": "matrix:!tSD1iyTyecHdckUZ6hYRIane02TLhbL1pkp2c3dnToI"
   },
   "rooms": {
