@@ -100,6 +100,44 @@ if [[ -d "$HOME/.claude-personal" ]] && command -v pi >/dev/null 2>&1; then
   }
 fi
 
+# `bot <name>` shows that bot's tab in the `bots` Rex session; `bot` lists the bots.
+# The names come from the bot directories ($PI_BOTS_DIR, default ~/code/pi-bots/bots,
+# each with an AGENTS.md and a pi-bots name: lower-case letters and digits), read on
+# every call and every completion, so a bot made or retired with pi-bots is picked up
+# without a new shell. bot-tab.py beside this file does the work. Only defined where
+# the bot directories exist.
+if [[ -d "${PI_BOTS_DIR:-$HOME/code/pi-bots/bots}" ]] && command -v python3 >/dev/null 2>&1; then
+  if [[ -n "${BASH_VERSION:-}" ]]; then
+    _BOT_TAB_PY="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bot-tab.py"
+  else
+    eval '_BOT_TAB_PY="${${(%):-%x}:A:h}/bot-tab.py"'
+  fi
+  if [[ -f "$_BOT_TAB_PY" ]]; then
+    bot() { python3 "$_BOT_TAB_PY" "$@"; }
+    _bot_names() {
+      local _dir _name
+      [[ -n "${ZSH_VERSION:-}" ]] && setopt local_options null_glob
+      for _dir in "${PI_BOTS_DIR:-$HOME/code/pi-bots/bots}"/*/; do
+        [[ -d "$_dir" ]] || continue
+        _name="${_dir%/}"; _name="${_name##*/}"
+        case "$_name" in *[!a-z0-9]*|"") continue ;; esac
+        [[ -f "${_dir}AGENTS.md" ]] && printf '%s\n' "$_name"
+      done
+    }
+    if [[ -n "${BASH_VERSION:-}" ]]; then
+      _bot_complete() {
+        COMPREPLY=($(compgen -W "$(_bot_names)" -- "${COMP_WORDS[COMP_CWORD]}"))
+      }
+      complete -F _bot_complete bot
+    elif whence compdef >/dev/null 2>&1; then
+      _bot() { (( CURRENT == 2 )) && compadd -- $(_bot_names); }
+      compdef _bot bot
+    fi
+  else
+    unset _BOT_TAB_PY
+  fi
+fi
+
 # Git aliases
 alias ga="git add"
 alias gb="git branch"

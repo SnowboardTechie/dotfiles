@@ -156,6 +156,16 @@ echo "Setting up Pi extensions..."
 "$REPO_ROOT/scripts/reconcile-pi-extensions.sh" --apply || \
     echo "  (Pi extensions incomplete; resolve the reported file and re-run)"
 
+# Pi trusts the bots' parent directory, so a bot's .pi/settings.json applies in Pi.
+echo ""
+echo "Setting up Pi trust for the bot directories..."
+if command -v node >/dev/null 2>&1; then
+    node "$REPO_ROOT/scripts/reconcile-pi-bots-trust.mjs" --apply || \
+        echo "  (Pi trust for the bots incomplete; resolve the reported problem and re-run)"
+else
+    echo "  Skipped (node is not installed)"
+fi
+
 # Retired third-party agent memory (Hindsight, context-mode, claude-mem):
 # remove only their known entries from machine-local Claude/Pi/OpenCode JSON.
 echo ""
