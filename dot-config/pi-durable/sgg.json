@@ -52,6 +52,7 @@
     ],
     "image": "pi-durable-sgg:4b67c9a",
     "network": "pi-durable-sgg",
+    "anchor": "net-anchor-pi-durable-sgg",
     "proxy": "http://192.168.128.1:8888",
     "prior_reviews": "~/code/sgg/vault/reviews",
     "canaries": [

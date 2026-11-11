@@ -3,6 +3,7 @@
   "image": "pi-durable-planning-agent:30bade4",
   "build": "~/.local/share/pi-durable/sgg-deployment",
   "network": "pi-durable-planning",
+  "anchor": "net-anchor-pi-durable-planning",
   "gateway": "192.168.129.1",
   "forge": {
     "repo": "bryan/durable-pi-workspace"
