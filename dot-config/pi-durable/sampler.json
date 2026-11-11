@@ -33,7 +33,16 @@
     "at": "00:15"
   },
   "opencode_go": {
-    "usage_file": "~/.local/state/hermes/opencode-go-usage.json",
-    "stale_after_minutes": 45
+    "session_dirs": [
+      {
+        "dir": "~/.pi/agent/sessions",
+        "label": "Pi desk"
+      },
+      {
+        "dir": "~/.local/state/pi-bots",
+        "label": "bot service"
+      }
+    ],
+    "hermes_root": "~/.hermes"
   }
 }
