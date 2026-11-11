@@ -46,6 +46,14 @@
         "label": "bot service"
       }
     ],
-    "hermes_root": "~/.hermes"
+    "hermes_root": "~/.hermes",
+    "price_check": {
+      "day": 10,
+      "at": "09:00",
+      "room": "notify",
+      "pi": [
+        "/opt/homebrew/bin/pi"
+      ]
+    }
   }
 }
