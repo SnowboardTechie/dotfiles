@@ -86,8 +86,8 @@ check "t1: Codex gets review contract" link_resolves_to "$H/.agents/skills/code-
 check "t1: Codex excludes Hermes orchestration" test ! -e "$H/.agents/skills/coding-agent-handoff-supervision"
 check "t1: Claude receives 27 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 27
 check "t1: OpenCode receives 25 pool links" test "$(links_into_pool "$H/.config/opencode/skills")" -eq 25
-check "t1: Pi receives 25 pool links"       test "$(links_into_pool "$H/.pi/agent/skills")" -eq 25
-check "t1: Hermes receives 38 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 38
+check "t1: Pi receives 26 pool links"       test "$(links_into_pool "$H/.pi/agent/skills")" -eq 26
+check "t1: Hermes receives 39 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 39
 check "t1: Claude-only skill is linked"     link_resolves_to "$H/.claude/skills/dx-target" "$POOL/dx-target"
 check "t1: Claude excludes non-Claude common" test ! -e "$H/.claude/skills/obsidian"
 check "t1: Pi keeps non-Claude common"      link_resolves_to "$H/.pi/agent/skills/obsidian" "$POOL/obsidian"
@@ -263,7 +263,7 @@ out="$(HOME="$H12" RECONCILE_OPENCODE_SKILLS=0 "$RECONCILER" --apply 2>&1)"; rc=
 check "t12: disabled OpenCode apply exits 0" test "$rc" -eq 0
 check "t12: OpenCode pool links are removed" test "$(links_into_pool "$H12/.config/opencode/skills")" -eq 0
 check "t12: foreign OpenCode link survives" test -L "$H12/.config/opencode/skills/foreign"
-check "t12: Pi links are retained" test "$(links_into_pool "$H12/.pi/agent/skills")" -eq 25
+check "t12: Pi links are retained" test "$(links_into_pool "$H12/.pi/agent/skills")" -eq 26
 
 echo ""
 echo "$TESTS tests, $FAILURES failures"

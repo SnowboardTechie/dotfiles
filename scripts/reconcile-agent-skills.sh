@@ -116,13 +116,14 @@ ADAPTED_CORES=(grilling wayfinder tdd diagnosing-bugs codebase-architecture)
 # then reviews, publishes and merges (manual-merge).
 # Desk skills that were Hermes-only, so no shared desk workflow needs a Hermes
 # session: dual-model teammate review, DX preview, proven cores, sprint updates,
-# guided learning. Hermes's own bots and cron (bot-planning, bot-reminders,
+# guided learning, and demo prep (technical-demo-preparation, moved from a
+# Hermes-local copy on 2026-11-12). Hermes's own bots and cron (bot-planning, bot-reminders,
 # yunohost-updates) stay with Hermes until the bot service replaces them.
 PI_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}" next-session
     manual-merge issue-create issue-plan issue-work loop-issue
     coding-agent-handoff-supervision dx-target
     multiagent-pr-review dx-preview proven-cores sprint-deliverable-update
-    guided-learning draw-it)
+    technical-demo-preparation guided-learning draw-it)
 
 # Codex uses the supported user scope (~/.agents/skills), not its bundled
 # ~/.codex/skills/.system directory. Share the portable coding/planning core;
@@ -161,6 +162,7 @@ HERMES_SKILLS=(
     session-handoff next-session black-box-verification
     dx-target dx-preview conforming-tech-specs proven-cores
     catalog-review dependency-review dependency-triage sprint-deliverable-update
+    technical-demo-preparation
     "${ADAPTED_CORES[@]}"
     guided-learning yunohost-updates superwhisper-meetings bot-planning bot-reminders
     rex
