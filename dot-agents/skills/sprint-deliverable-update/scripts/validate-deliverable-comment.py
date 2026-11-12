@@ -49,6 +49,10 @@ NUMBERED_LABEL = re.compile(
 LOCAL_TARGET = re.compile(r"^(?:file://|/tmp/|/private/tmp/|~|[A-Za-z]:\\)")
 ISSUE_LINK = re.compile(r"https?://\S*?/issues/\d+|(?<![\w/])#\d+\b")
 ANY_LINK = re.compile(r"\]\((?P<url>[^)\s]+)")
+# A #NNN that is not a link label ("[#355](...)") and not part of a URL or a
+# "repo#NNN" ref. GitHub resolves it against the repo the comment is posted on
+# (simpler-grants-gov), not the repo the drafter meant.
+BARE_REF = re.compile(r"(?<![\w/\[&])#\d+\b(?!\]\()")
 
 SHAPES = {
     "sprint-update": {
@@ -136,6 +140,11 @@ def check_content(text, report):
     for m in UNFILLED_SLOT.finditer(text):
         report.error(line_of(text, m.start()),
                      f"unfilled template slot: [{m.group('slot')}] (rule 6)")
+
+    for m in BARE_REF.finditer(text):
+        report.error(line_of(text, m.start()),
+                     f"bare reference {m.group(0)!r} resolves against the repo the comment is posted on "
+                     "— use a full-URL link (rule 9)")
 
     for m in NUMBERED_LABEL.finditer(text):
         report.error(line_of(text, m.start()),
@@ -300,8 +309,9 @@ Here's the report for [deliverable name].
 ### Accomplishments
 
 - Closed https://github.com/HHS/simpler-grants-gov/issues/8801
-- Closed #8802
-- Also #8803
+- Closed [#8802](https://github.com/HHS/simpler-grants-gov/issues/8802)
+- Also [#8803](https://github.com/HHS/simpler-grants-gov/issues/8803)
+- Review the pull request for #355
 
 ### Rollover
 
@@ -350,7 +360,9 @@ def selftest():
         check("literal Sprint X.Y caught", "Sprint X.Y" in blob)
         check("local /tmp target caught", "/tmp/shot.png" in blob)
         check("empty alt caught", "empty alt text" in blob)
-        check("ticket-only bullets warned", sum("only to a ticket" in w for w in report.warnings) == 3)
+        check("ticket-only bullets warned", sum("only to a ticket" in w for w in report.warnings) == 4)
+        check("bare #355 caught", "'#355'" in blob)
+        check("linked refs not flagged as bare", "'#8802'" not in blob and "'#8803'" not in blob)
 
         # Wrong artifact flag on the same file must fail on shape.
         report, _ = validate(good, "deliverable-summary", "review", tmp, False)

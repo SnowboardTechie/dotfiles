@@ -3,7 +3,7 @@ name: sprint-deliverable-update
 description: >
   Draft or post sprint updates and final completion summaries on deliverable
   issues, with review-ready evidence and verified screenshot rendering.
-version: 2.5.0
+version: 2.6.0
 author: Bryan Thompson
 license: MIT
 metadata:
@@ -56,6 +56,13 @@ is a separate skill: `sprint-status-update`.
 8. **Resolve images before handoff.** A review bundle may use relative image paths only
    when every file is packaged beside the Markdown. A post-ready comment must use live
    HTTPS image URLs; `/tmp`, `file://`, and bare local paths are forbidden.
+9. **Never write a bare `#NNN`.** Deliverable comments post on `HHS/simpler-grants-gov`,
+   so GitHub links a bare `#355` to that repo's #355 even when you meant
+   `HHS/simpler-grants-protocol#355`. Most sub-issues live in the protocol repo, and
+   the low numbers in the two repos are unrelated (simpler-grants-gov#355 is a closed
+   "Deprecated ticket"). Write every issue or PR reference as a full-URL Markdown link,
+   `[#355](https://github.com/HHS/simpler-grants-protocol/issues/355)`, in every
+   section including Next sprint. The validator rejects bare references.
 
 ## Choose the artifact type
 
@@ -363,3 +370,14 @@ per **The narrative pass**. A draft whose Accomplishments bullets map one-to-one
 ticket titles is not finished.
 
 **Always get user approval before posting.**
+
+## Handing the draft to Bryan
+
+Copying long Markdown out of the terminal is unreliable. After saving the draft, serve
+it as a copy page on a tailnet-only `tailscale serve` HTTPS URL on this Mac's
+`ts.net` name: the raw Markdown in a read-only textarea plus a "Copy comment" button.
+Use the URL itself, never a `file://` path or a localhost URL. Fetch the URL to confirm
+it loads before sharing it, and regenerate the page whenever the draft changes.
+
+After posting, fetch the posted comment and check it link by link: every link names
+the intended repository and each target's title and state match the claim beside it.
