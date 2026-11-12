@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "checkout": "~/.local/share/pi-durable/supervisor-checkout",
+  "workspaces": [
+    "sampler"
+  ],
+  "networks": {
+    "pi-durable-planning": {
+      "gateway": "192.168.129.1"
+    }
+  },
+  "mount_allowlist": [
+    {
+      "path": "~/.config/pi-durable/sampler-vm",
+      "match": "exact"
+    },
+    {
+      "path": "~/.local/state/pi-durable/sgg/usage",
+      "match": "exact"
+    },
+    {
+      "path": "~/.local/state/pi-durable/sgg/cases",
+      "match": "exact"
+    },
+    {
+      "path": "~/.local/state/pi-durable/planning/usage",
+      "match": "exact"
+    },
+    {
+      "path": "~/.local/state/pi-durable/sampler",
+      "match": "exact"
+    },
+    {
+      "path": "~/.pi/agent/sessions",
+      "match": "exact"
+    },
+    {
+      "path": "~/.local/state/pi-bots",
+      "match": "subtree"
+    }
+  ]
+}

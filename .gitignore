@@ -89,3 +89,4 @@ dot-config/pi-durable/planning-service/*
 !dot-config/pi-durable/planning-service/planning.json
 !dot-config/pi-durable/planning-service/planning-http.json
 !dot-config/pi-durable/go-check.json
+!dot-config/pi-durable/supervisor.json
