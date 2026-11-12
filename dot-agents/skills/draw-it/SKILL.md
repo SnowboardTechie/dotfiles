@@ -56,6 +56,8 @@ What makes a drawing explain something:
 - Caption each part with the conclusion ("One band. Keep."), not a description
   of what is drawn.
 - Use one color per meaning and keep it consistent across the picture.
+- Color the caption text by its verdict: amber for the problem, green for the
+  fix or the part to keep, muted grey for neutral notes.
 - Text must fit its box: measure with `draw.textlength` and shorten the words
   rather than shrinking the font.
 

@@ -18,6 +18,7 @@ BG = (13, 17, 23)
 TEXT = (230, 237, 243)
 MUTED = (160, 170, 180)
 ACCENT = (210, 153, 34)
+PROBLEM, GOOD = (227, 160, 50), (86, 211, 100)  # caption text: what's wrong, what to keep
 BLUE, PURPLE, GREEN, RED = (31, 111, 235), (137, 87, 229), (35, 134, 54), (218, 54, 51)
 
 FONTS = (
@@ -69,7 +70,7 @@ def main(out: str) -> None:
     y = box(draw, y, "py-cg- / ts-cg-grants-gov", "plugins: CG SDK + grants.gov fields", PURPLE)
     y = arrow(draw, y, "consumed by")
     box(draw, y, "simpler-grants-gov", "the app that consumes them", GREEN)
-    draw.text((MARGIN, height - 60), "Upstream wins: fix the downstream layer.", font=NOTE, fill=MUTED)
+    draw.text((MARGIN, height - 60), "Upstream wins: fix the downstream layer.", font=NOTE, fill=GOOD)
     image.save(out)
 
 
