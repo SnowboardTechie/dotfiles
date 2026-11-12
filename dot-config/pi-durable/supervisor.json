@@ -38,5 +38,18 @@
       "path": "~/.local/state/pi-bots",
       "match": "subtree"
     }
-  ]
+  ],
+  "git": [
+    "git",
+    "-c",
+    "gpg.program=/run/current-system/sw/bin/pi-durable-verify-commit-signature"
+  ],
+  "follow": {
+    "enabled": true,
+    "every_seconds": 300,
+    "status_command": [
+      "/run/current-system/sw/bin/pi-durable-commit-status"
+    ],
+    "verify_signature": true
+  }
 }
