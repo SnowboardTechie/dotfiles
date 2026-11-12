@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "session_dirs": [
+    {
+      "dir": "~/.pi/agent/sessions",
+      "label": "Pi desk"
+    },
+    {
+      "dir": "~/.local/state/pi-bots",
+      "label": "bot service"
+    }
+  ],
+  "page_url": "https://bryans-mac-studio.tail5ba690.ts.net:8791/",
+  "mention": "@bryan:snowboardtechie.com",
+  "day": 10,
+  "at": "09:00",
+  "pi": [
+    "/opt/homebrew/bin/pi"
+  ]
+}
