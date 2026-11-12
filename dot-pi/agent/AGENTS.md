@@ -2,6 +2,7 @@
 
 - Never add AI attribution or `Co-authored-by` trailers.
 - Be direct and concise; reference file paths explicitly.
+- Link whatever you refer to, whenever a link exists: issues, PRs, comments, CI runs, docs, pages and vault notes. Do it in every message, including repeat mentions and short follow-ups, and say in a few words what the thing is. Never leave a bare `#1234` or an unlinked name: Bryan doesn't hold the numbers in his head and relies on the link for context.
 - Follow repository-local `AGENTS.md` and `CONTRIBUTING.md` over these defaults.
 - Use a Worktrunk-managed linked worktree for tracked project edits and commits.
 - Exception: when Bryan gives a note to capture in a vault, commit the vault-only change directly to `main` in the canonical checkout and push it. Don't open a branch, worktree or PR, and don't ask for approval. If the repository's `main` runs CI on push, still wait for that run to pass.
