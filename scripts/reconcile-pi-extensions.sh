@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Link repository-owned Pi extensions into ~/.pi/agent/extensions.
+# Link repository-owned Pi files into ~/.pi/agent: the extensions and the
+# global AGENTS.md instructions.
 # Usage: reconcile-pi-extensions.sh --check | --apply
 # Never replaces a foreign file or symlink. rex-agent-sessions.ts is owned by
 # reconcile-rex-agent-sessions.sh and is not listed here.
@@ -10,16 +11,18 @@ MODE="${1:-}"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HOME_DIR="${PI_EXTENSIONS_HOME:-$HOME}"
-PI_EXTENSIONS=(
-    pi-rex.ts
-    pi-seat.ts
-    pi-split.ts
+# Paths relative to dot-pi/agent and ~/.pi/agent.
+PI_FILES=(
+    AGENTS.md
+    extensions/pi-rex.ts
+    extensions/pi-seat.ts
+    extensions/pi-split.ts
 )
 drift=0
 
-for ext in "${PI_EXTENSIONS[@]}"; do
-    src="$REPO_ROOT/dot-pi/agent/extensions/$ext"
-    dest="$HOME_DIR/.pi/agent/extensions/$ext"
+for rel in "${PI_FILES[@]}"; do
+    src="$REPO_ROOT/dot-pi/agent/$rel"
+    dest="$HOME_DIR/.pi/agent/$rel"
     if [[ -L "$dest" && "$(readlink "$dest")" == "$src" ]]; then
         echo "  OK   $dest"
     elif [[ -e "$dest" || -L "$dest" ]]; then
