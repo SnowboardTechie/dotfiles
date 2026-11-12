@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-# Claude Max 5-hour usage: the 75% capacity gate in references/rex-claude-handoff.md.
+# Claude subscription usage: the 75% capacity gate in references/rex-claude-handoff.md.
+# It reports the 5-hour window when the response carries one, and the weekly (7-day)
+# window when it carries only that, as a weekly-only plan does. Which seat has which
+# windows is never assumed: a plan can gain or lose its 5-hour window.
+# Render mode prints " 42% ↻1:30" for the 5-hour window and
+# " 25% weekly ↻6d 3h" for the weekly one; the first NN% is the utilization.
 # This is read-only: Claude Code owns OAuth token refresh and rotation.
 
 CACHE_FILE="${XDG_RUNTIME_DIR:-/tmp}/claude-usage-cache"
@@ -59,9 +64,23 @@ cache_age() {
     printf '%s\n' "$(( $(date +%s) - ${mtime:-0} ))"
 }
 
-if [[ "$MODE" == "render" && -f "$CACHE_FILE" ]] && [[ $(cache_age) -lt $CACHE_TTL ]]; then
+# The cache holds utilization, reset epoch, and the window they're for (5h or 7d).
+# A two-line cache predates weekly windows and is a 5-hour reading.
+read_cache() {
     UTILIZATION=$(sed -n '1p' "$CACHE_FILE")
     RESET_EPOCH=$(sed -n '2p' "$CACHE_FILE")
+    WINDOW=$(sed -n '3p' "$CACHE_FILE")
+    WINDOW="${WINDOW:-5h}"
+}
+
+# header_value NAME PATTERN: the first PATTERN match in the value of header NAME.
+header_value() {
+    printf '%s' "$HEADERS" | grep -i "anthropic-ratelimit-unified-$1:" | sed 's/.*: *//' \
+        | grep -oE "$2" | head -1
+}
+
+if [[ "$MODE" == "render" && -f "$CACHE_FILE" ]] && [[ $(cache_age) -lt $CACHE_TTL ]]; then
+    read_cache
 else
     # The bearer header goes in on stdin (printf is a builtin), keeping the
     # token out of curl's argv where any local user could read it in ps.
@@ -78,23 +97,31 @@ else
         -d '{"model":"claude-haiku-4-5-20251001","max_tokens":1,"messages":[{"role":"user","content":"hi"}]}' \
         "https://api.anthropic.com/v1/messages" 2>/dev/null)
 
-    UTILIZATION=$(printf '%s' "$HEADERS" | grep -i 'anthropic-ratelimit-unified-5h-utilization' | sed 's/.*: *//' | grep -oE '[0-9]+\.?[0-9]*' | head -1)
-    RESET_EPOCH=$(printf '%s' "$HEADERS" | grep -i 'anthropic-ratelimit-unified-5h-reset' | sed 's/.*: *//' | grep -oE '[0-9]+' | head -1)
+    # The 5-hour window wins when present; otherwise the weekly window, if complete.
+    WINDOW=''
+    for CANDIDATE in 5h 7d; do
+        UTILIZATION=$(header_value "$CANDIDATE-utilization" '[0-9]+\.?[0-9]*')
+        RESET_EPOCH=$(header_value "$CANDIDATE-reset" '[0-9]+')
+        if [[ -n "$UTILIZATION" && -n "$RESET_EPOCH" ]]; then
+            WINDOW="$CANDIDATE"
+            break
+        fi
+    done
 
-    if [[ -z "$UTILIZATION" || -z "$RESET_EPOCH" ]]; then
+    if [[ -z "$WINDOW" ]]; then
         if [[ "$MODE" == "render" && -f "$CACHE_FILE" ]]; then
-            UTILIZATION=$(sed -n '1p' "$CACHE_FILE")
-            RESET_EPOCH=$(sed -n '2p' "$CACHE_FILE")
+            read_cache
         else
             usage_unavailable
         fi
     else
-        printf '%s\n%s\n' "$UTILIZATION" "$RESET_EPOCH" > "${CACHE_FILE}.tmp" \
+        printf '%s\n%s\n%s\n' "$UTILIZATION" "$RESET_EPOCH" "$WINDOW" > "${CACHE_FILE}.tmp" \
             && mv "${CACHE_FILE}.tmp" "$CACHE_FILE"
     fi
 fi
 
 [[ -n "$UTILIZATION" && -n "$RESET_EPOCH" ]] || usage_unavailable
+[[ "$WINDOW" == 5h || "$WINDOW" == 7d ]] || usage_unavailable
 
 PCT=$(awk "BEGIN {printf \"%.0f\", $UTILIZATION * 100}" 2>/dev/null)
 [[ "$PCT" =~ ^[0-9]+$ ]] || usage_unavailable
@@ -103,16 +130,32 @@ REMAINING=$(( RESET_EPOCH - $(date +%s) ))
 HOURS=$(( REMAINING / 3600 ))
 MINS=$(printf "%02d" $(( (REMAINING % 3600) / 60 )))
 
+# The weekly window's reset can be days away: past a day it reads "6d 3h".
+if [[ "$WINDOW" == 5h ]]; then
+    NAME="5-hour"
+    LABEL=''
+    RESET_IN="$HOURS:$MINS"
+else
+    NAME="weekly"
+    LABEL=' weekly'
+    if [[ $REMAINING -ge 86400 ]]; then
+        RESET_IN="$(( REMAINING / 86400 ))d $(( (REMAINING % 86400) / 3600 ))h"
+    else
+        RESET_IN="$HOURS:$MINS"
+    fi
+fi
+
 if [[ "$MODE" == "--check-capacity" ]]; then
     if [[ "$PCT" -ge 100 ]]; then
-        printf 'Claude 5-hour capacity exhausted (%s%%); reset in %s:%s\n' \
-            "$PCT" "$HOURS" "$MINS" >&2
+        printf 'Claude %s capacity exhausted (%s%%); reset in %s\n' \
+            "$NAME" "$PCT" "$RESET_IN" >&2
         exit 75
     fi
-    printf 'Claude 5-hour capacity available: %s%%; reset in %s:%s\n' \
-        "$PCT" "$HOURS" "$MINS"
+    printf 'Claude %s capacity available: %s%%; reset in %s\n' \
+        "$NAME" "$PCT" "$RESET_IN"
     exit 0
 fi
 
-# Glyph Rail module:  U+EC82 Claude, ↻ U+21BB quota reset.
-printf ' %s%% ↻%s:%s\n' "$PCT" "$HOURS" "$MINS"
+# Glyph Rail module:  U+EC82 Claude, ↻ U+21BB quota reset. The first NN% is the
+# utilization callers parse; "weekly" follows it only for the weekly window.
+printf ' %s%%%s ↻%s\n' "$PCT" "$LABEL" "$RESET_IN"

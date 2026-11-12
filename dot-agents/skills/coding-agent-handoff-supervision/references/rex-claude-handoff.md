@@ -118,7 +118,10 @@ worker removes the tab.
 - `--focus=false` keeps Bryan's focus; `--keep-open` keeps the pane readable
   after Pi exits. Record `worker_rex_window` as the sub-agents tab.
 - The worker spends the Claude seat its `PI_CLAUDE_CODE_CONFIG_DIR` names, so
-  the capacity gate reads that seat. An empty capacity reading is a stop, never a pass. The usage line begins with a non-ASCII icon (e.g. `<icon> 72% ↻1:11`),
+  the capacity gate reads that seat. An empty capacity reading is a stop, never a pass. The usage line reports
+  the 5-hour window when the seat has one (e.g. `<icon> 72% ↻1:11`) and the
+  weekly window when it doesn't (e.g. `<icon> 25% weekly ↻6d 3h`). Either way
+  the first `NN%` is the utilization. The line begins with a non-ASCII icon,
   so an anchored `^ *[0-9]+` never matches; parse it with `grep -oE '[0-9]+%'`
   as above, and make any capacity waiter fail at once on an empty reading
   instead of looping.

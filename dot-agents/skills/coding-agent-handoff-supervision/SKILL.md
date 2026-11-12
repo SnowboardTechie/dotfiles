@@ -310,7 +310,11 @@ Run the live capacity gate before the block is created. A Pi worker on
 work seat. Any nonzero
 capacity result stops before a provider turn. An empty capacity reading is a stop, never a pass.
 
-**Bryan's capacity ceiling is 75% consumed of the 5-hour window.** Do not start
+**Bryan's capacity ceiling is 75% consumed of the window the gate reads.** The
+gate reads the 5-hour window when the seat has one, and the weekly window when
+it doesn't. The 75% ceiling applies to whichever window it reads. For a weekly-only
+seat, that ceiling is the coordinator's reading of Bryan's rule, recorded
+2026-11-11, and it stands until he sets another number. Do not start
 or prompt a worker turn at or above 75%. Below 75%, dispatch: the remaining 25%
 is the buffer that absorbs a turn's overrun. Do not forecast whether the
 expected turn, a concurrent session or past-lane costs will push past 75%, and
