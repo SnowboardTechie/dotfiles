@@ -3,6 +3,11 @@
 # All writes are isolated inside temporary HOME directories, removed on exit.
 
 set -u
+# The reconciler links into ${XDG_CONFIG_HOME:-$HOME/.config}; keep every run
+# inside the temporary HOME, and prove the real config directory is untouched.
+REAL_RC="${XDG_CONFIG_HOME:-$HOME/.config}/blesh/init.sh"
+real_rc_before="$(readlink "$REAL_RC" 2>/dev/null || echo absent)"
+unset XDG_CONFIG_HOME
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RECONCILER="$REPO_ROOT/scripts/reconcile-bash-enhancements.sh"
@@ -94,20 +99,20 @@ check "failed invocations did not mutate"   test "$(cat "$H4/.bashrc")" = "# rc"
 RC_SOURCE="$REPO_ROOT/dot-config/blesh/init.sh"
 H5="$(new_home)"
 printf '# rc\n' > "$H5/.bashrc"
-out="$(HOME="$H5" XDG_CONFIG_HOME= "$RECONCILER" --check 2>&1)"; rc=$?
+out="$(HOME="$H5" "$RECONCILER" --check 2>&1)"; rc=$?
 check "settings: check exits 0"             test "$rc" -eq 0
 check "settings: check reports pending link" bash -c 'grep -q "would link" <<<"$1"' _ "$out"
 check "settings: check creates nothing"      test ! -e "$H5/.config/blesh"
-out="$(HOME="$H5" XDG_CONFIG_HOME= "$RECONCILER" --apply 2>&1)"; rc=$?
+out="$(HOME="$H5" "$RECONCILER" --apply 2>&1)"; rc=$?
 check "settings: apply exits 0"             test "$rc" -eq 0
 check "settings: apply links init.sh"       test "$(readlink "$H5/.config/blesh/init.sh")" = "$RC_SOURCE"
-out="$(HOME="$H5" XDG_CONFIG_HOME= "$RECONCILER" --apply 2>&1)"
+out="$(HOME="$H5" "$RECONCILER" --apply 2>&1)"
 check "settings: second apply reports ok"   bash -c 'grep -q "settings already linked" <<<"$1"' _ "$out"
 
 H6="$(new_home)"
 printf '# rc\n' > "$H6/.bashrc"
 mkdir -p "$H6/.config/blesh" && printf '# mine\n' > "$H6/.config/blesh/init.sh"
-out="$(HOME="$H6" XDG_CONFIG_HOME= "$RECONCILER" --apply 2>&1)"; rc=$?
+out="$(HOME="$H6" "$RECONCILER" --apply 2>&1)"; rc=$?
 check "settings: existing file exits 0"     test "$rc" -eq 0
 check "settings: existing file warned"      bash -c 'grep -q "not this repository" <<<"$1"' _ "$out"
 check "settings: existing file untouched"   test "$(cat "$H6/.config/blesh/init.sh")" = "# mine"
@@ -115,7 +120,7 @@ check "settings: existing file untouched"   test "$(cat "$H6/.config/blesh/init.
 H7="$(new_home)"
 printf '# rc\n' > "$H7/.bashrc"
 printf '# blerc\n' > "$H7/.blerc"
-out="$(HOME="$H7" XDG_CONFIG_HOME= "$RECONCILER" --apply 2>&1)"
+out="$(HOME="$H7" "$RECONCILER" --apply 2>&1)"
 check "settings: ~/.blerc wins, warned"     bash -c 'grep -q "blerc exists" <<<"$1"' _ "$out"
 check "settings: ~/.blerc, no link made"    test ! -e "$H7/.config/blesh/init.sh"
 
@@ -130,6 +135,8 @@ fixed="$(bash --norc -c '
     ((4000<=da2r[1]&&da2r[1]<4100&&3<=da2r[2])) 2>&1
     printf %s "$_ble_term_DA2R"' _ "$RC_SOURCE" 2>&1)"
 check "settings: DA2 reply stored in base 10" test "$fixed" = "1;12800;0"
+
+check "real config directory untouched" test "$(readlink "$REAL_RC" 2>/dev/null || echo absent)" = "$real_rc_before"
 
 echo ""
 echo "$TESTS tests, $FAILURES failures"
