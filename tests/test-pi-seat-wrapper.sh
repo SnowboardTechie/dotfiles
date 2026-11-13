@@ -71,7 +71,8 @@ EXT="$REPO_ROOT/dot-pi/agent/extensions/pi-seat.ts"
 RH="$TMP/recon-home"
 mkdir -p "$RH"
 PI_EXTENSIONS_HOME="$RH" "$RECON" --check >/dev/null; rc=$?
-check "reconcile: check reports missing link" "1" "$rc"
+check "reconcile: check exits 0 with links missing" "0" "$rc"
+check "reconcile: check reports the missing link" "yes" "$(PI_EXTENSIONS_HOME="$RH" "$RECON" --check | grep -q 'MISSING.*pi-seat.ts' && echo yes || echo no)"
 check "reconcile: check does not create the link" "absent" "$([[ -e "$RH/.pi/agent/extensions/pi-seat.ts" ]] && echo present || echo absent)"
 PI_EXTENSIONS_HOME="$RH" "$RECON" --apply >/dev/null; rc=$?
 check "reconcile: apply exits 0" "0" "$rc"
@@ -80,7 +81,7 @@ check "reconcile: apply links pi-rex" "$REPO_ROOT/dot-pi/agent/extensions/pi-rex
 check "reconcile: apply links pi-split" "$REPO_ROOT/dot-pi/agent/extensions/pi-split.ts" "$(readlink "$RH/.pi/agent/extensions/pi-split.ts")"
 check "reconcile: apply links global AGENTS.md" "$REPO_ROOT/dot-pi/agent/AGENTS.md" "$(readlink "$RH/.pi/agent/AGENTS.md")"
 PI_EXTENSIONS_HOME="$RH" "$RECON" --check >/dev/null; rc=$?
-check "reconcile: check is clean after apply" "0" "$rc"
+check "reconcile: check is clean after apply" "no" "$(PI_EXTENSIONS_HOME="$RH" "$RECON" --check | grep -q MISSING && echo yes || echo no)"
 FH="$TMP/foreign-home"
 mkdir -p "$FH/.pi/agent/extensions"
 echo mine >"$FH/.pi/agent/extensions/pi-seat.ts"

@@ -4,8 +4,9 @@
 # Omarchy owns its own environment (shell, terminal, editor, Git, GPG,
 # Zed, and tool settings). This entry point deploys only additive personal
 # assets — curated skills, portable aliases, guarded Bash enhancements,
-# personal shell plugins, and retired agent-memory cleanup — and never runs Stow,
-# installs packages, or uses elevated privileges.
+# personal shell plugins, Pi's extensions and Claude Code provider, and retired
+# agent-memory cleanup — and never runs Stow, installs system packages, or uses
+# elevated privileges.
 #
 # Future additive reconcilers get appended to the RECONCILERS list below;
 # application-specific mutation logic never lives in this script itself.
@@ -74,6 +75,8 @@ RECONCILERS=(
     "$SCRIPT_DIR/reconcile-shell-additions.sh"
     "$SCRIPT_DIR/reconcile-bash-enhancements.sh"
     "$SCRIPT_DIR/reconcile-omarchy-auto-suspend.sh"
+    "$SCRIPT_DIR/reconcile-pi-extensions.sh"
+    "$SCRIPT_DIR/reconcile-pi-claude-code.sh"
     "$SCRIPT_DIR/retire-agent-memory.py"
 )
 
@@ -90,7 +93,11 @@ Ownership summary:
   existing ~/.bashrc (Omarchy's designated personal-additions section)
   loading portable aliases from dot-config/shell/aliases.sh plus an optional,
   guarded Ble.sh integration for inline suggestions/highlighting, enables a
-  repository-owned 45-minute auto-suspend shell service, and removes only the
+  repository-owned 45-minute auto-suspend shell service, links the repository's
+  Pi extensions and global AGENTS.md into ~/.pi/agent, installs the
+  pi-claude-code Pi package and makes claude-code Pi's default provider when
+  it was unset or anthropic (so Claude turns count against the plan, not
+  extra usage), and removes only the
   retired Hindsight / context-mode / claude-mem entries from Claude, Pi, and
   OpenCode JSON settings (native memory and data untouched) — nothing else.
 
@@ -103,5 +110,5 @@ Ownership summary:
     - Zed, OpenCode, and Claude settings files (beyond that retired-entry cleanup)
     - anything under /usr/share/omarchy
 
-  No Stow operation, package installation, or privileged command was run.
+  No Stow operation, system package installation, or privileged command was run.
 EOF

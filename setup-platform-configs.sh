@@ -156,6 +156,12 @@ echo "Setting up Pi extensions..."
 "$REPO_ROOT/scripts/reconcile-pi-extensions.sh" --apply || \
     echo "  (Pi extensions incomplete; resolve the reported file and re-run)"
 
+# Pi reaches Claude through Claude Code (plan limits), not a direct subscription
+# login that Anthropic bills as extra usage.
+echo ""
+"$REPO_ROOT/scripts/reconcile-pi-claude-code.sh" --apply || \
+    echo "  (Pi Claude Code provider incomplete; resolve the reported problem and re-run)"
+
 # Pi trusts the bots' parent directory, so a bot's .pi/settings.json applies in Pi.
 echo ""
 echo "Setting up Pi trust for the bot directories..."

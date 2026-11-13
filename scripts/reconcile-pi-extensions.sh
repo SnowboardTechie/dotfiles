@@ -3,7 +3,8 @@
 # global AGENTS.md instructions.
 # Usage: reconcile-pi-extensions.sh --check | --apply
 # Never replaces a foreign file or symlink. rex-agent-sessions.ts is owned by
-# reconcile-rex-agent-sessions.sh and is not listed here.
+# reconcile-rex-agent-sessions.sh and is not listed here. --check only reports
+# and exits 0, like the other reconcilers setup-omarchy.sh runs.
 set -e
 
 MODE="${1:-}"
@@ -11,6 +12,7 @@ MODE="${1:-}"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HOME_DIR="${PI_EXTENSIONS_HOME:-$HOME}"
+echo "Pi extensions (${MODE#--}) for $HOME_DIR/.pi/agent"
 # Paths relative to dot-pi/agent and ~/.pi/agent.
 PI_FILES=(
     AGENTS.md
@@ -18,7 +20,6 @@ PI_FILES=(
     extensions/pi-seat.ts
     extensions/pi-split.ts
 )
-drift=0
 
 for rel in "${PI_FILES[@]}"; do
     src="$REPO_ROOT/dot-pi/agent/$rel"
@@ -32,8 +33,8 @@ for rel in "${PI_FILES[@]}"; do
         ln -s "$src" "$dest"
         echo "  Linked $dest"
     else
-        echo "  MISSING $dest"; drift=1
+        echo "  MISSING $dest"
     fi
 done
 
-exit $drift
+exit 0
