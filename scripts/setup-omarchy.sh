@@ -70,6 +70,9 @@ fi
 
 echo "Omarchy additive setup ($MODE)"
 
+# Omarchy hosts don't run Hermes; set RECONCILE_HERMES_SKILLS=1 to link its skills anyway.
+export RECONCILE_HERMES_SKILLS="${RECONCILE_HERMES_SKILLS:-0}"
+
 RECONCILERS=(
     "$SCRIPT_DIR/reconcile-agent-skills.sh"
     "$SCRIPT_DIR/reconcile-shell-additions.sh"
@@ -88,8 +91,8 @@ cat <<'EOF'
 
 Ownership summary:
   This setup is additive. It links curated personal agent skills into
-  ~/.claude/skills, ~/.config/opencode/skills, ~/.pi/agent/skills, and
-  ~/.hermes/skills/personal, and appends one marked source line to an
+  ~/.claude/skills, ~/.config/opencode/skills, and ~/.pi/agent/skills
+  (Hermes only with RECONCILE_HERMES_SKILLS=1), and appends one marked source line to an
   existing ~/.bashrc (Omarchy's designated personal-additions section)
   loading portable aliases from dot-config/shell/aliases.sh plus an optional,
   guarded Ble.sh integration for inline suggestions/highlighting, enables a

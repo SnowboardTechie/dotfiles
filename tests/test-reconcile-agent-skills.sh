@@ -265,6 +265,19 @@ check "t12: OpenCode pool links are removed" test "$(links_into_pool "$H12/.conf
 check "t12: foreign OpenCode link survives" test -L "$H12/.config/opencode/skills/foreign"
 check "t12: Pi links are retained" test "$(links_into_pool "$H12/.pi/agent/skills")" -eq 26
 
+# --- Test 13: RECONCILE_HERMES_SKILLS=0 leaves Hermes untouched ----------------
+H13="$(new_home)"
+TMP_HOMES+=("$H13")
+out="$(HOME="$H13" RECONCILE_HERMES_SKILLS=0 "$RECONCILER" --apply 2>&1)"; rc=$?
+check "t13: Hermes-skipped apply exits 0" test "$rc" -eq 0
+check "t13: Hermes skip is reported" bash -c 'grep -q "Hermes: skipped" <<<"$1"' _ "$out"
+check "t13: no Hermes links are created" test ! -e "$H13/.hermes/skills/personal"
+check "t13: Pi links are still created" test "$(links_into_pool "$H13/.pi/agent/skills")" -eq 26
+HOME="$H13" "$RECONCILER" --apply >/dev/null 2>&1
+n13="$(links_into_pool "$H13/.hermes/skills/personal")"
+HOME="$H13" RECONCILE_HERMES_SKILLS=0 "$RECONCILER" --apply >/dev/null 2>&1
+check "t13: existing Hermes links are not pruned" test "$(links_into_pool "$H13/.hermes/skills/personal")" -eq "$n13"
+
 echo ""
 echo "$TESTS tests, $FAILURES failures"
 if [[ $FAILURES -gt 0 ]]; then

@@ -30,6 +30,8 @@ Usage: reconcile-agent-skills.sh (--check | --apply)
 
   RECONCILE_OPENCODE_SKILLS=0 retires only pool-owned OpenCode skill links
             on hosts that no longer run OpenCode; other tools are unchanged.
+  RECONCILE_HERMES_SKILLS=0 skips Hermes entirely: no links are created or
+            pruned in ~/.hermes/skills/personal.
 EOF
 }
 
@@ -328,7 +330,12 @@ else
 fi
 reconcile_tool "Codex"    "$HOME/.agents/skills"          ""                                      "${CODEX_SKILLS[@]}"
 reconcile_tool "Pi"       "$HOME/.pi/agent/skills"        ""                                      "${PI_SKILLS[@]}"
-reconcile_tool "Hermes"   "$HOME/.hermes/skills/personal" ""                                      "${HERMES_SKILLS[@]}"
+if [[ "${RECONCILE_HERMES_SKILLS:-1}" == "0" ]]; then
+    echo ""
+    echo "Hermes: skipped (RECONCILE_HERMES_SKILLS=0)"
+else
+    reconcile_tool "Hermes"   "$HOME/.hermes/skills/personal" ""                                      "${HERMES_SKILLS[@]}"
+fi
 
 echo ""
 if [[ "$MODE" == "check" ]]; then
