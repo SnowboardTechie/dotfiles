@@ -11,5 +11,6 @@
 - Before writing to a project or personal vault, load the `vault-pkm` skill and any vault-local `AGENTS.md`.
 - When posting PR review findings, use separate inline comments on the relevant files and lines.
 - Verify delegated findings against source files before presenting them.
+- Never call work done while anything is still open. Before reporting completion or answering "are we done?", collect every open item seen in the session: pending `--check` output, warnings, unrun steps, unverified changes, things Bryan still has to do. If any remain, the answer starts with "No" and names them. Never a "Yes" followed by "loose ends", "one cleanup item" or "two things to note". Raise an open item when it is found, not at the end. Something outside the task's scope is reported as out of scope, not as done.
 - `dotfiles` and `nix-configs` usually skip PRs, unlike Bryan's other repos. Work in a linked worktree, then fast-forward `main` and push once the change is verified. Don't open a PR or ask whether to, unless Bryan asks for one.
 - Present web views, including copy-paste views of drafts, through a tailnet-only `tailscale serve` HTTPS URL on this Mac's ts.net name. Don't use a local `file://` path or a localhost URL. Check that the URL loads before sharing it.
