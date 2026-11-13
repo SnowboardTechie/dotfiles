@@ -184,7 +184,10 @@ if [[ -d "$HOME/code/sgg/HHS/simpler-grants-protocol" ]]; then
   alias sgp="cd ~/code/sgg/HHS/simpler-grants-protocol"
 fi
 if [[ -d "$HOME/second-brain" ]]; then
-  alias second-brain="cd ~/second-brain/"
+  # Opens Pi in the vault, the only thing done there. The subshell keeps the
+  # caller's directory, and the pi() wrapper above picks the personal seat.
+  unalias second-brain 2>/dev/null
+  second-brain() { (cd ~/second-brain && pi "$@"); }
 fi
 
 # Worktrunk aliases (git worktree management)
