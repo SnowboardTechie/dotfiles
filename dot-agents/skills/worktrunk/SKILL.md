@@ -95,7 +95,7 @@ The pattern is `{repo}.{branch}` as a sibling directory. All worktrees share the
 | Task | Command | Notes |
 |------|---------|-------|
 | Switch to worktree | `wt switch <branch>` | Changes directory to the worktree |
-| Create + switch | `wt switch --create <branch>` | Creates from the default branch; add `--base <ref>` when the base is explicit |
+| Create + switch | `wt switch --create <branch>` | Creates from the local default branch: `git pull --ff-only` there first (or pass `--base origin/main` after `git fetch`); add `--base <ref>` when the base is explicit |
 | Create + run agent | `wt switch -c -x <agent-cli> <branch>` | Use `hermes`, `claude`, `opencode`, or `pi` as installed |
 | List all worktrees | `wt list` | Shows branch, status, ahead/behind, age |
 | Full list with summaries | `wt list --full` | Includes LLM-generated branch summaries |
