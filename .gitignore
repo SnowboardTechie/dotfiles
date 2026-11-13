@@ -18,6 +18,7 @@ dot-gitconfig.snowboardtechie
 # managed tools; anything new stays ignored until it gets its own line here.
 dot-config/*
 !dot-config/atuin/
+!dot-config/blesh/
 !dot-config/direnv/
 !dot-config/gh-dash/
 !dot-config/git/
