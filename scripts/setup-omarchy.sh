@@ -78,6 +78,7 @@ RECONCILERS=(
     "$SCRIPT_DIR/reconcile-shell-additions.sh"
     "$SCRIPT_DIR/reconcile-bash-enhancements.sh"
     "$SCRIPT_DIR/reconcile-omarchy-auto-suspend.sh"
+    "$SCRIPT_DIR/reconcile-omarchy-clipboard-bridge.sh"
     "$SCRIPT_DIR/reconcile-pi-extensions.sh"
     "$SCRIPT_DIR/reconcile-pi-claude-code.sh"
     "$SCRIPT_DIR/retire-agent-memory.py"
@@ -96,7 +97,9 @@ Ownership summary:
   existing ~/.bashrc (Omarchy's designated personal-additions section)
   loading portable aliases from dot-config/shell/aliases.sh plus an optional,
   guarded Ble.sh integration for inline suggestions/highlighting, enables a
-  repository-owned 45-minute auto-suspend shell service, links the repository's
+  repository-owned 45-minute auto-suspend shell service, runs a clipboard
+  bridge to a Mac as a user service when ~/.config/clipboard-bridge/host names
+  one, links the repository's
   Pi extensions and global AGENTS.md into ~/.pi/agent, installs the
   pi-claude-code Pi package and makes claude-code Pi's default provider when
   it was unset or anthropic (so Claude turns count against the plan, not
