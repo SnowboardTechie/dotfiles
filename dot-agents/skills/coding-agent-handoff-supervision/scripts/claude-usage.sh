@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Claude subscription usage: the 75% capacity gate in references/rex-claude-handoff.md.
+# Claude subscription usage: the capacity gate (75% of a 5-hour window, 90% of a weekly one) in references/rex-claude-handoff.md.
 # It reports the 5-hour window when the response carries one, and the weekly (7-day)
 # window when it carries only that, as a weekly-only plan does. Which seat has which
 # windows is never assumed: a plan can gain or lose its 5-hour window.

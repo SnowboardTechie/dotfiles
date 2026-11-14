@@ -279,7 +279,7 @@ The worker opens in the orchestrator's "<tab label> Sub Agents" tab (then
 `scripts/rex_subagent_slot.py`, a new tab's root block being the worker itself,
 never beside the coordinator's own block. The worker gets the prompt file as
 its first turn and a fixed `--session-id`. The coordinator does the checks by hand:
-identity record, the 75% capacity gate, one turn at a time, settlement from
+identity record, the capacity gate (75% of a 5-hour window, 90% of a weekly one), one turn at a time, settlement from
 transcript plus handback, close. Background `terminal` processes do not inherit
 foreground exports: put the `export` (or the literal values) inside every
 background command.
@@ -310,18 +310,18 @@ Run the live capacity gate before the block is created. A Pi worker on
 work seat. Any nonzero
 capacity result stops before a provider turn. An empty capacity reading is a stop, never a pass.
 
-**Bryan's capacity ceiling is 75% consumed of the window the gate reads.** The
-gate reads the 5-hour window when the seat has one, and the weekly window when
-it doesn't. The 75% ceiling applies to whichever window it reads. For a weekly-only
-seat, that ceiling is the coordinator's reading of Bryan's rule, recorded
-2026-11-11, and it stands until he sets another number. Do not start
-or prompt a worker turn at or above 75%. Below 75%, dispatch: the remaining 25%
-is the buffer that absorbs a turn's overrun. Do not forecast whether the
-expected turn, a concurrent session or past-lane costs will push past 75%, and
-do not defer dispatch to wait for a reset while below it. A self-imposed lower
-threshold (say, "start once below 55%") idles ready lanes for hours. Reviewers
-are worker turns too, and the same rule applies to them. When usage really is
-at or above 75%, a background waiter may poll for it to drop below 75. Parse the
+**Bryan's capacity ceiling depends on the window the gate reads: 75% consumed
+of a 5-hour window, 90% of a weekly one.** The gate reads the 5-hour window
+when the seat has one, and the weekly window when it doesn't (the reading then
+says `weekly`). The 75% was set for a 5-hour window; for a weekly-only seat
+Bryan set 90% on 2026-11-14. Do not start or prompt a worker turn at or above
+the ceiling. Below it, dispatch: the remainder is the buffer that absorbs a
+turn's overrun. Do not forecast whether the expected turn, a concurrent session
+or past-lane costs will push past the ceiling, and do not defer dispatch to
+wait for a reset while below it. A self-imposed lower threshold (say, "start
+once below 55%") idles ready lanes for hours. Reviewers are worker turns too,
+and the same rule applies to them. When usage really is at or above the
+ceiling, a background waiter may poll for it to drop below it. Parse the
 reading as `references/rex-claude-handoff.md` describes, and make an empty
 reading fail the waiter at once.
 
@@ -638,7 +638,7 @@ resume a visible Rex worker's identity.
 - [ ] Visible path uses a Rex sub-agents tab slot (max four, 2x2) per references/rex-claude-handoff.md, without stealing focus
 - [ ] The worker command sets `PI_PROGRAM_STATUS=0` (Claude: `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`), so Rex raises no alerts for it
 - [ ] The coordinator persisted all six identity fields
-- [ ] Seat capacity passed (below 75%) and no other turn was in flight in the worker runtime session
+- [ ] Seat capacity passed (below 75% of a 5-hour window, or 90% of a weekly one) and no other turn was in flight in the worker runtime session
 - [ ] No overlapping turn targeted the same session; unrelated sessions were not blocked
 - [ ] Delivery claims have acknowledgement evidence, not merely a background process handle
 - [ ] Rejected or uncertain submissions were inspected and recovered without bypass or duplicate delivery

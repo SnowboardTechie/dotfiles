@@ -334,7 +334,7 @@ Do the checks by hand as that reference describes. Persist
 - `worker_runtime_session_id`; and
 - `worker_worktree_identity`.
 
-The coordinator hard-gates the worker's Claude-seat capacity (below 75%) before start and every
+The coordinator hard-gates the worker's Claude-seat capacity (below 75% of a 5-hour window, or 90% of a weekly one) before start and every
 prompt, serializes provider turns within each worker runtime session, waits for
 settlement (transcript plus handback), and records start/end capacity.
 Independent worker sessions may work concurrently in separate worktrees; another

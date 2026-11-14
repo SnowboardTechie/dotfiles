@@ -60,8 +60,11 @@ SK=~/code/dotfiles/dot-agents/skills/coding-agent-handoff-supervision
 # work seat (the default login); everything else, durable-pi-workspace included, the
 # personal subscription in ~/.claude-personal.
 case "$W/" in "$HOME/code/sgg/"*) CCD= ;; *) CCD="$HOME/.claude-personal" ;; esac
-cap=$(env ${CCD:+CLAUDE_CONFIG_DIR="$CCD"} "$SK/scripts/claude-usage.sh" | grep -oE '[0-9]+%' | head -1 | tr -d %)
-[ -n "$cap" ] && [ "$cap" -lt 75 ] || { echo "capacity $cap: stop"; exit 1; }
+usage=$(env ${CCD:+CLAUDE_CONFIG_DIR="$CCD"} "$SK/scripts/claude-usage.sh")
+cap=$(printf %s "$usage" | grep -oE '[0-9]+%' | head -1 | tr -d %)
+# The ceiling is 75% of a 5-hour window and 90% of a weekly one (Bryan, 2026-11-14).
+case "$usage" in *weekly*) ceiling=90 ;; *) ceiling=75 ;; esac
+[ -n "$cap" ] && [ "$cap" -lt "$ceiling" ] || { echo "capacity $cap (ceiling $ceiling): stop"; exit 1; }
 UUID=$(uuidgen | tr A-Z a-z)
 if [ -n "$CCD" ]; then SEAT=(env PI_CLAUDE_CODE_CONFIG_DIR="$CCD"); else SEAT=(env -u PI_CLAUDE_CODE_CONFIG_DIR); fi
 WORKER=("${SEAT[@]}" PI_PROGRAM_STATUS=0 pi --name "$NAME" --session-id "$UUID"
