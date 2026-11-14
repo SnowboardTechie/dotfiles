@@ -191,6 +191,53 @@ test("an interactive Pi gets Rex's briefing and the naming note as one prompt se
 	assert.equal(rex.calls.filter((c) => c[0] === "__internal").length, 1, "Rex's text is fetched once");
 });
 
+test("the prompt section stays byte-identical after a rename, and later turns do not ask Rex", async () => {
+	// A changed section reaches Claude as a mid-conversation system message. Through
+	// pi-claude-code that message pushed requests past Anthropic's four cache breakpoints
+	// ("Found 5"), and any change also costs a prompt-cache write. The tool result already
+	// tells the model what was renamed, so the note is computed once per Pi process.
+	const fake = fakePi();
+	const current = { v: view("dawn-canyon", "Window 1bd453b0", "shell") };
+	const calls: string[][] = [];
+	const run: Run = async (args) => {
+		calls.push(args);
+		if (args[1] === "inspect") return { code: 0, stdout: JSON.stringify(current.v) };
+		if (args[0] === "__internal") return { code: 0, stdout: "You're running in a Rex terminal.\n" };
+		return { code: 0, stdout: "" };
+	};
+	init(fake.pi, run, memoryClaims(), { REX_SESSION: S, REX_BLOCK: B });
+	await fake.handlers.session_start({}, { mode: "tui" });
+	const first = { systemPromptOptions: { sections: {} as Record<string, string> } };
+	await fake.handlers.before_agent_start(first, {});
+	assert.match(first.systemPromptOptions.sections.rex, /still placeholders/);
+
+	current.v = view("Pi Durable", "PiRex", "rex-naming");
+	const before = calls.length;
+	const second = { systemPromptOptions: { sections: {} as Record<string, string> } };
+	await fake.handlers.before_agent_start(second, {});
+	assert.equal(second.systemPromptOptions.sections.rex, first.systemPromptOptions.sections.rex);
+	assert.deepEqual(calls.slice(before), [], "no Rex calls after the first turn");
+});
+
+test("an unreachable Rex on the first turn is tried again on the next", async () => {
+	const fake = fakePi();
+	let up = false;
+	const run: Run = async (args) => {
+		if (!up) throw new Error("rex down");
+		if (args[1] === "inspect") return { code: 0, stdout: JSON.stringify(view("Pi Durable", "PiRex", "w31-9")) };
+		return { code: 0, stdout: "You're running in a Rex terminal.\n" };
+	};
+	init(fake.pi, run, memoryClaims(), { REX_SESSION: S, REX_BLOCK: B });
+	await fake.handlers.session_start({}, { mode: "tui" });
+	const first = { systemPromptOptions: { sections: {} as Record<string, string> } };
+	await fake.handlers.before_agent_start(first, {});
+	assert.deepEqual(first.systemPromptOptions.sections, {});
+	up = true;
+	const second = { systemPromptOptions: { sections: {} as Record<string, string> } };
+	await fake.handlers.before_agent_start(second, {});
+	assert.match(second.systemPromptOptions.sections.rex, /already named/);
+});
+
 test("the tool names the pane and gives an unnamed Pi session the same slug", async () => {
 	const fake = fakePi();
 	const rex = fakeRex(view("dawn-canyon", "Window 1bd453b0", "shell"));

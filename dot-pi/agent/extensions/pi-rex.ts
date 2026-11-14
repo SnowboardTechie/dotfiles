@@ -185,7 +185,12 @@ export default function (pi: ExtensionAPI, run: Run = rexRunner(rexCommand()), c
 	if (!sessionId || !blockId) return;
 
 	let interactive = false;
-	let rexText: string | undefined;
+	// The whole `rex` section, built once per Pi process. A changed section reaches Claude as a
+	// mid-conversation system message, which costs a prompt-cache write and, through
+	// pi-claude-code, pushed requests past Anthropic's four cache breakpoints ("Found 5").
+	// The note can go stale after `rex_name` renames things; the tool's result already tells
+	// the model what changed, and the tool itself only renames placeholders.
+	let section: string | undefined;
 
 	// A Pi session that already has a name (`pi --name`, /name, a resumed session) labels
 	// its pane without asking the model.
@@ -225,18 +230,20 @@ export default function (pi: ExtensionAPI, run: Run = rexRunner(rexCommand()), c
 
 	pi.on("before_agent_start", async (event) => {
 		if (!interactive) return;
-		try {
-			if (rexText === undefined) {
+		if (section === undefined) {
+			try {
 				const out = await run(["__internal", "session-start", "--agent", "pi", "--feature-session-naming=false"]);
-				rexText = out.code === 0 ? briefing(out.stdout) : "";
+				const rexText = out.code === 0 ? briefing(out.stdout) : "";
+				const view = await run(["session", "inspect", sessionId, "--json"]);
+				const loc = view.code === 0 ? locate(JSON.parse(view.stdout), blockId) : undefined;
+				const text = [rexText, loc ? namingNote(loc, claims.has(sessionId)) : ""].filter(Boolean).join("\n\n");
+				// Keep only a complete result; an unreachable Rex is asked again next turn.
+				if (rexText && loc) section = text;
+				else if (text) (event.systemPromptOptions.sections ??= {}).rex = text;
+			} catch {
+				// Rex being unreachable must never block a turn.
 			}
-			const view = await run(["session", "inspect", sessionId, "--json"]);
-			const loc = view.code === 0 ? locate(JSON.parse(view.stdout), blockId) : undefined;
-			const text = [rexText, loc ? namingNote(loc, claims.has(sessionId)) : ""].filter(Boolean).join("\n\n");
-			// Pi diffs sections and patches only what changed, so the prompt cache survives.
-			if (text) (event.systemPromptOptions.sections ??= {}).rex = text;
-		} catch {
-			// Rex being unreachable must never block a turn.
 		}
+		if (section) (event.systemPromptOptions.sections ??= {}).rex = section;
 	});
 }
