@@ -710,7 +710,8 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
         ):
             with self.subTest(token=token):
                 self.assertIn(token.lower(), (self.body + self.rex).lower())
-        self.assertIn('[ "$cap" -lt 75 ]', self.rex)
+        self.assertIn("*weekly*) ceiling=90 ;; *) ceiling=75 ;;", self.rex)
+        self.assertIn('[ -n "$cap" ] && [ "$cap" -lt "$ceiling" ]', self.rex)
 
     def test_visible_authority_and_identity_remain_fail_closed(self) -> None:
         for token in (
