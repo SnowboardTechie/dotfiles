@@ -323,7 +323,10 @@ Bryan invokes with a loose idea.
    retry with it converges on the issue the first attempt made instead of
    duplicating the map or ticket.
 6. **Resolve research tickets in parallel** where the host supports it, capturing
-   findings as a context pointer on the ticket rather than pasted into it.
+   findings as a context pointer on the ticket rather than pasted into it. Start
+   each one in a fresh context that is given only its ticket, never in a fork of
+   this conversation: a fork inherits the charting discussion, which defeats the
+   point of handing the ticket off.
 7. **Stop.** Charting is one session's work; it resolves nothing by hand.
 
 ### Work through the map

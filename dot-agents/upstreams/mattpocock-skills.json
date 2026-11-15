@@ -52,18 +52,20 @@
         "Asking more than one question per round — Bryan requires one at a time, and batching even independent questions is refused.",
         "Writing the questionnaire to a fixed filename in the current directory; the path is chosen explicitly and may be vault-native.",
         "A horizontal rule between questions in a round: not applicable, since a round here is exactly one question.",
-        "Wording every question so \"yes\" accepts the recommendation: Bryan declined it (2026-10-22); questions keep genuine options with a reasoned recommendation."
+        "Wording every question so \"yes\" accepts the recommendation: Bryan declined it (2026-10-22); questions keep genuine options with a reasoned recommendation.",
+        "Dispatching the fact-finding sub-agent with a fresh context window: not applicable, because local grilling looks facts up itself and dispatches no sub-agent."
       ],
       "watchedFiles": [
         "skills/productivity/grilling/SKILL.md",
         "skills/productivity/to-questionnaire/SKILL.md"
       ],
       "reviewedThrough": {
-        "commit": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
-        "verifiedOn": "2026-10-22",
+        "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+        "verifiedOn": "2026-11-15",
         "upstreamCommits": [
           "85f83d3fde1d3a90d5c9a657f6998c79a6c37308",
-          "95249b0b49782349740fd9b8c6ce32b4e59e497a"
+          "95249b0b49782349740fd9b8c6ce32b4e59e497a",
+          "7739eaed7f8f3915437a8def198a6d0d7206dbc7"
         ]
       }
     },
@@ -130,7 +132,8 @@
         "UI variants prefer a real existing page, differ structurally, and switch on a stable `?variant=` parameter.",
         "`wayfinder:` labels are the only labels a map or ticket carries; never a triage label such as `ready-for-agent`.",
         "Never publish a placeholder or draft-numbered issue reference; it auto-links to an unrelated issue.",
-        "Resolve each ticket as the type its `wayfinder:<type>` label names; the body never states the type, and the grilling fallback applies only to HITL tickets."
+        "Resolve each ticket as the type its `wayfinder:<type>` label names; the body never states the type, and the grilling fallback applies only to HITL tickets.",
+        "Parallel research starts in a fresh context given only its ticket, never a fork of the charting conversation."
       ],
       "rejectedUpstreamRules": [
         "The local-markdown tracker default and the `/setup-matt-pocock-skills` bootstrap.",
@@ -145,10 +148,11 @@
         "skills/engineering/prototype/UI.md"
       ],
       "reviewedThrough": {
-        "commit": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
-        "verifiedOn": "2026-10-22",
+        "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+        "verifiedOn": "2026-11-15",
         "upstreamCommits": [
-          "8295b8e10d4cdb6cce772a56dda7b7c37075074d"
+          "8295b8e10d4cdb6cce772a56dda7b7c37075074d",
+          "7739eaed7f8f3915437a8def198a6d0d7206dbc7"
         ]
       }
     },
