@@ -1,0 +1,75 @@
+#!/usr/bin/env bun
+// pstack's pull request watcher, reading Forgejo instead of GitHub.
+// Same options and verdicts as the pstack package's watch-pr; see its --help.
+// PSTACK_WATCH_PR_DIR names the package's watch-pr directory when it is not in
+// the Pi agent directory's git packages.
+import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
+import { join } from "node:path";
+import { createForgejoReader } from "./forgejo-reader.ts";
+
+const agentDir = process.env.PI_CODING_AGENT_DIR ?? join(homedir(), ".pi", "agent");
+const watchDir =
+	process.env.PSTACK_WATCH_PR_DIR ??
+	join(agentDir, "git/github.com/michael-denyer/pstack-claude/plugins/pstack/skills/poteto-mode/scripts/watch-pr");
+if (!existsSync(join(watchDir, "cli.ts"))) {
+	console.error(`pstack's watch-pr is not at ${watchDir}; set PSTACK_WATCH_PR_DIR`);
+	process.exit(64);
+}
+const { ensureDependenciesInstalled } = await import(join(watchDir, "..", "bootstrap.ts"));
+ensureDependenciesInstalled();
+const { main } = await import(join(watchDir, "cli.ts"));
+const { WatcherQueryError } = await import(join(watchDir, "github.ts"));
+const { WatchDeadline, DeadlineExceeded } = await import(join(watchDir, "deadline.ts"));
+
+const argv = process.argv.slice(2);
+const timeoutAt = argv.indexOf("--timeout");
+const timeout = timeoutAt >= 0 ? Number(argv[timeoutAt + 1]) || 0 : 0;
+const now = () => performance.now() / 1_000;
+const deadline = new WatchDeadline(timeout, now);
+
+function run(command: string[], cwd?: string) {
+	if (deadline.remaining() === 0) return Promise.reject(new DeadlineExceeded());
+	return new Promise<{ code: number; stdout: string; stderr: string }>((resolve, reject) => {
+		const child = spawn(command[0], command.slice(1), { cwd, stdio: ["ignore", "pipe", "pipe"] });
+		let stdout = "";
+		let stderr = "";
+		const seconds = deadline.remaining();
+		const timer = Number.isFinite(seconds) ? setTimeout(() => child.kill("SIGKILL"), seconds * 1_000) : undefined;
+		child.stdout.on("data", (chunk) => (stdout += chunk));
+		child.stderr.on("data", (chunk) => (stderr += chunk));
+		child.on("error", (error) => {
+			clearTimeout(timer);
+			reject(new WatcherQueryError({ kind: "spawn-failed", retryable: false, detail: `could not run ${command[0]}: ${error.message}` }));
+		});
+		child.on("close", (code) => {
+			clearTimeout(timer);
+			if (deadline.remaining() === 0) reject(new DeadlineExceeded());
+			else resolve({ code: code ?? -1, stdout, stderr });
+		});
+	});
+}
+
+const reader = createForgejoReader({
+	run,
+	fail: (failure) => new WatcherQueryError(failure),
+	login: process.env.FORGEJO_TEA_LOGIN,
+	teaCwd: tmpdir(),
+	repoCwd: process.cwd(),
+});
+// The watcher writes GitHub links into its status table.
+const links = (text: string) =>
+	reader.webBase() ? text.replace(/https:\/\/github\.com\/([\w.-]+\/[\w.-]+)\/pull\//g, `${reader.webBase()}/$1/pulls/`) : text;
+
+process.exitCode = await main(argv, {
+	deadline,
+	reader,
+	clock: {
+		now,
+		observedAt: () => new Date().toISOString(),
+		sleep: (seconds: number) => new Promise((resolve) => setTimeout(resolve, seconds * 1_000)),
+	},
+	stdout: (value: string) => process.stdout.write(links(value)),
+	stderr: (value: string) => process.stderr.write(value),
+});
