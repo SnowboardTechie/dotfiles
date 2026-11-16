@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# forgejo-map: run the Forgejo Wayfinder adapter
+# (dot-agents/skills/wayfinder/scripts/forgejo_wayfinder.py) as a command.
+#
+# Every argument passes through unchanged. When --origin is not given, the
+# origin remote of the Git repository containing the current directory is put
+# in front of the arguments. --tracker is never inferred: the adapter requires
+# the tracker to be chosen explicitly.
+# Linked into ~/.local/bin by scripts/reconcile-agent-commands.sh.
+set -euo pipefail
+
+# Follow symlinks to this file's real location, so the adapter is found when
+# the command is reached through ~/.local/bin.
+self="${BASH_SOURCE[0]}"
+while [[ -L "$self" ]]; do
+    target="$(readlink "$self")"
+    if [[ "$target" == /* ]]; then
+        self="$target"
+    else
+        self="$(dirname "$self")/$target"
+    fi
+done
+bin_dir="$(cd "$(dirname "$self")" && pwd -P)"
+adapter="$(cd "$bin_dir/../skills/wayfinder/scripts" 2>/dev/null && pwd -P)/forgejo_wayfinder.py"
+
+if [[ ! -f "$adapter" ]]; then
+    echo "forgejo-map: adapter not found beside $bin_dir" >&2
+    exit 2
+fi
+
+needs_origin=1
+for arg in "$@"; do
+    case "$arg" in
+        --origin | --origin=*) needs_origin=0 ;;
+        -h | --help) needs_origin=0 ;;
+    esac
+done
+
+if [[ $needs_origin -eq 1 ]]; then
+    if ! origin="$(git remote get-url origin 2>/dev/null)" || [[ -z "$origin" ]]; then
+        echo "forgejo-map: no --origin given, and $PWD is not inside a Git repository" \
+            "with an 'origin' remote. Run it from such a repository or pass" \
+            "--origin <git remote URL>." >&2
+        exit 2
+    fi
+    exec python3 "$adapter" --origin "$origin" "$@"
+fi
+
+exec python3 "$adapter" "$@"

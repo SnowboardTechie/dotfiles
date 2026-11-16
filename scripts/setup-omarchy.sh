@@ -84,6 +84,8 @@ RECONCILERS=(
     "$SCRIPT_DIR/reconcile-pi-packages.sh"
     "$SCRIPT_DIR/reconcile-mattpocock-skills.sh"
     "$SCRIPT_DIR/retire-agent-memory.py"
+    # Last: it exits 1 on a file it will not replace, which stops this loop.
+    "$SCRIPT_DIR/reconcile-agent-commands.sh"
 )
 
 for reconciler in "${RECONCILERS[@]}"; do
@@ -107,7 +109,8 @@ Ownership summary:
   it was unset or anthropic (so Claude turns count against the plan, not
   extra usage), keeps a checkout of Matt Pocock's skills at the pinned
   commit under ~/.pi/agent/upstreams and lists its promoted skill
-  directories in Pi's settings, and removes only the
+  directories in Pi's settings, links the repository's agent commands
+  (forgejo-map) into ~/.local/bin, and removes only the
   retired Hindsight / context-mode / claude-mem entries from Claude, Pi, and
   OpenCode JSON settings (native memory and data untouched) — nothing else.
 

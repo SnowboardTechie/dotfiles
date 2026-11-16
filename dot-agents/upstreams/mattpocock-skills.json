@@ -12,7 +12,8 @@
     "The adapted copies under `adaptations` are still what Claude Code, OpenCode and Codex load from the shared pool. They are frozen: no further catch-up to upstream until those harnesses switch to his skills, when they retire.",
     "Local `code-review` retired on 2026-11-16 in every harness. Its review passes moved into `pr-self-review` (`references/review-contract.md`), and reviewing other people's PRs is `teammate-pr-review`, which loads his `code-review` for Standards and Spec only.",
     "Upstream paths are relative to the repository root at the pinned commit.",
-    "An adaptation's optional `reviewedThrough` records a later upstream commit its watched files were reviewed against before this pin moved; it is history now that the pin has caught up."
+    "An adaptation's optional `reviewedThrough` records a later upstream commit its watched files were reviewed against before this pin moved; it is history now that the pin has caught up.",
+    "His `wayfinder` reaches Forgejo maps through the `forgejo-map` command (`dot-agents/bin/forgejo-map`, the local Forgejo adapter, linked onto PATH by `scripts/reconcile-agent-commands.sh`), which a workspace's `docs/agents/issue-tracker.md` names; that doc is copied from `dot-agents/forgejo-tracker/issue-tracker-forgejo.md`."
   ],
   "updatePolicy": {
     "readOnlyDetection": true,
