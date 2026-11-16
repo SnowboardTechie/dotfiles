@@ -16,11 +16,11 @@
     "His `wayfinder` reaches Forgejo maps through the `forgejo-map` command (`dot-agents/bin/forgejo-map`, the local Forgejo adapter, linked onto PATH by `scripts/reconcile-agent-commands.sh`), which a workspace's `docs/agents/issue-tracker.md` names; that doc is copied from `dot-agents/forgejo-tracker/issue-tracker-forgejo.md`."
   ],
   "updatePolicy": {
-    "readOnlyDetection": true,
-    "humanApprovedPinAdvance": true,
-    "autoApply": false,
+    "readOnlyDetection": false,
+    "humanApprovedPinAdvance": false,
+    "autoApply": true,
     "monitor": "pi-bots job mattpocock-skill-watch",
-    "description": "The pi-bots job `mattpocock-skill-watch` hashes the watched files below each week and reports changes to Matrix. It never edits a file, advances the pin, opens a branch, or installs anything. Advancing `commit` is a reviewed local change today; automatic pin advance by that job, with a load check and a Matrix announcement, is planned and not built yet."
+    "description": "The pi-bots job `mattpocock-skill-watch` runs weekly. When upstream's `main` is ahead of `commit`, it lists the promoted skills added, removed and changed, writes the new `commit`, `version` and `verifiedOn` here, runs `scripts/reconcile-mattpocock-skills.sh --apply`, and checks that Pi loads every promoted skill from the checkout and nothing else from it. On a pass it commits this file alone to `main`, signed, and announces the advance in Matrix with the rollback. On a failure it puts the old pin back and commits nothing. Bryan chose automatic advance with no review step on 2026-11-16. The adapted copies under `adaptations` are not updated by it; they are frozen."
   },
   "adaptations": [
     {

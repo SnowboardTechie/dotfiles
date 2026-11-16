@@ -351,11 +351,20 @@ class UpstreamLedgerTest(unittest.TestCase):
         self.assertEqual(self.ledger.get("license"), "MIT")
         self.assertTrue((UPSTREAMS / self.ledger["licenseFile"]).is_file())
 
-    def test_update_policy_is_detection_only(self) -> None:
+    def test_update_policy_is_automatic_pin_advance(self) -> None:
+        # Bryan chose automatic advance on 2026-11-16: the pi-bots job moves the
+        # pin, checks the load, commits the ledger alone and announces it.
         policy = self.ledger.get("updatePolicy", {})
-        self.assertTrue(policy.get("readOnlyDetection") is True)
-        self.assertTrue(policy.get("humanApprovedPinAdvance") is True)
-        self.assertTrue(policy.get("autoApply") is False)
+        self.assertTrue(policy.get("autoApply") is True)
+        self.assertTrue(policy.get("humanApprovedPinAdvance") is False)
+        self.assertTrue(policy.get("readOnlyDetection") is False)
+        self.assertIn("mattpocock-skill-watch", policy.get("monitor", ""))
+
+    def test_the_pin_fields_are_one_per_line_for_the_job_that_rewrites_them(self) -> None:
+        # The job rewrites exactly these three lines and refuses any other shape.
+        text = (UPSTREAMS / "mattpocock-skills.json").read_text(encoding="utf-8")
+        for key in ("commit", "version", "verifiedOn"):
+            self.assertRegex(text, rf'(?m)^  "{key}": "[^"]*",?$')
 
     def test_every_adaptation_maps_upstream_to_canonical_local_paths(self) -> None:
         adaptations = self.ledger.get("adaptations", [])

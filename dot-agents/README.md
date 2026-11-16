@@ -121,9 +121,12 @@ local `code-review` already retired: its review contract lives in
 `pr-self-review/references/review-contract.md`, and `teammate-pr-review` runs it
 on top of his `code-review` for other people's PRs.
 
-The pi-bots job `mattpocock-skill-watch` reports upstream changes to the
-watched files. Updates are **detected**, never auto-applied; advancing a pin is
-a reviewed change. Automatic pin advance by that job is planned, not built.
+The pi-bots job `mattpocock-skill-watch` advances Matt Pocock's pin by itself
+(Bryan, 2026-11-16). Each week, when upstream is ahead, it moves `commit`,
+`version` and `verifiedOn` in the ledger, runs the reconciler, checks that Pi
+loads every promoted skill from the checkout, commits the ledger alone to
+`main` and announces the advance in Matrix with the rollback. A failed load
+puts the old pin back. Every other source's pin is still a reviewed change.
 
 ## Notes
 
