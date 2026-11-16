@@ -65,8 +65,10 @@ resolve_path() {
 # other broken or foreign link is still preserved untouched. `vault-capture`
 # was replaced by the backend-neutral `knowledge-capture` router (2026-09-16);
 # `apple-notes-pkm` was removed when the second brain returned to Markdown
-# (2026-10-31).
-RETIRED_POOL_TARGETS=(agent-workspace git-master vault-capture apple-notes-pkm)
+# (2026-10-31). The local `code-review` split into `pr-self-review`'s review
+# contract and `teammate-pr-review` (2026-11-16); Matt Pocock's own `code-review`
+# never comes from the pool.
+RETIRED_POOL_TARGETS=(agent-workspace git-master vault-capture apple-notes-pkm code-review)
 
 is_legacy_pool_link() { # <link-path> -> 0 when it names a retired pool skill
     local raw legacy
@@ -93,7 +95,7 @@ fi
 # apple-notes-pkm was removed 2026-10-31.
 # black-box-verification is a shared verification method (see
 # dot-agents/upstreams/pstack-claude.json), so every tool, Pi included, receives it.
-COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review code-review
+COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review teammate-pr-review
     vault-pkm knowledge-capture session-handoff
     black-box-verification)
 
@@ -103,10 +105,16 @@ NON_CLAUDE_COMMON=(skill-retrospective obsidian)
 # Planning and delivery cores adapted from an upstream suite (see
 # dot-agents/upstreams/mattpocock-skills.json). Curated for the implementation runtimes
 # Bryan actually plans and implements on. `guided-learning` goes only to Pi and
-# Hermes until real use earns wider distribution. Pi receives `code-review`
-# through COMMON_SKILLS because its shared `pr-self-review` workflow requires it.
-# Pi also reads Codex's ~/.agents/skills, so the other cores reach it without a
-# PI_SKILLS entry (Pi skips a second link to the same pool file).
+# Hermes until real use earns wider distribution. The local `code-review` retired
+# on 2026-11-16: its review contract lives in `pr-self-review`, and reviewing other
+# people's PRs is `teammate-pr-review` (both in COMMON_SKILLS), which loads Matt
+# Pocock's own `code-review`. In Pi that and his other promoted skills come from
+# scripts/reconcile-mattpocock-skills.sh. They win a name only while no copy of
+# that name is in ~/.agents/skills or ~/.pi/agent/skills: from `~` (or a non-Git
+# directory under it) Pi reads ~/.agents/skills as project skills, and a copy
+# there wins. Pi also reads Codex's ~/.agents/skills, so `codebase-architecture`
+# reaches it without a PI_SKILLS entry (Pi skips a second link to the same pool
+# file).
 ADAPTED_CORES=(grilling wayfinder tdd diagnosing-bugs codebase-architecture)
 
 # Pi is becoming the primary harness (dotfiles-workspace#34), so it grows past
@@ -130,12 +138,17 @@ PI_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}" next-session
 # Codex uses the supported user scope (~/.agents/skills), not its bundled
 # ~/.codex/skills/.system directory. Share the portable coding/planning core;
 # leave Hermes-specific orchestration and specialist workflows opt-in.
+# Pi reads ~/.agents/skills too, and from `~` a copy there beats Matt Pocock's
+# skill of the same name. So the adapted cores that share a name with his
+# (grilling, wayfinder, tdd, diagnosing-bugs) stay out of it; Claude Code and
+# OpenCode keep them (2026-11-16; Bryan no longer uses Codex). Their existing
+# links here are pruned as stale pool links.
 CODEX_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
     manual-merge issue-create issue-plan issue-work loop-issue
     adr-and-spec-coach conforming-tech-specs voice-bryan
     catalog-review dependency-review dependency-triage
     superwhisper-meetings
-    "${ADAPTED_CORES[@]}")
+    codebase-architecture)
 
 CLAUDE_SKILLS=("${COMMON_SKILLS[@]}"
     manual-merge issue-create issue-plan issue-work
@@ -157,7 +170,7 @@ OPENCODE_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
 # `rex` is Hermes-only: Rex's own `rex skill setup` already covers Claude, Codex,
 # OpenCode, and Pi (its skill dir lives in ~/.agents/skills/rex), but not Hermes.
 HERMES_SKILLS=(
-    ship worktrunk update-pr-description pr-self-review code-review multiagent-pr-review
+    ship worktrunk update-pr-description pr-self-review teammate-pr-review multiagent-pr-review
     manual-merge issue-create issue-plan issue-work loop-issue
     coding-agent-handoff-supervision
     knowledge-capture skill-retrospective adr-and-spec-coach voice-bryan

@@ -68,8 +68,8 @@ review is mandatory before publication:
 
 - when `issue-work` supplies a current pre-PR `pr-self-review` summary, validate
   that artifact against the candidate;
-- otherwise, run the integrated `code-review` contract against immutable
-  base/head SHAs:
+- otherwise, run the integrated review contract in `pr-self-review`'s
+  `references/review-contract.md` against immutable base/head SHAs:
   Standards and Spec, conditional Risk, then mandatory Ponytail in one review
   context; use an independent delegate when the active parent authored the code;
 - require every artifact to identify the same base SHA, head SHA, merge-base SHA,

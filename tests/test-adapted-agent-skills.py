@@ -28,15 +28,18 @@ UPSTREAMS = REPO_ROOT / "dot-agents" / "upstreams"
 LEDGER_PATH = UPSTREAMS / "mattpocock-skills.json"
 LICENSE_PATH = UPSTREAMS / "mattpocock-skills-LICENSE"
 RECONCILER = REPO_ROOT / "scripts" / "reconcile-agent-skills.sh"
+REVIEW_CONTRACT = POOL / "pr-self-review" / "references" / "review-contract.md"
 
 # The cores this plan adds. `guided-learning` deliberately goes only to Pi and
-# Hermes until real use earns wider distribution.
+# Hermes until real use earns wider distribution. The local `code-review`
+# retired on 2026-11-16: its review contract moved into `pr-self-review`
+# (`REVIEW_CONTRACT`), and `teammate-pr-review` reviews other people's PRs on
+# top of Matt Pocock's own `code-review`.
 ADAPTED_CORES = (
     "grilling",
     "wayfinder",
     "tdd",
     "diagnosing-bugs",
-    "code-review",
     "codebase-architecture",
 )
 PI_HERMES_ONLY_CORES = ("guided-learning",)
@@ -217,7 +220,7 @@ class SkillFrontmatterTest(unittest.TestCase):
 
     def test_model_invoked_primitives_stay_model_invocable(self) -> None:
         """The delivery primitives load when their trigger is genuinely present."""
-        for name in ("tdd", "diagnosing-bugs", "code-review", "codebase-architecture"):
+        for name in ("tdd", "diagnosing-bugs", "teammate-pr-review", "codebase-architecture"):
             with self.subTest(skill=name):
                 fields = frontmatter_fields(POOL / name / "SKILL.md")
                 self.assertNotIn(
@@ -235,6 +238,7 @@ class SkillFrontmatterTest(unittest.TestCase):
         """
         owned = set(ALL_NEW_SKILLS) | {
             "pr-self-review",
+            "teammate-pr-review",
             "worktrunk",
             "issue-work",
             "issue-create",
@@ -424,13 +428,34 @@ class CurationTest(unittest.TestCase):
             with self.subTest(tool=tool):
                 self.assertNotIn("guided-learning", self.arrays.get(tool, []))
 
-    def test_pi_receives_only_the_review_dependency_from_new_scope(self) -> None:
-        # The adapted cores reach Pi through Codex's ~/.agents/skills, which Pi
-        # also reads. guided-learning is not in Codex's set.
-        self.assertIn("code-review", self.arrays.get("PI_SKILLS", []))
-        for name in set(ALL_NEW_SKILLS) - {"code-review", "guided-learning"}:
+    def test_codex_target_skips_cores_that_share_his_names(self) -> None:
+        # Pi reads Codex's ~/.agents/skills, and from `~` a copy there beats
+        # Matt Pocock's skill of the same name.
+        codex = self.arrays.get("CODEX_SKILLS", [])
+        for name in ("grilling", "tdd", "wayfinder", "diagnosing-bugs"):
+            with self.subTest(skill=name):
+                self.assertNotIn(name, codex)
+        self.assertIn("codebase-architecture", codex)
+
+    def test_pi_receives_no_adapted_core_directly(self) -> None:
+        # codebase-architecture reaches Pi through Codex's ~/.agents/skills,
+        # which Pi also reads; the four shared-name cores must not reach it at
+        # all, and guided-learning is in PI_SKILLS directly.
+        for name in set(ALL_NEW_SKILLS) - {"guided-learning"}:
             with self.subTest(skill=name):
                 self.assertNotIn(name, self.arrays.get("PI_SKILLS", []))
+
+    def test_local_code_review_is_retired_everywhere(self) -> None:
+        self.assertFalse((POOL / "code-review").exists())
+        for tool, members in self.arrays.items():
+            with self.subTest(tool=tool):
+                self.assertNotIn("code-review", members)
+
+    def test_teammate_pr_review_goes_wherever_pr_self_review_does(self) -> None:
+        for tool, members in self.arrays.items():
+            if "pr-self-review" in members:
+                with self.subTest(tool=tool):
+                    self.assertIn("teammate-pr-review", members)
 
     def test_adr_and_spec_coach_survives_as_the_pilot_control(self) -> None:
         for tool in ("CLAUDE_SKILLS", "OPENCODE_SKILLS", "HERMES_SKILLS"):
@@ -739,7 +764,8 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.body = read(POOL / "pr-self-review" / "SKILL.md")
-        cls.code_review = read(POOL / "code-review" / "SKILL.md")
+        cls.code_review = read(REVIEW_CONTRACT)
+        cls.teammate = read(POOL / "teammate-pr-review" / "SKILL.md")
         cls.issue_work = read(POOL / "issue-work" / "SKILL.md")
         cls.ship = read(POOL / "ship" / "SKILL.md")
         cls.reviewer = read(REPO_ROOT / "dot-claude" / "agents" / "lane-reviewer.md")
@@ -862,9 +888,37 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
                 self.assertIn(identity, self.body)
 
     def test_ship_accepts_integrated_independent_evidence(self) -> None:
-        self.assertIn("integrated `code-review` contract", self.ship)
+        self.assertIn("integrated review contract in `pr-self-review`", self.ship)
+        self.assertIn("references/review-contract.md", self.ship)
         self.assertIn("Missing or stale Ponytail evidence blocks\npublication", self.ship)
         self.assertIn("Exact-candidate Standards, Spec, conditional Risk, and Ponytail", self.ship)
+
+    def test_pr_self_review_points_at_its_review_contract(self) -> None:
+        self.assertIn("references/review-contract.md", self.body)
+        self.assertNotIn("Load `code-review`", self.body)
+        self.assertIn("For someone else's PR use `teammate-pr-review`", self.body)
+
+    def test_teammate_review_stacks_on_his_code_review(self) -> None:
+        normalized = " ".join(self.teammate.split())
+        self.assertIn("Matt Pocock's `code-review` skill supplies only the Standards and Spec passes", normalized)
+        self.assertIn("../pr-self-review/references/review-contract.md", self.teammate)
+        for heading in ("## Human-facing review draft", "## Finding gate"):
+            with self.subTest(heading=heading):
+                self.assertIn(heading, self.teammate)
+        description = frontmatter_fields(POOL / "teammate-pr-review" / "SKILL.md")["description"]
+        self.assertIn("someone else's pull request", description)
+
+    def test_teammate_review_carries_the_drafting_and_gate_rules_whole(self) -> None:
+        for phrase in (
+            "Choose the proposed review event from the evidence",
+            "propose `APPROVE` with an empty body",
+            "Never put chat drafts in fenced blocks",
+            "Zero findings is a valid successful review",
+            "a surviving mutation establishes a coverage gap",
+            "Never preserve the original conclusion by changing qualifiers",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, " ".join(self.teammate.split()))
 
 
 class GuidedLearningTest(_MatchMixin, unittest.TestCase):

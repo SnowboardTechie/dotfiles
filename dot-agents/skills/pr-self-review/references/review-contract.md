@@ -1,18 +1,7 @@
----
-name: code-review
-description: Use when reviewing an exact code candidate.
-version: 2.1.1
-author: Bryan Thompson + Hermes Agent
-license: MIT
-metadata:
-  hermes:
-    tags: [review, standards, spec, risk, simplicity]
-    related_skills: [pr-self-review, tdd, diagnosing-bugs]
----
+# Review contract
 
-# Code Review
-
-## Overview
+The review semantics `pr-self-review` §4 and `teammate-pr-review` run, and that
+`ship`, `multiagent-pr-review` and the Claude lane-reviewer agents point to.
 
 Review one immutable candidate through distinct dimensions without paying for a
 separate model invocation per dimension. One review context reads the diff and
@@ -20,13 +9,14 @@ authorities once, then evaluates Standards, Spec, conditional Risk, and Ponytail
 in order. It writes separate artifacts so each dimension remains visible.
 
 `pr-self-review` owns finding validation, correction routing, and the bounded
-loop. This skill owns review semantics.
+loop. This contract owns review semantics.
 
-Provenance: adapted from Matt Pocock's `code-review`. Upstream pin, accepted and
-rejected rules, and watched files live in
-[`dot-agents/upstreams/mattpocock-skills.json`](../../upstreams/mattpocock-skills.json).
+Provenance: moved here on 2026-11-16 from the retired local `code-review`
+skill, which was adapted from Matt Pocock's `code-review`. Matt Pocock's own
+`code-review` now carries that name; its pin is in
+[`dot-agents/upstreams/mattpocock-skills.json`](../../../upstreams/mattpocock-skills.json).
 
-## When to Use
+## When it applies
 
 Use for branch, PR, or pre-publication review after the candidate is stable.
 
@@ -55,15 +45,15 @@ review. Recompute the same identity immediately before writing artifacts.
 
 Standards and Spec always run. Use `pr-self-review`'s
 `scripts/select_review_lanes.py` with both authoritative inputs. Resolve it from
-this skill's directory (`../pr-self-review/scripts/`), not the current
-repository, so it works from any checkout:
+the `pr-self-review` skill directory (`../scripts/` from this file), not the
+current repository, so it works from any checkout:
 
 ```sh
 git diff --name-status -z -M -C --find-copies-harder \
   "$base_sha...$head_sha" -- > "$name_status_file"
 git diff -M -C --find-copies-harder \
   "$base_sha...$head_sha" -- > "$unified_diff_file"
-python3 <code-review-skill-dir>/../pr-self-review/scripts/select_review_lanes.py \
+python3 <pr-self-review-skill-dir>/scripts/select_review_lanes.py \
   --repo "$OWNER_REPO" \
   --name-status-from "$name_status_file" \
   --diff-from "$unified_diff_file" --json
@@ -168,76 +158,12 @@ a valid blocker and the candidate changes, its artifact is stale; rerun one
 targeted Risk reviewer against the corrected identity. Do not restart the whole
 multi-dimension workflow in several model contexts.
 
-## 6. Severity and output
+## 6. Severity
 
 - Critical: production breakage, data exposure/corruption, or direct user harm.
 - Major: real blocking defect or meaningful operational risk.
 - Minor: non-blocking quality issue worth addressing.
 - Nit: optional wording, naming, or local simplification.
-
-### Human-facing review draft
-
-Include a clickable PR link and a source permalink for every file/line finding,
-pinned to the reviewed head. Verify the path and line or range against that
-candidate. Keep exact inline posting metadata alongside the link so the reader
-can both inspect the code and place the comment.
-
-Choose the proposed review event from the evidence: `APPROVE` for a completed
-review with no validated blockers; `REQUEST_CHANGES` for validated blocking
-findings; `COMMENT` for unresolved discussion or incomplete review coverage.
-Optional suggestions do not require withholding approval. When a blocker's fix
-already exists outside the candidate, as prerequisite PRs that are open now,
-the author has nothing to change: propose a conditional `APPROVE`, not
-`REQUEST_CHANGES`, and re-choose the event whenever the fix moves. Never
-promise future work in a review ("I'll put up a PR"): either make the fix now,
-before the review is posted, or make it the author's ask, which rules out
-`APPROVE`.
-When an open choice would change the candidate itself (an overlapping PR
-carries a newer copy of the same work, or the merge order decides what this
-head contains), the head is not what will merge. Propose `COMMENT` that asks
-the question and recommends the order when the evidence points to one. Do not
-approve it, and do not request changes just to hold a question.
-On a re-review where the author settled every earlier ask and no new finding
-passes the gate, propose `APPROVE` with an empty body: the approval closes the
-loop, and a line that recaps the fixes adds nothing (PR 1299, 2026-10-14).
-Preparing a draft
-and submitting that review are separate actions; preserve the user's submission
-authorization boundary.
-
-Make actionable inline corrections concrete with a small suggestion block when
-the replacement is known and verified. Keep its selected range exact. An
-inline's anchor, ask, and evidence cover the same lines: when the concrete
-defect is one assertion, ask for that assertion, not the test or file around
-it. A Ponytail whole-file deletion stays in the private audit unless its
-evidence covers the whole file. Separate
-publishable review text from private reviewer provenance and test logs. Inspect
-the saved artifact so links, anchors, and complete code fences remain usable.
-
-Write the overall review body in Bryan's voice, leading with the judgment.
-Keep routine test counts, execution details, and repeated change or inline-
-comment summaries in the private audit. Include technical detail in the
-publishable body only when it affects the review decision. Planning or tracker
-gaps that do not decide this PR's merge (an unfiled upstream issue, a ticket's
-stale assumption) stay in the private audit. Any condition on
-the event belongs in the body, never only in an inline: list the PRs that must
-merge first as linked, numbered items in merge order. Inlines carry the code
-defect and point back to that list.
-
-Self-review the publishable text against `voice-bryan` before presenting it:
-body length, no restating the author's own claims back, no opener reused from
-the same author's other reviews that day. The chat handoff opens with the
-drafts themselves, with no narrative or commentary ahead of them: a `Proposed
-event:` line, the review body as a rendered `>` blockquote, then every inline
-(optional or not-recommended ones included) as its exact-head permalink, side,
-and line range, followed by its full text as a blockquote with any suggestion
-code nested inside the quote. Never put chat drafts in fenced blocks: the
-terminal shows them as raw markdown. Raw copy-paste text lives in the saved
-draft. The saved-draft link comes after. Every later turn that changes or
-discusses the drafts repeats the whole current set the same way, never only
-the changed part. Never summarize an inline or point to the note instead of
-showing it: if the user has to ask to see the drafts, the handoff failed.
-Considered-not-posted items, evidence, and explanations stay in the saved
-draft.
 
 ### Finding gate
 
@@ -297,6 +223,3 @@ prescriptions before correction.
 - [ ] Every challenged finding was defended with evidence or withdrawn
 - [ ] Every blocking finding was independently validated
 - [ ] Artifacts still match the candidate at disposition
-- [ ] Human-facing draft has clickable PR and exact-head file/line links
-- [ ] Proposed event matches blocker status and review coverage
-- [ ] Suggestions have verified replacements and valid inline ranges

@@ -29,7 +29,8 @@ manifest and this contract are instructions.
 1. Recompute branch, clean status, the four-field candidate identity, and
    evidence manifest hash before reading.
 2. Dispatch isolated same-family leaves for `standards`, `spec`, and
-   `correctness` in parallel. Use the canonical briefs from `code-review`. A Pi
+   `correctness` in parallel. Use the canonical briefs from
+   `pr-self-review/references/review-contract.md`. A Pi
    reviewer has no sub-agent; its leaves are separate headless `pi -p` processes
    on the same route, as the Rex layout reference describes.
 3. Dispatch `risk` only when selected. Do not create a placeholder or substitute
@@ -37,7 +38,7 @@ manifest and this contract are instructions.
 4. Wait for every selected primary lane to settle against the same candidate
    identity and evidence manifest.
 5. Dispatch final `ponytail` only after all selected primary lanes settle, using
-   the same identity and the canonical `code-review` brief.
+   the same identity and the canonical Ponytail brief from that review contract.
 6. A failed or invalid lane may be retried once, in the same parent session,
    with the same model family and exact candidate. There is no second retry and
    no model-family fallback.

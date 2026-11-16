@@ -43,7 +43,8 @@ intentionally excluded from its pool links. Personal knowledge lives in the
 `~/second-brain` Markdown vault (Forgejo Git), written through `vault-pkm` like
 any other vault, with `knowledge-capture` routing resting-point captures between
 it and project vaults. `apple-notes-pkm` (2026-10-31) and `vault-capture` are
-retired and removed; the reconciler prunes their stale links.
+retired and removed; the reconciler prunes their stale links, as it does for the
+local `code-review` (2026-11-16).
 
 The **single authoritative curation source** is the set of `*_SKILLS` Bash arrays
 in [`../scripts/reconcile-agent-skills.sh`](../scripts/reconcile-agent-skills.sh):
@@ -100,11 +101,29 @@ Skills adapted from an external source keep a pinned provenance record under
 [`upstreams/`](upstreams/): the upstream repository and commit, the license, one
 entry per adaptation mapping upstream paths to canonical local paths, what was
 changed and why, which upstream rules were accepted or rejected, and the list of
-upstream files worth watching. Updates are **detected**, never auto-applied;
-advancing a pin is a human decision.
+upstream files worth watching. Each adapted `SKILL.md` carries a one-line
+pointer to the ledger rather than repeating its own adaptation history.
 
-Each adapted `SKILL.md` carries a one-line pointer to the ledger rather than
-repeating its own adaptation history.
+Matt Pocock's skills ([`upstreams/mattpocock-skills.json`](upstreams/mattpocock-skills.json))
+are now loaded as written rather than adapted, Pi first. In Pi,
+[`../scripts/reconcile-mattpocock-skills.sh`](../scripts/reconcile-mattpocock-skills.sh)
+keeps a plain checkout of upstream at the ledger's `commit` and lists its
+promoted `skills/engineering` and `skills/productivity` directories in Pi's
+settings. His copy of a name he shares with a pool skill wins once no copy of
+that name is in `~/.agents/skills` or `~/.pi/agent/skills`; started from `~` (or
+a non-Git directory under it), Pi reads `~/.agents/skills` as project skills and
+a copy there wins. So the Codex target `~/.agents/skills` no longer receives
+`grilling`, `tdd`, `wayfinder` or `diagnosing-bugs`, and the reconciler warns
+about any local copy of one of his names in either directory. The adapted
+copies the ledger still lists under `adaptations` are what Claude Code, OpenCode
+and Codex load; they are frozen until those harnesses switch, then retire. The
+local `code-review` already retired: its review contract lives in
+`pr-self-review/references/review-contract.md`, and `teammate-pr-review` runs it
+on top of his `code-review` for other people's PRs.
+
+The pi-bots job `mattpocock-skill-watch` reports upstream changes to the
+watched files. Updates are **detected**, never auto-applied; advancing a pin is
+a reviewed change. Automatic pin advance by that job is planned, not built.
 
 ## Notes
 

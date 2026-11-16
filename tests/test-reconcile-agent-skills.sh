@@ -78,11 +78,15 @@ H="$(new_home)"
 TMP_HOMES+=("$H")
 out="$(HOME="$H" "$RECONCILER" --apply 2>&1)"; rc=$?
 check "t1: apply exits 0 on a fresh home" test "$rc" -eq 0
-check "t1: Codex receives 28 pool links" test "$(links_into_pool "$H/.agents/skills")" -eq 28
+check "t1: Codex receives 24 pool links" test "$(links_into_pool "$H/.agents/skills")" -eq 24
+check "t1: Codex gets codebase-architecture" link_resolves_to "$H/.agents/skills/codebase-architecture" "$POOL/codebase-architecture"
+check "t1: Codex excludes the four cores Matt Pocock's skills share names with" bash -c 'for n in grilling tdd wayfinder diagnosing-bugs; do [[ ! -e "$1/.agents/skills/$n" && ! -L "$1/.agents/skills/$n" ]] || exit 1; done' _ "$H"
+check "t1: Claude keeps the four shared-name cores" bash -c 'for n in grilling tdd wayfinder diagnosing-bugs; do [[ -L "$1/.claude/skills/$n" ]] || exit 1; done' _ "$H"
+check "t1: OpenCode keeps the four shared-name cores" bash -c 'for n in grilling tdd wayfinder diagnosing-bugs; do [[ -L "$1/.config/opencode/skills/$n" ]] || exit 1; done' _ "$H"
 check "t1: Codex gets ADR coaching" link_resolves_to "$H/.agents/skills/adr-and-spec-coach" "$POOL/adr-and-spec-coach"
 check "t1: Codex gets conforming specs" link_resolves_to "$H/.agents/skills/conforming-tech-specs" "$POOL/conforming-tech-specs"
 check "t1: Codex gets shared handoff" link_resolves_to "$H/.agents/skills/session-handoff" "$POOL/session-handoff"
-check "t1: Codex gets review contract" link_resolves_to "$H/.agents/skills/code-review" "$POOL/code-review"
+check "t1: Codex gets teammate PR review" link_resolves_to "$H/.agents/skills/teammate-pr-review" "$POOL/teammate-pr-review"
 check "t1: Codex excludes Hermes orchestration" test ! -e "$H/.agents/skills/coding-agent-handoff-supervision"
 check "t1: Claude receives 27 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 27
 check "t1: OpenCode receives 25 pool links" test "$(links_into_pool "$H/.config/opencode/skills")" -eq 25
@@ -92,12 +96,12 @@ check "t1: Claude-only skill is linked"     link_resolves_to "$H/.claude/skills/
 check "t1: Claude excludes non-Claude common" test ! -e "$H/.claude/skills/obsidian"
 check "t1: Pi keeps non-Claude common"      link_resolves_to "$H/.pi/agent/skills/obsidian" "$POOL/obsidian"
 check "t1: Claude gets Ponytail workflow"     link_resolves_to "$H/.claude/skills/pr-self-review" "$POOL/pr-self-review"
-check "t1: Claude gets shared review contract" link_resolves_to "$H/.claude/skills/code-review" "$POOL/code-review"
+check "t1: Claude gets teammate PR review" link_resolves_to "$H/.claude/skills/teammate-pr-review" "$POOL/teammate-pr-review"
 check "t1: OpenCode gets Ponytail workflow"   link_resolves_to "$H/.config/opencode/skills/pr-self-review" "$POOL/pr-self-review"
-check "t1: OpenCode gets shared review contract" link_resolves_to "$H/.config/opencode/skills/code-review" "$POOL/code-review"
-check "t1: Pi gets shared review contract"   link_resolves_to "$H/.pi/agent/skills/code-review" "$POOL/code-review"
+check "t1: OpenCode gets teammate PR review" link_resolves_to "$H/.config/opencode/skills/teammate-pr-review" "$POOL/teammate-pr-review"
+check "t1: Pi gets teammate PR review"      link_resolves_to "$H/.pi/agent/skills/teammate-pr-review" "$POOL/teammate-pr-review"
 check "t1: Hermes gets Ponytail workflow"     link_resolves_to "$H/.hermes/skills/personal/pr-self-review" "$POOL/pr-self-review"
-check "t1: Hermes gets shared review contract" link_resolves_to "$H/.hermes/skills/personal/code-review" "$POOL/code-review"
+check "t1: Hermes gets teammate PR review" link_resolves_to "$H/.hermes/skills/personal/teammate-pr-review" "$POOL/teammate-pr-review"
 check "t1: Hermes gets multiagent PR review" link_resolves_to "$H/.hermes/skills/personal/multiagent-pr-review" "$POOL/multiagent-pr-review"
 check "t1: Claude excludes multiagent PR review" test ! -e "$H/.claude/skills/multiagent-pr-review"
 check "t1: OpenCode excludes multiagent PR review" test ! -e "$H/.config/opencode/skills/multiagent-pr-review"
@@ -112,6 +116,7 @@ check "t1: Hermes excludes vault-pkm"       test ! -e "$H/.hermes/skills/persona
 check "t1: every tool gets knowledge-capture" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ -L "$d/knowledge-capture" ]] || exit 1; done' _ "$H"
 check "t1: no tool gets retired apple-notes-pkm" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ ! -e "$d/apple-notes-pkm" ]] || exit 1; done' _ "$H"
 check "t1: every tool gets black-box-verification" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ -L "$d/black-box-verification" ]] || exit 1; done' _ "$H"
+check "t1: no tool gets retired local code-review" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ ! -e "$d/code-review" ]] || exit 1; done' _ "$H"
 check "t1: no tool gets retired vault-capture" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ ! -e "$d/vault-capture" ]] || exit 1; done' _ "$H"
 
 # --- Test 8: re-running --apply is idempotent --------------------------------
@@ -166,6 +171,16 @@ check "Codex: conflict warning emitted" bash -c 'grep -q "Codex/conforming-tech-
 check "Codex: stale pool link pruned" test ! -L "$H2/.agents/skills/gamedev"
 check "Codex: bundled skills untouched" test -f "$H2/.codex/skills/.system/marker"
 
+# Links an older curation left in ~/.agents/skills for the four cores that share
+# a name with Matt Pocock's skills: reported under check, pruned under apply.
+for n in grilling tdd wayfinder diagnosing-bugs; do ln -s "$POOL/$n" "$H2/.agents/skills/$n"; done
+out="$(HOME="$H2" "$RECONCILER" --check 2>&1)"
+check "Codex: check reports the shared-name core links" bash -c 'for n in grilling tdd wayfinder diagnosing-bugs; do grep -q "would prune stale pool link: $n$" <<<"$1" || exit 1; done' _ "$out"
+check "Codex: check keeps the shared-name core links" bash -c 'for n in grilling tdd wayfinder diagnosing-bugs; do [[ -L "$1/.agents/skills/$n" ]] || exit 1; done' _ "$H2"
+out="$(HOME="$H2" "$RECONCILER" --apply 2>&1)"
+check "Codex: apply prunes the shared-name core links" bash -c 'for n in grilling tdd wayfinder diagnosing-bugs; do [[ ! -L "$1/.agents/skills/$n" ]] || exit 1; done' _ "$H2"
+check "Codex: apply keeps codebase-architecture" test -L "$H2/.agents/skills/codebase-architecture"
+
 # --- Tests 5/6/7: stale pool links prune under apply, not check ---------------
 # gamedev is in the pool but not curated for Pi, so a Pi link to it is stale.
 ln -s "$POOL/gamedev" "$H2/.pi/agent/skills/gamedev"
@@ -203,6 +218,8 @@ ln -s "$GONE_POOL/agent-workspace" "$H11/.claude/skills/agent-workspace"
 ln -s "$POOL/agent-workspace" "$H11/.claude/skills/legacy-in-pool"
 ln -s "$POOL/git-master"      "$H11/.claude/skills/legacy-in-pool-2"
 ln -s "$POOL/vault-capture"   "$H11/.claude/skills/vault-capture"
+mkdir -p "$H11/.pi/agent/skills"
+ln -s "$POOL/code-review"     "$H11/.pi/agent/skills/code-review"
 # Unrelated broken and foreign links that must survive.
 ln -s "$H11/nowhere"    "$H11/.claude/skills/diagnose-crash"
 ln -s "$H11/other-pack" "$H11/.claude/skills/omarchy"
@@ -215,6 +232,7 @@ check "t11: check exits 0 with dangling legacy links" test "$rc" -eq 0
 # the same on every platform, so assert the outcome, not which branch reported it.
 check "t11: check plans a prune for the retired link"  bash -c 'grep -qE "would prune (stale|retired) pool link: legacy-in-pool$" <<<"$1"' _ "$out"
 check "t11: check plans the second retired prune"      bash -c 'grep -qE "would prune (stale|retired) pool link: legacy-in-pool-2$" <<<"$1"' _ "$out"
+check "t11: check plans the local code-review prune" bash -c 'grep -qE "would prune (stale|retired) pool link: code-review$" <<<"$1"' _ "$out"
 check "t11: check plans the vault-capture prune"       bash -c 'grep -qE "would prune (stale|retired) pool link: vault-capture$" <<<"$1"' _ "$out"
 check "t11: unrelated broken link is preserved"       bash -c 'grep -q "preserved (foreign symlink): diagnose-crash" <<<"$1"' _ "$out"
 check "t11: foreign package link is preserved"        bash -c 'grep -q "preserved (foreign symlink): omarchy" <<<"$1"' _ "$out"
@@ -225,6 +243,7 @@ out="$(HOME="$H11" "$RECONCILER" --apply 2>&1)"; rc=$?
 check "t11: apply exits 0"                            test "$rc" -eq 0
 check "t11: retired pool link is gone"                test ! -L "$H11/.claude/skills/legacy-in-pool"
 check "t11: second retired pool link is gone"         test ! -L "$H11/.claude/skills/legacy-in-pool-2"
+check "t11: retired local code-review link is gone"  test ! -L "$H11/.pi/agent/skills/code-review"
 check "t11: retired vault-capture link is gone"       test ! -L "$H11/.claude/skills/vault-capture"
 check "t11: unrelated broken link survived apply"     test -L "$H11/.claude/skills/diagnose-crash"
 check "t11: foreign package link survived apply"      test -L "$H11/.claude/skills/omarchy"

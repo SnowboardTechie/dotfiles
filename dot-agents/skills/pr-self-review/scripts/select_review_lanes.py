@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic review-lane selection for `pr-self-review` and `code-review`.
+"""Deterministic review-lane selection for `pr-self-review` and its review contract.
 
 Standards and Spec **always** run. Risk runs when the change plausibly touches
 something that can hurt: authentication, secrets, private data, untrusted
@@ -226,8 +226,8 @@ OLD_HEADER = re.compile(r"\A--- (?:a/)?(?P<path>.+?)\s*\Z")
 DEV_NULL = "/dev/null"
 
 # THE authority command for touched paths. One literal, quoted verbatim in
-# `code-review`, `pr-self-review`, this module's `--help`, and the tests, so
-# every caller produces the same inventory:
+# `pr-self-review`, its `references/review-contract.md`, this module's
+# `--help`, and the tests, so every caller produces the same inventory:
 #
 #   -z   NUL-separated, so an unusual filename arrives verbatim rather than as
 #        a quoted approximation the parser would have to unescape.

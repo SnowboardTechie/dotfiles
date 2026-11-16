@@ -313,7 +313,8 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
         self.assertIn("Write", fields.get("tools", ""))
         for lane in ("standards", "spec", "correctness", "risk", "ponytail"):
             self.assertIn(f"`{lane}`", self.agent)
-        self.assertIn("code-review", self.agent)
+        self.assertIn("references/review-contract.md", self.agent)
+        self.assertNotIn("`code-review`", self.agent)
         self.assertIn("evidence_manifest_sha256", self.agent)
         self.assert_matches(self.agent, r"only.*reviewer state root|write only.*state root", "writes must be confined")
         self.assert_matches(self.agent, r"untrusted data", "PR-provided text must be data")

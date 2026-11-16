@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [review, pull-request, acceptance, bounded-correction]
-    related_skills: [code-review, issue-work, worktrunk]
+    related_skills: [teammate-pr-review, issue-work, worktrunk]
 ---
 
 # PR Self-Review
@@ -20,6 +20,13 @@ conditional second correction. The workflow preserves Standards, Spec,
 conditional Risk, Ponytail, acceptance criteria, exact-candidate identity, and
 final verification without multiplying those checks across several reviewers.
 
+The review semantics (candidate freeze, lane selection, the Standards, Spec,
+optional Correctness, conditional Risk and Ponytail sections, targeted Risk
+deepening, severity, and the finding gate) live in
+[`references/review-contract.md`](references/review-contract.md). `ship`,
+`teammate-pr-review`, `multiagent-pr-review` and the Claude lane-reviewer
+agents use the same contract.
+
 ## Entry Modes
 
 - `pre-pr`: `issue-work` supplies state directory, worktree, ticket/plan, branch,
@@ -29,7 +36,7 @@ final verification without multiplying those checks across several reviewers.
   `worktrunk` worktree.
 - `branch-inference`: resolve the open authored PR from the current branch.
 
-For someone else's PR use `code-review`, not this correction workflow.
+For someone else's PR use `teammate-pr-review`, not this correction workflow.
 
 Standalone state lives at:
 
@@ -186,8 +193,9 @@ Complete when every criterion has a candidate-bound verdict and evidence.
 
 ## 4. Run one integrated review
 
-Load `code-review`. Use this skill's `scripts/select_review_lanes.py` classifier, then run
-one integrated review in this order:
+Read [`references/review-contract.md`](references/review-contract.md). Use this
+skill's `scripts/select_review_lanes.py` classifier, then run one integrated
+review in this order:
 
 ```sh
 git diff --name-status -z -M -C --find-copies-harder \

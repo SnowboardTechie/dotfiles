@@ -939,7 +939,7 @@ class StrictStatusParsingTest(unittest.TestCase):
         literal = command.replace("{base}", "")
         for skill in (
             root / "skills" / "pr-self-review" / "SKILL.md",
-            root / "skills" / "code-review" / "SKILL.md",
+            root / "skills" / "pr-self-review" / "references" / "review-contract.md",
         ):
             with self.subTest(skill=skill.name):
                 text = skill.read_text(encoding="utf-8")

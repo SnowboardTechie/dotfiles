@@ -35,7 +35,8 @@ rejected upstream rules live in
   boundary: ordinary unit tests at the seam (`tdd`) are the proof. Do not add
   a black-box gate on top.
 - Root-causing a failure: use `diagnosing-bugs`.
-- Review and acceptance: `code-review`, `pr-self-review`, and the owning
+- Review and acceptance: `pr-self-review` (with its review contract),
+  `teammate-pr-review`, and the owning
   workflow's acceptance step stay authoritative. This skill supplies evidence
   to them; it is not another reviewer.
 

@@ -68,7 +68,8 @@ Read repository instructions, the complete diff, commit list, plan/ticket/spec,
 neighboring code, and relevant consumers. Read the diff a second time for
 omissions and unrequested scope.
 
-Load `code-review` and apply its canonical dimensions in this order:
+Read `pr-self-review`'s `references/review-contract.md` and apply its canonical
+dimensions in this order:
 
 1. Standards;
 2. Spec;

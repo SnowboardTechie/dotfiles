@@ -21,7 +21,7 @@ class LeanIssueWorkContractTests(unittest.TestCase):
         cls.issue_work = read("dot-agents/skills/issue-work/SKILL.md")
         cls.handoff = read("dot-agents/skills/coding-agent-handoff-supervision/SKILL.md")
         cls.review = read("dot-agents/skills/pr-self-review/SKILL.md")
-        cls.code_review = read("dot-agents/skills/code-review/SKILL.md")
+        cls.code_review = read("dot-agents/skills/pr-self-review/references/review-contract.md")
         cls.ship = read("dot-agents/skills/ship/SKILL.md")
         cls.lane_reviewer = read("dot-claude/agents/lane-reviewer.md")
         cls.helper_reference = read(

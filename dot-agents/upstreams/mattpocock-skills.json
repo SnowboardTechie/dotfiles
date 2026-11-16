@@ -1,23 +1,25 @@
 {
   "upstream": "https://github.com/mattpocock/skills",
-  "version": "1.2.3",
-  "commit": "885e2ca4d842d139e9aef4e48d366c63cb1b8013",
+  "version": "1.3.2",
+  "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
   "license": "MIT",
   "licenseFile": "mattpocock-skills-LICENSE",
   "attribution": "Portions adapted from Matt Pocock's agent skills, MIT licensed, Copyright (c) 2026 Matt Pocock. Retained in mattpocock-skills-LICENSE.",
-  "verifiedOn": "2026-08-19",
+  "verifiedOn": "2026-11-16",
   "notes": [
-    "Adapted copies, not vendored ones: each local skill diverges deliberately and is reviewed as local source.",
-    "Upstream promotes 25 skills via .claude-plugin/plugin.json. Only the adaptations below are adopted; the rest are deliberately out of scope.",
+    "Pi loads the upstream checkout unmodified at `commit`: `scripts/reconcile-mattpocock-skills.sh` keeps a plain git checkout at this pin under the user's Pi agent directory and lists its `skills/engineering` and `skills/productivity` directories (the 27 promoted skills) in `skills` of `~/.pi/agent/settings.json`. Listed there, his copy of a name wins in Pi once no copy of that name is in `~/.agents/skills` or `~/.pi/agent/skills`; started from `~` (or a non-Git directory under it), Pi reads `~/.agents/skills` as project skills and a copy there wins. So the Codex target `~/.agents/skills` no longer receives `grilling`, `tdd`, `wayfinder` or `diagnosing-bugs` (Claude Code and OpenCode keep them), and the reconciler warns about any such copy. `skills/in-progress`, `skills/misc` and `skills/deprecated` are not promoted and do not load.",
+    "`commit` is the only place the pin lives; the reconciler reads it from here.",
+    "The adapted copies under `adaptations` are still what Claude Code, OpenCode and Codex load from the shared pool. They are frozen: no further catch-up to upstream until those harnesses switch to his skills, when they retire.",
+    "Local `code-review` retired on 2026-11-16 in every harness. Its review passes moved into `pr-self-review` (`references/review-contract.md`), and reviewing other people's PRs is `teammate-pr-review`, which loads his `code-review` for Standards and Spec only.",
     "Upstream paths are relative to the repository root at the pinned commit.",
-    "`commit` is the baseline every adaptation was reviewed at. An adaptation's optional `reviewedThrough` records a later upstream commit its watched files were reviewed against; it never advances the global pin, because other adaptations may have unreviewed changes in between."
+    "An adaptation's optional `reviewedThrough` records a later upstream commit its watched files were reviewed against before this pin moved; it is history now that the pin has caught up."
   ],
   "updatePolicy": {
     "readOnlyDetection": true,
     "humanApprovedPinAdvance": true,
     "autoApply": false,
-    "monitor": "hermes/scripts/check-mattpocock-skill-updates.py",
-    "description": "The weekly watcher hashes the watched files below and reports only changes plausibly worth adopting. It never edits a file, advances the pin, opens a branch, or installs anything. Advancing `commit` is a reviewed local change."
+    "monitor": "pi-bots job mattpocock-skill-watch",
+    "description": "The pi-bots job `mattpocock-skill-watch` hashes the watched files below each week and reports changes to Matrix. It never edits a file, advances the pin, opens a branch, or installs anything. Advancing `commit` is a reviewed local change today; automatic pin advance by that job, with a load check and a Matrix announcement, is planned and not built yet."
   },
   "adaptations": [
     {
@@ -226,51 +228,6 @@
       ],
       "watchedFiles": [
         "skills/engineering/diagnosing-bugs/SKILL.md"
-      ]
-    },
-    {
-      "skill": "code-review",
-      "upstreamPaths": [
-        "skills/engineering/code-review/SKILL.md"
-      ],
-      "localPaths": [
-        "dot-agents/skills/code-review/SKILL.md",
-        "dot-agents/skills/pr-self-review/scripts/select_review_lanes.py",
-        "dot-agents/skills/pr-self-review/tests/test_select_review_lanes.py",
-        "dot-claude/agents/lane-reviewer.md",
-        "dot-claude/agents/multiagent-pr-lane-reviewer.md"
-      ],
-      "localChanges": [
-        "Adds a third conditional Risk lane and delegates lane selection to `select_review_lanes.py` so the choice is deterministic rather than a judgment call.",
-        "Adds excess test sensitivity and over-wide interface shape to the Standards baseline.",
-        "Adds out-of-scope-boundary and reversed-accepted-decision checks to the Spec lane.",
-        "States that an empty Spec report is not proof the acceptance criteria are met, and defers the independent sweep to the caller.",
-        "States that lane convergence raises the cost of an error, not confidence in it.",
-        "Defines the lanes as a primitive consumed by `pr-self-review`, which owns disposition and the correction bound.",
-        "Adds an optional Correctness / Integration / Tests lane for caller-selected behavior tracing; `multiagent-pr-review`, not `pr-self-review`, selects it.",
-        "Review lane selection preserves one load-bearing inventory shape: `git diff --name-status -z -M -C --find-copies-harder … --`. The classifier help keeps the generic `{base}...HEAD` template, while `code-review` and `pr-self-review` substitute their immutable base/head SHA pair. `--find-copies-harder` is load-bearing: plain `-C` only inspects modified files, so copying a risky *untouched* source emits a bare `A` and the risky source is never classified. Parsing is strict — a suffixed status, an impossible similarity score, a misaligned empty field, truncation, an empty path, a control character, or undecodable bytes all refuse, because a guess here is a silently narrowed review.",
-        "The deterministic selector and its tests live under pr-self-review (scripts/select_review_lanes.py, tests/test_select_review_lanes.py) and are consumed by both code-review and pr-self-review; the Git name-status parser validates exact status bytes before any normalization and rejects every control character in a path, tab included.",
-        "Keeps Standards, Spec, and conditional Risk as the primary lane architecture, then runs a mandatory host-independent Ponytail over-engineering quality gate last against every exact candidate. The shared contract is deliberately narrow (delete/YAGNI/stdlib/native/shrink only), requires `review-ponytail.md`, and does not depend on a Claude plugin or slash command.",
-        "Pins review artifacts to immutable base, head, merge-base, and binary-diff identities, and distributes `code-review` anywhere `pr-self-review` is curated, including Pi, so no host can receive the orchestrator without its mandatory Ponytail contract.",
-        "Runs Standards, Spec, conditional Risk, and Ponytail sequentially inside one independent review context while retaining separate artifacts; a second reviewer is reserved for targeted high-risk boundaries after the ordinary candidate stabilizes.",
-        "Allows a pre-PR reviewer to write only inside the exact cross-repository ticket state directory after rerunning the issue-work context validator and matching its persisted artifact.",
-        "Adds a human-facing review contract: clickable PR and exact-head source anchors, evidence-based proposed review events, verified inline suggestions whose ask is no wider than their anchor and evidence, concise approval prose, and private audit material separated from publishable text. Test-coverage comments must identify a meaningful consequence; a surviving artificial mutation alone is not a runtime finding."
-      ],
-      "acceptedUpstreamRules": [
-        "Pin the fixed point and confirm it resolves with a non-empty diff before dispatching reviewers.",
-        "Three-dot diff against the merge-base.",
-        "The full Fowler smell baseline travels inline with the Standards brief.",
-        "A documented repository standard overrides the baseline; baseline smells are always judgment calls; skip what tooling enforces.",
-        "Do not merge or rerank findings across lanes.",
-        "Under-400-word briefs."
-      ],
-      "rejectedUpstreamRules": [
-        "Pure two-axis review — it leaves security and operational risk implicit.",
-        "A separate model invocation per review dimension — repeated repository and authority loading costs more than the observed independence benefit; dimensions stay distinct within one review context and one targeted Risk reviewer remains available for high-risk boundaries.",
-        "Requiring `docs/agents/issue-tracker.md` and telling the user to run `/setup-matt-pocock-skills`; Bryan's forge adapters already exist."
-      ],
-      "watchedFiles": [
-        "skills/engineering/code-review/SKILL.md"
       ]
     },
     {

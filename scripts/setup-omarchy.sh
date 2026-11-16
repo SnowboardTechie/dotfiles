@@ -82,6 +82,7 @@ RECONCILERS=(
     "$SCRIPT_DIR/reconcile-pi-extensions.sh"
     "$SCRIPT_DIR/reconcile-pi-claude-code.sh"
     "$SCRIPT_DIR/reconcile-pi-packages.sh"
+    "$SCRIPT_DIR/reconcile-mattpocock-skills.sh"
     "$SCRIPT_DIR/retire-agent-memory.py"
 )
 
@@ -104,7 +105,9 @@ Ownership summary:
   Pi extensions and global AGENTS.md into ~/.pi/agent, installs the
   pi-claude-code Pi package and makes claude-code Pi's default provider when
   it was unset or anthropic (so Claude turns count against the plan, not
-  extra usage), and removes only the
+  extra usage), keeps a checkout of Matt Pocock's skills at the pinned
+  commit under ~/.pi/agent/upstreams and lists its promoted skill
+  directories in Pi's settings, and removes only the
   retired Hindsight / context-mode / claude-mem entries from Claude, Pi, and
   OpenCode JSON settings (native memory and data untouched) — nothing else.
 

@@ -167,6 +167,11 @@ echo ""
 "$REPO_ROOT/scripts/reconcile-pi-packages.sh" --apply || \
     echo "  (Pi packages incomplete; resolve the reported problem and re-run)"
 
+# Matt Pocock's skills, loaded in Pi from a checkout at the ledger's pin.
+echo ""
+"$REPO_ROOT/scripts/reconcile-mattpocock-skills.sh" --apply || \
+    echo "  (Matt Pocock's skills incomplete; resolve the reported problem and re-run)"
+
 # Pi trusts the bots' parent directory, so a bot's .pi/settings.json applies in Pi.
 echo ""
 echo "Setting up Pi trust for the bot directories..."
