@@ -109,10 +109,13 @@ merge); exit 0 means it was read, not that the PR is ready. Without
 `--allow-draft` a draft is a merge gate. Set `PSTACK_WATCH_PR_DIR` when pstack
 is not installed under the Pi agent directory.
 
-Bryan's repositories report no commit statuses today, so CI reads "no checks
-reported yet" and polling ends in `TIMEOUT`, never `READY`. There, the required
-check is the repository's full local gate on the exact head, as `manual-merge`
-says.
+Where a repository's CI reports commit statuses, the watcher reads them as its
+checks, and `READY` is reachable. Most of Bryan's repositories report none: CI
+then reads "no checks reported yet" and polling ends in `TIMEOUT`, never
+`READY`. In a repository that reports none, the required check is the
+repository's full local gate on the exact head, as `manual-merge` says. Check
+with `tea api --login "$LOGIN" /repos/$REPO/commits/<sha>/status`:
+`total_count: 0` means none.
 
 ## Review comments
 
@@ -137,10 +140,11 @@ an agent never resolves. "Resolved" means the conversation's first comment has a
 disprove the finding, reply, and report the conversation as waiting for Bryan to
 resolve it.
 
-Known gap: `watch-pr-forgejo` calls a conversation resolved only when *every*
-comment in it has a `resolver`. Replies never get one, so a conversation with a
-reply stays unresolved to the watcher after Bryan resolves it. Read the first
-comment's `resolver` yourself until the reader is fixed.
+`watch-pr-forgejo` reads a conversation as resolved the same way: its first
+comment has a `resolver`. Forgejo 16.0.6's Resolve button sends the first
+comment's ID, and `MarkConversation` in `models/issues/review.go` sets the
+resolver on that comment only, so replies never carry one (read from the
+source).
 
 Reply (`gh api --method POST .../comments/<id>/replies`): post a comment review
 at the same path and line, so it joins that conversation. Keep the reply in a

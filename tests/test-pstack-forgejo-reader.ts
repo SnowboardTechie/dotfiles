@@ -87,15 +87,18 @@ test("the newest review of each reviewer decides, and stale reviews don't count"
 	assert.equal(reviewDecision([{ ...reject, stale: true }], 0), null);
 });
 
-test("review comments on one line form one conversation, resolved only when all are", () => {
+test("review comments on one line form one conversation, resolved by its first comment's resolver", () => {
+	// Forgejo 16's Resolve button marks the conversation's first comment only;
+	// replies keep a null resolver.
 	const threads = threadsFromComments([
-		{ path: "a.ts", position: 4, body: "first", created_at: "2026-01-01", user: { login: "ann" }, resolver: { login: "bo" } },
 		{ path: "a.ts", position: 4, body: "reply", created_at: "2026-01-02", user: { login: "bo" }, resolver: null },
-		{ path: "b.ts", position: 9, body: "done", created_at: "2026-01-03", user: { login: "ann" }, resolver: { login: "bo" } },
+		{ path: "a.ts", position: 4, body: "first", created_at: "2026-01-01", user: { login: "ann" }, resolver: { login: "bo" } },
+		{ path: "b.ts", position: 9, body: "open", created_at: "2026-01-03", user: { login: "ann" }, resolver: null },
+		{ path: "b.ts", position: 9, body: "stray", created_at: "2026-01-04", user: { login: "bo" }, resolver: { login: "bo" } },
 	]);
 	assert.equal(threads.length, 2);
-	assert.deepEqual([threads[0].resolved, threads[0].firstComment.body], [false, "first"]);
-	assert.equal(threads[1].resolved, true);
+	assert.deepEqual([threads[0].resolved, threads[0].firstComment.body], [true, "first"]);
+	assert.deepEqual([threads[1].resolved, threads[1].firstComment.body], [false, "open"]);
 });
 
 test("an open pull request Forgejo calls mergeable reads as clean", async () => {

@@ -12,8 +12,9 @@
 //   (Forgejo's "WIP: " title). A local `git merge-tree` of the base and head
 //   tells a conflict from the rest; without those objects the answer is UNKNOWN.
 // - There is no review-thread object. Review comments are grouped into a
-//   conversation by file and position, and a conversation is resolved when every
-//   comment in it has a resolver.
+//   conversation by file and position, and a conversation is resolved when its
+//   first comment has a resolver. Forgejo 16's Resolve button marks only that
+//   comment; replies keep a null resolver.
 // - A commit status of `warning` is reported as failed.
 
 export interface CommandResult {
@@ -129,7 +130,7 @@ export function threadsFromComments(comments: Json[]) {
 				line: null,
 				createdAt: String(first.created_at ?? ""),
 			},
-			resolved: group.every((comment) => comment.resolver != null),
+			resolved: first.resolver != null,
 		};
 	});
 }
