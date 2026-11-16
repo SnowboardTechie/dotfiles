@@ -35,7 +35,8 @@ Draft: add `--draft`, which prefixes the title with `WIP: `. A Forgejo draft
 *is* that prefix. Forgejo 16's create schema has no `draft` field, so a
 `"draft": true` in a `tea api` payload (as `ship` sends) is ignored; only the
 title decides. A stack child passes the parent's branch as `--base`.
-**Unverified.**
+The ready form is **verified** (with `--description "$(cat <body-file>)"`); `--draft`
+and a non-default `--base` are **unverified**.
 
 Read back with the view below: `draft` matches what you asked for, `base.ref`
 and `head.ref` are right, and no second open PR exists for the branch.
@@ -77,8 +78,8 @@ tea api --login "$LOGIN" --repo "$REPO" -X PATCH --data @edit.json /repos/$REPO/
 ```
 
 Send only the fields you change. Keep an existing `WIP: ` prefix in a title
-edit unless you mean to mark the PR ready. **Unverified.** Read back `title`, `body`
-and `base.ref`.
+edit unless you mean to mark the PR ready. Title and body are **verified**; `base` is
+**unverified**. Read back `title`, `body` and `base.ref`.
 
 ## Mark ready
 
@@ -90,7 +91,8 @@ tea pulls edit <n> --login "$LOGIN" --repo "$REPO" --ready
 tea api --login "$LOGIN" --repo "$REPO" -X PATCH -f title="<title without WIP: >" /repos/$REPO/pulls/<n>
 ```
 
-`--ready` strips a leading `WIP: ` or `[WIP]`. **Unverified.** Read back
+`--ready` strips a leading `WIP: ` or `[WIP]` (**unverified**). The PATCH form is
+**verified**: `draft` went to `false` and `mergeable` to `true`. Read back
 `draft: false` and a title with no prefix.
 
 ## Checks
@@ -104,8 +106,10 @@ watch-pr-forgejo --pr <n> --status-only --pretty   # one table, then exit
 watch-pr-forgejo --pr <n>                          # poll until READY or BLOCKER
 ```
 
-**Verified** on a draft: `--status-only` exits 0 with a table (CI, review,
-merge); exit 0 means it was read, not that the PR is ready. Without
+**Verified** on a draft, and on an open pull request whose CI was running: it
+reported `WAITING` with the pending check, then `READY` when the check passed.
+`--status-only` exits 0 with a table (CI, review, merge); exit 0 means it was
+read, not that the PR is ready. Without
 `--allow-draft` a draft is a merge gate. Set `PSTACK_WATCH_PR_DIR` when pstack
 is not installed under the Pi agent directory.
 
@@ -178,7 +182,8 @@ Forgejo has no server-side head condition like `--match-head-commit`;
 `manual-merge` compares the PR's `head.sha` with the branch it squashes, right
 before it squashes. Merge one PR at a time per base.
 
-The record step, from `manual-merge` (**unverified** here):
+The record step, from `manual-merge` (**verified**: the PR read back `closed`,
+`merged: true`, with the pushed commit):
 
 ```bash
 tea api --login "$LOGIN" --repo "$REPO" -X POST \
