@@ -19,6 +19,7 @@ PI_FILES=(
     extensions/pi-rex.ts
     extensions/pi-seat.ts
     extensions/pi-split.ts
+    extensions/stream-rules.ts
 )
 
 for rel in "${PI_FILES[@]}"; do

@@ -162,10 +162,10 @@ echo ""
 "$REPO_ROOT/scripts/reconcile-pi-claude-code.sh" --apply || \
     echo "  (Pi Claude Code provider incomplete; resolve the reported problem and re-run)"
 
-# Pi's own web search and page fetch, for whichever model Pi runs.
+# Pinned third-party Pi packages (web search, hashline edits) for any model.
 echo ""
-"$REPO_ROOT/scripts/reconcile-pi-web-access.sh" --apply || \
-    echo "  (Pi web access incomplete; resolve the reported problem and re-run)"
+"$REPO_ROOT/scripts/reconcile-pi-packages.sh" --apply || \
+    echo "  (Pi packages incomplete; resolve the reported problem and re-run)"
 
 # Pi trusts the bots' parent directory, so a bot's .pi/settings.json applies in Pi.
 echo ""

@@ -81,7 +81,7 @@ RECONCILERS=(
     "$SCRIPT_DIR/reconcile-omarchy-clipboard-bridge.sh"
     "$SCRIPT_DIR/reconcile-pi-extensions.sh"
     "$SCRIPT_DIR/reconcile-pi-claude-code.sh"
-    "$SCRIPT_DIR/reconcile-pi-web-access.sh"
+    "$SCRIPT_DIR/reconcile-pi-packages.sh"
     "$SCRIPT_DIR/retire-agent-memory.py"
 )
 
