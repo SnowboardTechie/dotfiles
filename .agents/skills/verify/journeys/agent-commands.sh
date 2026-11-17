@@ -5,14 +5,23 @@ SRC="$REPO/dot-agents/bin/forgejo-map"
 
 step "fresh home: check, then apply"
 H="$(new_home fresh)"
+mkdir -p "$H/.local/share"; echo "app data" >"$H/.local/share/note"   # something already in the home
+capture "$H" before; BEFORE="$TREE"
 drive check "$H" -- "$R" --check
+capture "$H" after-check
+expect "check left the home unchanged" same_file "$BEFORE" "$TREE"
 expect "check exits 0" test "$RC" -eq 0
 expect "check says it would link" has "$OUT" "MISSING $H/.local/bin/forgejo-map (would link)"
-expect "check wrote nothing" test ! -e "$H/.local"
 drive apply "$H" -- "$R" --apply
 expect "apply exits 0" test "$RC" -eq 0
 expect "forgejo-map links to this checkout" links_to "$H/.local/bin/forgejo-map" "$SRC"
+capture "$H" after-apply; APPLIED="$TREE"
+expect "apply changed nothing but the link" \
+    bash -c 'diff <(grep -v "^\.local/bin" "$1") <(grep -v "^\.local/bin" "$2") >/dev/null && [[ "$(grep "^\.local/bin" "$2")" == ".local/bin/
+.local/bin/forgejo-map -> $3" ]]' _ "$BEFORE" "$APPLIED" "$SRC"
 drive apply-again "$H" -- "$R" --apply
+capture "$H" after-second-apply
+expect "second apply left the home identical" same_file "$APPLIED" "$TREE"
 expect "second apply exits 0 and reports OK" bash -c '[[ $1 -eq 0 ]] && grep -qF "OK   $2" <<<"$3"' _ "$RC" "$H/.local/bin/forgejo-map" "$OUT"
 
 step "the linked command runs through the link"
@@ -28,9 +37,11 @@ step "a stale link left by a removed worktree is repaired"
 H="$(new_home stale)"
 mkdir -p "$H/.local/bin"
 ln -s "/gone/dotfiles.old-worktree/dot-agents/bin/forgejo-map" "$H/.local/bin/forgejo-map"
+capture "$H" stale-before; BEFORE="$TREE"
 drive check-stale "$H" -- "$R" --check
 expect "check exits 0 and calls it stale" bash -c '[[ $1 -eq 0 ]] && grep -qF "STALE" <<<"$2"' _ "$RC" "$OUT"
-expect "check left the stale link" test "$(readlink "$H/.local/bin/forgejo-map")" = /gone/dotfiles.old-worktree/dot-agents/bin/forgejo-map
+capture "$H" stale-after-check
+expect "check left the stale home unchanged" same_file "$BEFORE" "$TREE"
 drive apply-stale "$H" -- "$R" --apply
 expect "apply exits 0" test "$RC" -eq 0
 expect "the link now points here" links_to "$H/.local/bin/forgejo-map" "$SRC"

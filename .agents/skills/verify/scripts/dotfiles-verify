@@ -69,7 +69,7 @@ doctor() {
     local stale=0 r
     for r in "$root"/*/run.json; do
         [[ -f "$r" ]] || continue
-        grep -q '"state": "cleaned"' "$r" || { echo "note  not cleaned: $(dirname "$r")"; stale=$((stale + 1)); }
+        [[ "$(run_field "$r" state)" == cleaned ]] || { echo "note  not cleaned: $(dirname "$r")"; stale=$((stale + 1)); }
     done
     [[ $stale -eq 0 ]] && ok "runs: all cleaned" || bad "runs: $stale not cleaned; run: dotfiles-verify cleanup"
     [[ $fails -eq 0 ]]
@@ -83,9 +83,25 @@ kill_tree() {
 
 # ---- run --------------------------------------------------------------------
 
+# started <pid>: the process's start time, which with the pid names one process.
+started() { LC_ALL=C ps -o lstart= -p "$1" 2>/dev/null | sed 's/  */ /g; s/^ //; s/ $//'; }
+
+# run.json records the processes this run started (the run itself and the
+# journey's subshell), each with its start time, the scratch directory and a
+# random token. The token is also written into the scratch's marker file, so
+# cleanup can tell that directory was made by this run.
 write_run_json() { # <state>
-    printf '{\n  "journey": "%s",\n  "repo": "%s",\n  "head": "%s",\n  "scratch": "%s",\n  "pid": %s,\n  "state": "%s"\n}\n' \
-        "$JOURNEY" "$REPO_ROOT" "$(git -C "$REPO_ROOT" rev-parse HEAD)" "$SCRATCH" "$$" "$1" >"$RUN_DIR/run.json"
+    python3 - "$RUN_DIR/run.json" "$1" "$JOURNEY" "$REPO_ROOT" "$(git -C "$REPO_ROOT" rev-parse HEAD)" \
+        "$SCRATCH" "$RUN_TOKEN" "$$" "$(started $$)" "${JOURNEY_PID:-}" "${JOURNEY_STARTED:-}" <<'PY'
+import json, sys
+path, state, journey, repo, head, scratch, token, pid, pid_start, jpid, jstart = sys.argv[1:]
+procs = [{"role": "run", "pid": int(pid), "started": pid_start}]
+if jpid:
+    procs.append({"role": "journey", "pid": int(jpid), "started": jstart})
+json.dump({"journey": journey, "repo": repo, "head": head, "scratch": scratch, "token": token,
+           "processes": procs, "state": state}, open(path, "w"), indent=2)
+open(path, "a").write("\n")
+PY
 }
 
 log() { echo "$*" | tee -a "$RUN_DIR/log.txt"; }
@@ -134,18 +150,24 @@ PY'
 
 # mattpocock_upstream: the sandbox has no network, so give git a local
 # stand-in for Matt Pocock's skills repository holding the pinned commit.
-# Copies it from the checkout the real reconciler keeps, else clones it once
-# (outside the sandbox). Sets GIT_UPSTREAM_ENV to pass to `drive`.
+# Copies it from the checkout the real reconciler keeps (read only). Never
+# reaches the network: without the pin there, the journey fails and says why.
+# Sets GIT_UPSTREAM_ENV to pass to `drive`.
 mattpocock_upstream() {
     local ledger="$REPO/dot-agents/upstreams/mattpocock-skills.json" url pin src
     url="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["upstream"])' "$ledger")"
     pin="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["commit"])' "$ledger")"
-    src="$HOME/.pi/agent/upstreams/mattpocock-skills"
-    if git -C "$src" cat-file -e "$pin^{commit}" 2>/dev/null; then
-        git clone --quiet --bare "$src" "$SCRATCH/mattpocock-skills.git"
-    else
-        git clone --quiet --bare "$url" "$SCRATCH/mattpocock-skills.git" || fail "cannot fetch a stand-in for $url"
-    fi
+    # Where the real reconciler keeps its checkout: ~/.local/share on current
+    # main, ~/.pi/agent/upstreams before that. Read only.
+    local candidates=("$HOME/.local/share/mattpocock-skills" "$HOME/.pi/agent/upstreams/mattpocock-skills") c
+    [[ -z "${DOTFILES_VERIFY_MATTPOCOCK_SOURCE:-}" ]] || candidates=("$DOTFILES_VERIFY_MATTPOCOCK_SOURCE")
+    src=""
+    for c in "${candidates[@]}"; do
+        if git -C "$c" cat-file -e "$pin^{commit}" 2>/dev/null; then src="$c"; break; fi
+    done
+    [[ -n "$src" ]] \
+        || fail "setup: the pinned commit $pin of $url is in none of: ${candidates[*]}. Run the real scripts/reconcile-mattpocock-skills.sh --apply, or set DOTFILES_VERIFY_MATTPOCOCK_SOURCE to a local clone that has it. This command never fetches it."
+    git clone --quiet --bare --no-local "$src" "$SCRATCH/mattpocock-skills.git" || fail "setup: cannot copy $src"
     git -C "$SCRATCH/mattpocock-skills.git" cat-file -e "$pin^{commit}" || fail "stand-in upstream lacks the pin $pin"
     MATTPOCOCK_PIN="$pin"
     GIT_UPSTREAM_ENV=(GIT_CONFIG_COUNT=1 "GIT_CONFIG_KEY_0=url.$SCRATCH/mattpocock-skills.git.insteadOf" "GIT_CONFIG_VALUE_0=$url")
@@ -220,8 +242,10 @@ run_journey() {
     RUN_DIR="$root/$(date -u +%Y%m%dT%H%M%SZ)-$JOURNEY"
     while [[ -e "$RUN_DIR" ]]; do RUN_DIR="$RUN_DIR-x"; done
     mkdir -p "$RUN_DIR"
-    SCRATCH="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-verify-scratch.XXXXXX")"
+    SCRATCH="$(mktemp -d "$(scratch_parent)/dotfiles-verify-scratch.XXXXXX")"
     SCRATCH="$(cd "$SCRATCH" && pwd -P)"
+    RUN_TOKEN="$(python3 -c 'import secrets; print(secrets.token_hex(16))')"
+    write_marker
     mkdir -p "$SCRATCH/homes" "$SCRATCH/calls" "$SCRATCH/stubs" "$SCRATCH/tools" "$SCRATCH/tmp"
     local t
     for t in "${TOOLS[@]}"; do ln -s "$(command -v "$t")" "$SCRATCH/tools/$t"; done
@@ -234,12 +258,19 @@ run_journey() {
     write_run_json running
     # On a signal, stop the journey (this run's own children, by parent pid) and
     # remove the scratch; cleanup may already have marked the run cleaned.
-    trap 'kill_tree $$; grep -q "\"state\": \"cleaned\"" "$RUN_DIR/run.json" || write_run_json interrupted; rm -rf "$SCRATCH"; exit 130' INT TERM
+    trap 'kill_tree $$; [[ "$(run_field "$RUN_DIR/run.json" state)" == cleaned ]] || write_run_json interrupted; rm -rf "$SCRATCH"; exit 130' INT TERM
     log "run $RUN_DIR"
     log "journey $file"
     log "repo $REPO_ROOT at $(git -C "$REPO_ROOT" rev-parse --short HEAD)$( [[ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]] && echo ' (with local changes)')"
     log "scratch $SCRATCH"
-    ( set +e; REPO="$REPO_ROOT"; source "$file" )
+    # In the background and waited for, so the journey's pid is recorded before
+    # it does anything, and a signal to the run is handled at once.
+    ( set +e; REPO="$REPO_ROOT"; source "$file" ) &
+    JOURNEY_PID=$!
+    JOURNEY_STARTED="$(started "$JOURNEY_PID")"
+    write_marker
+    write_run_json running
+    wait "$JOURNEY_PID"
     local rc=$?
     if [[ $rc -eq 0 ]]; then log "PASSED"; else log "FAILED"; fi
     write_run_json finished
@@ -249,31 +280,102 @@ run_journey() {
 
 # ---- cleanup ----------------------------------------------------------------
 
+MARKER=.dotfiles-verify-run
+
+# The marker inside the scratch: the run's token and directory, then one line
+# per process this run started, "<role> <pid> <start time>". Cleanup takes the
+# processes to stop from here, never from run.json, and only once the scratch
+# itself has been validated.
+write_marker() {
+    {
+        printf '%s\n%s\n' "$RUN_TOKEN" "$RUN_DIR"
+        printf 'run %s %s\n' "$$" "$(started $$)"
+        [[ -z "${JOURNEY_PID:-}" ]] || printf 'journey %s %s\n' "$JOURNEY_PID" "$JOURNEY_STARTED"
+    } >"$SCRATCH/$MARKER.tmp" && mv "$SCRATCH/$MARKER.tmp" "$SCRATCH/$MARKER"
+}
+
+# The directory every run's scratch is made in, canonical.
+scratch_parent() { (cd "${TMPDIR:-/tmp}" && pwd -P); }
+
+run_field() { # <run.json> <key>  -> the value, or nothing when unreadable
+    python3 -c 'import json,sys
+try: print(json.load(open(sys.argv[1]))[sys.argv[2]])
+except Exception: pass' "$1" "$2"
+}
+
+# owned_scratch <run dir> <run.json>: prints the scratch path when it is safe to
+# remove, else explains on stderr and fails. Safe means: canonical, a real
+# directory (not a link) directly in this machine's temporary directory, named
+# exactly dotfiles-verify-scratch.XXXXXX, holding a marker whose token and run
+# directory match this run.
+owned_scratch() {
+    local dir="$1" json="$2" scratch token parent canon
+    scratch="$(run_field "$json" scratch)"; token="$(run_field "$json" token)"
+    parent="$(scratch_parent)"
+    [[ -n "$scratch" && -n "$token" ]] || { echo "no scratch or token recorded" >&2; return 1; }
+    # The recorded path itself must have the exact generated shape, so no
+    # traversal or other directory can pass even when it does not exist.
+    [[ "$scratch" =~ ^"$parent"/dotfiles-verify-scratch\.[A-Za-z0-9]{6}$ ]] \
+        || { echo "'$scratch' is not $parent/dotfiles-verify-scratch.XXXXXX" >&2; return 1; }
+    [[ -e "$scratch" || -L "$scratch" ]] || { echo "ABSENT"; return 0; }
+    [[ ! -L "$scratch" && -d "$scratch" ]] || { echo "'$scratch' is not a real directory" >&2; return 1; }
+    canon="$(cd "$scratch" && pwd -P)"
+    [[ "$canon" == "$scratch" ]] || { echo "'$scratch' is not canonical (resolves to '$canon')" >&2; return 1; }
+    [[ "$(dirname "$canon")" == "$parent" ]] || { echo "'$canon' is not directly in $parent" >&2; return 1; }
+    [[ "$(basename "$canon")" =~ ^dotfiles-verify-scratch\.[A-Za-z0-9]{6}$ ]] || { echo "'$canon' does not have the generated name" >&2; return 1; }
+    [[ -f "$canon/$MARKER" && ! -L "$canon/$MARKER" ]] || { echo "'$canon' has no marker" >&2; return 1; }
+    [[ "$(sed -n 1p "$canon/$MARKER")" == "$token" && "$(sed -n 2p "$canon/$MARKER")" == "$dir" ]] \
+        || { echo "'$canon' marker names another run" >&2; return 1; }
+    echo "$canon"
+}
+
+# stop_recorded <validated scratch>: SIGTERM each process the run's marker
+# records (journey first, its descendants before it), only while that pid still
+# has the recorded start time and runs `dotfiles-verify run`.
+stop_recorded() {
+    local role pid start
+    while read -r role pid start; do
+        [[ "$pid" =~ ^[0-9]+$ && "$pid" != "$$" && -n "$start" ]] || continue
+        if [[ "$(started "$pid")" == "$start" ]] \
+            && ps -o command= -p "$pid" | grep -qE '(^|/| )dotfiles-verify run '; then
+            kill_tree "$pid"
+            kill -TERM "$pid" 2>/dev/null || true
+            echo "      stopped $role process $pid"
+        fi
+    done < <(tail -n +3 "$1/$MARKER" | sort)   # "journey" sorts before "run"
+}
+
 cleanup_run() { # <run dir>
-    local dir="$1" scratch pid
-    [[ -f "$dir/run.json" ]] || { echo "skip  $dir (no run.json)"; return; }
-    grep -q '"state": "cleaned"' "$dir/run.json" && { echo "ok    $dir (already cleaned)"; return; }
-    scratch="$(sed -n 's/.*"scratch": "\(.*\)".*/\1/p' "$dir/run.json")"
-    pid="$(sed -n 's/.*"pid": \([0-9]*\).*/\1/p' "$dir/run.json")"
-    if [[ "$pid" != "$$" ]] && kill -0 "$pid" 2>/dev/null \
-        && ps -o command= -p "$pid" | grep -q dotfiles-verify; then
-        kill_tree "$pid"   # the journey's commands first: bash runs a trap only once they end
-        kill -TERM "$pid" 2>/dev/null || true
-        sleep 1
+    local dir json scratch
+    dir="$(cd "$1" 2>/dev/null && pwd -P)" || { echo "skip  $1 (not a directory)"; return 1; }
+    json="$dir/run.json"
+    [[ -f "$json" && ! -L "$json" ]] || { echo "skip  $dir (no run.json)"; return 1; }
+    [[ "$(run_field "$json" state)" == cleaned ]] && { echo "ok    $dir (already cleaned)"; return 0; }
+    # Validate the scratch before stopping anything: a run.json that fails here
+    # was not written by a run of this command, and nothing it names is touched.
+    if ! scratch="$(owned_scratch "$dir" "$json" 2>"$dir/.cleanup-refusal")"; then
+        echo "REFUSED $dir: $(cat "$dir/.cleanup-refusal"); nothing stopped or removed"
+        rm -f "$dir/.cleanup-refusal"
+        return 1
     fi
-    case "$scratch" in
-        */dotfiles-verify-scratch.*) rm -rf "$scratch" ;;
-        *) echo "skip  $dir (scratch path '$scratch' is not one of ours)"; return ;;
-    esac
-    sed -i '' 's/"state": "[a-z]*"/"state": "cleaned"/' "$dir/run.json"
+    rm -f "$dir/.cleanup-refusal"
+    # An absent scratch proves nothing about the run's processes: stop none.
+    if [[ "$scratch" != ABSENT ]]; then
+        stop_recorded "$scratch"
+        sleep 1
+        rm -rf "$scratch"
+    fi
+    python3 -c 'import json,sys
+d = json.load(open(sys.argv[1])); d["state"] = "cleaned"
+json.dump(d, open(sys.argv[1], "w"), indent=2)' "$json"
     echo "ok    $dir cleaned; evidence kept"
 }
 
 cleanup() {
     if [[ $# -gt 0 ]]; then cleanup_run "$1"; return; fi
-    local root r; root="$(evidence_root)" || exit 2
-    for r in "$root"/*/run.json; do [[ -f "$r" ]] && cleanup_run "$(dirname "$r")"; done
-    return 0
+    local root r rc=0; root="$(evidence_root)" || exit 2
+    for r in "$root"/*/run.json; do [[ -f "$r" ]] && { cleanup_run "$(dirname "$r")" || rc=1; }; done
+    return $rc
 }
 
 case "${1:-}" in

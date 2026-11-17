@@ -5,11 +5,13 @@
 
 ## Sub-features
 
-- `link`: check reports `MISSING … (would link)` and writes nothing; apply links; a second apply reports `OK`.
+- `link`: in a home that already holds `~/.local/share/note`, check reports `MISSING … (would link)` and the home's
+  tree is unchanged; apply changes nothing in the tree but `~/.local/bin/` and the link; a second apply leaves the tree
+  identical and reports `OK`.
 - `runs-through-link`: the linked `forgejo-map` finds the Wayfinder adapter through the link (`--help`), and outside a
   Git repository without `--origin` it stops with exit 2 and says to pass `--origin`.
 - `stale`: a dangling link whose target ends in `dot-agents/bin/forgejo-map` (a removed worktree) is called `STALE` by
-  check, left by check, and repointed here by apply.
+  check, the home's tree is unchanged by check, and apply repoints it here.
 - `foreign`: a regular file, and a live link into another checkout, are reported as `CONFLICT` with exit 1 in check
   and apply, and the home is unchanged.
 

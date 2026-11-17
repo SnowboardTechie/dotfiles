@@ -7,8 +7,10 @@ guarded Ble.sh line and links `~/.config/blesh/init.sh` to the repository's. Nei
 ## Sub-features
 
 - `no-bashrc`: both exit 0 and `~/.bashrc` is still absent.
-- `append`: check changes nothing; apply leaves the original lines first and adds the aliases line and the Ble.sh line
-  once each, the aliases line under its marker, and links the Ble.sh settings; a second apply appends nothing.
+- `append`: in a home that also holds Omarchy's `shell.json`, the home's tree is unchanged by check; apply leaves the
+  original lines first, adds the aliases line and the Ble.sh line once each (the aliases line under its marker), links
+  the Ble.sh settings, and changes nothing else in the tree; a second apply leaves `.bashrc` and the whole tree
+  identical.
 - `interactive`: a fresh `bash -i` in that home has `alias gs='git status'` and the `grb` function, and Omarchy's own
   `alias ls=eza` line is still there.
 - `hand-edited`: a `.bashrc` that already sources some other `dot-config/shell/aliases.sh` gets a warning

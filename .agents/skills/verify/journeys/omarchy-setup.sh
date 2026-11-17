@@ -10,6 +10,9 @@ omarchy_home() { # <name>: a home as a stock Omarchy install leaves it
     mkdir -p "$h/.config/omarchy"
     printf '# Omarchy default bashrc\nsource ~/.local/share/omarchy/default/bash/rc\n# Add your own exports, aliases, and functions here.\n' >"$h/.bashrc"
     printf '{\n  "version": 1,\n  "plugins": [{"id": "omarchy.foreign"}]\n}\n' >"$h/.config/omarchy/shell.json"
+    # Pi settings left by an old install: the retired Hindsight extension beside one of Bryan's.
+    mkdir -p "$h/.pi/agent"
+    printf '{"extensions": ["/home/peer/.hindsight/coding-agents/dist/pi.js", "/opt/pi/mine.js"]}\n' >"$h/.pi/agent/settings.json"
     echo "$h"
 }
 
@@ -29,7 +32,24 @@ drive check "$H" "${GIT_UPSTREAM_ENV[@]}" -- "$S" --check
 capture "$H" after-check
 expect "check left the home unchanged" same_file "$BEFORE" "$TREE"
 expect "check exits 0" test "$RC" -eq 0
-expect "check reaches the last reconciler" has "$OUT" "Agent commands (check)"
+# Each reconciler setup-omarchy.sh lists runs, in check mode, and proposes its change.
+while IFS='|' read -r header proposal; do
+    expect "check runs $header" has "$OUT" "$header"
+    [[ -z "$proposal" ]] || expect "check proposes: $proposal" has "$OUT" "$proposal"
+done <<'LIST'
+Reconciling agent skills (check)|would create link: ship
+Shell additions (check)|would append: marked source line
+Bash enhancements (check)|would append: guarded Ble.sh source line
+Omarchy auto suspend (check)|would enable: snowboardtechie.auto-suspend in shell.json
+Clipboard bridge (check)|
+Pi extensions (check)|MISSING
+Pi Claude Code provider (check)|WOULD SET defaultProvider <unset> -> claude-code
+Pi packages (check)|MISSING package npm:pi-web-access@
+Matt Pocock's skills in Pi (check)|checkout: missing
+Retired agent-memory cleanup (check)|would remove from
+Agent commands (check)|(would link)
+LIST
+expect "check ran no apply step" lacks "$OUT" "(apply)"
 expect "check ran no pi command" test -z "$(calls "$H" pi)"
 expect "check restarted nothing" test -z "$(calls "$H" omarchy)"
 
@@ -49,11 +69,16 @@ expect "shell.json keeps Omarchy's plugin and adds ours once" \
 expect "shell.json was backed up first" test -f "$H/.config/omarchy/shell.json.pre-auto-suspend"
 expect "Bryan's own Pi AGENTS.md is kept" bash -c '[[ ! -L "$1" && "$(cat "$1")" == "Bryan'"'"'s own Pi rules" ]]' _ "$H/.pi/agent/AGENTS.md"
 expect "Pi extensions linked" links_to "$H/.pi/agent/extensions/worker-watch.ts" "$REPO/dot-pi/agent/extensions/worker-watch.ts"
+expect "the pinned Pi packages are installed" test "$(jq -c '[.packages[] | select(startswith("npm:"))]' "$H/.pi/agent/settings.json")" = \
+    "$(grep -oE '"(pi-web-access|@deathbeam/pi-hashline)@[^"]+"' "$REPO/scripts/reconcile-pi-packages.sh" | tr -d '"' | sed 's/^/npm:/' | jq -Rsc 'split("\n") | map(select(. != ""))')"
+expect "the retired Hindsight extension is removed from Pi's settings, Bryan's kept" \
+    test "$(jq -c .extensions "$H/.pi/agent/settings.json")" = '["/opt/pi/mine.js"]'
+expect "Omarchy's shell was restarted to load the plugin" test "$(calls "$H" omarchy)" = "omarchy restart shell"
 expect "Pi's default provider is claude-code" test "$(jq -r .defaultProvider "$H/.pi/agent/settings.json")" = claude-code
 expect "Matt Pocock's checkout is at the pin" test "$(git -C "$H/.pi/agent/upstreams/mattpocock-skills" rev-parse HEAD)" = "$MATTPOCOCK_PIN"
 expect "forgejo-map linked into ~/.local/bin" links_to "$H/.local/bin/forgejo-map" "$REPO/dot-agents/bin/forgejo-map"
 expect "no clipboard bridge unit without a configured Mac" test ! -e "$H/.config/systemd/user/clipboard-bridge.service"
-expect "nothing ran stow" lacks "$OUT" "stow:"
+expect "nothing ran stow, sudo or systemctl" test -z "$(calls "$H" stow)$(calls "$H" sudo)$(calls "$H" systemctl)"
 capture "$H" after-apply; APPLIED="$TREE"
 
 step "repeat: apply and check again"

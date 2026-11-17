@@ -48,6 +48,38 @@
   "fails_at": "an uncurated pool link is pruned"
  },
  {
+  "journey": "agent-skills",
+  "file": "scripts/reconcile-agent-skills.sh",
+  "break": "a real directory on a curated name is deleted and replaced by the pool link",
+  "old": "            echo \"  WARNING: $label/$name exists and is not a symlink; preserved, not linked\"",
+  "new": "            [[ \"$MODE\" == apply && -d \"$dest/$name\" ]] && { rm -rf \"$dest/$name\"; ln -sfn \"$SKILLS_SRC/$name\" \"$dest/$name\"; }",
+  "fails_at": "a real directory on a curated name is kept with its content"
+ },
+ {
+  "journey": "agent-skills",
+  "file": "scripts/reconcile-agent-skills.sh",
+  "break": "a regular file on a curated name is deleted and replaced by the pool link",
+  "old": "            echo \"  WARNING: $label/$name exists and is not a symlink; preserved, not linked\"",
+  "new": "            [[ \"$MODE\" == apply && -f \"$dest/$name\" ]] && { rm -f \"$dest/$name\"; ln -sfn \"$SKILLS_SRC/$name\" \"$dest/$name\"; }",
+  "fails_at": "a regular file on a curated name is kept with its content"
+ },
+ {
+  "journey": "agent-skills",
+  "file": "scripts/reconcile-agent-skills.sh",
+  "break": "draw-it also curated for Hermes",
+  "old": "    guided-learning yunohost-updates superwhisper-meetings bot-planning bot-reminders",
+  "new": "    guided-learning yunohost-updates superwhisper-meetings bot-planning bot-reminders draw-it",
+  "fails_at": ".hermes/skills/personal does not get draw-it"
+ },
+ {
+  "journey": "agent-skills",
+  "file": "scripts/reconcile-agent-skills.sh",
+  "break": "diagnosing-bugs added to Codex's ~/.agents/skills",
+  "old": "    superwhisper-meetings\n    codebase-architecture)",
+  "new": "    superwhisper-meetings diagnosing-bugs\n    codebase-architecture)",
+  "fails_at": "Codex (~/.agents/skills) gets no diagnosing-bugs, so Matt Pocock's copy wins in Pi"
+ },
+ {
   "journey": "omarchy-setup",
   "file": "scripts/setup-omarchy.sh",
   "break": "every host counts as Omarchy",
@@ -69,6 +101,14 @@
   "break": "the Pi extensions reconciler dropped from the list",
   "old": "    \"$SCRIPT_DIR/reconcile-pi-extensions.sh\"\n",
   "new": "",
+  "fails_at": "check runs Pi extensions (check)"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/reconcile-pi-extensions.sh",
+  "break": "Pi extensions apply links nothing",
+  "old": "        ln -s \"$src\" \"$dest\"\n        echo \"  Linked $dest\"",
+  "new": "        echo \"  Linked $dest\"",
   "fails_at": "Pi extensions linked"
  },
  {
@@ -102,6 +142,54 @@
   "old": "        git -C \"$tmp\" -c advice.detachedHead=false checkout --quiet --detach \"$PIN\"",
   "new": "        git -C \"$tmp\" -c advice.detachedHead=false checkout --quiet --detach HEAD~1",
   "fails_at": "Matt Pocock's checkout is at the pin"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/setup-omarchy.sh",
+  "break": "the Pi packages reconciler dropped from the list",
+  "old": "    \"$SCRIPT_DIR/reconcile-pi-packages.sh\"\n",
+  "new": "",
+  "fails_at": "check runs Pi packages (check)"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/reconcile-bash-enhancements.sh",
+  "break": "Ble.sh check mode proposes nothing",
+  "old": "        echo \"  would append: guarded Ble.sh source line\"",
+  "new": "        true",
+  "fails_at": "check proposes: would append: guarded Ble.sh source line"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/retire-agent-memory.py",
+  "break": "the retired Hindsight Pi extension is no longer removed",
+  "old": "    prune_list_entries(settings, (\"extensions\", \"packages\"), removed)",
+  "new": "    prune_list_entries(settings, (\"packages\",), removed)",
+  "fails_at": "check proposes: would remove from"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/reconcile-pi-packages.sh",
+  "break": "apply installs nothing",
+  "old": "        command pi install \"$want\"\n",
+  "new": "",
+  "fails_at": "the pinned Pi packages are installed"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/reconcile-omarchy-auto-suspend.sh",
+  "break": "Omarchy's shell is not restarted after enabling the plugin",
+  "old": "        if omarchy restart shell >/dev/null 2>&1; then",
+  "new": "        if true; then",
+  "fails_at": "Omarchy's shell was restarted to load the plugin"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/setup-omarchy.sh",
+  "break": "setup-omarchy.sh runs stow over the home",
+  "old": "echo \"Omarchy additive setup ($MODE)\"\n",
+  "new": "echo \"Omarchy additive setup ($MODE)\"\n[[ $MODE == apply ]] && stow . --dotfiles --target \"$HOME\"\n",
+  "fails_at": "nothing ran stow, sudo or systemctl"
  },
  {
   "journey": "platform-setup",
@@ -192,6 +280,30 @@
   "fails_at": "the link now points here"
  },
  {
+  "journey": "agent-commands",
+  "file": "scripts/reconcile-agent-commands.sh",
+  "break": "check creates ~/.local/bin",
+  "old": "    else\n        echo \"  MISSING $dest (would link)\"",
+  "new": "    else\n        mkdir -p \"$DEST_DIR\"\n        echo \"  MISSING $dest (would link)\"",
+  "fails_at": "check left the home unchanged"
+ },
+ {
+  "journey": "agent-commands",
+  "file": "scripts/reconcile-agent-commands.sh",
+  "break": "apply also drops a stray file into ~/.local",
+  "old": "        mkdir -p \"$DEST_DIR\"\n        ln -s \"$src\" \"$dest\"",
+  "new": "        mkdir -p \"$DEST_DIR\"\n        touch \"$HOME/.local/.agent-commands-stamp\"\n        ln -s \"$src\" \"$dest\"",
+  "fails_at": "apply changed nothing but the link"
+ },
+ {
+  "journey": "agent-commands",
+  "file": "scripts/reconcile-agent-commands.sh",
+  "break": "every apply rewrites a stamp file",
+  "old": "echo \"Agent commands (${MODE#--}) for $DEST_DIR\"",
+  "new": "echo \"Agent commands (${MODE#--}) for $DEST_DIR\"\n[[ $MODE == --apply && -d \"$DEST_DIR\" ]] && date +%s%N >\"$DEST_DIR/.stamp\"",
+  "fails_at": "second apply left the home identical"
+ },
+ {
   "journey": "shell-additions",
   "file": "scripts/reconcile-shell-additions.sh",
   "break": "~/.bashrc created when missing",
@@ -222,5 +334,29 @@
   "old": "        echo \"  WARNING: $BLESH_RC_TARGET exists and is not this repository's file;\"",
   "new": "        [[ \"$MODE\" == apply ]] && ln -sfn \"$BLESH_RC_SOURCE\" \"$BLESH_RC_TARGET\"",
   "fails_at": "warns and keeps the file"
+ },
+ {
+  "journey": "shell-additions",
+  "file": "scripts/reconcile-bash-enhancements.sh",
+  "break": "check creates ~/.config/blesh",
+  "old": "    elif [[ \"$MODE\" == \"check\" ]]; then\n        echo \"  would link: $BLESH_RC_TARGET -> $BLESH_RC_SOURCE\"",
+  "new": "    elif [[ \"$MODE\" == \"check\" ]]; then\n        mkdir -p \"$(dirname \"$BLESH_RC_TARGET\")\"\n        echo \"  would link: $BLESH_RC_TARGET -> $BLESH_RC_SOURCE\"",
+  "fails_at": "check left the home unchanged"
+ },
+ {
+  "journey": "shell-additions",
+  "file": "scripts/reconcile-shell-additions.sh",
+  "break": "apply also writes a backup of ~/.bashrc",
+  "old": "    printf '\\n%s\\n%s\\n' \"$MARKER\" \"$SOURCE_LINE\" >> \"$BASHRC\"",
+  "new": "    cp \"$BASHRC\" \"$BASHRC.bak\"\n    printf '\\n%s\\n%s\\n' \"$MARKER\" \"$SOURCE_LINE\" >> \"$BASHRC\"",
+  "fails_at": "apply changed only ~/.bashrc and the Ble.sh settings link"
+ },
+ {
+  "journey": "shell-additions",
+  "file": "scripts/reconcile-bash-enhancements.sh",
+  "break": "every apply rewrites a stamp beside the Ble.sh settings",
+  "old": "reconcile_bashrc\nreconcile_blesh_rc\n",
+  "new": "reconcile_bashrc\nreconcile_blesh_rc\n[[ $MODE == apply ]] && date +%s%N >\"$(dirname \"$BLESH_RC_TARGET\")/.applied\"\n",
+  "fails_at": "a second apply left the home identical"
  }
 ]

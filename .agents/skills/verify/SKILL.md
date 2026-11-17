@@ -78,7 +78,7 @@ on the closest of the five in `journeys/`. What it gets:
 | `stub <name> '<body>'` | A command in front of the real tools; `__CALLS__` in the body is its call log, kept outside the home |
 | `calls <home> <name>` | That stub's log for that home |
 | `stub_pi` | A `pi` that edits `packages` in `~/.pi/agent/settings.json` as `pi install`/`remove` do, and a no-op `claude` |
-| `mattpocock_upstream` | A local bare copy of Matt Pocock's skills repository at the ledger's pin (from `~/.pi/agent/upstreams/mattpocock-skills`, read-only, else one clone outside the sandbox), and `GIT_UPSTREAM_ENV` to pass to `drive` so git's `insteadOf` uses it |
+| `mattpocock_upstream` | A local bare copy of Matt Pocock's skills repository at the ledger's pin (copied read-only from the real reconciler's checkout, `~/.local/share/mattpocock-skills` or the older `~/.pi/agent/upstreams/mattpocock-skills`, or `DOTFILES_VERIFY_MATTPOCOCK_SOURCE`; never fetched), and `GIT_UPSTREAM_ENV` to pass to `drive` so git's `insteadOf` uses it |
 | `step <name>` | A heading in the log |
 
 The commands under test are the repository's own entry points with their own flags: `--check` and `--apply` for the
@@ -132,11 +132,18 @@ $V cleanup                  # every run under the evidence root not yet cleaned
 $V cleanup <run directory>  # one run
 ```
 
-For each run still alive, it sends SIGTERM to the run's own descendants (found by parent pid from the `pid` in
-`run.json`, after checking that pid's command line is `dotfiles-verify`, never by process name), then to the run
-itself. It removes the scratch directory named in `run.json` only if it is a `dotfiles-verify-scratch.*` directory,
-and marks the run `cleaned`. It never removes evidence. Ctrl-C on a run unwinds the same way. The journeys start no
-long-lived process, so there is nothing else to stop.
+Each run makes its scratch with `mktemp` directly in `$TMPDIR` and writes a marker into it,
+`.dotfiles-verify-run`: a random token, the run directory, and one line per process the run started (the run and the
+journey's subshell), each with its pid and start time. `run.json` records the same token and scratch path.
+
+Cleanup trusts nothing in `run.json` until the scratch is shown to be this run's. It refuses, and stops and removes
+nothing, unless the recorded scratch is exactly `<canonical $TMPDIR>/dotfiles-verify-scratch.XXXXXX`, is a real
+directory (not a link) whose canonical path is that same path, and holds a marker (not a link) whose token and run
+directory match. A refused run prints `REFUSED <dir>: <reason>`, keeps its state, and makes cleanup exit 1. For an
+accepted run it takes the processes from the marker and sends SIGTERM to each, journey first and its descendants
+before it, only while that pid still has the recorded start time and a `dotfiles-verify run` command line. Then it
+removes the scratch and marks the run `cleaned`. A recorded scratch that no longer exists stops nothing. It never
+removes evidence. Ctrl-C on a run unwinds the same way.
 
 ## Gotchas
 
@@ -149,8 +156,10 @@ long-lived process, so there is nothing else to stop.
 - `reconcile-pi-bots-trust.mjs` skips in every journey: the throwaway home has no `~/code/pi-bots/bots`.
   `reconcile-omarchy-clipboard-bridge.sh` skips because `wl-paste` is absent. Neither is proven here; their own tests
   cover them (`tests/test-bot-alias.sh`, `tests/test-omarchy-clipboard-bridge.sh`).
-- `omarchy-setup` and `platform-setup` need Matt Pocock's pinned commit: from `~/.pi/agent/upstreams/mattpocock-skills`
-  if it has it, else one clone from GitHub outside the sandbox. With neither, they fail at setup, not at a claim.
+- `omarchy-setup` and `platform-setup` need Matt Pocock's pinned commit in a local clone: the real reconciler's
+  checkout (`~/.local/share/mattpocock-skills`, or `~/.pi/agent/upstreams/mattpocock-skills` before current `main`), or
+  `DOTFILES_VERIFY_MATTPOCOCK_SOURCE`. Without it they fail with `FAIL: setup: the pinned commit … is in none of …`.
+  Nothing in this skill reaches the network.
 - `bash -i` in the sandbox prints "cannot set terminal process group" and "no job control"; expected.
 - These journeys complement the repository's tests (`tests/test-reconcile-*.sh` and others), which drive each script
   alone with more edge cases. This skill drives the entry points a host runs end to end. It replaces none of them.
