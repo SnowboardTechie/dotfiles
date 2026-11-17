@@ -78,7 +78,7 @@ on the closest of the five in `journeys/`. What it gets:
 | `has <text> <string>`, `lacks`, `same_file a b`, `links_to <link> <target>` | Predicates for `expect` |
 | `stub <name> '<body>'` | A command in front of the real tools; `__CALLS__` in the body is its call log, kept outside the home |
 | `calls <home> <name>` | That stub's log for that home |
-| `stub_pi` | A `pi` that edits `packages` in `~/.pi/agent/settings.json` as `pi install`/`remove` do, and a no-op `claude` |
+| `stub_pi` | A `pi` that edits `packages` in the `settings.json` of `$PI_CODING_AGENT_DIR` (else `~/.pi/agent`) as `pi install`/`remove` do, logging each call led by that directory, and a no-op `claude` |
 | `mattpocock_upstream` | A local bare copy of Matt Pocock's skills repository at its source record's pin (copied read-only from the real reconciler's checkout, `~/.local/share/mattpocock-skills` or the older `~/.pi/agent/upstreams/mattpocock-skills`, or `DOTFILES_VERIFY_MATTPOCOCK_SOURCE`; never fetched), and `GIT_UPSTREAM_ENV` to pass to `drive` so git's `insteadOf` uses it |
 | `step <name>` | A heading in the log |
 
