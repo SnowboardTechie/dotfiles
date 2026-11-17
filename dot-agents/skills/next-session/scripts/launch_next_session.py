@@ -24,7 +24,7 @@ decides. Pi finds its own skills, so ``--skills`` is not passed on.
 optional: without one the new session waits for input.
 
 Commands:
-  whoami                       print this session's id and Rex block
+  whoami                       print this session's id and Rex pane
   launch [--prompt-file F] --name N [--cwd D] [--skills S] [--focus] [--dry-run]
          [--agent hermes|pi] [--model M] [--thinking T] [--subscription personal|work]
          [--fork SESSION_FILE]
@@ -222,7 +222,7 @@ def rex_caller(session: str, host: terminal_host.Host) -> dict:
     except CannotRun:
         raise
     except Refused as exc:
-        raise Refused("this session's Rex block is not on the connected server", block=host.pane,
+        raise Refused("this session's Rex pane is not on the connected server", block=host.pane,
                       rex_session=host.session, **exc.detail) from exc
     foreground = info.get("foreground") or {}
     return {"session_id": session, "host": "rex", "pane_id": host.pane, "rex_session": host.session,
@@ -258,7 +258,7 @@ def rex_launch(args: argparse.Namespace, session: str, host: terminal_host.Host)
     split = rex(host, "api", "call", "session.new_split", json.dumps(request))
     blocks = [b for b in split.get("block_ids") or [] if b]
     if len(blocks) != 1:
-        raise Refused("rex split did not return exactly one new block", result=split)
+        raise Refused("rex split did not return exactly one new pane", result=split)
     pane = blocks[0]
     deadline = time.monotonic() + REX_START_TIMEOUT_S
     foreground: dict = {}

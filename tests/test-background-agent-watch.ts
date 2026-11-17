@@ -88,8 +88,8 @@ test("a running watch satisfies the check", async () => {
 	const { emit, watch, children } = setup();
 	await emit("before_agent_start");
 	await emit("tool_call", bash(PROMPT));
-	const res = await watch({ label: "brief-01", transcript: "/t.jsonl", completion_report: "/h.md", marker: "Correction 1" });
-	assert.match(res.content[0].text, /Watching brief-01/);
+	const res = await watch({ label: "docs-review", transcript: "/t.jsonl", completion_report: "/h.md", marker: "Correction 1" });
+	assert.match(res.content[0].text, /Watching docs-review/);
 	assert.deepEqual(children[0].args, ["/t.jsonl", "/h.md", "14400", "Correction 1"]);
 	assert.equal(await settle(emit), undefined);
 });

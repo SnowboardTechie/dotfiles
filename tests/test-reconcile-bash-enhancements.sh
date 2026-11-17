@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Integration tests for scripts/reconcile-bash-enhancements.sh.
-# All writes are isolated inside temporary HOME directories, removed on exit.
+# All writes are isolated inside throwaway homes, removed on exit.
 
 set -u
 # The reconciler links into ${XDG_CONFIG_HOME:-$HOME/.config}; keep every run
-# inside the temporary HOME, and prove the real config directory is untouched.
+# inside the throwaway home, and prove the real config directory is untouched.
 REAL_RC="${XDG_CONFIG_HOME:-$HOME/.config}/blesh/init.sh"
 real_rc_before="$(readlink "$REAL_RC" 2>/dev/null || echo absent)"
 unset XDG_CONFIG_HOME
@@ -125,7 +125,7 @@ check "settings: ~/.blerc wins, warned"     bash -c 'grep -q "blerc exists" <<<"
 check "settings: ~/.blerc, no link made"    test ! -e "$H7/.config/blesh/init.sh"
 
 # --- The settings repair foot's zero-padded DA2 reply ---------------------------
-# Stand-in for ble.sh's notify hook; the settings replace it.
+# Fake of ble.sh's notify hook; the settings replace it.
 fixed="$(bash --norc -c '
     function ble/term/DA2/notify { :; }
     _ble_term_DA2R=

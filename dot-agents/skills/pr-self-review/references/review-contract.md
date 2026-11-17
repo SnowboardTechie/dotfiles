@@ -14,9 +14,9 @@ loop. This contract owns review semantics.
 Provenance: moved here on 2026-11-16 from the retired local `code-review`
 skill, which was adapted from Matt Pocock's `code-review`. Matt Pocock's own
 `code-review` now carries that name; its pin is in
-[`dot-agents/upstreams/mattpocock-skills.json`](../../../upstreams/mattpocock-skills.json).
+[`dot-agents/skill-sources/mattpocock-skills.json`](../../../skill-sources/mattpocock-skills.json).
 The Ponytail pass is adapted from the Ponytail plugin; its record is
-[`dot-agents/upstreams/ponytail.json`](../../../upstreams/ponytail.json).
+[`dot-agents/skill-sources/ponytail.json`](../../../skill-sources/ponytail.json).
 
 ## When it applies
 
@@ -135,7 +135,7 @@ candidate.
 
 Ponytail checks the candidate for over-engineering: code that could be deleted
 or made smaller. It is named after the Ponytail plugin
-([record](../../../upstreams/ponytail.json)); "simplicity review" is another
+([record](../../../skill-sources/ponytail.json)); "simplicity review" is another
 name for this pass.
 
 Review over-engineering only. Walk from largest deletion to smallest

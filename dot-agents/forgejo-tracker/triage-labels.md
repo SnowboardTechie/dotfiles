@@ -23,7 +23,7 @@ Bryan's `loop-issue` builds, unattended, any issue in this repository that carri
 `/triage` puts it on every issue it judges ready. So with the row above as it stands, publishing a spec or tickets,
 or triaging an issue to ready, is approval to build it.
 
-That mapping is a choice. Keep it where Bryan wants tickets built automatically. Anywhere else, map the role to
+That mapping is a choice. Keep it where Bryan wants issues built automatically. Anywhere else, map the role to
 another label (for example `agent-ready`): the skills then apply that, and nothing picks the issues up.
 
 ## Category labels

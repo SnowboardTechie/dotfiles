@@ -23,23 +23,23 @@ Instead, we:
 1. **Search** skills.sh via their API
 2. **Fetch** the raw `SKILL.md` from GitHub
 3. **Present** the content for the user to review
-4. **Adapt** it into the canonical pool if the user wants to keep it
+4. **Adapt** it into the skill pool if the user wants to keep it
 
-**Adopted skills are authored in the canonical pool, never written straight into
+**Adopted skills are authored in the skill pool, never written straight into
 a harness's directory.** `~/.claude/skills/`, `~/.config/opencode/skills/`,
 `~/.pi/agent/skills/`, `~/.agents/skills/`, and `~/.hermes/skills/personal/` are
 *outputs*: they hold per-skill symlinks that
 `scripts/reconcile-agent-skills.sh` creates from `dot-agents/skills/`. A file
 written directly into one of them is unmanaged — untracked, absent on every
 other machine, invisible to the curation arrays, and liable to be pruned or to
-shadow a pooled skill of the same name.
+shadow a skill pool skill of the same name.
 
 So an adoption lands in three places, all of them in the repository:
 
 | What | Where |
 |---|---|
 | The adapted skill | `dot-agents/skills/{name}/SKILL.md` |
-| Its upstream provenance | `dot-agents/upstreams/{source}.json` |
+| Its upstream provenance | `dot-agents/skill-sources/{source}.json` |
 | Which harnesses get it | the `*_SKILLS` arrays in `scripts/reconcile-agent-skills.sh` |
 
 ---
@@ -163,7 +163,7 @@ Instructions adapted for your workflow...
 4. Adjust file paths to match your conventions
 5. Keep the actual procedural knowledge — that's the valuable part
 
-### Create the skill in the canonical pool
+### Create the skill in the skill pool
 
 ```bash
 mkdir -p dot-agents/skills/{skill-name}
@@ -173,12 +173,12 @@ mkdir -p dot-agents/skills/{skill-name}
 ### Record its provenance
 
 An adapted copy without a pin is a silent fork. Add an entry to
-`dot-agents/upstreams/{source}.json` — or create that ledger if the source is
+`dot-agents/skill-sources/{source}.json` — or create that source record if the source is
 new — carrying the upstream repository and **exact commit**, the license and
 where it is retained, the upstream paths this adaptation came from, the local
 paths, what was changed locally and why, which upstream rules were accepted or
 rejected, and the upstream files worth watching. See
-[`dot-agents/README.md`](../../README.md) → *Upstream adaptations*.
+[`dot-agents/README.md`](../../README.md) → *Adaptations from skill sources*.
 
 ### Curate the harnesses
 
@@ -191,7 +191,7 @@ it without a reason.
 
 ## Step 4: Verify through the reconciler
 
-Existence in the pool is not availability. Distribution is what makes a skill
+Existence in the skill pool is not availability. Distribution is what makes a skill
 load, and the reconciler owns it:
 
 ```bash
@@ -200,17 +200,17 @@ load, and the reconciler owns it:
 ```
 
 `--check` must show `would create link: {skill-name}` for each intended harness.
-If it says `WARNING: skill '{skill-name}' not in pool`, the file is in the wrong
+If it says `WARNING: skill '{skill-name}' not in the skill pool`, the file is in the wrong
 place. If it says nothing about the skill at all, it is not curated.
 
-Then confirm the link resolves back into the pool, and start a fresh session so
+Then confirm the link resolves back into the skill pool, and start a fresh session so
 the harness rescans:
 
 ```bash
 readlink ~/.claude/skills/{skill-name}      # -> …/dot-agents/skills/{skill-name}
 ```
 
-A skill is done when the link resolves into the pool **and** the trigger
+A skill is done when the link resolves into the skill pool **and** the trigger
 actually fires in a fresh session — not when the file exists.
 
 ---
@@ -260,5 +260,5 @@ If the search returns no results:
 3. Fetch: `curl -s "https://raw.githubusercontent.com/someorg/some-pack/main/skills/a11y-review/SKILL.md"`
 4. Present content to user
 5. If user wants it: adapt it into `dot-agents/skills/a11y-review/`, record its upstream
-   provenance under `dot-agents/upstreams/`, and curate it in the reconciler arrays —
+   provenance under `dot-agents/skill-sources/`, and curate it in the reconciler arrays —
    never write an unmanaged copy straight into `~/.claude/skills/`

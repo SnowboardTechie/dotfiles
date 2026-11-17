@@ -16,12 +16,12 @@ metadata:
 
 Turn an existing GitHub or Forgejo issue into an approved, durable implementation
 plan before implementation starts. The workflow grounds itself in the current
-issue, codebase, and project vault; deliberates unresolved decisions with the
+issue, codebase, and the workspace's vault; deliberates unresolved decisions with the
 user; invokes the appropriate design skills; and saves one canonical plan note
 that `issue-work` can consume later.
 
 Planning is read-only with respect to tracked code and the working tree. An
-authenticated ticket read and `git fetch` of the default branch are allowed so
+authenticated issue read and `git fetch` of the default branch are allowed so
 the plan is grounded in the current remote base. Do not create a worktree, edit
 project files, commit code, post issue comments, or begin implementation. Vault
 writes and the vault's own commit/push discipline are the only content mutations.
@@ -33,12 +33,12 @@ Use when the user:
 - Has an issue that is known work but is not ready to implement yet.
 - Wants to discuss implementation details before running `issue-work`.
 - Asks to prepare, pre-plan, design, or flesh out an existing issue.
-- Wants the resulting implementation context saved in the appropriate project
+- Wants the resulting implementation context saved in the workspace's
   vault.
 
 Do not use for a rough idea that is not yet an issue; use `issue-create`. Do not
 use when the user wants implementation to begin now; use `issue-work`, whose
-plan-source gate will either accept an approved vault plan, accept a sufficiently
+plan-source check will either accept an approved vault plan, accept a sufficiently
 clear issue as planning authority, or stop.
 
 ## Inputs
@@ -54,17 +54,17 @@ to a PR, route to the appropriate review workflow instead.
 
 ## Phase 1: Resolve and Ground
 
-### 1. Resolve the issue, ticket workspace, and implementation repository
+### 1. Resolve the issue, the issue repository, and the implementation repository
 
-Use `issue-work`'s source detection, ticket-fetch, and repository-resolution
+Use `issue-work`'s source detection, issue-fetch, and repository-resolution
 references. Fetch the current issue body, `updatedAt`/`updated_at`, every comment
 with its stable ID and update timestamp, labels, linked references one level
 deep, and acceptance criteria. Compute the canonical comment checkpoint defined
-in the ticket-fetch reference.
+in the issue-fetch reference.
 
-Resolve the ticket repository's local primary checkout first. It owns issue identity,
+Resolve the issue repository's local primary checkout first. It owns issue identity,
 workspace instructions, vault discovery, and planning state. Then determine the
-implementation repository: default it to the ticket repository, or use a
+implementation repository: default it to the issue repository, or use a
 different repository only when the user or existing project authority names it
 explicitly. Resolve that clone independently and verify its origin hostname plus
 owner/repository; never infer a cross-repository binding from directory layout,
@@ -80,26 +80,26 @@ If default-branch resolution or fetch fails, stop and surface the authentication
 or remote error. Never fall back to a stale local ref.
 
 **Complete when:** the canonical issue URL, issue update timestamp, comment
-checkpoint, ticket repository and primary checkout, implementation forge, repository and primary checkout,
+checkpoint, issue repository and primary checkout, implementation forge, repository and primary checkout,
 implementation default branch, and fetched base revision are known.
 
-### 2. Resolve the project vault
+### 2. Resolve the workspace's vault
 
 Load `vault-pkm`; it owns vault discovery, local instructions, topology,
 frontmatter, linking, and synchronization. Resolve in this order:
 
-1. A vault path explicitly named by ticket-workspace instructions.
-2. `{TICKET_PRIMARY_CHECKOUT}/vault` when it is a directory or symlink.
+1. A vault path explicitly named by the issue repository's instructions.
+2. `{ISSUE_PRIMARY_CHECKOUT}/vault` when it is a directory or symlink.
 3. For same-repository work only, a path named by implementation instructions,
    `{IMPLEMENTATION_PRIMARY_CHECKOUT}/vault`, or
    `~/code/notes/{implementation-repo}` when it clearly belongs to the project.
 
-Cross-repository canonical plans must be ticket-discoverable through step 1 or
+Cross-repository canonical plans must be discoverable from the issue repository through step 1 or
 2. Do not place their sole canonical handoff in an implementation-only vault:
 `issue-work` cannot know the implementation identity until it finds that handoff.
 
 Do not silently fall back to `~/second-brain` for project implementation plans.
-If no project vault can be resolved, stop and ask where this project's durable
+If no vault can be resolved for the workspace, stop and ask where this project's durable
 notes belong.
 
 Read the vault's `AGENTS.md`, entry point, status note when present, relevant MOC,
@@ -149,8 +149,8 @@ Harness mapping is explicit:
 |---|---|---|---|
 | Generic task-plan authoring | none — draft directly to the Phase 3 contract | installed `plan` | none — draft directly to the Phase 3 contract |
 | DX target exploration | installed `dx-target` | installed `dx-target` | use `dx-target` only when installed; otherwise stop and hand the session to Pi or Claude Code, which have it |
-| Decision coaching | Matt Pocock's `grilling` | none since the local `grilling` retired: hand the session to Pi, or use pooled `adr-and-spec-coach` if Bryan asks | Matt Pocock's `grilling` |
-| Spec conformance | pooled `conforming-tech-specs` through `~/.agents/skills` | installed `conforming-tech-specs` | installed pooled `conforming-tech-specs` |
+| Decision coaching | Matt Pocock's `grilling` | none since the local `grilling` retired: hand the session to Pi, or use `adr-and-spec-coach` from the skill pool if Bryan asks | Matt Pocock's `grilling` |
+| Spec conformance | `conforming-tech-specs` from the skill pool through `~/.agents/skills` | installed `conforming-tech-specs` | installed `conforming-tech-specs` from the skill pool |
 
 Do not silently replace a missing specialized workflow with generic drafting.
 
@@ -178,7 +178,7 @@ verify that the complete draft is presented for its real approval boundary, or
 name the specific unresolved material decision that prevents it.
 
 Before asking a behavior question,
-check whether the ticket's outcome/acceptance criteria, canonical contract, or
+check whether the issue's outcome/acceptance criteria, canonical contract, or
 explicitly named reference implementation already answers it. An alignment
 requirement is not permission to offer retention of the incompatible behavior as
 an equally open option; derive the required behavior and explain compatibility
@@ -187,9 +187,9 @@ impact. Ask only when authoritative sources conflict or leave a material choice.
 Separate product decisions from engineering discovery before presenting a plan
 as handoff-ready. Resolve cheap mechanism feasibility, suspected helper defects,
 and concrete consumer-harness commands during planning through bounded read-only
-inspection or scratch/in-memory probes. Do not bury these as "if needed", "choose
+inspection or scratch/in-memory spikes. Do not bury these as "if needed", "choose
 a command", or "verify feasibility" implementation tasks and then ask Bryan to
-settle them. Record what the probe actually established and leave full candidate
+settle them. Record what the spike actually established and leave full candidate
 verification to implementation. Classify each apparent open question before
 requesting plan approval.
 
@@ -201,11 +201,11 @@ be deferred into an "approved" plan.
 
 When Bryan asks why an order, design, or dependency is recommended, answer the question before editing the plan. A curiosity question is not approval of a different order. Change a recommendation only after naming the new evidence, changed constraint, explicit preference, or error in its original reasoning; distinguish the corrected fact from any newly proposed choice.
 
-For multi-ticket sequencing, classify each edge before drawing the review stack:
+For multi-issue sequencing, classify each edge before drawing the review stack:
 
 - **Implementation prerequisite:** the child needs a model, API, or behavior supplied by the parent. Cite the inspected symbol, contract, or acceptance criterion.
 - **Integration coordination:** independently buildable changes need a combined regression check. Record the joining point without making every branch inherit both changes.
-- **Scheduling preference:** doing one ticket first may reduce rework. State the expected benefit and uncertainty; do not turn it into a branch dependency or release gate.
+- **Scheduling preference:** doing one issue first may reduce rework. State the expected benefit and uncertainty; do not turn it into a branch dependency or release gate.
 
 Keep the work-order list, PR-base graph, and release boundary separate. A shared-library fix can be worth doing first without requiring every PR to branch from its unmerged head. Conversely, do not reverse the work order merely because the graph needs correction.
 
@@ -261,7 +261,7 @@ On approval:
 
 1. Set `Planning status: approved` in the handoff section.
 2. Re-read the note and linked decision/design artifacts.
-3. Verify the issue URL, issue timestamp, comment checkpoint, ticket repository,
+3. Verify the issue URL, issue timestamp, comment checkpoint, issue repository,
    implementation forge/repository, implementation default branch, and fetched
    base revision.
 4. Ensure the relevant MOC or index has an inbound route to every new durable
@@ -305,7 +305,7 @@ strategy drift is material.
 5. **Treating stale metadata as automatic invalidation.** Inspect the drift and
    distinguish material change from harmless movement.
 6. **Writing to the personal vault by default.** Project implementation plans
-   belong in the project vault unless the user explicitly chooses otherwise.
+   belong in the workspace's vault unless the user explicitly chooses otherwise.
 7. **Duplicating issue prose.** Link and synthesize; capture decisions and
    implementation detail the issue does not already preserve.
 8. **Inferring a cross-repository target.** A workspace path or related repo name
@@ -315,9 +315,9 @@ strategy drift is material.
 
 - [ ] Current issue body, update timestamp, and all comment IDs/update timestamps fetched
 - [ ] Canonical comment checkpoint computed
-- [ ] Ticket repository and primary checkout, and implementation forge, repository and primary checkout verified
+- [ ] Issue repository and primary checkout, and implementation forge, repository and primary checkout verified
 - [ ] Implementation default branch fetched and plan grounded against its remote revision
-- [ ] Project vault resolved without guessing
+- [ ] The workspace's vault resolved without guessing
 - [ ] Vault-local instructions, index/MOC, and related notes read
 - [ ] Relevant code, tests, specs, and prior patterns inspected read-only
 - [ ] Applicable planning/design skills loaded in the right order

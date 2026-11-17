@@ -66,7 +66,7 @@ def ticket_body(question: str, map_number: int, ticket_type: str = "grilling") -
 
 
 class FakeForgejo(WF.Transport):
-    """In-memory stand-in for the endpoints the adapter uses."""
+    """In-memory fake of the endpoints the adapter uses."""
 
     def __init__(
         self, *, private: bool = True, labels: dict[str, int] | None = None,

@@ -77,7 +77,7 @@ thinking type between_tools instead"); `claude-sonnet-5-5` takes `off`.
 
 ## The OpenCode key in a headless run
 
-Pi lists no `opencode-go` models until it has a key. pi-bots jobs export
+Pi lists no `opencode-go` models until it has a key. pi-bots' scheduled jobs export
 `OPENCODE_API_KEY` from `~/.secrets/opencode-api-key` into the background agent's
 environment. For pstack, put a command in the agent directory's `auth.json`
 instead:

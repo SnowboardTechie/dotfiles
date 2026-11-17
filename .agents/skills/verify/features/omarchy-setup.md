@@ -1,6 +1,6 @@
 # Omarchy additive setup
 
-`scripts/setup-omarchy.sh --check|--apply` is the only supported install on an Omarchy host. It runs a fixed list of
+`scripts/setup-omarchy.sh --check|--apply` is the only supported install on an Omarchy machine. It runs a fixed list of
 reconcilers that add to Omarchy's own configuration and never replace it: skill links, one marked line each in
 `~/.bashrc` for the shared aliases and Ble.sh, the auto-suspend plugin in `shell.json`, the clipboard bridge (when a Mac
 is configured), Pi's extensions, Claude Code provider and packages, Matt Pocock's pinned skills, the retired-memory
@@ -8,7 +8,7 @@ cleanup and `forgejo-map` in `~/.local/bin`.
 
 ## Sub-features
 
-- `refused`: a host that does not identify as Omarchy (no `ID=omarchy` in `/etc/os-release`, no `omarchy` command) is
+- `refused`: a machine that does not identify as Omarchy (no `ID=omarchy` in `/etc/os-release`, no `omarchy` command) is
   refused with exit 1 and nothing written.
 - `check`: each of the eleven reconcilers prints its check-mode header, each except the clipboard bridge (which skips)
   proposes its change, no `(apply)` header appears, the home is unchanged, and no `pi` or `omarchy` command runs.
@@ -20,7 +20,7 @@ cleanup and `forgejo-map` in `~/.local/bin`.
 
 ## How to get to it (user POV)
 
-- `./scripts/setup-omarchy.sh --check`, then `--apply`, on an Omarchy host (AGENTS.md, "DEPLOYMENT PROFILES").
+- `./scripts/setup-omarchy.sh --check`, then `--apply`, on an Omarchy machine (AGENTS.md, "DEPLOYMENT PROFILES").
 
 ## Driving it with dotfiles-verify
 
@@ -28,7 +28,7 @@ Preconditions:
 
 - `doctor` passes.
 - Matt Pocock's pinned commit is reachable (see Gotchas).
-- The journey stubs `pi`/`claude` (`stub_pi`) and `omarchy`. The `omarchy` stub is what makes the host count as
+- The journey stubs `pi`/`claude` (`stub_pi`) and `omarchy`. The `omarchy` stub is what makes the machine count as
   Omarchy, as the real command would; it also receives `restart shell` on apply.
 
 - **Refused.** `$V run omarchy-setup`. With `PATH` lacking the stubs, `--apply` exits 1, says `does not identify as
@@ -45,7 +45,7 @@ Preconditions:
   exactly `omarchy restart shell`; Pi's `packages` holds exactly the two pins from `reconcile-pi-packages.sh`; Pi's
   `extensions` is `["/opt/pi/mine.js"]`; the seeded
   `~/.pi/agent/AGENTS.md` still a file with its text; `background-agent-watch.ts` linked; `defaultProvider` `claude-code`; the
-  Matt Pocock checkout at `~/.local/share/mattpocock-skills` has `HEAD` at the ledger's pin and nothing is left under
+  Matt Pocock checkout at `~/.local/share/mattpocock-skills` has `HEAD` at its source record's pin and nothing is left under
   `~/.pi/agent/upstreams`; Pi's `skills` is exactly his `skills/engineering` and `skills/productivity` directories; his
   `tdd` is linked into both `~/.claude/skills` and `~/.config/opencode/skills`; `forgejo-map` linked; no `clipboard-bridge.service`; the
   `stow`, `sudo` and `systemctl` call logs are empty.
@@ -54,7 +54,7 @@ Preconditions:
 
 ## Gotchas
 
-- The sandbox has no network. `mattpocock_upstream` gives git a local bare copy of the upstream, copied read-only
+- The sandbox has no network. `mattpocock_skill_source` gives git a local bare copy of his repository, the skill source, copied read-only
   from a local clone that holds the pin (see `../SKILL.md`, Gotchas). Without one the journey fails at setup; it never
   fetches. The real clone's fetch is not proven, only the checkout at the pin, the Pi settings entries and the links.
 - Of his 27 promoted skills only `tdd` is read back as a link; the rest are covered by the repeat run's identical
@@ -62,7 +62,7 @@ Preconditions:
   `tests/test-reconcile-mattpocock-skills.sh` covers it.
 - `pi install` is a stub that edits `settings.json`; nothing is downloaded. Whether Pi then loads the package is not
   proven.
-- The clipboard bridge skips at `wl-paste is not installed`, before it reads the host file. Its unit writing is in
+- The clipboard bridge skips at `wl-paste is not installed`, before it reads the file naming the Mac. Its unit writing is in
   `tests/test-omarchy-clipboard-bridge.sh`.
 - macOS `bash` runs the scripts, not Omarchy's. GNU-only flags would pass here and fail there only where the script
   has no BSD fallback (the auto-suspend reconciler has one for `stat`).

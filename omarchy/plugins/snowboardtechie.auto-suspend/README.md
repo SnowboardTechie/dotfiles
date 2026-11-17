@@ -1,6 +1,6 @@
 # Auto Suspend
 
-Personal Omarchy shell service that suspends the host after 45 minutes of
+Personal Omarchy shell service that suspends the machine after 45 minutes of
 uninhibited user idle time.
 
 ## Behavior

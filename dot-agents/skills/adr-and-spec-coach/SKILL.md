@@ -134,7 +134,7 @@ author must answer, and writes one draft file. Dispatch needs the author's go
 ahead ("get to work" counts). Verify consequential claims yourself before
 presenting them, because background agents' summaries are self-reports. Then descend Phase 3
 as usual. The research does not replace one-decision-per-turn deliberation.
-Brief template and source-pinning recipe: `references/research-fanout.md`.
+Assignment template and source-pinning recipe: `references/research-fanout.md`.
 
 ### Phase 3 — Descend the agenda, one decision per turn
 

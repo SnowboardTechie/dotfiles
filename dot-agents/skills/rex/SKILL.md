@@ -33,4 +33,4 @@ If that command fails, the installed Rex version predates the guide. Start with
 `"$REX" whoami --json`, then use `"$REX" --help` and `"$REX" COMMAND --help`.
 
 Your own location in Rex is in the environment: `REX_SESSION` and `REX_BLOCK`
-name this terminal's session and block, and `REX_SERVER` the server socket.
+name this terminal's session and pane, and `REX_SERVER` the server socket.

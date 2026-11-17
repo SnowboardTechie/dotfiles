@@ -1,4 +1,4 @@
-# Fetching Tickets — CLI Reference
+# Fetching Issues — CLI Reference
 
 Long-form fetch recipes. Use them from an isolated intake background agent (`delegate_task`, `Task`, `Agent`, or a visible Pi background agent) or inline when delegation is unavailable. On Pi, run them inline unless a background agent is warranted. Loaded on demand from SKILL.md.
 
@@ -262,7 +262,7 @@ When you resolve a linked ref, only fetch its title + state + url. Do **not** fe
 |---|---|
 | `gh auth status` fails | Stop. Tell user to `gh auth login`. |
 | `FORGEJO_TOKEN` missing | Stop. Tell user to set it. |
-| 404 on primary ticket | Stop. "Ticket not found. Check URL/access." |
+| 404 on primary issue | Stop. "Issue not found. Check URL/access." |
 | 403 (rate limit or perms) | Stop. Report rate-limit reset time if present in `X-RateLimit-Reset`. |
 | 404 on a linked ref | Record "could not fetch" and continue. |
 | Forgejo instance unreachable | Stop. "Cannot reach {host}. Check VPN/network." |

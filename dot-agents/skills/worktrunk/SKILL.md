@@ -29,9 +29,9 @@ git worktree list --porcelain | head -1
 
 ## Primary checkout resolution
 
-This skill **owns** primary checkout/worktree resolution for the whole shared pool. Other
+This skill **owns** primary checkout/worktree resolution for the whole skill pool. Other
 skills cite this section; none of them re-spell the logic. Anything that needs
-the primary checkout — repo-scoped state directories, project vaults, shared caches,
+the primary checkout — repo-scoped state directories, workspaces' vaults, shared caches,
 per-repo config — resolves it here first.
 
 `git rev-parse --show-toplevel` gives the *current* checkout, which is the

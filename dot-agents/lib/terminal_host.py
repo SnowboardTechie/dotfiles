@@ -34,7 +34,7 @@ HOST_PREFIXES = ("REX_",)
 @dataclass(frozen=True)
 class Host:
     kind: str  # always "rex"
-    pane: str  # Rex block ID of the caller
+    pane: str  # Rex pane ID (block ID) of the caller
     session: str  # Rex session ID
     binary: str  # executable to run for this host
 

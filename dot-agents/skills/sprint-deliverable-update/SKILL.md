@@ -33,12 +33,12 @@ is a separate skill: `sprint-status-update`.
    list come from the planning doc — not from cadence math or the previous comment. The
    format and voice come from the latest sibling-deliverable updates. See
    **Gather sources first** below.
-5. **Never list tickets.** Closed sub-issues are the raw input, not the update. The
-   Accomplishments section is a few top-level takeaways synthesized across the tickets
-   that landed — not one bullet per ticket, however well-written each bullet is. Each
+5. **Never list issues.** Closed sub-issues are the raw input, not the update. The
+   Accomplishments section is a few top-level takeaways synthesized across the issues
+   that landed — not one bullet per issue, however well-written each bullet is. Each
    takeaway names what changed for someone outside the team and links to the thing
-   itself — the new endpoint, spec page, docs page, released package. Ticket refs may
-   ride along as provenance next to a takeaway, but a ticket is never the subject or
+   itself — the new endpoint, spec page, docs page, released package. Issue refs may
+   ride along as provenance next to a takeaway, but an issue is never the subject or
    organizing unit of a bullet. A bullet that means nothing to a reader who doesn't
    follow the repo gets rewritten. See **The narrative pass** below.
 6. **Final means final.** A draft called complete, post-ready, or review-ready contains
@@ -46,7 +46,7 @@ is a separate skill: `sprint-status-update`.
    Do not add a sentence announcing that no deliverable acceptance criteria or metrics
    closed unless the audience needs that fact; rollover already names unfinished work.
    Only classify work as rollover when it was actually committed for that sprint. A
-   ticket's existence or the prior update's tentative "Next sprint" list is not proof.
+   issue's existence or the prior update's tentative "Next sprint" list is not proof.
    In stakeholder-facing risks, explain the consequence rather than assuming readers
    know the team's internal checkpoint labels.
 7. **Embed or omit.** If the artifact mentions a screenshot, the screenshot must appear
@@ -79,7 +79,7 @@ Classify the request before drafting:
 When the requested format is ambiguous but the user links an established comment, the
 linked precedent decides. Do not substitute a familiar sprint-update shape.
 
-## Visual evidence gate
+## Visual evidence check
 
 Treat images as part of the artifact, not as follow-up work:
 
@@ -221,18 +221,18 @@ have any questions!
 
 ## The narrative pass
 
-The closed-ticket filter tells you which work landed. It does not tell a stakeholder why
+The closed-issue filter tells you which work landed. It does not tell a stakeholder why
 the sprint mattered. The narrative pass is synthesis, not enrichment: adding more detail
-to each ticket's bullet is the failure mode, not the fix. Work top-down instead:
+to each issue's bullet is the failure mode, not the fix. Work top-down instead:
 
 1. **Name the takeaways first.** Before writing any bullet, answer: if the stakeholder
    remembers only two or three things about this sprint, what should they be? Those
-   takeaways — not the tickets — become the Accomplishments bullets.
+   takeaways — not the issues — become the Accomplishments bullets.
 2. **Attach the work as evidence.** Under each takeaway, the shipped things (endpoint,
    spec page, docs page, released package) appear as supporting links — as nested
    sub-bullets when they enumerate (routes, models, pages), so the reader scans and
-   clicks rather than parsing prose. Ticket refs sit alongside as provenance. Several
-   tickets from one effort collapse into one takeaway; a ticket that supports no
+   clicks rather than parsing prose. Issue refs sit alongside as provenance. Several
+   issues from one effort collapse into one takeaway; an issue that supports no
    takeaway is probably maintenance — fold such items into one housekeeping line or
    drop them.
 3. **Say what it sets up.** Progress toward an AC, a metric, an unblocked consumer, a
@@ -242,7 +242,7 @@ to each ticket's bullet is the failure mode, not the fix. Work top-down instead:
 
 Checks before calling the draft done:
 
-- **Count.** If Accomplishments bullets ≈ closed tickets, it is still a ticket list
+- **Count.** If Accomplishments bullets ≈ closed issues, it is still an issue list
   wearing prose. Typical sprints yield 2–4 takeaways.
 - **Lead.** Each takeaway opens with what someone can do or rely on now that they
   couldn't before, and a reader can click through to see the new thing.
@@ -365,9 +365,9 @@ Filter results for issues closed during the sprint period (closedAt > SPRINT_STA
 Sub-issues may be in either `HHS/simpler-grants-gov` or `HHS/simpler-grants-protocol`.
 
 This list is where drafting starts, not what gets posted. Open the merged PRs behind the
-closed tickets to find what actually changed and what to link to, then translate the list
+closed issues to find what actually changed and what to link to, then translate the list
 per **The narrative pass**. A draft whose Accomplishments bullets map one-to-one onto
-ticket titles is not finished.
+issue titles is not finished.
 
 **Always get user approval before posting.**
 

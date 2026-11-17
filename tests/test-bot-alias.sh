@@ -2,7 +2,7 @@
 # Tests the `bot` function in dot-config/shell/aliases.sh (bash and zsh), its helper
 # dot-config/shell/bot-tab.py, and scripts/reconcile-pi-bots-trust.mjs.
 # A fake `rex` records its calls and answers from fixture JSON; a fake Pi package
-# stands in for Pi's trust store. Temporary HOMEs and bot directories only.
+# replaces Pi's trust store. Throwaway homes and bot directories only.
 
 set -u
 
@@ -220,7 +220,7 @@ else
     PKG="$TMP/pkg/node_modules/@earendil-works/pi-coding-agent"
     mkdir -p "$PKG/dist" "$TMP/pibin"
     echo '{"name": "@earendil-works/pi-coding-agent"}' >"$PKG/package.json"
-    # Stand-in for Pi's store: same nearest-ancestor rule and canonical keys.
+    # Fake of Pi's store: same nearest-ancestor rule and canonical keys.
     cat >"$PKG/dist/index.js" <<'EOF'
 import { existsSync, readFileSync, writeFileSync, realpathSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -285,7 +285,7 @@ EOF
     MODE=--check; out="$(trust)"
     contains "trust: trust through a parent passes" "through $H" "$out"
 
-    # Real hosts reach the bots through a symlink (~/code/pi-bots -> repos/pi-bots); Pi keys
+    # Real machines reach the bots through a symlink (~/code/pi-bots -> repos/pi-bots); Pi keys
     # trust by the real path, so the script must compare and save real paths.
     ln -s "$H/code/pi-bots" "$TMP/linked"
     echo "{\"$real_bots\": false}" >"$AG/trust.json"

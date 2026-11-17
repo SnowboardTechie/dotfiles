@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-POOL = ROOT / "dot-agents" / "skills"
+SKILL_POOL = ROOT / "dot-agents" / "skills"
 
 
 def read(relative: str) -> str:
@@ -78,7 +78,7 @@ class LeanIssueWorkContractTests(unittest.TestCase):
         self.assertIn("block inspect", ref)
         self.assertIn("Confirm a new `user` record in the transcript", ref)
         self.assertIn("Never resend a prompt merely to regain a completion signal", ref)
-        self.assertIn("close only the recorded block", ref)
+        self.assertIn("close only the recorded pane", ref)
         self.assertIn("expect 0", ref)
 
     def test_cross_repository_reviewer_admits_validated_ticket_state(self) -> None:
@@ -117,19 +117,19 @@ class LeanIssueWorkContractTests(unittest.TestCase):
         self.assertIn("record_efficiency.py", self.issue_work)
 
     def test_rex_mechanics_have_script_owners(self) -> None:
-        skill = POOL / "coding-agent-handoff-supervision"
+        skill = SKILL_POOL / "coding-agent-handoff-supervision"
         self.assertEqual(
             sorted(p.name for p in (skill / "scripts").iterdir() if p.suffix in (".py", ".sh")),
-            # rex_subagent_slot.py is a stand-in at the old name, for launchers written before the rename.
-            ["claude-usage.sh", "rex_background_agent_slot.py", "rex_subagent_slot.py", "rex_wait.sh"],
+            # rex_subagent_slot.py is a fake at the old name, for launchers written before the renames.
+            ["claude-usage.sh", "rex_background_agent_pane.py", "rex_subagent_slot.py", "rex_wait.sh"],
         )
         self.assertEqual(
             sorted(p.name for p in (skill / "tests").glob("test_*.py")),
-            ["test_rex_background_agent_slot.py", "test_rex_wait.py"],
+            ["test_rex_background_agent_pane.py", "test_rex_wait.py"],
         )
         self.assertTrue((skill / "scripts" / "rex_wait.sh").stat().st_mode & 0o111)
         self.assertIn("references/rex-claude-handoff.md", self.handoff)
-        for script in ("rex_background_agent_slot.py", "rex_wait.sh"):
+        for script in ("rex_background_agent_pane.py", "rex_wait.sh"):
             with self.subTest(script=script):
                 self.assertIn(script, self.handoff)
                 self.assertIn(script, self.helper_reference)

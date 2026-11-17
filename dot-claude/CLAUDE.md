@@ -14,10 +14,10 @@
 - The user's project agent notes live in `AGENTS.md`, which Claude Code loads natively. Its default `instructionFiles` mode (`claude-md-or-agents-md`) loads a project's `AGENTS.md` exactly where and how `CLAUDE.md` would be loaded, whenever no `CLAUDE.md` is present. The old `CLAUDE.md`-symlink bridge was removed on 2026-09-21 — **don't recreate it.** A `CLAUDE.md` sitting next to an `AGENTS.md` no longer merely duplicates it, it *suppresses* it, so don't propose adding one. Both filenames are in the user's global gitignore (`~/.config/git/ignore`) and should stay there; don't suggest tracking either file or removing the global ignore. Note the scopes differ: this file — the user-level global instructions at `~/.claude/CLAUDE.md` — is **not** covered by the AGENTS.md fallback and stays named `CLAUDE.md`.
 - Preserve links when summarizing or re-sharing content (plan files, daily notes, PR/issue bodies). Don't strip markdown links to bare identifiers (`#740`, `PR #755`) — the user clicks them.
 
-## Project vaults & the personal second brain
+## Workspace vaults & the personal vault
 
 Several repos under `~/code/` have a top-level `vault/` directory — tracked
-in-repo for project-owned vaults and workspace repos (e.g. `~/code/sgg/vault/`,
+in-repo as a workspace's vault in its project or workspace repo (e.g. `~/code/sgg/vault/`,
 `~/code/cairn-os/vault/`); `~/code/notes/` holds retained dormant/historical
 vault snapshots. When working in any of these — or when capturing project
 decisions, taking project notes, investigating debugs, recording learnings, or
@@ -26,7 +26,7 @@ making sense of project context that doesn't live in code — invoke the
 `AGENTS.md` at its root (`vault/AGENTS.md`), read it after the skill — it
 overrides skill defaults for that specific vault.
 
-Bryan's **personal** second brain is the Markdown vault `~/second-brain/`
+Bryan's **personal vault** is the Markdown vault `~/second-brain/`
 (Forgejo Git is its only sync; read its `AGENTS.md` after `vault-pkm`). For
 personal recall or capture — decisions, explorations, ideas, vehicles, home,
 tools, gifts, journal, learning — use it through `vault-pkm`. At a session's

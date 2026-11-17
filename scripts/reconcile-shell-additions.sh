@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# reconcile-shell-additions.sh — ensure the host shell loads the repository's
+# reconcile-shell-additions.sh — ensure the machine's own shell loads the repository's
 # portable aliases (dot-config/shell/aliases.sh) additively.
 #
 # On Omarchy the login shell is Omarchy-owned bash; its stock ~/.bashrc ends

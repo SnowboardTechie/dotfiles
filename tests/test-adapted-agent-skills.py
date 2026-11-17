@@ -6,7 +6,7 @@ explanatory prose may be rewritten freely, but workflow phase headings,
 canonical output strings, and fail-closed shell shapes asserted below are
 load-bearing contract surfaces:
 the retired adapted cores staying out of `dot-agents/skills/` (Matt Pocock's
-own skills replace them), a machine-readable provenance ledger, the Forgejo
+own skills replace them), a machine-readable source record, the Forgejo
 adapter beside its tracker doc, deterministic review-lane selection, curation that
 matches the intended per-harness roles, and a timestamp-free upstream
 monitor. They deliberately assert structure and authority wording, not
@@ -25,12 +25,12 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-POOL = REPO_ROOT / "dot-agents" / "skills"
-UPSTREAMS = REPO_ROOT / "dot-agents" / "upstreams"
-LEDGER_PATH = UPSTREAMS / "mattpocock-skills.json"
-LICENSE_PATH = UPSTREAMS / "mattpocock-skills-LICENSE"
+SKILL_POOL = REPO_ROOT / "dot-agents" / "skills"
+SKILL_SOURCES = REPO_ROOT / "dot-agents" / "skill-sources"
+SOURCE_RECORD_PATH = SKILL_SOURCES / "mattpocock-skills.json"
+LICENSE_PATH = SKILL_SOURCES / "mattpocock-skills-LICENSE"
 RECONCILER = REPO_ROOT / "scripts" / "reconcile-agent-skills.sh"
-REVIEW_CONTRACT = POOL / "pr-self-review" / "references" / "review-contract.md"
+REVIEW_CONTRACT = SKILL_POOL / "pr-self-review" / "references" / "review-contract.md"
 
 FORGEJO_TRACKER = REPO_ROOT / "dot-agents" / "forgejo-tracker"
 
@@ -51,7 +51,7 @@ RETIRED_ADAPTED_SKILLS = (
     "guided-learning",
     "code-review",
 )
-# Names his promoted skills hold that the pool once also held. A pool copy of
+# Names his promoted skills hold that the skill pool once also held. A skill pool copy of
 # one of them would shadow his in Pi from `~` and collide in Claude Code and
 # OpenCode, where his are linked under the same names.
 HIS_NAMES_ONCE_LOCAL = ("code-review", "grilling", "tdd", "wayfinder", "diagnosing-bugs")
@@ -106,13 +106,13 @@ def frontmatter_fields(path: Path) -> dict[str, str]:
 
 
 def skill_dirs() -> list[Path]:
-    return sorted(p for p in POOL.iterdir() if p.is_dir() and (p / "SKILL.md").is_file())
+    return sorted(p for p in SKILL_POOL.iterdir() if p.is_dir() and (p / "SKILL.md").is_file())
 
 
 # Arrays in the reconciler that are *not* a per-harness curation list. They are
 # inputs to one (a shared set of names) or operational allowlists, so asserting
 # curation rules against them is a category error.
-_NON_CURATION_ARRAYS = frozenset({"RETIRED_POOL_TARGETS"})
+_NON_CURATION_ARRAYS = frozenset({"RETIRED_SKILL_POOL_TARGETS"})
 
 
 def curation_arrays() -> dict[str, list[str]]:
@@ -156,12 +156,12 @@ def outside_code_fences(text: str) -> str:
 
 def active_markdown() -> list[Path]:
     """Every markdown surface that routes live agent behavior."""
-    paths = sorted(POOL.glob("*/SKILL.md"))
-    paths += sorted(POOL.glob("*/references/*.md"))
+    paths = sorted(SKILL_POOL.glob("*/SKILL.md"))
+    paths += sorted(SKILL_POOL.glob("*/references/*.md"))
     paths += sorted((REPO_ROOT / "dot-config" / "opencode" / "agents").glob("*.md"))
     paths += sorted((REPO_ROOT / "dot-claude" / "agents").glob("*.md"))
-    # The Git-backed Hermes pool routes too, and it is ours to change —
-    # including its background agent scripts, which select skills by name at launch.
+    # The Git-backed Hermes skills route too, and they are ours to change —
+    # including their background agent scripts, which select skills by name at launch.
     paths += sorted((REPO_ROOT / "hermes" / "skills").glob("*/*/SKILL.md"))
     paths += sorted((REPO_ROOT / "hermes" / "skills").glob("*/*/scripts/*.py"))
     paths.append(REPO_ROOT / "dot-agents" / "README.md")
@@ -180,7 +180,7 @@ class _MatchMixin:
 
 
 class SkillFrontmatterTest(unittest.TestCase):
-    """Every pooled skill must be discoverable by every harness."""
+    """Every skill in the skill pool must be discoverable by every harness."""
 
     def test_every_pool_skill_has_name_and_description(self) -> None:
         for skill in skill_dirs():
@@ -200,18 +200,18 @@ class SkillFrontmatterTest(unittest.TestCase):
     def test_retired_adapted_copies_are_gone(self) -> None:
         for name in RETIRED_ADAPTED_SKILLS:
             with self.subTest(skill=name):
-                self.assertFalse((POOL / name).exists(), f"{name} retired; his copy replaces it")
+                self.assertFalse((SKILL_POOL / name).exists(), f"{name} retired; his copy replaces it")
 
     def test_no_pool_skill_takes_one_of_his_names(self) -> None:
         for name in HIS_NAMES_ONCE_LOCAL:
             with self.subTest(skill=name):
-                self.assertFalse((POOL / name).exists())
+                self.assertFalse((SKILL_POOL / name).exists())
 
     def test_model_invoked_primitives_stay_model_invocable(self) -> None:
         """The delivery primitives load when their trigger is genuinely present."""
         for name in ("teammate-pr-review",):
             with self.subTest(skill=name):
-                fields = frontmatter_fields(POOL / name / "SKILL.md")
+                fields = frontmatter_fields(SKILL_POOL / name / "SKILL.md")
                 self.assertNotIn(
                     "disable-model-invocation",
                     fields,
@@ -236,7 +236,7 @@ class SkillFrontmatterTest(unittest.TestCase):
             "skill-retrospective",
         }
         link = re.compile(r"\]\((?!https?:|mailto:|#)([^)]+)\)")
-        for path in sorted(p for p in POOL.glob("*/**/*.md") if p.parts[-2] in owned or p.parent.parent.name in owned):
+        for path in sorted(p for p in SKILL_POOL.glob("*/**/*.md") if p.parts[-2] in owned or p.parent.parent.name in owned):
             for target in link.findall(outside_code_fences(read(path))):
                 target = target.split("#", 1)[0].strip()
                 if not target:
@@ -322,30 +322,30 @@ class SessionHandoffEngagementContractTest(unittest.TestCase):
                 self.assertIn(phrase, self.reference)
 
 
-class UpstreamLedgerTest(unittest.TestCase):
+class SourceRecordTest(unittest.TestCase):
     """Pinned provenance is what keeps an adaptation from becoming a silent fork."""
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.ledger = json.loads(read(LEDGER_PATH)) if LEDGER_PATH.is_file() else {}
+        cls.source_record = json.loads(read(SOURCE_RECORD_PATH)) if SOURCE_RECORD_PATH.is_file() else {}
 
-    def test_license_is_retained_beside_the_ledger(self) -> None:
-        self.assertTrue(LICENSE_PATH.is_file(), "upstream MIT license must be stored beside the ledger")
+    def test_license_is_retained_beside_the_source_record(self) -> None:
+        self.assertTrue(LICENSE_PATH.is_file(), "the skill source's MIT license must be stored beside the source record")
         self.assertIn("MIT License", read(LICENSE_PATH))
         self.assertIn("Matt Pocock", read(LICENSE_PATH))
 
-    def test_ledger_header_is_complete(self) -> None:
+    def test_source_record_header_is_complete(self) -> None:
         for key in ("upstream", "version", "commit", "license", "licenseFile", "updatePolicy"):
             with self.subTest(key=key):
-                self.assertIn(key, self.ledger)
-        self.assertRegex(self.ledger.get("commit", ""), r"\A[0-9a-f]{40}\Z")
-        self.assertEqual(self.ledger.get("license"), "MIT")
-        self.assertTrue((UPSTREAMS / self.ledger["licenseFile"]).is_file())
+                self.assertIn(key, self.source_record)
+        self.assertRegex(self.source_record.get("commit", ""), r"\A[0-9a-f]{40}\Z")
+        self.assertEqual(self.source_record.get("license"), "MIT")
+        self.assertTrue((SKILL_SOURCES / self.source_record["licenseFile"]).is_file())
 
     def test_update_policy_is_automatic_pin_advance(self) -> None:
         # Bryan chose automatic advance on 2026-11-16: the pi-bots job moves the
-        # pin, checks the load, commits the ledger alone and announces it.
-        policy = self.ledger.get("updatePolicy", {})
+        # pin, checks the load, commits the source record alone and announces it.
+        policy = self.source_record.get("updatePolicy", {})
         self.assertTrue(policy.get("autoApply") is True)
         self.assertTrue(policy.get("humanApprovedPinAdvance") is False)
         self.assertTrue(policy.get("readOnlyDetection") is False)
@@ -353,16 +353,16 @@ class UpstreamLedgerTest(unittest.TestCase):
 
     def test_the_pin_fields_are_one_per_line_for_the_job_that_rewrites_them(self) -> None:
         # The job rewrites exactly these three lines and refuses any other shape.
-        text = (UPSTREAMS / "mattpocock-skills.json").read_text(encoding="utf-8")
+        text = (SKILL_SOURCES / "mattpocock-skills.json").read_text(encoding="utf-8")
         for key in ("commit", "version", "verifiedOn"):
             self.assertRegex(text, rf'(?m)^  "{key}": "[^"]*",?$')
 
     def test_no_adaptation_remains(self) -> None:
         # Every adapted copy retired on 2026-11-16; his skills load as written.
-        self.assertNotIn("adaptations", self.ledger)
+        self.assertNotIn("adaptations", self.source_record)
 
     def test_notes_record_what_sits_on_top_of_his_skills(self) -> None:
-        notes = " ".join(self.ledger.get("notes", []))
+        notes = " ".join(self.source_record.get("notes", []))
         for phrase in (
             "~/.local/share/mattpocock-skills",
             "dot-agents/forgejo-tracker/scripts/forgejo_wayfinder.py",
@@ -375,10 +375,10 @@ class UpstreamLedgerTest(unittest.TestCase):
                 self.assertIn(phrase, notes)
 
     def test_every_local_path_the_notes_name_exists(self) -> None:
-        notes = " ".join(self.ledger.get("notes", []))
+        notes = " ".join(self.source_record.get("notes", []))
         for path in re.findall(r"`((?:dot-agents|scripts)/[^`\s]+)`", notes):
             with self.subTest(path=path):
-                self.assertTrue((REPO_ROOT / path).exists(), f"ledger notes name missing {path}")
+                self.assertTrue((REPO_ROOT / path).exists(), f"source record notes name missing {path}")
 
 
 class AdaptedSourceRecordTest(unittest.TestCase):
@@ -390,8 +390,8 @@ class AdaptedSourceRecordTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.records = {
             path.stem: json.loads(read(path))
-            for path in sorted(UPSTREAMS.glob("*.json"))
-            if path.name != LEDGER_PATH.name
+            for path in sorted(SKILL_SOURCES.glob("*.json"))
+            if path.name != SOURCE_RECORD_PATH.name
         }
 
     def test_ponytail_and_pstack_are_recorded(self) -> None:
@@ -404,7 +404,7 @@ class AdaptedSourceRecordTest(unittest.TestCase):
                 self.assertRegex(record.get("commit", ""), r"\A[0-9a-f]{40}\Z")
                 self.assertRegex(record.get("verifiedOn", ""), r"\A\d{4}-\d{2}-\d{2}\Z")
                 self.assertEqual(record.get("license"), "MIT")
-                self.assertIn("MIT License", read(UPSTREAMS / record["licenseFile"]))
+                self.assertIn("MIT License", read(SKILL_SOURCES / record["licenseFile"]))
 
     def test_each_reviewed_pin_is_watched_by_the_adapted_skill_watch(self) -> None:
         # The pi-bots scheduled job reads every record whose pin is a reviewed
@@ -422,7 +422,7 @@ class AdaptedSourceRecordTest(unittest.TestCase):
         pi_bots = Path(os.environ.get("PI_BOTS_DIR") or Path.home() / "code" / "pi-bots") / "jobs"
         if not pi_bots.is_dir():
             self.skipTest(f"no pi-bots checkout at {pi_bots.parent}")
-        for record in [*self.records.values(), json.loads(read(LEDGER_PATH))]:
+        for record in [*self.records.values(), json.loads(read(SOURCE_RECORD_PATH))]:
             monitor = record["updatePolicy"]["monitor"]
             with self.subTest(monitor=monitor):
                 self.assertRegex(monitor, r"\Api-bots job [a-z0-9-]+\Z")
@@ -450,14 +450,14 @@ class AdaptedSourceRecordTest(unittest.TestCase):
     def test_ponytail_is_defined_and_called_a_simplicity_review_where_it_runs(self) -> None:
         for skill in ("pr-self-review", "teammate-pr-review"):
             with self.subTest(skill=skill):
-                path = POOL / skill / "SKILL.md"
+                path = SKILL_POOL / skill / "SKILL.md"
                 body = read(path)
                 self.assertIn("simplicity review", frontmatter_fields(path)["description"])
                 self.assertRegex(body, r"(?m)^##+ .*Ponytail, the simplicity review")
                 self.assertIn("Ponytail checks the", body)
                 self.assertIn("named after the Ponytail plugin", " ".join(body.split()))
-                self.assertIn("upstreams/ponytail.json", body)
-                self.assertTrue((path.parent / "../../upstreams/ponytail.json").resolve().is_file())
+                self.assertIn("skill-sources/ponytail.json", body)
+                self.assertTrue((path.parent / "../../skill-sources/ponytail.json").resolve().is_file())
 
 
 class CurationTest(unittest.TestCase):
@@ -474,9 +474,9 @@ class CurationTest(unittest.TestCase):
                     self.assertNotIn(name, members)
 
     def test_existing_links_to_retired_adapted_skills_are_pruned(self) -> None:
-        # Their pool directories are gone, so only the raw-target allowlist
-        # recognises a dangling link to one as the pool's.
-        match = re.search(r"^RETIRED_POOL_TARGETS=\((.*?)\)", read(RECONCILER), re.DOTALL | re.MULTILINE)
+        # Their skill pool directories are gone, so only the raw-target allowlist
+        # recognises a dangling link to one as the skill pool's.
+        match = re.search(r"^RETIRED_SKILL_POOL_TARGETS=\((.*?)\)", read(RECONCILER), re.DOTALL | re.MULTILINE)
         self.assertIsNotNone(match)
         retired = match.group(1).split()
         for name in RETIRED_ADAPTED_SKILLS:
@@ -484,7 +484,7 @@ class CurationTest(unittest.TestCase):
                 self.assertIn(name, retired)
 
     def test_local_code_review_is_retired_everywhere(self) -> None:
-        self.assertFalse((POOL / "code-review").exists())
+        self.assertFalse((SKILL_POOL / "code-review").exists())
         for tool, members in self.arrays.items():
             with self.subTest(tool=tool):
                 self.assertNotIn("code-review", members)
@@ -511,8 +511,8 @@ class CurationTest(unittest.TestCase):
             for name in members:
                 with self.subTest(tool=tool, skill=name):
                     self.assertTrue(
-                        (POOL / name).is_dir(),
-                        f"{tool} curates {name}, which is not in the pool",
+                        (SKILL_POOL / name).is_dir(),
+                        f"{tool} curates {name}, which is not in the skill pool",
                     )
 
 
@@ -522,7 +522,7 @@ class RetiredRouteTest(unittest.TestCase):
     def test_retired_pool_directories_are_gone(self) -> None:
         for name in ("git-master", "agent-workspace"):
             with self.subTest(skill=name):
-                self.assertFalse((POOL / name).exists(), f"{name} should be deleted from the pool")
+                self.assertFalse((SKILL_POOL / name).exists(), f"{name} should be deleted from the pool")
 
     def test_no_active_reference_to_a_retired_route(self) -> None:
         """A retired name may only appear in a passage that marks it as history.
@@ -547,14 +547,14 @@ class RetiredRouteTest(unittest.TestCase):
                         )
 
     def test_primary_checkout_resolution_has_one_owner(self) -> None:
-        body = read(POOL / "worktrunk" / "SKILL.md")
+        body = read(SKILL_POOL / "worktrunk" / "SKILL.md")
         self.assertIn("resolve_primary_checkout", body, "worktrunk must own primary checkout/worktree resolution")
         self.assertIn("--git-common-dir", body)
 
     def test_consumers_cite_worktrunk_for_primary_checkout_resolution(self) -> None:
         for name in ("issue-work", "pr-self-review"):
             with self.subTest(skill=name):
-                body = read(POOL / name / "SKILL.md")
+                body = read(SKILL_POOL / name / "SKILL.md")
                 self.assertIn("worktrunk", body, f"{name} must cite worktrunk for primary checkout resolution")
 
 
@@ -563,12 +563,12 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.body = read(POOL / "issue-work" / "SKILL.md")
-        cls.handoff = read(POOL / "issue-plan" / "references" / "handoff-contract.md")
-        cls.repo_resolution = read(POOL / "issue-work" / "references" / "repo-resolution.md")
-        cls.router = read(POOL / "issue-work" / "scripts" / "select_issue_agent.py")
+        cls.body = read(SKILL_POOL / "issue-work" / "SKILL.md")
+        cls.handoff = read(SKILL_POOL / "issue-plan" / "references" / "handoff-contract.md")
+        cls.repo_resolution = read(SKILL_POOL / "issue-work" / "references" / "repo-resolution.md")
+        cls.router = read(SKILL_POOL / "issue-work" / "scripts" / "select_issue_agent.py")
         cls.handoff_supervision = read(
-            POOL / "coding-agent-handoff-supervision" / "SKILL.md"
+            SKILL_POOL / "coding-agent-handoff-supervision" / "SKILL.md"
         )
 
     def test_supports_explicit_cross_repository_handoffs(self) -> None:
@@ -582,15 +582,15 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
             with self.subTest(field=field):
                 self.assertIn(field, self.handoff)
         for token in (
-            "issue-xrepo-{ticket_digest}",
+            "issue-xrepo-{issue_digest}",
             "publication-summary.md",
-            "each distinct ticket and",
+            "each distinct issue and",
             "source_issue_mode: github_shorthand",
             "wrong forge",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, self.body)
-        self.assertIn("{TICKET_PRIMARY_CHECKOUT}/repos/{repo}", self.repo_resolution)
+        self.assertIn("{ISSUE_PRIMARY_CHECKOUT}/repos/{repo}", self.repo_resolution)
         self.assertIn("Do not rescue an identity mismatch", self.repo_resolution)
 
     def test_imperative_work_authorizes_reviewable_pr_not_merge(self) -> None:
@@ -700,23 +700,23 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.body = read(POOL / "coding-agent-handoff-supervision" / "SKILL.md")
+        cls.body = read(SKILL_POOL / "coding-agent-handoff-supervision" / "SKILL.md")
         cls.rex = read(
-            POOL
+            SKILL_POOL
             / "coding-agent-handoff-supervision"
             / "references"
             / "rex-claude-handoff.md"
         )
-        cls.scripts = POOL / "coding-agent-handoff-supervision" / "scripts"
+        cls.scripts = SKILL_POOL / "coding-agent-handoff-supervision" / "scripts"
         cls.tests = (
-            POOL
+            SKILL_POOL
             / "coding-agent-handoff-supervision"
             / "tests"
-            / "test_rex_background_agent_slot.py"
+            / "test_rex_background_agent_pane.py"
         )
 
     def test_preparation_reuses_or_creates_one_ticket(self) -> None:
-        for token in ("Reuse the ticket", "issue-create", "duplicate", "read it back"):
+        for token in ("Reuse the issue", "issue-create", "duplicate", "read it back"):
             with self.subTest(token=token):
                 self.assertIn(token, self.body)
 
@@ -724,8 +724,8 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
         self.assertIn("artifact, not the prompt", self.body)
         self.assert_matches(
             self.body,
-            r"(?is)ticket or plan URL/path.*implementation repository.*worktree.*authority boundaries.*permissions",
-            "brief must contain locators and authority only",
+            r"(?is)issue or plan URL/path.*implementation repository.*worktree.*authority boundaries.*permissions",
+            "the prompt must contain locators and authority only",
         )
         self.assert_matches(
             self.body,
@@ -748,15 +748,15 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
         )
         self.assert_matches(
             self.body,
-            r"(?is)a background agent produces a\s+candidate,\s+not an accepted deliverable",
+            r"(?is)a background agent produces\s+changes,\s+not an accepted deliverable",
             "background agent authorship and orchestrator acceptance must stay distinct",
         )
 
     def test_rex_scripts_and_tests_exist(self) -> None:
-        self.assertTrue((self.scripts / "rex_background_agent_slot.py").is_file())
+        self.assertTrue((self.scripts / "rex_background_agent_pane.py").is_file())
         self.assertTrue((self.scripts / "rex_wait.sh").stat().st_mode & 0o111)
         self.assertTrue(self.tests.is_file())
-        for script in ("rex_background_agent_slot.py", "rex_wait.sh"):
+        for script in ("rex_background_agent_pane.py", "rex_wait.sh"):
             with self.subTest(script=script):
                 self.assertIn(script, self.body)
                 self.assertIn(script, self.rex)
@@ -773,8 +773,8 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
         ):
             with self.subTest(token=token):
                 self.assertIn(token.lower(), (self.body + self.rex).lower())
-        self.assertIn("*weekly*) ceiling=90 ;; *) ceiling=75 ;;", self.rex)
-        self.assertIn('[ -n "$cap" ] && [ "$cap" -lt "$ceiling" ]', self.rex)
+        self.assertIn("*weekly*) threshold=90 ;; *) threshold=75 ;;", self.rex)
+        self.assertIn('[ -n "$cap" ] && [ "$cap" -lt "$threshold" ]', self.rex)
 
     def test_visible_authority_and_identity_remain_fail_closed(self) -> None:
         for token in (
@@ -801,19 +801,19 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.body = read(POOL / "pr-self-review" / "SKILL.md")
+        cls.body = read(SKILL_POOL / "pr-self-review" / "SKILL.md")
         cls.code_review = read(REVIEW_CONTRACT)
-        cls.teammate = read(POOL / "teammate-pr-review" / "SKILL.md")
-        cls.issue_work = read(POOL / "issue-work" / "SKILL.md")
-        cls.ship = read(POOL / "ship" / "SKILL.md")
+        cls.teammate = read(SKILL_POOL / "teammate-pr-review" / "SKILL.md")
+        cls.issue_work = read(SKILL_POOL / "issue-work" / "SKILL.md")
+        cls.ship = read(SKILL_POOL / "ship" / "SKILL.md")
         cls.reviewer = read(REPO_ROOT / "dot-claude" / "agents" / "lane-reviewer.md")
 
     def test_lane_selector_and_tests_exist(self) -> None:
         self.assertTrue(
-            (POOL / "pr-self-review" / "scripts" / "select_review_lanes.py").is_file()
+            (SKILL_POOL / "pr-self-review" / "scripts" / "select_review_lanes.py").is_file()
         )
         self.assertTrue(
-            (POOL / "pr-self-review" / "tests" / "test_select_review_lanes.py").is_file()
+            (SKILL_POOL / "pr-self-review" / "tests" / "test_select_review_lanes.py").is_file()
         )
         self.assertIn("select_review_lanes.py", self.body)
         self.assertIn("select_review_lanes.py", self.code_review)
@@ -943,7 +943,7 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
         for heading in ("## Human-facing review draft", "## Finding gate"):
             with self.subTest(heading=heading):
                 self.assertIn(heading, self.teammate)
-        description = frontmatter_fields(POOL / "teammate-pr-review" / "SKILL.md")["description"]
+        description = frontmatter_fields(SKILL_POOL / "teammate-pr-review" / "SKILL.md")["description"]
         self.assertIn("someone else's pull request", description)
 
     def test_teammate_review_carries_the_drafting_and_gate_rules_whole(self) -> None:
@@ -1001,7 +1001,7 @@ class WritingGovernanceTest(_MatchMixin, unittest.TestCase):
         self.assert_matches(body, r"(?i)inlin", "missing required wording: inline")
 
     def test_retrospective_treats_repeated_lookups_as_a_stale_cache(self) -> None:
-        body = read(POOL / "skill-retrospective" / "SKILL.md")
+        body = read(SKILL_POOL / "skill-retrospective" / "SKILL.md")
         self.assert_matches(body, r"(?i)stale cache", "missing required wording: stale cache")
         self.assert_matches(
             body, r"(?i)--help|manifest", "missing required wording: help or manifest"

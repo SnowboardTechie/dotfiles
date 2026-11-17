@@ -77,7 +77,7 @@ reconcile_bashrc() {
 }
 
 # ~/.config is a real directory on Omarchy but a folded symlink to dot-config/
-# on Stow hosts, where the target already resolves to the repository file.
+# on machines set up with Stow, where the target already resolves to the repository file.
 reconcile_blesh_rc() {
     if [[ "$BLESH_RC_TARGET" -ef "$BLESH_RC_SOURCE" ]]; then
         echo "  ok: Ble.sh settings already linked ($BLESH_RC_TARGET)"

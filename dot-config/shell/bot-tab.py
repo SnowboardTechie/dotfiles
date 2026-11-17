@@ -10,7 +10,7 @@ call, so a bot made with `pi-bots bot create` works at once and a retired one
   1. makes the bot's tab the active tab of the `bots` session (the server side,
      which every Rex app sees when it opens that session), then
   2. asks one Rex app to show that tab: the app that owns the calling pane
-     (Rex's block owner: the app that claimed it, usually the one that opened
+     (the pane's owner in Rex: the app that claimed it, usually the one that opened
      it, which need not be the machine you are typing on), else the only
      connected app. With no owner and several apps, no app is switched. That
      step needs the app's Remote Control setting; if it refuses, the tab is

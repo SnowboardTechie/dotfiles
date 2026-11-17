@@ -299,7 +299,7 @@ For each approved ID:
    than adapting silently.
 2. Load the harness's authoring workflow. In Hermes, use
    `hermes-agent-skill-authoring` and treat current Hermes documentation as the
-   source of truth. In Pi, read Pi's `docs/skills.md`. A pooled skill follows
+   source of truth. In Pi, read Pi's `docs/skills.md`. A skill in the skill pool follows
    `dot-agents/README.md` either way.
 3. Use harness-native equivalents for session retrieval, skill discovery,
    mutation, and approval. If a harness lacks durable memory or prior-session

@@ -25,15 +25,15 @@ and a test whose expected value was copied from the code under test proves only
 that the code agrees with itself.
 
 Provenance: concepts adapted from pstack's `blast-radius` and
-`create-verification-skill`. Upstream pin, license, and the accepted and
-rejected upstream rules live in
-[`dot-agents/upstreams/pstack-claude.json`](../../upstreams/pstack-claude.json).
+`create-verification-skill`. The skill source's pin, license, and its accepted and
+rejected rules live in the source record
+[`dot-agents/skill-sources/pstack-claude.json`](../../skill-sources/pstack-claude.json).
 
 ## When this is the wrong tool
 
 - Trivial changes, documentation, or pure internal logic with no observable
   boundary: ordinary unit tests at the seam (`tdd`) are the proof. Do not add
-  a black-box gate on top.
+  a black-box check on top.
 - Root-causing a failure: use `diagnosing-bugs`.
 - Review and acceptance: `pr-self-review` (with its review contract),
   `teammate-pr-review`, and the owning
@@ -43,7 +43,7 @@ rejected upstream rules live in
 ## Authority comes from the workflow, never from this skill
 
 - **Planning is read-only.** Resolve known facts by inspection and by the
-  isolated scratch or in-memory probes planning already permits. Checks that
+  isolated scratch or in-memory spikes planning already permits. Checks that
   write real state, launch the application, or call a live service are
   recorded as verification steps for implementation authority to run.
 - **This skill grants nothing.** No dependency or software install, no live or
@@ -57,7 +57,7 @@ rejected upstream rules live in
 
 1. **Name the interface.** The exact command, endpoint, page, or file a caller
    touches, and the version or build under test.
-2. **Write the expected result first, from the contract.** Ticket acceptance
+2. **Write the expected result first, from the contract.** Issue acceptance
    criteria, spec, documentation, or `--help` output — not the implementation.
    If the contract is silent, say so; do not fill the gap by reading the code.
 3. **Drive the real interface in isolation.** A scratch `HOME`, temp data dir,
@@ -85,7 +85,7 @@ rejected upstream rules live in
 - A failing setup, missing fixture, or broken harness is not a reproduced
   regression. A red result counts only when it fails for the reason the
   contract predicts.
-- A stand-in target (container for a VM, local stack for a remote one) leaves
+- A fake target (container for a VM, local stack for a remote one) leaves
   every step the real target would do unverified until it runs there.
 
 ## References — open when the trigger fires
@@ -93,7 +93,7 @@ rejected upstream rules live in
 - [`references/change-impact.md`](references/change-impact.md) — **open when** a
   change's safety rests on a claim about code you are not changing ("only this
   caller", "the library already handles it", "the wire format is unchanged"),
-  or a brief asserts something about existing code before you design against
+  or an assignment asserts something about existing code before you design against
   it. It decides which one or two facts to prove and how far to prove them.
 - [`references/project-recipe.md`](references/project-recipe.md) — **open when**
   the same project keeps needing its real app driven and nobody wrote down how

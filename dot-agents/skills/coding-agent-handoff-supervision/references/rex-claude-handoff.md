@@ -1,8 +1,8 @@
 # Visible Pi background agents in Rex
 
 A Pi or Hermes CLI session in a Rex pane starts and supervises its Pi background agent with the `rex` CLI
-directly, and does these checks by hand: identity record, capacity gate, one
-turn per session, settlement, close. Everything else in the skill (contract file,
+directly, and does these checks by hand: identity record, capacity limit, one
+turn per session, settlement, close. Everything else in the skill (assignment file,
 one-line prompt, permissions, orchestrator acceptance, correction bound) is unchanged.
 Verified end to end (start, settle, close) on durable-pi-workspace#278's
 layout prototype, 2026-11-02.
@@ -22,24 +22,24 @@ Otherwise find this session's CLI process as SKILL.md describes and read it with
 pane and no visible background-agent route.
 
 The binary is not on PATH: `REX="$REX_BIN_DIR/rex"`. `"$REX" whoami --json`
-confirms the session and block still exist.
+confirms the session and pane still exist.
 
 ## Start
 
 **Background agents never open in the orchestrator's own tab**: a split beside the
-orchestrator's block squeezes the chat Bryan reads. They open in the orchestrator's "Background Agents" tabs, in the same
+orchestrator's pane squeezes the chat Bryan reads. They open in the orchestrator's "Background Agents" tabs, in the same
 session, without taking focus:
 
 - **Tabs.** The first is the caller tab's label plus " Background Agents" (for example
   "Pi Durable Background Agents"); when it is full the next is "... Background Agents 2", then
   3. A tab holds at most **four** background agents.
-- **Layout: 2x2.** The first background agent is the tab's own root block. Each later one
+- **Layout: 2x2.** The first background agent is the tab's own root pane. Each later one
   splits the largest pane, right when it is at least as wide as tall, otherwise
   below: 2 side by side, 3 with the left column split, 4 a square grid. A closed
   background agent's quadrant is refilled first. Never stack background agents with `--split=below`
   on a fixed anchor; that is the column of thin panes this rule replaces.
 - **No empty shell.** A new tab is created *with the background agent's command*, so its
-  root block is the background agent. Never `window new` without a command and then
+  root pane is the background agent. Never `window new` without a command and then
   split: the tab's initial shell is left idle and the grid starts one short.
 - **One "Background Agents" tab set per orchestrator,** so many orchestrators can run at
   once while Bryan talks only to them. Read-only research and briefing agents
@@ -48,13 +48,13 @@ session, without taking focus:
   moved without stopping it: `"$REX" block move -s "$REX_SESSION" <block> right
   <a block in the "Background Agents" tab>`.
 
-`scripts/rex_background_agent_slot.py` makes the choice from the live layout (tested in
-`tests/test_rex_background_agent_slot.py`): it prints `{"action":"new","tab_label":…}`
+`scripts/rex_background_agent_pane.py` makes the choice from the live layout (tested in
+`tests/test_rex_background_agent_pane.py`): it prints `{"action":"new","tab_label":…}`
 or `{"action":"split","anchor":…,"direction":…}`. Run it right before each
 start, never from a cached layout:
 
 ```sh
-S=<ticket state dir>; W=<worktree>; NAME=<agent name, e.g. sgg-278-layout>
+S=<issue state directory>; W=<worktree>; NAME=<agent name, e.g. sgg-278-layout>
 SK=~/code/dotfiles/dot-agents/skills/coding-agent-handoff-supervision
 # Who pays follows the worktree (Bryan, 2026-11-03): SGG repos under ~/code/sgg use the
 # work subscription (the default login); everything else, durable-pi-workspace included, the
@@ -62,16 +62,16 @@ SK=~/code/dotfiles/dot-agents/skills/coding-agent-handoff-supervision
 case "$W/" in "$HOME/code/sgg/"*) CCD= ;; *) CCD="$HOME/.claude-personal" ;; esac
 usage=$(env ${CCD:+CLAUDE_CONFIG_DIR="$CCD"} "$SK/scripts/claude-usage.sh")
 cap=$(printf %s "$usage" | grep -oE '[0-9]+%' | head -1 | tr -d %)
-# The ceiling is 75% of a 5-hour window and 90% of a weekly one (Bryan, 2026-11-14).
-case "$usage" in *weekly*) ceiling=90 ;; *) ceiling=75 ;; esac
-[ -n "$cap" ] && [ "$cap" -lt "$ceiling" ] || { echo "capacity $cap (ceiling $ceiling): stop"; exit 1; }
+# The usage threshold is 75% of a 5-hour usage window and 90% of a weekly one (Bryan, 2026-11-14).
+case "$usage" in *weekly*) threshold=90 ;; *) threshold=75 ;; esac
+[ -n "$cap" ] && [ "$cap" -lt "$threshold" ] || { echo "capacity $cap (usage threshold $threshold): stop"; exit 1; }
 UUID=$(uuidgen | tr A-Z a-z)
 if [ -n "$CCD" ]; then SUBSCRIPTION=(env PI_CLAUDE_CODE_CONFIG_DIR="$CCD"); else SUBSCRIPTION=(env -u PI_CLAUDE_CODE_CONFIG_DIR); fi
 AGENT=("${SUBSCRIPTION[@]}" PI_PROGRAM_STATUS=0 pi --name "$NAME" --session-id "$UUID"
   --model claude-code/claude-opus-5-5 --thinking medium "@$S/<workstream>-prompt.md")
-SLOT=$("$REX" window ls -s "$REX_SESSION" --json |
-  python3 "$SK/scripts/rex_background_agent_slot.py" --caller-block "$REX_BLOCK")
-get() { python3 -c 'import json,sys;print(json.loads(sys.argv[1])[sys.argv[2]])' "$SLOT" "$1"; }
+PANE=$("$REX" window ls -s "$REX_SESSION" --json |
+  python3 "$SK/scripts/rex_background_agent_pane.py" --caller-block "$REX_BLOCK")
+get() { python3 -c 'import json,sys;print(json.loads(sys.argv[1])[sys.argv[2]])' "$PANE" "$1"; }
 if [ "$(get action)" = new ]; then
   "$REX" window new -s "$REX_SESSION" "$(get tab_label)" --focus=false \
     --keep-open -c "$W" --json -- "${AGENT[@]}" > "$S/<workstream>-rex-split.json"
@@ -84,7 +84,7 @@ else
 fi
 ```
 
-`window new` has no `--label` for the block, hence the `block rename`. Start
+`window new` has no `--label` for the pane, hence the `block rename`. Start
 background agents one at a time (each start re-reads the layout); two starts racing on
 the same layout can pick the same anchor. Verified in a scratch Rex session,
 2026-11-02: four starts gave four equal quadrants, a fifth went to a new
@@ -105,7 +105,7 @@ background agent removes the tab.
   record is written. `pi --session "$UUID"` in the worktree, with the same subscription,
   reopens it later.
 - **Pi has no approval gate.** It runs every tool call, so a background agent's limits
-  are the contract's prohibitions only. That fits work in Bryan's own
+  are the assignment's prohibitions only. That fits work in Bryan's own
   repositories. When a task needs an approval gate or hard confinement, Pi
   can't give it: stop and ask Bryan, who may select a Claude background agent for it.
 - **Background agents don't notify Bryan** (Bryan, 2026-11-03, 2026-11-10). Rex raises its
@@ -121,12 +121,12 @@ background agent removes the tab.
 - `--focus=false` keeps Bryan's focus; `--keep-open` keeps the pane readable
   after Pi exits. Record `background_agent_rex_window` as the "Background Agents" tab.
 - The background agent spends the Claude subscription its `PI_CLAUDE_CODE_CONFIG_DIR` names, so
-  the capacity gate reads that subscription. An empty capacity reading is a stop, never a pass. The usage line reports
-  the 5-hour window when the subscription has one (e.g. `<icon> 72% ↻1:11`) and the
-  weekly window when it doesn't (e.g. `<icon> 25% weekly ↻6d 3h`). Either way
+  the capacity check reads that subscription. An empty capacity reading is a stop, never a pass. The usage line reports
+  the 5-hour usage window when the subscription has one (e.g. `<icon> 72% ↻1:11`) and the
+  weekly one when it doesn't (e.g. `<icon> 25% weekly ↻6d 3h`). Either way
   the first `NN%` is the utilization. The line begins with a non-ASCII icon,
   so an anchored `^ *[0-9]+` never matches; parse it with `grep -oE '[0-9]+%'`
-  as above, and make any capacity waiter fail at once on an empty reading
+  as above, and make any wait for capacity fail at once on an empty reading
   instead of looping.
 - `claude-code/claude-opus-5-5` at `medium` thinking is the default (Bryan,
   2026-10-23). Set another model only when Bryan explicitly selects it, and a
@@ -137,17 +137,17 @@ background agent removes the tab.
   attribute a startup failure to unrelated active agents.
 
 Then write `<workstream>-background-agent-identity.json` yourself: `background_agent_surface: "rex"`,
-`background_agent_name`, `background_agent_pane_id` (the new block ID from
+`background_agent_name`, `background_agent_pane_id` (the new pane's ID from
 `.block_ids[0]`), `background_agent_rex_session`, `background_agent_rex_window`, `background_agent_kind:
 "pi"`, model, thinking level, subscription, `background_agent_session_id` (the UUID, after
 checking the `.jsonl` exists), `background_agent_transcript` (its path),
 `background_agent_worktree_identity` (branch, git common dir, root),
 `capacity_start_percent`, `closed: false`. Use a fresh path: never overwrite an
-existing identity file, including a closed one.
+existing identity record, including a closed one.
 
 ### Other harnesses for background agents (explicit selection only)
 
-**A Claude background agent** keeps the same placement, gate and identity record, with
+**A Claude background agent** keeps the same placement, capacity limit and identity record, with
 this command; its transcript lands at
 `${CCD:-~/.claude}/projects/<worktree path with / and . as ->/<UUID>.jsonl`
 (about 20 s after start), and `rex_wait.sh` reads it too:
@@ -186,7 +186,7 @@ accepted that for rare Hermes background agents (2026-11-03).
 - Read the pane: `"$REX" capture -s "$REX_SESSION" -b <block> --trim | tail -40`.
 - **Settled** means both: the transcript's last message is an assistant one
   that stopped without a tool call (`stopReason` `stop`; `error` and `aborted`
-  also end the turn), and the contract's completion report file ends with its
+  also end the turn), and the assignment's completion report file ends with its
   `Divergence:` line. A turn that ends with a background shell still running
   can end before the completion report exists, so the completion report is the deciding signal.
 
@@ -213,13 +213,13 @@ accepted that for rare Hermes background agents (2026-11-03).
   has been silent about eight minutes: the turn halted without ending and the
   pane sits idle
   at its prompt. A model safety-filter stop ("…safeguards stopped the response")
-  looks like this. A waiter keyed only on the turn ending sits until its cap while
+  looks like this. A wait keyed only on the turn ending sits until its cap while
   Bryan wonders why nothing moves. Read the pane, then send the same session one
   short continuation (not a correction pass). If exploit-style wording in the
-  contract tripped the filter, restate the work as defensive checks and tests.
+  assignment tripped the filter, restate the work as defensive checks and tests.
   Never resend a prompt merely to regain a completion signal.
 - **Watch a read-only reviewer the same way.** Its "completion report" is the summary
-  file its contract names; pass that path to `rex_wait.sh`, so exit 3 covers a
+  file its assignment names; pass that path to `rex_wait.sh`, so exit 3 covers a
   halted review too.
 - **Keep `Divergence:` one paragraph, last.** `rex_wait.sh` settles only when
   the completion report's last paragraph begins with `Divergence:`. Wrapped lines, or a
@@ -228,7 +228,7 @@ accepted that for rare Hermes background agents (2026-11-03).
   something else. The wait then exits 2 "no completion report" though the report is
   complete. A `Divergence:` line glued to the paragraph above it (no blank line
   before it) fails the same way. Say "on its own line, last, with a blank line
-  before it and nothing after it" in every contract's and correction's completion report
+  before it and nothing after it" in every assignment's and correction's completion report
   list, reviewer summaries included. When it happens anyway, read the completion report
   by hand rather than resending.
 - **A correction turn needs the marker** (its new section's heading, such as
@@ -236,26 +236,26 @@ accepted that for rare Hermes background agents (2026-11-03).
   `Divergence:` line, so without it the wait settles on the old turn.
 - Background shells load the interactive profile: use `test -f`, never `ls`,
   to check a path there, because an alias can swap `ls` for a tool that rejects
-  the argument and kills the waiter before it starts.
+  the argument and kills the wait before it starts.
 - **A background agent that backgrounds its own long check may not resume.** A background agent can
   start a long run (a full mutant search, a test suite) as a background shell,
   end its turn and promise to finish "once it reports". Put "run long checks in
-  the foreground" in every contract. When it happens anyway (`rex_wait.sh` exits
+  the foreground" in every assignment. When it happens anyway (`rex_wait.sh` exits
   2), send the same session one short continuation prompt to finish from the
   run's output. That is not a correction pass.
 - A background agent blocked on a permission or question shows it in `capture`. Answer
   only what the governing plan already settles, through `rex send` and
   `rex send-key`; anything new goes to Bryan.
 - **"Read outside the working directories."** (Claude background agents only.) The
-  ticket state directory sits outside the worktree, so Claude asks before
+  issue's state directory sits outside the worktree, so Claude asks before
   reading the completion report it must append to. Choose the narrowest yes, "Yes, but
   ask again next time" (`down down down enter`, after `capture` shows the path
-  is the state dir). Never "keep allowing any reads". Pi doesn't ask.
+  is the state directory). Never "keep allowing any reads". Pi doesn't ask.
 
 ## A second turn (correction)
 
 One turn at a time per session: only after settlement, rerun the capacity
-check, then type into the same block and submit. Clear the input line first
+check, then type into the same pane and submit. Clear the input line first
 (`"$REX" send-key -s "$REX_SESSION" -b <block> ctrl+u`): leftover text would
 join the prompt. Afterwards, read the newest `user` message in the transcript
 and check it is exactly your prompt.
@@ -277,7 +277,7 @@ seconds after a good submit. Then arm the watch with the marker (`watch_backgrou
 ## Close
 
 When no concrete next turn remains, quit Pi and close only the recorded
-block, then confirm it is gone:
+pane, then confirm it is gone:
 
 ```sh
 "$REX" send -s "$REX_SESSION" -b <block> "/quit"
@@ -286,20 +286,20 @@ block, then confirm it is gone:
 "$REX" block ls -s "$REX_SESSION" --json | grep -c <block>    # expect 0
 ```
 
-Mark the identity file `closed: true` with the end capacity. The transcript
+Mark the identity record `closed: true` with the end capacity. The transcript
 stays at its path; `pi --session <UUID>` in the worktree, with the background agent's
 subscription, reopens it later. (A Claude background agent exits with `/exit` instead.)
 
 ## What this does not give you
 
-No turn lease or journal: two orchestrators could both type into the block, so
+No turn lease or journal: two orchestrators could both type into the pane, so
 one orchestrator owns each background agent and nothing else sends to it. No automatic
 identity revalidation: before every `send`, `"$REX" block inspect <block>`
-must still show the recorded label and window.
+must still show the recorded label and tab.
 
 ## Failure rules
 
-- Never edit an identity file to make a mismatch pass.
+- Never edit an identity record to make a mismatch pass.
 - Never switch providers when capacity or identity fails.
 - Never target a globally focused pane when the caller's `REX_BLOCK` is
   unavailable.

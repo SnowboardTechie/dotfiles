@@ -43,7 +43,7 @@ remove_retired_tmux_link() {
             echo "  Removed $link_path"
             ;;
         *)
-            echo "  WARNING: $link_path is not managed by this repository, skipping"
+            echo "  WARNING: $link_path is foreign (this repository did not make it), skipping"
             ;;
     esac
 }
@@ -133,7 +133,7 @@ else
     fi
 fi
 
-# Agent skills — shared pool in dot-agents/skills, curated per tool.
+# Agent skills — the skill pool in dot-agents/skills, curated per harness.
 # Curation arrays and ownership logic live in scripts/reconcile-agent-skills.sh.
 echo ""
 echo "Setting up agent skills..."
@@ -173,7 +173,7 @@ echo ""
 "$REPO_ROOT/scripts/reconcile-pi-pstack.sh" --apply || \
     echo "  (Pi pstack directory incomplete; resolve the reported problem and re-run)"
 
-# Matt Pocock's skills, from one checkout at the ledger's pin: listed in Pi's
+# Matt Pocock's skills, from one checkout at its source record's pin: listed in Pi's
 # settings, linked into Claude Code and OpenCode (not OpenCode on Gnarbox).
 echo ""
 if [[ "$GNARBOX_PROFILE" == true ]]; then
@@ -231,5 +231,5 @@ if [[ "$PLATFORM" == "macos" ]]; then
     echo "Additional manual step:"
     echo "  - GPG: ln -s ~/code/dotfiles/dot-gnupg/gpg-agent.conf ~/.gnupg/gpg-agent.conf"
 else
-    echo "GPG: use a host-local Linux pinentry config if enabling commit signing; do not link pinentry-mac."
+    echo "GPG: use a machine-local Linux pinentry config if enabling commit signing; do not link pinentry-mac."
 fi

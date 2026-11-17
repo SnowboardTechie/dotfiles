@@ -15,8 +15,8 @@ from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-POOL = REPO_ROOT / "dot-agents" / "skills"
-SKILL_ROOT = POOL / "multiagent-pr-review"
+SKILL_POOL = REPO_ROOT / "dot-agents" / "skills"
+SKILL_ROOT = SKILL_POOL / "multiagent-pr-review"
 SKILL_PATH = SKILL_ROOT / "SKILL.md"
 CLAUDE_AGENT = REPO_ROOT / "dot-claude" / "agents" / "multiagent-pr-lane-reviewer.md"
 RECONCILER = REPO_ROOT / "scripts" / "reconcile-agent-skills.sh"
@@ -168,16 +168,16 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
         self.assert_matches(
             self.layout,
             r"REX_SESSION.*REX_BLOCK.*whoami --json",
-            "preflight must check the injected caller block",
+            "preflight must check the injected caller pane",
         )
         self.assert_matches(
             self.layout,
-            r"\"Background Agents\" tab.*never beside.*instigating block.*without taking focus",
+            r"\"Background Agents\" tab.*never beside.*instigating pane.*without taking focus",
             "reviewers open in the \"Background Agents\" tab and never steal focus",
         )
         self.assert_matches(
             self.layout,
-            r"one at a time.*rex_background_agent_slot\.py.*Claude first, then GPT",
+            r"one at a time.*rex_background_agent_pane\.py.*Claude first, then GPT",
             "reviewers are placed one at a time from the live layout",
         )
         self.assert_matches(self.layout, r"surface: rex", "identity records name the Rex surface")

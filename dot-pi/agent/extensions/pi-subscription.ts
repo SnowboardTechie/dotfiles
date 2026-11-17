@@ -24,7 +24,7 @@ export default function (pi: ExtensionAPI) {
 	const name = subscriptionName(dir);
 
 	pi.on("session_start", async (_event, ctx) => {
-		// Hosts without the personal login have one subscription; keep the footer quiet there.
+		// Machines without the personal login have one subscription; keep the footer quiet there.
 		if (ctx.hasUI && existsSync(join(homedir(), ".claude-personal"))) ctx.ui.setStatus("subscription", `subscription: ${name}`);
 	});
 
