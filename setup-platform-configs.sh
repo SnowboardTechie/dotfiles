@@ -167,6 +167,12 @@ echo ""
 "$REPO_ROOT/scripts/reconcile-pi-packages.sh" --apply || \
     echo "  (Pi packages incomplete; resolve the reported problem and re-run)"
 
+# pstack's own Pi agent directory (~/.pi/pstack) for unattended builds; kept
+# apart from ~/.pi/agent so pstack's skills don't load into every Pi session.
+echo ""
+"$REPO_ROOT/scripts/reconcile-pi-pstack.sh" --apply || \
+    echo "  (Pi pstack directory incomplete; resolve the reported problem and re-run)"
+
 # Matt Pocock's skills, from one checkout at its source record's pin: listed in Pi's
 # settings, linked into Claude Code and OpenCode (not OpenCode on Gnarbox).
 echo ""
