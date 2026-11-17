@@ -38,7 +38,7 @@ Channel-specific phrasings live in the per-channel sections below.
    this one) get included with an explicit out-of-scope frame, e.g. "not
    this PR's job to fix, but flagging in case it's useful before that branch
    merges."
-   **Action-taken follow-ups:** when a teammate asks for a ticket audit, name
+   **Action-taken follow-ups:** when a teammate asks for an issue audit, name
    what was closed, how it was closed, and what remains current or moved. That
    distinction supplies the rationale; do not summarize the underlying audit
    unless it changes the teammate's next decision.
@@ -83,14 +83,14 @@ Channel-specific phrasings live in the per-channel sections below.
 
 ## Recurring phrases
 
-Pulled verbatim from samples.md and off-target.md. Use as direct stand-ins
+Pulled verbatim from samples.md and off-target.md. Use as direct replacements
 when a draft is reaching for stiffer or more AI-flavored alternatives.
 
 **Openers (substantive replies, generic):**
 - "Yeah, ..." (Slack channel posts, PR review, spec comments)
 - "Very nice, ..." (warm affirmation for a teammate's genuine win or simplification; warmer than a measured "Nice")
 - "Just checking, ..." (clarifying question without an accusatory frame)
-- "Thanks for catching this, ..." (replying to a reviewer's finding: thank them, then answer. Not "Good call to flag this." Grading their comment is evaluation, not gratitude. See off-target.md 2026-10-20.)
+- "Thanks for catching this, ..." (replying to a human reviewer's finding: thank them, then answer. Not "Good call to flag this." Grading their comment is evaluation, not gratitude. See off-target.md 2026-10-20.)
 - "Quick context on why:" (when teeing up justification for an ask)
 - "The reason X is..." (when leading with a reframe of the question)
 
@@ -170,7 +170,7 @@ Observed habits, the positive-form mirror of `anti-patterns.md`.
   acknowledgement ("I like how they were mentioning the possibility to have
   folks rotating back and continuing to get ESOP"). Detail-recall reads as
   warmth.
-- Bryan does not narrate self-corrections to a reviewer. Spec-mechanics fixes
+- Bryan does not narrate self-corrections to a human reviewer. Spec-mechanics fixes
   get fixed silently. Calling them out frames Bryan's own work negatively for
   no upside (off-target.md Pi SDK entry).
 - Bryan avoids volatile identifiers when commenting on artifacts in flux.
@@ -182,7 +182,7 @@ Observed habits, the positive-form mirror of `anti-patterns.md`.
   without explicit labels: "Worth flagging" < "Heads up" < "Found something
   subtle worth surfacing" < "The bigger thing I'd push on is."
 - Bryan points to where follow-up is happening rather than leaving concerns
-  dangling. Includes specific PR/ticket links when possible, preserving live
+  dangling. Includes specific PR/issue links when possible, preserving live
   links per the repository's active agent instructions.
 - Bryan uses detail-recall in approvals as warmth: names the specific
   changes being signed off rather than generic "looks good."
@@ -216,7 +216,7 @@ like how they were mentioning..."); channel posts default to "Yeah".
 
 Three distinct shapes by message type:
 
-- **Review request to named reviewers:** two sentences, no context wrapper.
+- **Review request to named human reviewers:** two sentences, no context wrapper.
   Use the impersonal "X is ready for review," NOT the first-person "I got X
   up" that channel posts use; the first-person frame is for volunteering work
   to a room, not for asking specific people. Fuse identifier, plain-language
@@ -234,8 +234,8 @@ Three distinct shapes by message type:
   let the sequence carry the priority. Use one unbulleted paragraph per PR,
   with a blank line between entries. Fuse linked `#N`, a short lowercase gerund gloss,
   `is ready for review,`, and the Slack display-name mentions into one line.
-  Do not add a separate merge-order explanation, terminal periods, reviewer
-  allocation, a request to split the batch, or a coordination question the
+  Do not add a separate merge-order explanation, terminal periods, human
+  reviewer allocation, a request to split the batch, or a coordination question the
   user did not request. See samples.md 2026-09-03.
 - **Casual DM:** multiple short sends rather than packed paragraphs. Question
   + follow-up question pattern ("No, how are you doing with that? Do you
@@ -304,7 +304,7 @@ Em-dashes strict zero in all PR-review drafts.
   that affect the reader's *next* PR get included with an explicit
   out-of-scope frame.
 - **Spec-mechanics fixes get fixed silently.** Do not narrate self-corrections
-  to a reviewer.
+  to a human reviewer.
 - **Drop labeling scaffolding** before relying on word-level cuts when
   shortening. See off-target.md D3 descope entry.
 - **Do not manufacture a closing question.** When the reply accepts a good
@@ -312,7 +312,7 @@ Em-dashes strict zero in all PR-review drafts.
   will take. Ask only when the recipient actually owns an unresolved decision.
 - **Keep investigation evidence behind the reply.** A link to the follow-up
   plus the bounded action is enough when the investigation no longer changes
-  what the reviewer needs to decide.
+  what the human reviewer needs to decide.
 - **Inline comment = defect + fix.** One or two sentences saying what is wrong
   and what it should be, then the suggestion block. Name the trigger and the
   consequence in plain words; when the failure is noise rather than a real

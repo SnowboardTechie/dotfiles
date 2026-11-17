@@ -58,9 +58,9 @@ rather than Bryan talking to another person. Start conversationally and work
 the completed action into the sentence, for example: "Yeah, I went through
 these and cleaned them up."
 
-### Evaluating the reviewer instead of thanking them
+### Evaluating the human reviewer instead of thanking them
 
-When replying to a reviewer who raised a finding, do not open by grading their
+When replying to a human reviewer who raised a finding, do not open by grading their
 comment: "Good call to flag this," "Good catch," "Great point." Open with
 gratitude ("Thanks for catching this, ..."), then the substance. Bryan,
 2026-10-20: "I would prefer that we show gratitude instead of just
@@ -133,7 +133,7 @@ you" for after the meeting. See off-target.md 2026-11-06.
 Never put a commitment, deadline, deliverable, or ownership claim in a draft
 that Bryan has not stated ("I'll send X over tonight"). If the teammate
 framed a step as joint ("let's settle X"), keep it joint rather than assigning
-it to Bryan. Do not make picks in the recipient's lane on Bryan's behalf, even
+it to Bryan. Do not make picks that are the recipient's to make on Bryan's behalf, even
 as placeholders. A sent message commits a real person, so every promise in it
 must be one he made.
 
@@ -152,7 +152,7 @@ own notes. Reply to the question that was asked, not to the investigation
 that surfaced 3 things. Bryan corrected this twice in one session. Highest
 volume miss drafting agents make.
 
-### Narrating self-corrections to a reviewer
+### Narrating self-corrections to a human reviewer
 
 Forbidden patterns:
 
@@ -160,9 +160,9 @@ Forbidden patterns:
 - "I noticed I had X wrong, I'll update"
 - "The spec overstates Y, I'll correct"
 
-Spec-mechanics fixes get fixed silently. Calling them out in a reviewer reply
+Spec-mechanics fixes get fixed silently. Calling them out in a reply to a human reviewer
 frames Bryan's own work negatively for no upside. Apply quietly; mention only
-if the reviewer would otherwise be confused.
+if the human reviewer would otherwise be confused.
 
 ### Substituting smaller words instead of cutting scaffolding
 
@@ -198,12 +198,12 @@ below flags as forbidden:
   verbatim, 2026-06-26)
 
 The generic "Thanks in advance" closing anti-pattern (below) applies to
-*cold / first-time* asks, not re-review asks: there the reviewer already did
+*cold / first-time* asks, not re-review asks: there the human reviewer already did
 you a favor once, so the close thanks them for both the past look and the
 next. Two calibration rules confirmed in the same session:
 
 - **"when time allows" is fine; "no rush" is not.** "when time allows"
-  acknowledges the reviewer's time; "no rush" downplays the work's
+  acknowledges the human reviewer's time; "no rush" downplays the work's
   importance. Bryan rejected "no rush" and posted "when time allows" in the
   same draft. Same surface, opposite urgency signal. Don't reach for "no
   rush" / "whenever you've got a spare cycle" to sound gracious.

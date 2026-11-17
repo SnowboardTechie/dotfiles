@@ -4,10 +4,10 @@ Use these checks when a short technical demo crosses collaborators, machines, re
 
 ## Verify the actual presentation machine
 
-A successful run on the agent's current host does not prove readiness on a different presentation laptop.
+A successful run on the agent's current machine does not prove readiness on a different presentation laptop.
 
-- Identify the host used for rehearsal and the host used for presentation.
-- On the presentation host, verify the exact commit, remote URLs, branch tracking, dependencies, fixture/cache paths, and normal interactive-shell command resolution.
+- Identify the machine used for rehearsal and the machine used for presentation.
+- On the presentation machine, verify the exact commit, remote URLs, branch tracking, dependencies, fixture/cache paths, and normal interactive-shell command resolution.
 - A local `main` can match an upstream merge while still tracking a stale fork. The healthy end state is the project's intended canonical `origin` and local `main` tracking canonical `origin/main`.
 - Follow the repository's transport convention. Do not silently switch SSH remotes to HTTPS to bypass broken authentication; repair SSH or surface the choice.
 - Keep remote repair and diagnostic Git output out of the live screen-share path.

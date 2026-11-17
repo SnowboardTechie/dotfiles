@@ -14,8 +14,8 @@ gh api 'repos/YunoHost-Apps/<app>_ynh/commits?per_page=40' \
 The auto-updater flow is: `ci-auto-update-<ver>` PR → `testing`, then a
 "Merge pull request #N from YunoHost-Apps/testing" into the default branch.
 Pick that later testing → master merge for the wanted version, not the
-`ci-auto-update` merge, because only the master merge has passed the package
-release gate. Ignore the repo's tags; they're stale.
+`ci-auto-update` merge, because only the master merge has passed the package's
+release testing. Ignore the repo's tags; they're stale.
 
 ## 2. Verify the commit before recommending it
 

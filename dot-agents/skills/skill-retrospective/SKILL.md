@@ -43,7 +43,7 @@ open-ended retrospective discovery.
    already exists, improve its trigger or verification instead of duplicating it.
 3. Save the scoped change under the user's existing authorization. The standing
    instruction covers the necessary correction, not unrelated candidates,
-   external publication, or permission/configuration changes. If the host needs
+   external publication, or permission/configuration changes. If the harness needs
    further approval or lacks durable storage, report the exact blocker.
 4. Read back the saved content and exercise the corrected behavior in a fresh
    context or representative case. Check that the intended harness can discover
@@ -67,9 +67,9 @@ Also use for a supplied transcript or prior-session reference.
 Do not use the full audit when:
 
 - The user already identified a specific correction; use the direct route above.
-- The main result belongs in a knowledge store. Use `knowledge-capture` (project vault or `~/second-brain`).
+- The main result belongs in a knowledge store. Use `knowledge-capture` (the workspace's vault or the personal vault, `~/second-brain`).
 - The task is still in progress and more evidence is likely.
-- A loaded skill is already known to be stale or wrong and host policy requires
+- A loaded skill is already known to be stale or wrong and harness policy requires
   an immediate patch. Fix it during the task instead of postponing it.
 
 ## Relationship to Hermes Learning
@@ -91,7 +91,7 @@ generalize beyond accidental identifiers, change future behavior at a clear
 trigger, define verification, avoid duplication, and exclude sensitive or
 volatile state.
 
-Then apply the gate for its proposed destination:
+Then apply the bar for its proposed destination:
 
 | Destination | Minimum evidence |
 |---|---|
@@ -99,10 +99,10 @@ Then apply the gate for its proposed destination:
 | User memory | An explicit stable preference or durable environment fact should affect behavior across sessions |
 | Project instructions | A repository or team invariant has a canonical project owner and should apply whenever work occurs there |
 | New skill | A verified non-obvious class-level procedure has a stable trigger, no suitable existing owner, and either recurrence across episodes or an explicit user request |
-| Vault or automation | The observation meets that destination's own capture or change-management gate |
+| Vault or automation | The observation meets that destination's own capture or change-management bar |
 
 Repeated loops, user corrections, verified recovery, and repeatedly rediscovered
-prerequisites raise confidence but do not replace the destination gate. Decline
+prerequisites raise confidence but do not replace the destination's bar. Decline
 one-off facts, generic advice, transient failures, unverified theories, task
 progress, and successful trajectories whose method was not shown to cause the
 success.
@@ -201,15 +201,15 @@ For a repeated-workflow candidate, record its **current maturity** and the
 2. a proven loop becomes an on-demand skill when future invocation should not
    reconstruct the procedure;
 3. a workflow gains a dedicated workspace only when context or remote
-   continuity benefits from isolation: a canonical project vault or project
+   continuity benefits from isolation: a canonical workspace's vault or project
    instructions own durable context, a Desktop Project owns the local working
    boundary, and a dedicated messaging room or thread owns remote interaction;
    use a separate profile only when tools, memory, or permissions must differ;
 4. independent evidence workstreams may become focused background agent work only when their
    bounded reports improve context or decision quality;
-5. a proven on-demand loop may become a cron when time is the natural trigger,
+5. a proven on-demand loop may become a scheduled job when time is the natural trigger,
    a webhook when an external state transition is the natural trigger, or a
-   polling cron when no reliable event exists and change detection can remain
+   polling scheduled job when no reliable event exists and change detection can remain
    deterministic and quiet;
 6. unattended workflows gain an observability surface only when chat delivery
    and existing logs no longer make status, failures, or approvals clear.
@@ -220,8 +220,8 @@ More machinery is not improvement by itself.
 Before proposing unattended execution, require at least one representative
 manual run that proves source access, rule and exclusion handling, output
 quality, permission boundaries, and observable verification. If the loop has
-not passed that gate, propose a bounded manual pilot rather than a persistent
-cron, webhook, or polling job.
+not passed that test, propose a bounded manual pilot rather than a persistent
+scheduled job, webhook, or polling scheduled job.
 
 **Complete when:** every retained candidate has a trigger, behavior change,
 verification, evidence strength, and root-cause rationale.
@@ -279,12 +279,12 @@ Then include:
 The foreground retrospective does not create, patch, install, publish, commit,
 push, or write memory from a slate. A broad "capture anything useful" is not
 item-level selection. If the user explicitly overrides the slate gate for a
-named change, follow that instruction and host safety policy.
+named change, follow that instruction and harness safety policy.
 
 Hermes's optional `skills.write_approval` staging is useful defense-in-depth,
 but it is off by default and does not replace this slate-and-approval boundary.
 Guaranteeing no independent background skill or memory writes requires staging
-or disabling those host features separately; never change those settings as a
+or disabling those harness features separately; never change those settings as a
 side effect of this retrospective.
 
 If nothing qualifies, say so directly. A zero-candidate slate is a successful
@@ -306,7 +306,7 @@ For each approved ID:
    retrieval, report that route as unsupported rather than inventing storage.
 4. Confirm the canonical writable source. Patch a tracked or shared source
    rather than a generated symlink. For bundled or hub-installed skills,
-   default to the upstream/source artifact and disclose update-lifecycle
+   default to the skill source's artifact and disclose update-lifecycle
    consequences before patching an installed copy. Resolve shadowed duplicates
    before approval.
 5. Patch existing content in place and remove superseded wording. Create a new
@@ -319,7 +319,7 @@ For each approved ID:
 
 Approval to edit a skill is not approval to commit, push, publish, install a
 community package, or perform another externally visible action. Obtain whatever
-separate authorization the host and repository require.
+separate authorization the harness and repository require.
 
 **Complete when:** each approved change is behaviorally tested and reported per
 artifact as **saved**, **staged/pending**, **blocked**, or **failed**, with its
@@ -350,7 +350,7 @@ verification evidence.
 - [ ] Productive diagnostic iteration was not mislabeled as friction
 - [ ] Every candidate passes the promotion and behavioral-delta tests
 - [ ] Repeated manual decisions were considered even when no failure occurred
-- [ ] Automation candidates passed the representative manual-run gate
+- [ ] Automation candidates passed the representative manual-run test
 - [ ] Every workflow candidate names its current maturity and next justified layer
 - [ ] Workspace candidates separate durable context from local and remote interaction surfaces
 - [ ] Closest existing skills were read in full

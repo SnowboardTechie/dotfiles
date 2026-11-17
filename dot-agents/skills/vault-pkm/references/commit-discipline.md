@@ -6,7 +6,7 @@ per resting-point, whichever comes first** — not per individual write.
 ## Why per-session, not per-write
 
 Per-write commits were the original spec, but the empirical baseline
-(~11 commits/month in second-brain, multi-note batches) shows that per-write
+(~11 commits/month in the personal vault, multi-note batches) shows that per-write
 discipline would have been silently abandoned. Per-session matches actual
 cadence; multi-note batches are normal and fine.
 
@@ -19,8 +19,8 @@ sustained exploration, commit at the end.
 
 Use `git -C <vault-root>` so you don't change your working directory:
 
-- Project vaults: `git -C ~/code/notes`
-- second-brain: `git -C ~/second-brain`
+- Workspace vaults in `~/code/notes`: `git -C ~/code/notes`
+- The personal vault: `git -C ~/second-brain`
 
 ```sh
 git -C <vault-root> add <files>
@@ -43,8 +43,8 @@ Examples:
 - `second-brain(Decisions): pick AGI router for fleet`
 - `second-brain: garage tools + tool inventory sync`
 
-Case in `<trigger-type>` matches the vault's folder naming (project vaults use
-lowercase `decisions/`; second-brain uses Capitalized `Decisions/`).
+Case in `<trigger-type>` matches the vault's folder naming (workspace vaults use
+lowercase `decisions/`; the personal vault uses Capitalized `Decisions/`).
 
 ## Cadence
 

@@ -1,4 +1,4 @@
-# Agent-compiled project vaults
+# Agent-compiled workspace vaults
 
 Use this for code-adjacent vaults that agents maintain directly. Their main failure mode is **recompilation debt**: detailed notes advance while the index, status page, topic MOCs, plans, and superseded decisions disagree.
 
@@ -74,7 +74,7 @@ Audit canonical content—not `.agents/`, unpromoted `drafts/`, or templates—f
 
 Distinguish intentional forward links, historical placeholders, folder links, and examples from retrieval failures. Do not create empty notes merely to make a checker green.
 
-The optional read-only helper `scripts/audit-project-vaults.py` reports structural candidates; its output is triage, not authority.
+The optional read-only helper `scripts/audit-workspace-vaults.py` reports structural candidates; its output is triage, not authority.
 
 ## Verification sequence
 

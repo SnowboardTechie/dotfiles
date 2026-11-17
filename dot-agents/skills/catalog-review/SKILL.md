@@ -22,7 +22,7 @@ Use this skill for PRs created by the catalog workflow or any PR that changes:
 
 Do not use this skill for ordinary pip, website-framework, tooling, runtime, or GitHub Actions PRs.
 
-This lane is specific to `HHS/simpler-grants-protocol`. Confirm the PR belongs to that repository before continuing; plugin-repo dependency PRs route to `dependency-review`.
+This skill is specific to `HHS/simpler-grants-protocol`. Confirm the PR belongs to that repository before continuing; plugin-repo dependency PRs route to `dependency-review`.
 
 Note: there are **two** catalog workflows, both weekly on Mondays at 15:00 UTC. Everything in the `catalog:` block of `pnpm-workspace.yaml` is excluded from Dependabot (known pnpm catalog bugs) and managed by these instead:
 
@@ -45,12 +45,12 @@ The rest (`typescript`, `eslint`, `prettier`, `vitest`, `@vitest/*`, `globals`, 
 
 Check for catalog indicators:
 
-- branch `chore/update-catalog-deps` or title `chore(deps): update catalog dependencies` (within-major lane)
-- branch `chore/update-catalog-deps-majors` or a `chore(deps-major):` title (majors lane — opened as a **draft**; treat a draft here as "not ready to merge, review the migration cost," not as a reason to skip the review)
+- branch `chore/update-catalog-deps` or title `chore(deps): update catalog dependencies` (within-major catalog PR)
+- branch `chore/update-catalog-deps-majors` or a `chore(deps-major):` title (majors catalog PR — opened as a **draft**; treat a draft here as "not ready to merge, review the migration cost," not as a reason to skip the review)
 - changes to `pnpm-workspace.yaml`
 - changes to catalog-managed packages in the root ignore list or lockfile
 
-Both catalog lanes belong to this skill. If it is not a catalog PR at all, stop and use `dependency-review` instead.
+Both kinds of catalog PR belong to this skill. If it is not a catalog PR at all, stop and use `dependency-review` instead.
 
 ---
 
@@ -123,8 +123,8 @@ Use this decision model:
 If the user approves and the current harness is a Pi orchestrator or a Codex-backed Hermes orchestrator:
 
 1. Create or reuse an isolated worktree for the catalog PR; never switch the primary checkout in place.
-2. Load `coding-agent-handoff-supervision`, reuse or create the governing project-workspace ticket, and launch the normal visible Pi background agent handoff through Rex. An unavailable Rex route stops the handoff; do not silently choose a hidden background route instead.
-3. Give the background agent the ticket/PR URLs, exact implementation repository and worktree, explicit authority boundaries, and the downstream impact and validation outcome from Steps 2–3. Do not duplicate a self-contained implementation plan into the prompt.
+2. Load `coding-agent-handoff-supervision`, reuse or create the governing project-workspace issue, and launch the normal visible Pi background agent handoff through Rex. An unavailable Rex route stops the handoff; do not silently choose a hidden background route instead.
+3. Give the background agent the issue/PR URLs, exact implementation repository and worktree, explicit authority boundaries, and the downstream impact and validation outcome from Steps 2–3. Do not duplicate a self-contained implementation plan into the prompt.
 4. The orchestrator reviews the actual diff and independently reruns the full relevant validation path, including audit and every affected downstream package. Then return to Step 4 and recompute the merge/hold/reject decision.
 
 The background agent's local commit, push, and PR/issue permissions must each be stated explicitly; the normal route forbids all three and leaves local commit creation and every PR mutation orchestrator-owned. The explicit public-action approval in Hard Rules still applies. In other harnesses, use the approved harness-native implementation workflow with the same downstream-validation contract.
@@ -147,7 +147,7 @@ Never recommend a blanket exception just to get the PR merged.
 
 ## Step 6: Check Release Attribution
 
-Most catalog updates are dev-tooling changes that correctly produce no release. But when one moves a consumer-facing range, the catalog lane hits a structural limit you need to report accurately rather than route around.
+Most catalog updates are dev-tooling changes that correctly produce no release. But when one moves a consumer-facing range, a catalog PR hits a structural limit you need to report accurately rather than route around.
 
 Since [ADR-0027](https://github.com/HHS/simpler-grants-protocol/blob/main/website/src/content/docs/governance/adr/0027-release-please.md) (merged 2026-08-14) releases are cut by release-please, not Changesets; `.changeset/` no longer exists. release-please attributes a commit to a package **purely by the file paths it touches** (`src/util/commit-split.ts`: "Commits that only touch files under paths not specified here are ignored"). The released paths are `lib/core/`, `lib/cli/`, `lib/ts-sdk/`, and `lib/python-sdk/`. The conventional-commit scope in the title plays no part in attribution.
 
@@ -162,17 +162,17 @@ That matters because `lib/core/package.json` declares every one of its `peerDepe
 
 Verify rather than assume: read `lib/core/package.json` and the other `lib/*/package.json` files to confirm which block (`peerDependencies`, `dependencies`, `devDependencies`) each moved catalog entry appears in.
 
-**This flag is a reporting obligation, not a merge blocker.** It does not change the Step 4 decision on its own: a green catalog PR whose only outstanding item is `unreleasable by path` is still a Merge. Every `@typespec/*` bump trips this gate, so holding on it would stall catalog maintenance indefinitely and still not produce a release. Record the flag in the report and let the merge decision rest on validation, audit, and downstream impact as it did before.
+**This flag is a reporting obligation, not a merge blocker.** It does not change the Step 4 decision on its own: a green catalog PR whose only outstanding item is `unreleasable by path` is still a Merge. Every `@typespec/*` bump trips this flag, so holding on it would stall catalog maintenance indefinitely and still not produce a release. Record the flag in the report and let the merge decision rest on validation, audit, and downstream impact as it did before.
 
 ### Do not route around it
 
-Retitling does **not** fix this, and the reviewer checklist in the catalog workflow's own PR body currently says it does:
+Retitling does **not** fix this, and the checklist for human reviewers in the catalog workflow's own PR body currently says it does:
 
 > If peerDep ranges changed for `@common-grants/core`, retitle this PR `fix(core): ...` so the change ships in a release (`chore(deps)` does not trigger a version bump)
 
-Retitling to `fix(core):` clears the commit-type gate, but the path gate still blocks — no file under `lib/core/` is touched, so there is nothing for release-please to attribute the commit to. Note the discrepancy in your review if it is load-bearing for the decision; do not silently follow the checklist item as though it works.
+Retitling to `fix(core):` satisfies the commit-type rule, but the path rule still blocks — no file under `lib/core/` is touched, so there is nothing for release-please to attribute the commit to. Note the discrepancy in your review if it is load-bearing for the decision; do not silently follow the checklist item as though it works.
 
-There is no mechanism in this lane that turns a catalog bump into a release. Report the gap and stop. Whether the repo should declare these ranges literally instead of via `catalog:`, and what those ranges should promise consumers, is an open question headed for team discussion — not a call this review makes. Do not propose a restructuring, and do not recommend a changeset; the tool is gone.
+There is no mechanism for catalog PRs that turns a catalog bump into a release. Report the gap and stop. Whether the repo should declare these ranges literally instead of via `catalog:`, and what those ranges should promise consumers, is an open question headed for team discussion — not a call this review makes. Do not propose a restructuring, and do not recommend a changeset; the tool is gone.
 
 ---
 
@@ -215,12 +215,12 @@ Use this format:
 - Do not recommend blanket audit suppressions
 - Do not skip downstream impact analysis when TypeSpec packages changed
 - Do not recommend a changeset or `pnpm changeset` — Changesets was removed in ADR-0027
-- Do not recommend a retitle to force a release; the path gate blocks catalog PRs regardless of title. Report `unreleasable by path` and leave the resolution to the team
+- Do not recommend a retitle to force a release; the path rule blocks catalog PRs regardless of title. Report `unreleasable by path` and leave the resolution to the team
 - The review is advisory. Pushing, commenting on, approving, closing, or merging the PR is public-facing and requires the user's explicit approval immediately before the action.
 
 ## Related Skills
 
-- `dependency-triage` — queue-level routing into the catalog lane.
+- `dependency-triage` — queue-level routing of catalog PRs to this skill.
 - `dependency-review` — non-catalog dependency PRs.
-- `coding-agent-handoff-supervision` — normal visible, ticket-backed fix handoff.
+- `coding-agent-handoff-supervision` — normal visible, issue-backed fix handoff.
 - `codex-claude-implementation-loop` — explicit background-only alternative.

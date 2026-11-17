@@ -6,13 +6,13 @@ argument-hint: <pr-number-or-url>
 
 # Dependency Review
 
-Review a single dependency pull request in the SGG / CommonGrants monorepo and decide whether it is safe to merge, needs a focused fix, should be held, or should be closed as not worth the churn. Its package lanes, commands, and release-attribution rules are project-specific.
+Review a single dependency pull request in the SGG / CommonGrants monorepo and decide whether it is safe to merge, needs a focused fix, should be held, or should be closed as not worth the churn. Its update types, commands, and release-attribution rules are project-specific.
 
 ---
 
 ## Input
 
-First confirm the PR belongs to a repository in the SGG workspace manifest `~/code/sgg/repos.tsv`. Stop if it belongs to `HHS/simpler-grants-gov`: Bryan doesn't manage that repo's dependencies. The lane matrix below is fullest for `simpler-grants-protocol`; for any other repo, use only commands actually defined by that repo.
+First confirm the PR belongs to a repository in the SGG workspace manifest `~/code/sgg/repos.tsv`. Stop if it belongs to `HHS/simpler-grants-gov`: Bryan doesn't manage that repo's dependencies. The verification matrix below is fullest for `simpler-grants-protocol`; for any other repo, use only commands actually defined by that repo.
 
 Accepts either:
 
@@ -61,21 +61,21 @@ git diff {baseRefName}...HEAD
 
 ---
 
-## Step 2: Determine the Update Lane
+## Step 2: Determine the Update Type
 
 Classify the PR before deciding what to do.
 
-Possible lanes:
+Possible update types:
 
-- Python isolated lockfile lane
-- website-framework lane
-- tooling lane
-- runtime lane
-- GitHub Actions lane
-- catalog workflow lane
+- Python isolated lockfile
+- website framework
+- tooling
+- runtime
+- GitHub Actions
+- catalog workflow
 - major version bump
 
-State the lane explicitly in your review.
+State the update type explicitly in your review.
 
 ---
 
@@ -147,9 +147,9 @@ published package. There is no `.changeset/` directory in any of these repos —
 [ADR-0027](https://github.com/HHS/simpler-grants-protocol/blob/main/website/src/content/docs/governance/adr/0027-release-please.md)
 replaced Changesets with release-please on 2026-08-14. Releases are now derived
 from the squashed PR title and the touched file paths, and a dependency change
-ships a bump only if it clears **both** gates below.
+ships a bump only if it passes **both** rules below.
 
-### Gate 1 — path
+### Rule 1 — path
 
 release-please attributes a commit to a package purely by the files it touches
 (`src/util/commit-split.ts`: "Commits that only touch files under paths not
@@ -162,17 +162,17 @@ plays no part in attribution.
   released path, so a commit confined to those is ignored outright.
 - `ts-cg-grants-gov` and `py-cg-grants-gov` each publish a **single package
   rooted at `.`**, which release-please assigns every commit regardless of
-  path. **This gate does not exist in the plugin repos** — do not carry the
+  path. **This rule does not exist in the plugin repos** — do not carry the
   protocol repo's path rule over to them.
 
-### Gate 2 — type
+### Rule 2 — type
 
 The title's conventional-commit type must render a changelog entry: `feat` →
 minor, `fix` / `perf` / `revert` / `docs` / `refactor` / `build` → patch, any
 `!` → breaking (minor while pre-1.0). `chore`, `ci`, and `test` are `hidden` in
 `changelog-sections`, render nothing, and cut no release.
 
-Both bots default to a type that **fails** this gate: Dependabot is configured
+Both bots default to a type that **fails** this rule: Dependabot is configured
 `commit-message.prefix: "chore"`, and the catalog workflow titles its PR
 `chore(deps): update catalog dependencies`.
 
@@ -185,8 +185,8 @@ dependencies` in `pyproject.toml`. Do not guess; open the file.
 | What the PR changes | Outcome | What to report |
 |---|---|---|
 | devDependencies only | Correctly no release | Nothing to flag. |
-| A consumer-visible dep, **and** it touches a released path | Blocked by gate 2 only | **Actionable** — flag `retitle needed`. Retitling to `fix(<scope>): …` before squash-merge cuts a patch release. |
-| A consumer-visible dep, but touches **only** non-released paths (the catalog lane and pnpm `overrides` lane, which live in `pnpm-workspace.yaml` / `pnpm-lock.yaml`) | Blocked by gate 1 | Flag `unreleasable by path`. **No title change fixes this** — retitling clears gate 2 while gate 1 still blocks. Report it and stop there. |
+| A consumer-visible dep, **and** it touches a released path | Blocked by rule 2 only | **Actionable** — flag `retitle needed`. Retitling to `fix(<scope>): …` before squash-merge cuts a patch release. |
+| A consumer-visible dep, but touches **only** non-released paths (catalog and pnpm `overrides` updates, which live in `pnpm-workspace.yaml` / `pnpm-lock.yaml`) | Blocked by rule 1 | Flag `unreleasable by path`. **No title change fixes this** — retitling satisfies rule 2 while rule 1 still blocks. Report it and stop there. |
 
 That last row is a real gap with no mechanism behind it, not an oversight you
 should route around. Say plainly that the change reaches consumers without a
@@ -199,7 +199,7 @@ gone.
 
 ## Step 5: Verify Locally Before Recommending Merge
 
-This step applies a no-claim-without-evidence discipline using native terminal execution: never say "safe to merge" on the strength of a green PR badge alone; run the commands and read the output. The per-lane matrix below is this skill's domain-specific gate.
+This step applies a no-claim-without-evidence discipline using native terminal execution: never say "safe to merge" on the strength of a green PR badge alone; run the commands and read the output. The per-type matrix below is this skill's domain-specific check.
 
 Before recommending "safe to merge," check out the branch and run the relevant verification commands:
 
@@ -207,10 +207,10 @@ Before recommending "safe to merge," check out the branch and run the relevant v
 gh pr checkout {number}
 ```
 
-### Per-lane verification
+### Verification by update type
 
-| Lane | Verification command | What it covers |
-|------|---------------------|----------------|
+| Update type | Verification command | What it covers |
+|-------------|---------------------|----------------|
 | npm root (tooling/runtime) | `pnpm run ci` | Full workspace build + test in dependency order |
 | website-framework | `pnpm run ci:website` | Website build, checks, link validation |
 | Python isolated | `cd lib/python-sdk && make checks && make test` | Formatting, linting, type checking, test suite |
@@ -221,7 +221,7 @@ Use `pnpm run ci`, not `pnpm ci`: pnpm still reserves the latter as an
 unimplemented native command (`ERR_PNPM_CI_NOT_IMPLEMENTED`). Verified against
 pnpm 11.20.0, the version this repo pins in `packageManager`.
 
-If running the full workspace CI is too slow, use the package-specific command for the affected lane:
+If running the full workspace CI is too slow, use the package-specific command for the affected update type:
 
 - `pnpm run ci:core` — core package
 - `pnpm run ci:cli` — CLI package
@@ -251,14 +251,14 @@ Use these defaults:
 
 ### Approved “Fix in this PR” handoff
 
-The recommendation is not authorization to edit or publish. Present the diagnosis, proposed scope, acceptance criteria, and required lane-specific checks, then ask whether to implement the fix.
+The recommendation is not authorization to edit or publish. Present the diagnosis, proposed scope, acceptance criteria, and required checks for its update type, then ask whether to implement the fix.
 
 If the user approves and the current harness is a Pi orchestrator or a Codex-backed Hermes orchestrator:
 
 1. Create or reuse an isolated worktree for the dependency PR; do not switch the primary checkout in place.
-2. Load `coding-agent-handoff-supervision`, reuse or create the governing project-workspace ticket, and launch the normal visible Pi background agent handoff through Rex. An unavailable Rex route stops the handoff; do not silently choose a hidden background route instead.
-3. Give the background agent the ticket/PR URLs, exact implementation repository and worktree, explicit authority boundaries, and this skill's Step 5 verification outcome. Do not duplicate a self-contained implementation plan into the prompt.
-4. The orchestrator inspects the actual diff and independently reruns the affected lane's verification. Return to Step 6 and recompute the recommendation from the final evidence.
+2. Load `coding-agent-handoff-supervision`, reuse or create the governing project-workspace issue, and launch the normal visible Pi background agent handoff through Rex. An unavailable Rex route stops the handoff; do not silently choose a hidden background route instead.
+3. Give the background agent the issue/PR URLs, exact implementation repository and worktree, explicit authority boundaries, and this skill's Step 5 verification outcome. Do not duplicate a self-contained implementation plan into the prompt.
+4. The orchestrator inspects the actual diff and independently reruns the verification for its update type. Return to Step 6 and recompute the recommendation from the final evidence.
 
 The background agent's local commit, push, and PR/issue permissions must each be stated explicitly; the normal route forbids all three and leaves local commit creation and the reviewed dependency-PR branch push orchestrator-owned. The user's approval to implement the fix authorizes the orchestrator to edit, verify, commit, and push that reviewed unit without a second prompt. Commenting, approving, closing, and merging each still require their own direct request under Hard Rules. In other harnesses, use the approved harness-native implementation workflow while preserving the same diagnosis, verification, and authorization contract.
 
@@ -274,7 +274,7 @@ Use this format:
 ## Dependency Review
 
 - PR: #123
-- Lane: tooling
+- Update type: tooling
 - Decision: Fix in this PR
 
 ### What changed
@@ -288,7 +288,7 @@ Use this format:
 - devDependency-only; correctly no release
 
 ### Why
-- Failure appears attributable and contained to the tooling lane, so this is worth fixing.
+- Failure appears attributable and contained to the tooling update, so this is worth fixing.
 ```
 
 ---
@@ -297,7 +297,7 @@ Use this format:
 
 - Do not say “safe to merge” without checking status checks
 - Do not recommend a retitle without first reading the diff to confirm the dependency is consumer-facing (`dependencies` / `peerDependencies` / `[project] dependencies`)
-- Do not recommend a retitle for a PR confined to `pnpm-workspace.yaml` / `pnpm-lock.yaml` — gate 1 blocks it regardless of title. Report `unreleasable by path` and stop; do not invent a remedy
+- Do not recommend a retitle for a PR confined to `pnpm-workspace.yaml` / `pnpm-lock.yaml` — rule 1 blocks it regardless of title. Report `unreleasable by path` and stop; do not invent a remedy
 - Never tell the reader to add a changeset or run `pnpm changeset` — Changesets was removed in ADR-0027 and `.changeset/` does not exist
 - Do not recommend audit exceptions just because CI is noisy
 - Do not bury the decision; the report must contain one explicit recommendation
@@ -308,6 +308,6 @@ Use this format:
 ## Related Skills
 
 - `dependency-triage` — queue-level classification and review routing.
-- `catalog-review` — stricter lane for catalog-managed updates.
-- `coding-agent-handoff-supervision` — normal visible, ticket-backed fix handoff.
+- `catalog-review` — stricter review for catalog-managed updates.
+- `coding-agent-handoff-supervision` — normal visible, issue-backed fix handoff.
 - `codex-claude-implementation-loop` — explicit background-only alternative.

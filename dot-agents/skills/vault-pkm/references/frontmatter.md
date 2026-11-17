@@ -1,9 +1,9 @@
 # Frontmatter shape
 
 Every vault note has YAML frontmatter. The shape differs slightly between
-project vaults and ~/second-brain/.
+a workspace's vault and the personal vault, ~/second-brain/.
 
-## Project vaults
+## A workspace's vault
 
 ```yaml
 ---
@@ -23,8 +23,8 @@ source-checked: 2026-07-15         # optional: checked date for claims that can 
 ---
 ```
 
-**Note:** Project vaults use `domain/` (not `area/`) to avoid cross-vault tag
-collision with second-brain's `area/<life-domain>` namespace. The two vaults
+**Note:** Workspace vaults use `domain/` (not `area/`) to avoid cross-vault tag
+collision with the personal vault's `area/<life-domain>` namespace. The two vaults
 have different categorical universes; tag namespaces stay separate.
 
 **No `related:`** field. Use inline `[[wikilinks]]` for lateral relations in
@@ -55,14 +55,14 @@ status: active                     # active | decided | complete
 
 ## Key differences
 
-- Project vaults use `domain/` for project-internal areas; second-brain uses
+- Workspace vaults use `domain/` for project-internal areas; the personal vault uses
   `area/` for life-area categorization. Tag namespaces deliberately separate.
-- Project vaults use `project/<vault>` for cross-vault search; second-brain
+- Workspace vaults use `project/<vault>` for cross-vault search; personal vault
   notes don't (they're not tied to a code project).
-- Project vaults express parent-MOC relations via `up:`; second-brain relies
+- Workspace vaults express parent-MOC relations via `up:`; the personal vault relies
   on inline wikilinks throughout the note body.
-- second-brain's type values are Exploration/Decision/Idea (matching its
-  folder structure); project vaults are richer (moc, learning, investigation, etc.).
+- The personal vault's type values are Exploration/Decision/Idea (matching its
+  folder structure); workspace vaults are richer (moc, learning, investigation, etc.).
 
 ## Properties UI expectations
 

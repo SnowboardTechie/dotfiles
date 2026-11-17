@@ -16,7 +16,7 @@ description: >
 
 Bryan's vaults are PKM-style: MOC-and-spoke topology, atomic spokes, linked
 richly. A living graph, not a filing pile. This skill encodes the shared
-conventions across his project vaults and personal vault.
+conventions across his workspaces' vaults and his personal vault.
 
 ## When this applies
 
@@ -33,7 +33,7 @@ conventions across his project vaults and personal vault.
 ## Step 1 — check for per-vault overrides
 
 Before applying defaults, check if the vault has an `AGENTS.md` at its root:
-- Project vaults: `vault/AGENTS.md` (= `~/code/notes/<vault>/AGENTS.md` via symlink)
+- A workspace's vault: `vault/AGENTS.md` (= `~/code/notes/<vault>/AGENTS.md` via symlink)
 - `~/second-brain/`: `~/second-brain/AGENTS.md` (already exists — IS the override file for that vault)
 
 If present:
@@ -45,15 +45,15 @@ If not present, proceed with skill defaults below.
 ## Step 2 — at session start in a vault
 
 Read the vault's entry point:
-- Project vaults: `vault/INDEX.md` (the Map of Content)
-- ~/second-brain/: the `AGENTS.md` at the vault root
+- A workspace's vault: `vault/INDEX.md` (the Map of Content)
+- The personal vault, `~/second-brain/`: the `AGENTS.md` at the vault root
 
 Check INDEX.md's `index-last-verified:` frontmatter field. If older than 30 days,
 mention this to the user — the Map of Content may have drifted from the vault's
 actual MOCs and active threads. This is a fallback warning, not a freshness
 window: verified changes to current state trigger reconciliation immediately.
 
-For an agent-maintained project vault, also read `status.md` when present and the
+For an agent-maintained workspace's vault, also read `status.md` when present and the
 relevant topic MOC before writing. Classify the vault as active compiled work,
 a dormant snapshot, or a historical/archive corpus before treating old state as
 current.
@@ -68,7 +68,7 @@ bulk-load the vault.
 | Deciding folder + filename shape for a new note | `references/filename-conventions.md` |
 | Writing frontmatter | `references/frontmatter.md` |
 | Establishing or linking to a MOC, or any "before I write" thinking | `references/hub-and-spoke.md` |
-| Grounding and recompiling an agent-maintained project vault | `references/agent-compiled-project-vaults.md` |
+| Grounding and recompiling an agent-maintained workspace's vault | `references/agent-compiled-workspace-vaults.md` |
 | Committing + pushing a vault write | `references/commit-discipline.md` |
 
 For anything ambiguous, start with `references/hub-and-spoke.md` — it covers
@@ -90,8 +90,8 @@ routing table dynamically. The mechanism differs; the content is the same.
 
 ## See also
 
-- `~/second-brain/AGENTS.md` — second-brain has its own note shapes
+- `~/second-brain/AGENTS.md` — the personal vault has its own note shapes
   (Exploration / Decision / Idea) and frontmatter tuned for personal-knowledge
-  work; this skill defers to that file for second-brain specifics
+  work; this skill defers to that file for the personal vault's specifics
 - `~/code/notes/AGENTS.md` — orientation for agents that land in the
-  project-vaults repo directly
+  `~/code/notes` repository of retained vaults directly

@@ -15,7 +15,7 @@ description: >
 
 # Knowledge capture
 
-The end-of-session triage gate: decide whether anything from the work just done
+The end-of-session triage step: decide whether anything from the work just done
 earns a durable note, of what kind, and in which backend — then hand the
 writing to that backend's skill. This skill is **judgment and routing, not
 mechanics.**
@@ -26,7 +26,7 @@ mechanics.**
 | A project or workspace: code, plans, issues, handoffs, architecture, DX artifacts, reviews | that repo's Markdown vault (`vault/`, `~/code/notes/<project>/`) | `vault-pkm` |
 | Agent behaviour corrections, "remember to…" for the agent itself | the harness's native memory (e.g. Claude auto-memory, Hermes `MEMORY.md`/`USER.md`) | none — name it and let that native system catch it |
 
-Apple Notes is not a knowledge store (the personal second brain returned to
+Apple Notes is not a knowledge store (the personal vault returned to
 `~/second-brain` on 2026-10-31 and the Notes folder was deleted). Never write
 personal knowledge there.
 
@@ -59,7 +59,7 @@ Two failure modes this exists to prevent:
 ### Step 1 — Route, then load the backend's conventions
 
 Decide the backend from the table above before anything else. Mixed sessions
-split: the project part goes to the project vault, the personal part to
+split: the project part goes to the workspace's vault, the personal part to
 `~/second-brain`. Then load `vault-pkm` and the destination's own `AGENTS.md`
 (`~/second-brain/AGENTS.md` for personal: note shapes, folders, frontmatter,
 commit discipline; a project's `vault/AGENTS.md` and `INDEX.md` otherwise).
@@ -71,13 +71,13 @@ List everything that *might* be note-worthy; triage happens next. For each,
 note **what it is** and **who produced it** — Bryan/the team or the agent —
 plus whether Bryan explicitly adopted an agent-proposed idea.
 
-### Step 3 — Triage: two gates, then a tier
+### Step 3 — Triage: two tests, then a tier
 
-**Gate A — Provenance and adoption (hard).** Did Bryan or the team decide,
+**Test A — Provenance and adoption (hard).** Did Bryan or the team decide,
 discover, or produce this? If the agent proposed it, did Bryan explicitly
 approve or adopt it? "mm, maybe" is not adoption.
 
-**Gate B — Already captured / derivable.** Is it in the active project
+**Test B — Already captured / derivable.** Is it in the active project
 instructions, the code, the git log, or an existing note? Then link, don't
 duplicate.
 
@@ -86,9 +86,9 @@ duplicate.
 - **capture-now** — shaped knowledge: a decision + its why, a confirmed
   investigation, an observed behaviour, a learning → a full note.
 - **defer-until-signal** — a live but unshaped idea → a one-line seed (an
-  `Idea` note in `~/second-brain`; an "Open threads" line in a project vault's
+  `Idea` note in `~/second-brain`; an "Open threads" line in the workspace's vault's
   `INDEX.md`).
-- **decline** — routine, derivable, or failed a gate → nothing.
+- **decline** — routine, derivable, or failed a test → nothing.
 
 ### Step 4 — Present the slate; the author picks
 
@@ -111,10 +111,10 @@ name it and get a yes first.
 ## Interaction contract (hard rules)
 
 - The capture question is not write authorization (closeout exception above).
-- Provenance gate requires adoption.
+- The provenance test requires adoption.
 - "Nothing worth capturing" is a valid result.
 - Route before writing; never put project plans in `~/second-brain` or personal
-  reflection in a project vault because it was convenient.
+  reflection in a workspace's vault because it was convenient.
 - defer ≠ a full note.
 - Don't duplicate what instructions, code, git, or an existing note hold.
 
