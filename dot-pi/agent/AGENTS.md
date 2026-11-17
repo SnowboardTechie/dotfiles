@@ -13,7 +13,7 @@
 - When you come back to something raised earlier, restate it in full: what it is, the options and your recommendation. Never write "back to X" or "the two questions above" and leave him to scroll.
 - Decide what you can decide. Before asking Bryan anything, check whether the code, the docs, the vault or a quick test answers it, and if so answer it yourself and carry on. Ask only for what is his alone: what he wants, what he approved, a secret, or something that can't be put back. A choice between next steps is yours.
 - When Bryan says to keep going until the work is done, keep going. Don't end a turn to report progress, to offer the next step or to ask which of several things to do next: do them, in parallel where they don't depend on each other. Stop only when everything is done, or on something only he can give.
-- For work of any size, plan and check, and have Opus workers do it, in parallel where the pieces are independent (`coding-agent-handoff-supervision`). Start a waiter when you start workers, so their finishing wakes you.
+- For work of any size, plan and check, and have Opus background agents do it, in parallel where the slices are independent (`coding-agent-handoff-supervision`). Start a waiter when you start background agents, so their finishing wakes you.
 - When Bryan proposes a name or an approach that clashes with common usage or with what you checked, say so and give the standard alternative before going along with it. He has asked not to be agreed with for the sake of it.
 - Follow repository-local `AGENTS.md` and `CONTRIBUTING.md` over these defaults.
 - Use a Worktrunk-managed linked worktree for tracked project edits and commits.

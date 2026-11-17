@@ -24,7 +24,7 @@ SKILL = SKILL_DIR / "SKILL.md"
 REFERENCES = ("change-impact.md", "project-recipe.md")
 UPSTREAMS = REPO_ROOT / "dot-agents" / "upstreams"
 LEDGER_PATH = UPSTREAMS / "pstack-claude.json"
-PINNED_COMMIT = "963781d11834918bf0951202d721c2e144777a70"
+PINNED_COMMIT = "a12b04786023e762f12f5de7bb5fafb8c23f8c36"
 RECONCILER = REPO_ROOT / "scripts" / "reconcile-agent-skills.sh"
 CURATED_FOR = ("CLAUDE_SKILLS", "CODEX_SKILLS", "PI_SKILLS", "OPENCODE_SKILLS", "HERMES_SKILLS")
 
@@ -176,11 +176,12 @@ class ProvenanceTest(unittest.TestCase):
         self.assertIn("Lauren Tan", license_text)
         self.assertIn("Michael Denyer", license_text)
 
-    def test_update_policy_is_manual_and_unwatched(self) -> None:
+    def test_update_policy_is_reviewed_and_watched(self) -> None:
+        # The pin moves only as a reviewed change; a pi-bots scheduled job reports when upstream has moved on.
         policy = self.ledger["updatePolicy"]
         self.assertIs(policy["autoApply"], False)
         self.assertIs(policy["humanApprovedPinAdvance"], True)
-        self.assertIsNone(policy["monitor"])
+        self.assertEqual(policy["monitor"], "pi-bots job adapted-skill-watch")
 
     def test_adaptation_maps_both_upstream_skills(self) -> None:
         (entry,) = self.ledger["adaptations"]
