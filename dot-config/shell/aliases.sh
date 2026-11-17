@@ -186,7 +186,8 @@ fi
 if [[ -d "$HOME/second-brain" ]]; then
   # Opens Pi in the vault, the only thing done there. The subshell keeps the
   # caller's directory, and the pi() wrapper above picks the personal seat.
-  unalias second-brain 2>/dev/null
+  # `|| true`: with no such alias, unalias fails, and that would end a shell sourcing this under `set -e`.
+  unalias second-brain 2>/dev/null || true
   second-brain() { (cd ~/second-brain && pi "$@"); }
 fi
 
