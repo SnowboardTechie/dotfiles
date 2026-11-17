@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 # cleanup-proof <output dir> [bash ...]: prove dotfiles-verify removes only what
-# it made. Writes cleanup-proof.txt and the runs' evidence under <output dir>
-# (outside the repository; it is replaced). Each bash given (default: the bash
-# on PATH and /bin/bash) runs the temporary-directory cases; the rest run under
-# the bash on PATH. Exit 0 when every check passes.
+# it made. Writes cleanup-proof.txt and the runs' evidence under <output dir>,
+# which must be absent or empty, outside the repository, and not $HOME or /;
+# anything else is refused with the reason and nothing is removed. Each bash
+# given (default: the bash on PATH and /bin/bash) runs the refusal and
+# temporary-directory cases; the rest run under the bash on PATH. Exit 0 when
+# every check passes.
 #
+#   0. An output directory that is the checkout (spelled ../<checkout>), $HOME
+#      (spelled $HOME//), /, inside the checkout, or not empty: refused, exit
+#      non-zero, its sentinel survives.
 #   1. TMPDIR missing or unwritable: doctor, run and cleanup exit non-zero and a
 #      sentinel in the directory they were started from survives.
 #   2. Crafted run.json files naming an unrelated process and directories the
@@ -12,18 +17,87 @@
 #   3. A normal run cleans up after itself.
 #   4. A hung run is stopped and cleaned from another shell.
 set -u
-SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)" || { echo "cleanup-proof: cannot find its own directory" >&2; exit 2; }
 V="$SCRIPTS/dotfiles-verify"
-P="${1:?usage: cleanup-proof <output dir> [bash ...]}"; shift
+# canon_dir, make_tmp, remove_tmp, tmp_parent and REPO_ROOT, as the command has them.
+# shellcheck source=dotfiles-verify
+source "$V" || { echo "cleanup-proof: cannot load $V" >&2; exit 2; }
+set +o pipefail
+refuse() { echo "cleanup-proof: refusing output directory '$ARG': $*; nothing was created or removed" >&2; exit 2; }
+
+ARG="${1:-}"; [[ $# -gt 0 ]] && shift
+[[ -n "$ARG" ]] || { echo "usage: cleanup-proof <output dir> [bash ...]" >&2; exit 2; }
 BASHES=("$@"); [[ ${#BASHES[@]} -gt 0 ]] || BASHES=("$(command -v bash)" /bin/bash)
-case "$P" in /|"$HOME"|"$HOME"/|"$(cd "$SCRIPTS/../../../.." && pwd -P)"*) echo "refusing output dir $P" >&2; exit 2 ;; esac
-rm -rf "$P"; mkdir -p "$P/ev"; P="$(cd "$P" && pwd -P)"; export DOTFILES_VERIFY_EVIDENCE="$P/ev"
+
+# The output directory is never removed. It must be absent or an empty real
+# directory; it is compared by canonical path, so no spelling of the checkout,
+# $HOME or / passes.
+REPO_CANON="$(canon_dir "$REPO_ROOT")" || { echo "cleanup-proof: cannot resolve the checkout" >&2; exit 2; }
+HOME_CANON="$(canon_dir "${HOME:-}")" || HOME_CANON=""
+trimmed="$ARG"; while [[ "$trimmed" == */ && "$trimmed" != / ]]; do trimmed="${trimmed%/}"; done
+if [[ -L "$trimmed" ]]; then refuse "it is a symbolic link"; fi
+if [[ -e "$trimmed" ]]; then
+    [[ -d "$trimmed" ]] || refuse "it exists and is not a directory"
+    P="$(canon_dir "$trimmed")" || refuse "it cannot be resolved"
+    CREATE=0
+else
+    base="$(basename "$trimmed")"
+    [[ -n "$base" && "$base" != . && "$base" != .. ]] || refuse "it has no final name"
+    parent="$(canon_dir "$(dirname "$trimmed")")" || refuse "its parent directory does not exist"
+    P="${parent%/}/$base"
+    CREATE=1
+fi
+[[ -n "$P" && "$P" != / ]] || refuse "it is /"
+[[ "$P" != "$REPO_CANON" && "$P/" != "$REPO_CANON"/* ]] || refuse "it is or is inside the checkout $REPO_CANON"
+[[ -z "$HOME_CANON" || "$P" != "$HOME_CANON" ]] || refuse "it is \$HOME ($HOME_CANON)"
+[[ "$P" != "$SCRIPTS" ]] || refuse "it is this script's directory"
+if [[ $CREATE -eq 0 ]]; then
+    [[ -z "$(ls -A "$P" 2>/dev/null)" ]] || refuse "it is not empty"
+    [[ -w "$P" ]] || refuse "it is not writable"
+else
+    mkdir "$P" || refuse "it could not be created"
+fi
+mkdir "$P/ev" || { echo "cleanup-proof: cannot create $P/ev" >&2; exit 2; }
+export DOTFILES_VERIFY_EVIDENCE="$P/ev"
 LOG="$P/cleanup-proof.txt"; : >"$LOG"
 say() { echo "$*" | tee -a "$LOG"; }
-T="$(cd "${TMPDIR:-/tmp}" && pwd -P)"
+T="$(tmp_parent)" || { echo "cleanup-proof: no usable temporary directory" >&2; exit 2; }
 started() { LC_ALL=C ps -o lstart= -p "$1" | sed 's/  */ /g; s/^ //; s/ $//'; }
 pass=0; failn=0
 check() { if eval "$2"; then say "PASS $1"; pass=$((pass+1)); else say "FAIL $1"; failn=$((failn+1)); fi; }
+
+say "== 0. output directories cleanup-proof must refuse"
+SELF="$SCRIPTS/cleanup-proof"
+STAND_HOME="$P/stand-in-home"; mkdir "$STAND_HOME"; echo sentinel >"$STAND_HOME/sentinel"
+EMPTY_HOME="$P/empty-stand-in-home"; mkdir "$EMPTY_HOME"
+FULL="$P/not-empty"; mkdir "$FULL"; echo sentinel >"$FULL/sentinel"
+CHECKOUT_SENTINEL="$REPO_CANON/.cleanup-proof-sentinel.$$"
+echo sentinel >"$CHECKOUT_SENTINEL"
+REL_CHECKOUT="../$(basename "$REPO_CANON")"
+INSIDE="$REPO_CANON/.agents/skills/verify/../../../cleanup-proof-out.$$"
+for B in "${BASHES[@]}"; do
+    say "-- $B ($("$B" -c 'echo $BASH_VERSION'))"
+    # name | directory to run from | HOME | argument | file that must survive | path that must not appear
+    while IFS='|' read -r name from home arg keep absent; do
+        ( cd "$from" || exit 99; HOME="$home" "$B" "$SELF" "$arg" ) >"$P/refuse-$name-$(basename "$B").txt" 2>&1; rc=$?
+        check "$B: $name: started from $from" '[[ $rc -ne 99 ]]'
+        say "   $name ('$arg' from $from): exit $rc; $(head -1 "$P/refuse-$name-$(basename "$B").txt")"
+        check "$B: $name refused, exit non-zero" '[[ $rc -ne 0 ]] && grep -q "refusing output directory" "$P/refuse-$name-$(basename "$B").txt"'
+        check "$B: $name: the sentinel survives" '[[ "$(cat "$keep" 2>/dev/null)" == sentinel ]]'
+        [[ -z "$absent" ]] || check "$B: $name: nothing was created" '[[ ! -e "$absent" ]]'
+    done <<LIST
+checkout-as-relative|$REPO_CANON|$HOME|$REL_CHECKOUT|$CHECKOUT_SENTINEL|
+home-with-slashes|$REPO_CANON|$STAND_HOME|$STAND_HOME//|$STAND_HOME/sentinel|
+empty-home-with-slashes|$REPO_CANON|$EMPTY_HOME|$EMPTY_HOME//|$CHECKOUT_SENTINEL|$EMPTY_HOME/ev
+home-through-parent|$REPO_CANON|$STAND_HOME|$STAND_HOME/../$(basename "$STAND_HOME")|$STAND_HOME/sentinel|
+root|$REPO_CANON|$HOME|/|$CHECKOUT_SENTINEL|
+absent-inside-checkout|$REPO_CANON|$HOME|$INSIDE|$CHECKOUT_SENTINEL|$REPO_CANON/cleanup-proof-out.$$
+relative-inside-checkout|$REPO_CANON|$HOME|out.$$|$CHECKOUT_SENTINEL|$REPO_CANON/out.$$
+not-empty|$P|$HOME|$FULL|$FULL/sentinel|
+LIST
+done
+rm -f "$CHECKOUT_SENTINEL"
+check "the checkout sentinel was removed again by this proof" '[[ ! -e "$CHECKOUT_SENTINEL" ]]'
 
 say "== 1. an unusable TMPDIR"
 WORK="$P/started-here"; mkdir -p "$WORK"; echo sentinel >"$WORK/sentinel"
@@ -33,8 +107,9 @@ for B in "${BASHES[@]}"; do
     for kind in missing unwritable; do
         if [[ $kind == missing ]]; then TD="$P/no-such-tmp"; else TD="$RO"; fi
         for cmd in doctor "run agent-commands" cleanup; do
-            ( cd "$WORK" && TMPDIR="$TD" DOTFILES_VERIFY_EVIDENCE="$P/ev-$kind" "$B" "$V" $cmd ) >"$P/tmp-$kind-${cmd%% *}-$(basename "$B").txt" 2>&1
+            ( cd "$WORK" || exit 99; TMPDIR="$TD" DOTFILES_VERIFY_EVIDENCE="$P/ev-$kind" "$B" "$V" $cmd ) >"$P/tmp-$kind-${cmd%% *}-$(basename "$B").txt" 2>&1
             rc=$?
+            check "$B: $kind TMPDIR, $cmd: started from $WORK" '[[ $rc -ne 99 ]]'
             say "   $kind TMPDIR, $cmd: exit $rc; $(grep -m1 -E 'dotfiles-verify:|FAIL' "$P/tmp-$kind-${cmd%% *}-$(basename "$B").txt")"
             check "$B: $kind TMPDIR, $cmd exits non-zero" '[[ $rc -ne 0 ]]'
             check "$B: $kind TMPDIR, $cmd: the sentinel in its start directory survives" '[[ "$(cat "$WORK/sentinel" 2>/dev/null)" == sentinel ]]'
@@ -49,8 +124,10 @@ say "== 2. crafted run.json files naming an unrelated process and directories th
 ( exec -a "dotfiles-verify run fake" /bin/sleep 300 ) & UNREL=$!
 sleep 0.3; ST="$(started $UNREL)"
 say "unrelated process $UNREL: $(ps -o command= -p $UNREL)"
-VICTIM="$(mktemp -d "$T/dotfiles-verify-scratch.XXXXXX")"; echo keep >"$VICTIM/keep"
-OTHER="$(mktemp -d "$T/victim.XXXXXX")"; echo keep >"$OTHER/keep"
+VICTIM="$(make_tmp dotfiles-verify-scratch)" || { echo "cleanup-proof: mktemp failed" >&2; exit 2; }
+echo keep >"$VICTIM/keep"
+OTHER="$(make_tmp victim)" || { echo "cleanup-proof: mktemp failed" >&2; exit 2; }
+echo keep >"$OTHER/keep"
 LINK="$T/dotfiles-verify-scratch.LnKd01"; ln -s "$VICTIM" "$LINK"
 mk() { # <name> <scratch>
     mkdir -p "$P/ev/$1"
@@ -61,7 +138,7 @@ mk glob-match-no-marker "$VICTIM"
 mk other-directory "$OTHER"
 mk traversal "$T/dotfiles-verify-scratch.ABCDEF/../$(basename "$VICTIM")"
 mk symlink "$LINK"
-mk checkout "$(cd "$SCRIPTS/../../../.." && pwd -P)"
+mk checkout "$REPO_CANON"
 mk home "$HOME"
 mk root "/"
 mk empty ""
@@ -80,7 +157,11 @@ for d in glob-match-no-marker other-directory traversal symlink checkout home ro
 done
 check "absent-but-named: nothing to remove, no process stopped" 'kill -0 $UNREL 2>/dev/null'
 kill $UNREL; wait $UNREL 2>/dev/null
-rm -rf "$VICTIM" "$OTHER" "$LINK" "$P/ev/"{glob-match-no-marker,other-directory,traversal,symlink,checkout,home,root,empty,forged-marker,absent-but-named}
+remove_tmp "$VICTIM" dotfiles-verify-scratch; remove_tmp "$OTHER" victim
+[[ -L "$LINK" ]] && rm -f "$LINK"
+for d in glob-match-no-marker other-directory traversal symlink checkout home root empty forged-marker absent-but-named; do
+    rm -rf "${P:?}/ev/$d"     # created by this script under its own validated output directory
+done
 
 say "== 3. a normal run cleans up after itself"
 "$V" run shell-additions >"$P/normal-run.txt" 2>&1; rc=$?

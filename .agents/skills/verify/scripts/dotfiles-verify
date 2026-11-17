@@ -439,6 +439,10 @@ cleanup() {
     return $rc
 }
 
+# Sourced (cleanup-proof uses canon_dir, make_tmp and remove_tmp from here):
+# define the functions and stop.
+[[ "${BASH_SOURCE[0]}" != "$0" ]] && return 0
+
 case "${1:-}" in
     doctor) doctor ;;
     journeys) for f in "$JOURNEY_DIR"/*.sh; do printf '%-18s %s\n' "$(basename "$f" .sh)" "$(sed -n '2s/^# //p' "$f")"; done ;;

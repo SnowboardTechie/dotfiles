@@ -159,7 +159,12 @@ Prove all of this, after any change to the command:
 .agents/skills/verify/scripts/cleanup-proof /path/outside/the/repo/cleanup-proof   # bash on PATH and /bin/bash
 ```
 
-It starts `doctor`, `run` and `cleanup` from a directory holding a sentinel file with `TMPDIR` missing, then
+The output directory must be absent or empty. It is compared by canonical path and refused, with the reason and
+nothing created or removed, when it is the checkout or inside it (in any spelling, `../<checkout>` and relative names
+included), `$HOME` (`$HOME//`, `$HOME/../<home>`), `/`, a symbolic link, or not empty. The script never removes it.
+It first proves exactly that refusal: under each bash, given `../<checkout>`, a stand-in `$HOME//`, `$HOME/../<home>`,
+`/`, absent and relative paths inside the checkout, and a non-empty directory, it exits non-zero and a sentinel in each
+survives. Then it starts `doctor`, `run` and `cleanup` from a directory holding a sentinel file with `TMPDIR` missing, then
 unwritable, under each bash (default: the one on `PATH` and macOS's `/bin/bash` 3.2), and checks each exits non-zero
 and the sentinel survives. It then feeds `cleanup` crafted `run.json` files (a scratch-named directory without this
 run's marker, another directory, a `../` path, a symlink, the checkout, `$HOME`, `/`, an empty path, a forged marker)
