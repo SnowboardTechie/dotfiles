@@ -17,8 +17,8 @@ REX="$(command -v rex || echo "$REX_BIN_DIR/rex")"
 "$REX" whoami --json
 ```
 
-`whoami` must name the same session and block; an exit code alone is not proof.
-Use the caller's injected block throughout. There is no background
+`whoami` must name the same session and pane; an exit code alone is not proof.
+Use the caller's injected pane throughout. There is no background
 substitution, Agent View substitution, model fallback, or focused-pane guess
 when this preflight fails.
 
@@ -32,17 +32,17 @@ global configuration to make the route pass.
 ## Place both reviewers in the "Background Agents" tab
 
 Both reviewers open in the instigating session's "Background Agents" tab, never beside
-the instigating block, without taking focus. Start them one at a time, running
+the instigating pane, without taking focus. Start them one at a time, running
 `scripts/rex_background_agent_slot.py` right before each start as the Rex handoff
 reference shows: Claude first, then GPT. Each start re-reads the live layout,
-so the two never race for one anchor. Confirm both new block IDs, their window,
+so the two never race for one anchor. Confirm both new pane IDs, their tab,
 labels, and working directories (`"$REX" block inspect <block>`) before either
 reviewer's turn proceeds. On any mismatch, stop and close only the verified
-reviewer blocks.
+reviewer panes.
 
 ## Start exact reviewer routes
 
-Choose two unique block labels. Claude starts with the Rex reference's background-agent
+Choose two unique pane labels. Claude starts with the Rex reference's background-agent
 command (`--permission-mode auto --model claude-opus-5-5 --effort medium`, a
 fixed `--session-id`) in `$CLAUDE_WORKTREE`. GPT starts in `$GPT_WORKTREE` as a
 background agent of the root's own kind: a Hermes background agent, as that reference's Hermes
@@ -75,8 +75,8 @@ only limits. No fallback is allowed for either orchestrator or any leaf.
 Persist two distinct identity records as each start returns. Each record
 includes:
 
-- `surface: rex`, block label (agent name), block ID (pane ID), Rex session and
-  window, kind, and harness session ID;
+- `surface: rex`, pane label (agent name), pane ID, Rex session and
+  tab, kind, and harness session ID;
 - canonical worktree root, absolute Git common directory, and branch;
 - launch model, provider, base URL where applicable, and reasoning/effort;
 - dedicated reviewer state root.
@@ -119,9 +119,9 @@ reviewer for at most one bounded same-model retry.
 Handle each reviewer independently. As soon as its report is admitted—or that
 route becomes terminally incomplete after its one allowed retry—that reviewer
 has no permitted next turn. Stop its supervisor, reverify ownership, close its
-recorded block with the Rex reference's close steps, and verify that block ID is
-absent while the other reviewer may continue. Require both blocks absent before
+recorded pane with the Rex reference's close steps, and verify that pane ID is
+absent while the other reviewer may continue. Require both panes absent before
 root adjudication or incomplete-result presentation continues. Do not wait for
 the peer reviewer, vault capture, final presentation, or a separate cleanup
 approval, and do not leave completed panes visible as status markers. Close only
-the recorded reviewer blocks, never the instigating block.
+the recorded reviewer panes, never the instigating pane.

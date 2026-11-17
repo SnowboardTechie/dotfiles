@@ -93,7 +93,7 @@ rejected upstream rules live in
 - [`references/change-impact.md`](references/change-impact.md) — **open when** a
   change's safety rests on a claim about code you are not changing ("only this
   caller", "the library already handles it", "the wire format is unchanged"),
-  or a brief asserts something about existing code before you design against
+  or an assignment asserts something about existing code before you design against
   it. It decides which one or two facts to prove and how far to prove them.
 - [`references/project-recipe.md`](references/project-recipe.md) — **open when**
   the same project keeps needing its real app driven and nobody wrote down how

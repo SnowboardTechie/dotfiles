@@ -214,9 +214,9 @@ PY'
 # reaches the network: without the pin there, the journey fails and says why.
 # Sets GIT_UPSTREAM_ENV to pass to `drive`.
 mattpocock_upstream() {
-    local ledger="$REPO/dot-agents/upstreams/mattpocock-skills.json" url pin src
-    url="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["upstream"])' "$ledger")"
-    pin="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["commit"])' "$ledger")"
+    local source_record="$REPO/dot-agents/upstreams/mattpocock-skills.json" url pin src
+    url="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["upstream"])' "$source_record")"
+    pin="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["commit"])' "$source_record")"
     # Where the real reconciler keeps its checkout: ~/.local/share on current
     # main, ~/.pi/agent/upstreams before that. Read only.
     local candidates=("$HOME/.local/share/mattpocock-skills" "$HOME/.pi/agent/upstreams/mattpocock-skills") c

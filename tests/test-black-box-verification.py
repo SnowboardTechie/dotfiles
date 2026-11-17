@@ -18,12 +18,12 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-POOL = REPO_ROOT / "dot-agents" / "skills"
-SKILL_DIR = POOL / "black-box-verification"
+SKILL_POOL = REPO_ROOT / "dot-agents" / "skills"
+SKILL_DIR = SKILL_POOL / "black-box-verification"
 SKILL = SKILL_DIR / "SKILL.md"
 REFERENCES = ("change-impact.md", "project-recipe.md")
 UPSTREAMS = REPO_ROOT / "dot-agents" / "upstreams"
-LEDGER_PATH = UPSTREAMS / "pstack-claude.json"
+SOURCE_RECORD_PATH = UPSTREAMS / "pstack-claude.json"
 PINNED_COMMIT = "a12b04786023e762f12f5de7bb5fafb8c23f8c36"
 RECONCILER = REPO_ROOT / "scripts" / "reconcile-agent-skills.sh"
 CURATED_FOR = ("CLAUDE_SKILLS", "CODEX_SKILLS", "PI_SKILLS", "OPENCODE_SKILLS", "HERMES_SKILLS")
@@ -148,14 +148,14 @@ class ReferenceTest(unittest.TestCase):
 
 class RoutingTest(unittest.TestCase):
     def test_issue_plan_routes_unproven_cross_boundary_assumptions(self) -> None:
-        body = read(POOL / "issue-plan" / "SKILL.md")
+        body = read(SKILL_POOL / "issue-plan" / "SKILL.md")
         rows = [line for line in body.splitlines() if line.startswith("|") and "black-box-verification" in line]
         self.assertEqual(len(rows), 1, "issue-plan needs exactly one planning-table route")
         self.assertRegex(rows[0], r"(?i)boundary")
         self.assertRegex(rows[0], r"(?i)change-impact")
 
     def test_issue_work_routes_public_interface_behavior_conditionally(self) -> None:
-        body = read(POOL / "issue-work" / "SKILL.md")
+        body = read(SKILL_POOL / "issue-work" / "SKILL.md")
         route = paragraphs_naming(body, "`black-box-verification`")
         self.assertEqual(len(route), 1, "issue-work needs one routing paragraph")
         self.assertRegex(route[0], r"(?i)public-interface")
@@ -165,26 +165,26 @@ class RoutingTest(unittest.TestCase):
 class ProvenanceTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.ledger = json.loads(read(LEDGER_PATH))
+        cls.source_record = json.loads(read(SOURCE_RECORD_PATH))
 
     def test_pin_and_license(self) -> None:
-        self.assertEqual(self.ledger["upstream"], "https://github.com/michael-denyer/pstack-claude")
-        self.assertEqual(self.ledger["commit"], PINNED_COMMIT)
-        self.assertEqual(self.ledger["license"], "MIT")
-        license_text = read(UPSTREAMS / self.ledger["licenseFile"])
+        self.assertEqual(self.source_record["upstream"], "https://github.com/michael-denyer/pstack-claude")
+        self.assertEqual(self.source_record["commit"], PINNED_COMMIT)
+        self.assertEqual(self.source_record["license"], "MIT")
+        license_text = read(UPSTREAMS / self.source_record["licenseFile"])
         self.assertIn("MIT License", license_text)
         self.assertIn("Lauren Tan", license_text)
         self.assertIn("Michael Denyer", license_text)
 
     def test_update_policy_is_reviewed_and_watched(self) -> None:
         # The pin moves only as a reviewed change; a pi-bots scheduled job reports when upstream has moved on.
-        policy = self.ledger["updatePolicy"]
+        policy = self.source_record["updatePolicy"]
         self.assertIs(policy["autoApply"], False)
         self.assertIs(policy["humanApprovedPinAdvance"], True)
         self.assertEqual(policy["monitor"], "pi-bots job adapted-skill-watch")
 
     def test_adaptation_maps_both_upstream_skills(self) -> None:
-        (entry,) = self.ledger["adaptations"]
+        (entry,) = self.source_record["adaptations"]
         self.assertEqual(entry["skill"], "black-box-verification")
         upstream = " ".join(entry["upstreamPaths"])
         self.assertIn("skills/blast-radius/", upstream)
@@ -198,12 +198,12 @@ class ProvenanceTest(unittest.TestCase):
                 self.assertTrue(entry[key])
 
     def test_rejected_rules_cover_fan_out_autonomy_and_shipping(self) -> None:
-        rejected = " ".join(self.ledger["adaptations"][0]["rejectedUpstreamRules"]).lower()
+        rejected = " ".join(self.source_record["adaptations"][0]["rejectedUpstreamRules"]).lower()
         for term in ("fan-out", "autonomy", "shipping"):
             with self.subTest(term=term):
                 self.assertIn(term, rejected)
 
-    def test_skill_points_at_the_ledger(self) -> None:
+    def test_skill_points_at_the_source_record(self) -> None:
         self.assertIn("upstreams/pstack-claude.json", read(SKILL))
 
 

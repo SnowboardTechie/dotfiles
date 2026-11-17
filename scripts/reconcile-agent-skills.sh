@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# reconcile-agent-skills.sh — link the curated personal agent-skill pool
+# reconcile-agent-skills.sh — link the curated skills from the personal skill pool
 # (dot-agents/skills/) into each harness's skills directory.
 #
 # The *_SKILLS arrays below are the single canonical curation source.
 # dot-agents/README.md documents the rationale; it does not duplicate the lists.
 #
 # Ownership rules (extracted unchanged from setup-platform-configs.sh):
-#   - create or refresh links for curated pool skills
-#   - prune only symlinks that resolve into the pool and are no longer curated
+#   - create or refresh links for curated skills in the skill pool
+#   - prune only symlinks that resolve into the skill pool and are no longer curated
 #   - preserve real directories, regular files, foreign and broken symlinks
 #
 # Requires only Bash plus the utilities the legacy setup script already used
@@ -24,11 +24,11 @@ Usage: reconcile-agent-skills.sh (--check | --apply)
 
   --check   Report the per-harness operations that --apply would perform.
             Never mutates the filesystem.
-  --apply   Create/refresh curated skill links and prune stale pool-owned
+  --apply   Create/refresh curated skill links and prune stale skill pool
             links. Never touches real files, real directories, or symlinks
             that do not resolve into this repository's skill pool.
 
-  RECONCILE_OPENCODE_SKILLS=0 retires only pool-owned OpenCode skill links
+  RECONCILE_OPENCODE_SKILLS=0 retires only OpenCode links into the skill pool
             on hosts that no longer run OpenCode; other harnesses are unchanged.
   RECONCILE_HERMES_SKILLS=0 skips Hermes entirely: no links are created or
             pruned in ~/.hermes/skills/personal.
@@ -55,7 +55,7 @@ resolve_path() {
     perl -MCwd -le 'print Cwd::abs_path($ARGV[0])' "$1"
 }
 
-# Retired pool skills. Their source directories no longer exist, so links to
+# Skills retired from the skill pool. Their source directories no longer exist, so links to
 # them are dangling — and `Cwd::abs_path` returns EMPTY for a dangling link whose
 # *parent* component is also missing, which would classify them as "foreign" and
 # preserve them forever. Match the raw `readlink` target instead: it needs no
@@ -70,17 +70,17 @@ resolve_path() {
 # Matt Pocock's retired the same day in favour of his own (`grilling`,
 # `wayfinder`, `tdd`, `diagnosing-bugs`, `codebase-architecture` for his
 # `codebase-design` and `improve-codebase-architecture`, `guided-learning` for
-# his `teach`). His skills never come from the pool:
+# his `teach`). His skills never come from the skill pool:
 # scripts/reconcile-mattpocock-skills.sh links them into Claude Code and
 # OpenCode and lists them in Pi's settings.
-RETIRED_POOL_TARGETS=(agent-workspace git-master vault-capture apple-notes-pkm code-review
+RETIRED_SKILL_POOL_TARGETS=(agent-workspace git-master vault-capture apple-notes-pkm code-review
     grilling wayfinder tdd diagnosing-bugs codebase-architecture guided-learning)
 
-is_legacy_pool_link() { # <link-path> -> 0 when it names a retired pool skill
+is_retired_skill_pool_link() { # <link-path> -> 0 when it names a skill retired from the skill pool
     local raw legacy
     raw="$(readlink "$1" 2>/dev/null || true)"
     [[ -n "$raw" ]] || return 1
-    for legacy in "${RETIRED_POOL_TARGETS[@]}"; do
+    for legacy in "${RETIRED_SKILL_POOL_TARGETS[@]}"; do
         if [[ "$raw" == "$SKILLS_SRC/$legacy" ]]; then
             return 0
         fi
@@ -116,7 +116,7 @@ NON_CLAUDE_COMMON=(skill-retrospective obsidian)
 # Matt Pocock's promoted skills (his `grilling`, `wayfinder`, `tdd`,
 # `code-review` and the rest) are not in these lists: one checkout of his
 # repository serves every harness through scripts/reconcile-mattpocock-skills.sh.
-# No pool skill may share a name with one of his. Reviewing other people's PRs
+# No skill in the skill pool may share a name with one of his. Reviewing other people's PRs
 # is `teammate-pr-review` (in COMMON_SKILLS), which loads his `code-review`.
 
 # Pi is becoming the primary harness (dotfiles-workspace#34), so it grows past
@@ -141,7 +141,7 @@ PI_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}" next-session
 # ~/.codex/skills/.system directory. Share the portable coding/planning core;
 # leave Hermes-specific orchestration and specialist workflows opt-in.
 # Pi reads ~/.agents/skills too, and from `~` a copy there beats Matt Pocock's
-# skill of the same name, which is one more reason no pool skill takes one of
+# skill of the same name, which is one more reason no skill in the skill pool takes one of
 # his names.
 CODEX_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
     manual-merge issue-create issue-plan issue-work loop-issue
@@ -161,7 +161,7 @@ OPENCODE_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
     voice-bryan gamedev)
 
 # Hermes keeps its bundled/local obsidian and vault-pkm implementations. Personal
-# skills live in a dedicated category so the shared pool remains canonical while
+# skills live in a dedicated category so the skill pool remains canonical while
 # Hermes's curator and bundled-skill lifecycle stay separate. Personal knowledge
 # is ~/second-brain, reached through Hermes's own vault-pkm.
 # `rex` is Hermes-only: Rex's own `rex skill setup` already covers Claude, Codex,
@@ -202,7 +202,7 @@ reconcile_tool() {
     echo ""
     echo "$label ($dest):"
 
-    # Replace known whole-directory layouts from before the per-skill pool.
+    # Replace known whole-directory layouts from before the per-skill links into the skill pool.
     # A foreign destination symlink may be independently managed.
     if [[ -L "$dest" ]]; then
         tgt="$(resolve_path "$dest")"
@@ -227,7 +227,7 @@ reconcile_tool() {
         mkdir -p "$dest"
     fi
 
-    # Scan pass: prune stale pool-owned links, report foreign links that are
+    # Scan pass: prune stale skill pool links, report foreign links that are
     # preserved, count unmanaged real entries. Skipped when the destination
     # does not exist yet (or is a legacy link that check mode leaves in place).
     if [[ $fresh -eq 0 || "$MODE" == "apply" ]]; then
@@ -245,7 +245,7 @@ reconcile_tool() {
                 case "$tgt" in
                     "$SKILLS_SRC"/*)
                         if [[ $keep -eq 0 ]]; then
-                            op "prune stale pool link" "$name"
+                            op "prune stale skill pool link" "$name"
                             if [[ "$MODE" == "apply" ]]; then
                                 rm "$existing"
                             fi
@@ -253,10 +253,10 @@ reconcile_tool() {
                         fi
                         ;;
                     *)
-                        if [[ $keep -eq 0 ]] && is_legacy_pool_link "$existing"; then
-                            # A dangling link to a retired pool skill. Resolution
+                        if [[ $keep -eq 0 ]] && is_retired_skill_pool_link "$existing"; then
+                            # A dangling link to a skill retired from the skill pool. Resolution
                             # cannot see through it, so the raw target decides.
-                            op "prune retired pool link" "$name"
+                            op "prune retired skill pool link" "$name"
                             if [[ "$MODE" == "apply" ]]; then
                                 rm "$existing"
                             fi
@@ -282,10 +282,10 @@ reconcile_tool() {
         done
     fi
 
-    # Link pass: create or refresh curated links owned by the pool.
+    # Link pass: create or refresh curated links owned by the skill pool.
     for name in "${wanted[@]+"${wanted[@]}"}"; do
         if [[ ! -d "$SKILLS_SRC/$name" ]]; then
-            echo "  WARNING: skill '$name' not in pool, skipping"
+            echo "  WARNING: skill '$name' not in the skill pool, skipping"
             n_missing=$((n_missing + 1))
             continue
         fi
@@ -301,7 +301,7 @@ reconcile_tool() {
             else
                 case "$tgt" in
                     "$SKILLS_SRC"/*)
-                        op "refresh pool link" "$name"
+                        op "refresh skill pool link" "$name"
                         if [[ "$MODE" == "apply" ]]; then
                             ln -sfn "$SKILLS_SRC/$name" "$dest/$name"
                         fi

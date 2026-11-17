@@ -66,7 +66,7 @@ target-project vault.
    prove one vault, require an explicit vault path. Never create or guess a
    vault.
 6. Require non-empty injected `REX_SESSION` and `REX_BLOCK`, a runnable `rex`
-   binary, and `rex whoami --json` naming that same session and block. Do this
+   binary, and `rex whoami --json` naming that same session and pane. Do this
    before starting either reviewer.
 7. Fix the GPT route. From a Hermes root, capture the instigating session's
    active GPT model, provider, base URL, and high-reasoning route, and reject any
@@ -144,8 +144,8 @@ and evidence set.
 
 Follow the [dual Rex layout](references/rex-dual-review-layout.md): start Claude,
 then GPT, one at a time in the instigating session's "Background Agents" tab, never
-beside the instigating block, without taking focus. Persist both
-block/label/harness-session/worktree/state identities as each start returns.
+beside the instigating pane, without taking focus. Persist both
+pane/label/harness-session/worktree/state identities as each start returns.
 
 Pass both reviewers the same candidate and manifest identity plus the same
 [reviewer-orchestrator contract](references/reviewer-orchestrator-contract.md).
@@ -178,7 +178,7 @@ adjudication. Do not issue a verdict until both settle.
 
 For each model-family report:
 
-1. Re-read the Rex block identity and compare surface, name, pane, kind, harness
+1. Re-read the Rex pane identity and compare surface, name, pane, kind, harness
    session, launch route, worktree identity, and state root.
 2. Recompute the reviewer worktree branch, clean tracked/untracked status, all
    candidate fields, expected PR head ref, evidence files, and manifest hash.

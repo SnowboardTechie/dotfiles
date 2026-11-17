@@ -8,7 +8,7 @@ Reads `rex window ls -s SESSION --json` on stdin and prints one JSON object:
 
 Background agents live in the caller's "Background Agents" tabs ("<caller tab label> Background Agents",
 then "... Background Agents 2", "... 3"), at most four per tab, as a 2x2 grid. The
-first background agent is the tab's own root block (the tab is created with the
+first background agent is the tab's own root pane (the tab is created with the
 background agent's command, so no empty shell is left in it). Each later one splits the largest
 pane: right when the pane is at least as wide as it is tall, otherwise below.
 That gives 1 -> full tab, 2 -> side by side, 3 -> left column split,
@@ -50,7 +50,7 @@ def choose(listing: dict[str, Any], caller_block: str) -> dict[str, Any]:
         None,
     )
     if caller is None:
-        raise SystemExit(f"caller block {caller_block} is in no window of this session")
+        raise SystemExit(f"caller pane {caller_block} is in no tab of this session")
     base = f"{caller['label']} Background Agents"
     pattern = re.compile(rf"^{re.escape(base)}(?: (\d+))?$")
 
@@ -88,7 +88,7 @@ def choose(listing: dict[str, Any], caller_block: str) -> dict[str, Any]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Choose where the next visible background agent opens in Rex.")
-    parser.add_argument("--caller-block", required=True, help="the orchestrator's own block ($REX_BLOCK)")
+    parser.add_argument("--caller-block", required=True, help="the orchestrator's own pane ID ($REX_BLOCK)")
     args = parser.parse_args()
     print(json.dumps(choose(json.load(sys.stdin), args.caller_block)))
 

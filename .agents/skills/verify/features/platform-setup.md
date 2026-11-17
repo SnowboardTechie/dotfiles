@@ -13,7 +13,7 @@ has no flags: every run applies.
   `launchctl bootstrap`; Pi's `anthropic` default becomes `claude-code`; an older `pi-web-access` pin is replaced and a
   package with a similar name is kept; a retired Hindsight hook and context-mode plugin leave Claude's settings while
   Bryan's hook, plugin and model stay; Matt Pocock's checkout is at the pin in `~/.local/share/mattpocock-skills`,
-  his `grilling` is linked into `~/.claude/skills` and `~/.config/opencode/skills` after the old dangling pool
+  his `grilling` is linked into `~/.claude/skills` and `~/.config/opencode/skills` after the old dangling skill pool
   `grilling` link is pruned, and Bryan's own `~/.claude/skills/tdd` link on one of his names is kept; Hermes's
   Studio-only step skips; no `stow`, `sudo` or `brew`.
 - `second-run`: no path changes, launchd is not bootstrapped again, nothing is installed.

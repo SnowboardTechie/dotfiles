@@ -929,7 +929,7 @@ class StrictStatusParsingTest(unittest.TestCase):
         self.assertIn("unusable name-status inventory", err.getvalue())
 
     def test_documented_commands_preserve_the_load_bearing_flags(self) -> None:
-        """Orchestrators pin SHAs, but none may weaken the Git inventory flags."""
+        """Orchestrators fix a review on exact SHAs, but none may weaken the Git inventory flags."""
         command = LANES.NAME_STATUS_COMMAND
         self.assertEqual(
             command,

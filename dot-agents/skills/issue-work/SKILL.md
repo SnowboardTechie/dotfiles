@@ -262,7 +262,7 @@ into `{TICKET_STATE_DIR}/plan.md`. Include:
 Do not invent file paths, APIs, commands, or counts. For an approved vault plan,
 the derived plan may add executor detail but cannot supersede intent.
 
-When the orchestrator settles an issue's open mechanism question in the brief,
+When the orchestrator settles an issue's open mechanism question in the assignment,
 trace the failure path to what the user actually receives.
 
 - A validation failure usually retries as a fresh attempt with no feedback, and
@@ -357,9 +357,9 @@ For an explicit Qwen route, use its original model-pure background agent and ses
 harness-native implementation route requires Bryan's explicit selection; it is not
 a fallback when the background agent is unavailable. The orchestrator runs existing checks and independently
 accepts results, but sends required code, fixture, harness and tooling repairs
-back through a bounded background agent contract under the current authority.
+back through a bounded background agent assignment under the current authority.
 
-Complete when the authorized implementation owner has produced a candidate and
+Complete when the authorized implementation owner has produced the changes and
 settled; background agent settlement alone is not acceptance or delivery.
 
 ### 3. Inspect, test, and batch correction
@@ -378,13 +378,13 @@ When the change is to a model's instructions (a skill, prompt or result schema)
 and the issue names the real case that motivated it, acceptance is one rerun of
 that case through the real model on the current build, with scratch state and
 every outward write (posting, comments, notices) disabled. Put the rerun in the
-background agent's contract or correction. A test that pins the instruction text proves
+background agent's assignment or correction. A test that pins the instruction text proves
 only the text. Report the rerun's output against each criterion, and name how
 its conditions differed from the original run (missing tokens or tools, the
 upstream's state having moved), since those can explain a better result.
 
 If targeted checks find blockers that prevent a candidate commit, write one
-consolidated correction contract and resume the same background agent. This consumes the
+consolidated correction and resume the same background agent. This consumes the
 workflow's normal correction: require the global `correction_passes` counter to
 be `0`, increment it to `1` before submission, and preserve that value even when
 the turn fails after input is accepted. For visible Pi/Claude/Hermes, follow the
@@ -398,7 +398,7 @@ opening an extra pre-review turn. No Phase 3 correction has a separate allowance
 Do not conduct a separate pre-commit reviewer fan-out here. Phase 4 is the one
 independent acceptance loop.
 
-Complete when the candidate passes targeted checks or has a recorded blocker.
+Complete when the changes pass targeted checks or have a recorded blocker.
 
 ### 4. Reconcile planning sources
 
@@ -681,8 +681,8 @@ weaker review, or fabricated completion claim.
    fresh final reviewer found the Python SDK failure on GitHub.)
 5. Running full CI after every correction. The full gate runs **once per PR**, on the final reviewed head, right
    before merge (Bryan, 2026-11-07: "it was always supposed to be just one gate run at the end"; a gate takes 20+
-   minutes). Don't start it on the first candidate beside the final review, or again after each correction: the
-   review and corrections use the background agent's targeted checks, and the contract's checks must already include every
+   minutes). Don't start it on the first changes beside the final review, or again after each correction: the
+   review and corrections use the background agent's targeted checks, and the assignment's checks must already include every
    suite the change can break (for SGG grant builders, `packages/foundation/test`), so the one gate rarely fails.
    On #243 slice 3 the orchestrator ran 11 gates for 4 PRs. For a small PR in durable-pi-workspace (Bryan,
    2026-11-07): one review, Minor findings recorded in the PR body rather than corrected in another round, a
@@ -718,7 +718,7 @@ weaker review, or fabricated completion claim.
     its final gate so the gate judges what lands.
 13. Leaving a background agent's whole-slice contract shapes implicit when later PRs build
     on it in parallel. Have the first PR's completion report list the config, record and
-    API shapes, and point the parallel contracts at that list; any change to a
+    API shapes, and point the parallel assignments at that list; any change to a
     shape is then additive and named in the later completion report.
 
 ## Verification Checklist

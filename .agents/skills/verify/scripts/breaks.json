@@ -18,10 +18,10 @@
  {
   "journey": "agent-skills",
   "file": "scripts/reconcile-agent-skills.sh",
-  "break": "a dangling pool link is kept instead of pruned",
-  "old": "                    \"$SKILLS_SRC\"/*)\n                        if [[ $keep -eq 0 ]]; then\n                            op \"prune stale pool link\" \"$name\"",
-  "new": "                    \"$SKILLS_SRC\"/*)\n                        if [[ $keep -eq 0 && -e \"$existing\" ]]; then\n                            op \"prune stale pool link\" \"$name\"",
-  "fails_at": "dangling links to retired pool skills (vault-capture, grilling, guided-learning) are pruned"
+  "break": "a dangling skill pool link is kept instead of pruned",
+  "old": "                    \"$SKILLS_SRC\"/*)\n                        if [[ $keep -eq 0 ]]; then\n                            op \"prune stale skill pool link\" \"$name\"",
+  "new": "                    \"$SKILLS_SRC\"/*)\n                        if [[ $keep -eq 0 && -e \"$existing\" ]]; then\n                            op \"prune stale skill pool link\" \"$name\"",
+  "fails_at": "dangling links to skills retired from the skill pool (vault-capture, grilling, guided-learning) are pruned"
  },
  {
   "journey": "agent-skills",
@@ -42,15 +42,15 @@
  {
   "journey": "agent-skills",
   "file": "scripts/reconcile-agent-skills.sh",
-  "break": "a pool link no longer curated is kept, not pruned",
-  "old": "                            op \"prune stale pool link\" \"$name\"\n                            if [[ \"$MODE\" == \"apply\" ]]; then\n                                rm \"$existing\"",
-  "new": "                            op \"prune stale pool link\" \"$name\"\n                            if false; then\n                                rm \"$existing\"",
-  "fails_at": "an uncurated pool link is pruned"
+  "break": "a skill pool link no longer curated is kept, not pruned",
+  "old": "                            op \"prune stale skill pool link\" \"$name\"\n                            if [[ \"$MODE\" == \"apply\" ]]; then\n                                rm \"$existing\"",
+  "new": "                            op \"prune stale skill pool link\" \"$name\"\n                            if false; then\n                                rm \"$existing\"",
+  "fails_at": "an uncurated skill pool link is pruned"
  },
  {
   "journey": "agent-skills",
   "file": "scripts/reconcile-agent-skills.sh",
-  "break": "a real directory on a curated name is deleted and replaced by the pool link",
+  "break": "a real directory on a curated name is deleted and replaced by the skill pool link",
   "old": "            echo \"  WARNING: $label/$name exists and is not a symlink; preserved, not linked\"",
   "new": "            [[ \"$MODE\" == apply && -d \"$dest/$name\" ]] && { rm -rf \"$dest/$name\"; ln -sfn \"$SKILLS_SRC/$name\" \"$dest/$name\"; }",
   "fails_at": "a real directory on a curated name is kept with its content"
@@ -58,7 +58,7 @@
  {
   "journey": "agent-skills",
   "file": "scripts/reconcile-agent-skills.sh",
-  "break": "a regular file on a curated name is deleted and replaced by the pool link",
+  "break": "a regular file on a curated name is deleted and replaced by the skill pool link",
   "old": "            echo \"  WARNING: $label/$name exists and is not a symlink; preserved, not linked\"",
   "new": "            [[ \"$MODE\" == apply && -f \"$dest/$name\" ]] && { rm -f \"$dest/$name\"; ln -sfn \"$SKILLS_SRC/$name\" \"$dest/$name\"; }",
   "fails_at": "a regular file on a curated name is kept with its content"

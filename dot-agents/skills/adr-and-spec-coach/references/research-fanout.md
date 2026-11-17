@@ -15,7 +15,7 @@ load-bearing items need evidence the author does not already have.
 - Give every background agent the same **consumer story** so trade-offs are judged from the
   adopter's side, not the implementer's.
 
-## Shared background block (repeat verbatim in every background agent's brief)
+## Shared background block (repeat verbatim in every background agent's assignment)
 
 Background agents know nothing about the conversation. Include:
 

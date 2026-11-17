@@ -149,8 +149,8 @@ Harness mapping is explicit:
 |---|---|---|---|
 | Generic task-plan authoring | none — draft directly to the Phase 3 contract | installed `plan` | none — draft directly to the Phase 3 contract |
 | DX target exploration | installed `dx-target` | installed `dx-target` | use `dx-target` only when installed; otherwise stop and hand the session to Pi or Claude Code, which have it |
-| Decision coaching | Matt Pocock's `grilling` | none since the local `grilling` retired: hand the session to Pi, or use pooled `adr-and-spec-coach` if Bryan asks | Matt Pocock's `grilling` |
-| Spec conformance | pooled `conforming-tech-specs` through `~/.agents/skills` | installed `conforming-tech-specs` | installed pooled `conforming-tech-specs` |
+| Decision coaching | Matt Pocock's `grilling` | none since the local `grilling` retired: hand the session to Pi, or use `adr-and-spec-coach` from the skill pool if Bryan asks | Matt Pocock's `grilling` |
+| Spec conformance | `conforming-tech-specs` from the skill pool through `~/.agents/skills` | installed `conforming-tech-specs` | installed `conforming-tech-specs` from the skill pool |
 
 Do not silently replace a missing specialized workflow with generic drafting.
 

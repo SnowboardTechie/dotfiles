@@ -2,7 +2,7 @@
 # Tests for scripts/reconcile-mattpocock-skills.sh: the shared checkout, Pi's
 # settings and the Claude Code and OpenCode links. Uses a stub `pi`, a local
 # stand-in git repository for upstream and a copy of the script beside its own
-# ledger, all under one temporary directory removed on exit. No network.
+# source record, all under one temporary directory removed on exit. No network.
 
 set -u
 
@@ -37,14 +37,14 @@ echo "more" >>"$UP/skills/engineering/tdd/SKILL.md"
 gitc commit --quiet -am two
 C2="$(git -C "$UP" rev-parse HEAD)"
 
-# The script reads its ledger relative to itself, so give it a copy whose pin
+# The script reads its source record relative to itself, so give it a copy whose pin
 # and upstream the tests control.
 SCRIPTS="$TMP/repo/scripts"
-LEDGER="$TMP/repo/dot-agents/upstreams/mattpocock-skills.json"
-mkdir -p "$SCRIPTS" "${LEDGER%/*}"
+SOURCE_RECORD="$TMP/repo/dot-agents/upstreams/mattpocock-skills.json"
+mkdir -p "$SCRIPTS" "${SOURCE_RECORD%/*}"
 cp "$REPO_ROOT/scripts/reconcile-mattpocock-skills.sh" "$SCRIPTS/"
 pin() { # <commit>
-    python3 - "$REPO_ROOT/dot-agents/upstreams/mattpocock-skills.json" "$LEDGER" "$UP" "$1" <<'PY'
+    python3 - "$REPO_ROOT/dot-agents/upstreams/mattpocock-skills.json" "$SOURCE_RECORD" "$UP" "$1" <<'PY'
 import json, sys
 src, dst, up, commit = sys.argv[1:]
 d = json.load(open(src))
@@ -70,9 +70,9 @@ snapshot() { # <home>: every path and content hash under it
      find . -type f -print0 | LC_ALL=C sort -z | xargs -0 cat 2>/dev/null | shasum)
 }
 
-check "real ledger pin is a full SHA" "yes" \
+check "real source record pin is a full SHA" "yes" \
     "$(yn grep -qE '"commit": "[0-9a-f]{40}"' "$REPO_ROOT/dot-agents/upstreams/mattpocock-skills.json")"
-check "the pin lives only in the ledger" "no" \
+check "the pin lives only in the source record" "no" \
     "$(yn grep -qE '[0-9a-f]{40}' "$REPO_ROOT/scripts/reconcile-mattpocock-skills.sh")"
 
 # More upstream history: C3 changes teach; C4 drops teach and promotes zoom-out.
@@ -334,10 +334,10 @@ out="$(run "$H" "$TMP/bin" --apply)"
 check "no colliding copy: apply prints no warning" "no" "$(yn grep -q WARNING <<<"$out")"
 out="$(run "$H" "$TMP/bin" --check)"
 check "no colliding copy: check prints no warning" "no" "$(yn grep -q WARNING <<<"$out")"
-mkdir -p "$H/.agents/skills/tdd" "$H/.pi/agent/skills" "$H/pool/teach" "$H/.agents/skills/misc-x"
+mkdir -p "$H/.agents/skills/tdd" "$H/.pi/agent/skills" "$H/skill-pool/teach" "$H/.agents/skills/misc-x"
 echo local >"$H/.agents/skills/tdd/SKILL.md"
-ln -s "$H/pool/teach" "$H/.pi/agent/skills/teach"
-ln -s "$H/pool/x" "$H/.agents/skills/x"   # unpromoted upstream name, and dangling
+ln -s "$H/skill-pool/teach" "$H/.pi/agent/skills/teach"
+ln -s "$H/skill-pool/x" "$H/.agents/skills/x"   # unpromoted upstream name, and dangling
 out="$(run "$H" "$TMP/bin" --check)"; rc=$?
 check "colliding copy: check exits 0" "0" "$rc"
 check "colliding copy: check warns about ~/.agents/skills" "yes" \
@@ -382,7 +382,7 @@ check "setup-omarchy registers reconciler after pi-packages" "yes" \
     "$(yn bash -c 'grep -A1 -F "reconcile-pi-packages.sh\"" "$1" | grep -qF reconcile-mattpocock-skills.sh' _ "$REPO_ROOT/scripts/setup-omarchy.sh")"
 check "setup-platform-configs runs reconciler" "yes" \
     "$(yn grep -qF 'reconcile-mattpocock-skills.sh" --apply' "$REPO_ROOT/setup-platform-configs.sh")"
-check "setup-platform-configs runs it after the pool reconciler" "yes" \
+check "setup-platform-configs runs it after the skill pool's reconciler" "yes" \
     "$(yn python3 -c 'import sys; t=open(sys.argv[1]).read(); sys.exit(0 if t.index("reconcile-agent-skills.sh\" --apply") < t.index("reconcile-mattpocock-skills.sh\" --apply") else 1)' "$REPO_ROOT/setup-platform-configs.sh")"
 
 echo "$TESTS tests, $FAILURES failures"

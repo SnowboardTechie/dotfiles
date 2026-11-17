@@ -133,7 +133,7 @@ else
     fi
 fi
 
-# Agent skills — shared pool in dot-agents/skills, curated per tool.
+# Agent skills — the skill pool in dot-agents/skills, curated per harness.
 # Curation arrays and ownership logic live in scripts/reconcile-agent-skills.sh.
 echo ""
 echo "Setting up agent skills..."
@@ -167,7 +167,7 @@ echo ""
 "$REPO_ROOT/scripts/reconcile-pi-packages.sh" --apply || \
     echo "  (Pi packages incomplete; resolve the reported problem and re-run)"
 
-# Matt Pocock's skills, from one checkout at the ledger's pin: listed in Pi's
+# Matt Pocock's skills, from one checkout at its source record's pin: listed in Pi's
 # settings, linked into Claude Code and OpenCode (not OpenCode on Gnarbox).
 echo ""
 if [[ "$GNARBOX_PROFILE" == true ]]; then

@@ -49,7 +49,7 @@ problem rather than handing off anyway.
 
 > **Tripwire: this handoff-only route cannot send the background agent another turn,
 > read its pane, answer it, or close it, or review, correct, or accept
-> the candidate. Retain only the status watch and read its durable completion report
+> the changes. Retain only the status watch and read its durable completion report
 > artifact to communicate the result; neither grants acceptance authority.**
 
 Three engagement modes exist, and they never mix:
@@ -64,7 +64,7 @@ Three engagement modes exist, and they never mix:
 
 In explicit status-only and fire-and-forget modes this session does not read the
 background agent pane, answer questions, judge the diff, or close the pane. Require a
-durable completion report path in the governing artifact: candidate identity, actual
+durable completion report path in the governing artifact: the identity of the changes, actual
 checks/results, unfinished work, blockers, approval requests in dependency order,
 and next acceptance owner. After a status-only turn settles, read that completion report
 (not the pane) and report its substantive outcome, labeling background agent claims as
@@ -177,7 +177,7 @@ not `.agent-work/` (or legacy `.hermes/`). It is a disposable pointer with no
 independent content, so a vault copy would be exactly the second copy the
 pointer contract forbids.
 
-The procedure lives in the dotfiles repo and is reached by its pool path,
+The procedure lives in the dotfiles repo and is reached by its skill pool path,
 because `coding-agent-handoff-supervision` is not curated into every harness's
 skills directory. Start the background agent exactly as the "Start" section of
 `dot-agents/skills/coding-agent-handoff-supervision/references/rex-claude-handoff.md`
@@ -231,7 +231,7 @@ Three distinct states; never collapse them:
 2. **Background agent's turn settled** — the status-only watch reported a terminal
    status. Say "the background agent's turn is done" (or blocked/failed), never "done":
    the qualifier is mandatory, because this is not evidence that tests passed, a
-   commit exists, or the candidate is correct.
+   commit exists, or the changes are correct.
 3. **Candidate independently accepted** — a separate, later invocation reviewed
    and accepted it. This skill never reaches this state.
 

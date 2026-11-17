@@ -21,7 +21,7 @@
 #
 # Why not `pi install git:...` or upstream's Claude Code plugin: a Pi package
 # also loads his unpromoted skills (in-progress/, misc/), and the plugin
-# namespaces every skill and moves its own pin. Here the ledger holds the one
+# namespaces every skill and moves its own pin. Here the source record holds the one
 # pin, which the pi-bots job mattpocock-skill-watch advances.
 #
 # In Pi his copy of a name wins once no copy of that name is in
@@ -68,7 +68,7 @@ if [[ -z "$MODE" ]]; then
 fi
 
 SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
-LEDGER="$SCRIPT_DIR/../dot-agents/upstreams/mattpocock-skills.json"
+SOURCE_RECORD="$SCRIPT_DIR/../dot-agents/upstreams/mattpocock-skills.json"
 SETTINGS="$HOME/.pi/agent/settings.json"
 CHECKOUT="$HOME/.local/share/mattpocock-skills"
 OLD_CHECKOUT="$HOME/.pi/agent/upstreams/mattpocock-skills"
@@ -88,13 +88,13 @@ done
 HAVE_PI=1
 command -v pi >/dev/null 2>&1 || HAVE_PI=0
 
-read_ledger() { # <key>
-    python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])' "$LEDGER" "$1"
+read_source_record() { # <key>
+    python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])' "$SOURCE_RECORD" "$1"
 }
-UPSTREAM="$(read_ledger upstream)"
-PIN="$(read_ledger commit)"
+UPSTREAM="$(read_source_record upstream)"
+PIN="$(read_source_record commit)"
 if [[ ! "$PIN" =~ ^[0-9a-f]{40}$ ]]; then
-    echo "  ERROR: pinned commit in $LEDGER is not a full SHA: $PIN" >&2
+    echo "  ERROR: pinned commit in $SOURCE_RECORD is not a full SHA: $PIN" >&2
     exit 1
 fi
 echo "  pin: $PIN"

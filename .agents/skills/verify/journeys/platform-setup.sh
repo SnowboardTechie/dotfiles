@@ -46,7 +46,7 @@ expect "Matt Pocock's checkout is at the pin" test "$(git -C "$M" rev-parse HEAD
 expect "his grilling is linked for Claude Code" test "$(readlink "$H/.claude/skills/grilling")" = "$M/skills/productivity/grilling"
 expect "his grilling is linked for OpenCode" test "$(readlink "$H/.config/opencode/skills/grilling")" = "$M/skills/productivity/grilling"
 expect "a foreign link on one of his names is kept" test "$(readlink "$H/.claude/skills/tdd")" = /opt/elsewhere/tdd
-expect "the old pool grilling link is pruned and his takes the name" has "$OUT" "pool link: grilling"
+expect "the old skill pool grilling link is pruned and his takes the name" has "$OUT" "skill pool link: grilling"
 P="$H/Library/LaunchAgents/com.snowboardtechie.rex-agent-sessions.plist"
 expect "the Rex watcher plist is written" test -f "$P"
 expect "the plist names this checkout and this home, no placeholders left" \

@@ -114,7 +114,7 @@ stow --ignore='dot-gnupg$' --ignore='dot-claude$' --ignore='opencode$' . --dotfi
 ```
 
 The setup script still links curated Claude/Hermes/Pi skills and retires
-pool-owned OpenCode skill links on Gnarbox; it does not deploy
+OpenCode links into the skill pool on Gnarbox; it does not deploy
 Studio's Mac-only Claude settings, start a second Hermes gateway, or copy
 credentials. `update-system` and `upgrade-system` detect `gnarbox` and use
 `nixos-rebuild`.

@@ -45,7 +45,7 @@ Preconditions:
   exactly `omarchy restart shell`; Pi's `packages` holds exactly the two pins from `reconcile-pi-packages.sh`; Pi's
   `extensions` is `["/opt/pi/mine.js"]`; the seeded
   `~/.pi/agent/AGENTS.md` still a file with its text; `background-agent-watch.ts` linked; `defaultProvider` `claude-code`; the
-  Matt Pocock checkout at `~/.local/share/mattpocock-skills` has `HEAD` at the ledger's pin and nothing is left under
+  Matt Pocock checkout at `~/.local/share/mattpocock-skills` has `HEAD` at its source record's pin and nothing is left under
   `~/.pi/agent/upstreams`; Pi's `skills` is exactly his `skills/engineering` and `skills/productivity` directories; his
   `tdd` is linked into both `~/.claude/skills` and `~/.config/opencode/skills`; `forgejo-map` linked; no `clipboard-bridge.service`; the
   `stow`, `sudo` and `systemctl` call logs are empty.

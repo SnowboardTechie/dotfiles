@@ -22,7 +22,7 @@ implementers, reviewers and requested read-only work alike; simple questions
 stay with the orchestrator unless Bryan asks for a background agent. Only Bryan's explicit
 selection changes the implementation role or harness (Claude or Hermes). The orchestrator owns scope,
 dependencies, handoffs, supervision, independent acceptance, authorized Git
-integration/publication, and live verification. A background agent produces a candidate,
+integration/publication, and live verification. A background agent produces changes,
 not an accepted deliverable.
 
 The workflow optimizes for one useful implementation turn and one bundled
@@ -45,7 +45,7 @@ or authorization to make a transport work.
 For a natural request such as "Have a worker take a look at the dotfiles README",
 resolve the project directory from established context; do not ask the user to
 supply internal task IDs or paths already known. For a bounded read-only review,
-the user's request is the brief authority: narrow the brief to inspection and
+the user's request is the assignment's authority: narrow the assignment to inspection and
 reporting, prohibit edits/publication, and start the background agent. Ask a question only
 when that changes the work or a required project/permission is genuinely unknown.
 Implementation still needs the governing ticket/approved plan and the role,
@@ -54,7 +54,7 @@ for either orchestrator and every role, is a visible Pi background agent on
 `claude-code/claude-opus-5-5` with medium thinking, its subscription following the
 worktree.
 Bryan's explicit harness selection overrides this
-policy. Do not expand a simple question into an audit: keep the brief and
+policy. Do not expand a simple question into an audit: keep the assignment and
 verification proportional to the requested answer.
 
 ## When to Use
@@ -66,7 +66,7 @@ Use for repository implementation of any size when all of these are true:
 - acceptance is observable through tests, probes, or exact readback;
 - edit and delivery permissions are explicit.
 
-Delegate a `single-loop` change too; right-size its brief and verification, not
+Delegate a `single-loop` change too; right-size its assignment and verification, not
 its implementation owner. For ticket work, use `issue-work`'s router with the
 standing Pi selection. Do not turn a fixture or tooling repair into orchestrator
 implementation by calling it verification.
@@ -83,13 +83,13 @@ installation, download, activation and other real safety gates without turning
 every mechanical prerequisite into a separate user decision.
 
 Require a durable completion report path in the governing plan/ticket. Before settling,
-the background agent writes candidate identity, changes, actual checks/results, unfinished
+the background agent writes the identity of its changes, the changes, actual checks/results, unfinished
 criteria, blockers, exact approval requests in dependency order, next owner, and
 one `Divergence:` line: how the result differs from the task as given (another
 approach, changed scope, a new agreement), or `Divergence: None`. Put that line
-in every contract's completion report list. Check it against the diff and the contract
+in every assignment's completion report list. Check it against the diff and the assignment
 rather than recording it; an unstated difference the diff shows is a finding.
-Read the report and the real candidate before reporting completion or answering what the background agent said. A lifecycle `done` event is not a completion report. If the report is
+Read the report and the real changes before reporting completion or answering what the background agent said. A lifecycle `done` event is not a completion report. If the report is
 absent, retrieve the final message by reading the recorded background agent's pane after
 checking its identity, or request the missing report from the same background agent
 within its capacity and turn boundary. Never substitute a runbook for an unread final message while
@@ -155,9 +155,9 @@ and continue under `issue-work`; do not return "done" at background agent settle
 pushed branch. Plan-only and prompt-only requests remain non-execution requests.
 
 A scope boundary stops applying an unapproved change, not ordinary investigation
-of its remedies. Before escalating a blocked candidate, inspect upstream fixes,
+of its remedies. Before escalating blocked work, inspect upstream fixes,
 compatibility requirements and the actual affected call paths; perform isolated
-probes when already authorized. Preserve the candidate and return a concrete,
+probes when already authorized. Preserve the changes and return a concrete,
 evidence-backed decision only where implementation would cross the boundary.
 Do not ask permission merely to investigate the next recovery step.
 
@@ -188,7 +188,7 @@ solely for transport; never replace durable authority with a large prompt.
 
 Complete when one verified ticket URL or approved plan path owns the outcome.
 
-### 2. Brief authority, not implementation
+### 2. Point at authority, not implementation
 
 The reachable artifact, not the prompt, is self-contained. The prompt contains
 only:
@@ -211,7 +211,7 @@ for them. In particular, "cover every existing call site" means apply the
 selected mechanism at every site, not exhaustively discover every latent
 behavior behind those calls unless the governing artifact explicitly requires
 conformance exhaustiveness. The orchestrator dispositions observations against the
-original contract before authorizing any correction.
+original assignment before authorizing any correction.
 
 Destructive and history-rewriting Git operations are absolute and not
 approval-eligible: forbid `git reset`, `git clean`, checkout-discard operations,
@@ -219,7 +219,7 @@ rebase, amend, every other history rewrite, force-push, delete or overwrite any
 local ref or branch, branch deletion, and update-ref deletion.
 
 Pi background agents are not approval-gated and not sandbox-confined: Pi runs every tool
-call, so a background agent's limits rest on its contract's prohibitions only. That fits
+call, so a background agent's limits rest on its assignment's prohibitions only. That fits
 work in Bryan's own repositories. When a task requires an approval gate or hard
 confinement, stop and ask Bryan; he may select a Claude background agent
 (`--permission-mode auto`) or a Hermes one (`approvals.mode: smart`, no
@@ -271,13 +271,13 @@ messages where content like '%<a unique phrase from this conversation>%')`); a
 with `REX_BLOCK` in its environment whose `ps -o lstart=` agrees within a
 second or two, and export that process's `REX_*` values. Only a gateway-sourced
 session (Matrix and similar) has no caller pane; see "Select the execution
-surface first". Check the transport before writing the contract so the blocker
-surfaces early; the worktree and contract stay useful for the resumed session.
+surface first". Check the transport before writing the assignment so the blocker
+surfaces early; the worktree and assignment stay useful for the resumed session.
 
 The background agent opens in the orchestrator's "<tab label> Background Agents" tab (then
 "... 2", "... 3"), at most four per tab in a 2x2 grid placed by
-`scripts/rex_background_agent_slot.py`, a new tab's root block being the background agent itself,
-never beside the orchestrator's own block. The background agent gets the prompt file as
+`scripts/rex_background_agent_slot.py`, a new tab's root pane being the background agent itself,
+never beside the orchestrator's own pane. The background agent gets the prompt file as
 its first turn and a fixed `--session-id`. The orchestrator does the checks by hand:
 identity record, the capacity gate (75% of a 5-hour window, 90% of a weekly one), one turn at a time, settlement from
 transcript plus completion report, close. Background `terminal` processes do not inherit
@@ -304,7 +304,7 @@ After the start, the orchestrator computes Git identity and records, once:
 - `background_agent_session_id`; and
 - `background_agent_worktree_identity`.
 
-Run the live capacity gate before the block is created. A Pi background agent on
+Run the live capacity gate before the pane is created. A Pi background agent on
 `claude-code/...` spends a Claude subscription, so the gate reads the subscription it uses:
 `CLAUDE_CONFIG_DIR` set to the background agent's `PI_CLAUDE_CODE_CONFIG_DIR`, unset for the
 work subscription. Any nonzero
@@ -335,14 +335,14 @@ worktree.
 
 ### 4. Submit one turn per background agent session
 
-Put the short brief in a state-root file. The first turn is that file, given to
+Put the one-line prompt in a state-root file. The first turn is that file, given to
 the background agent as its start argument; a later turn (a correction) is typed into the same
-block only after settlement, as the Rex reference's "A second turn" section
+pane only after settlement, as the Rex reference's "A second turn" section
 shows. Before every turn:
 
 1. confirm no turn is in flight in that background agent's session;
 2. perform a fresh provider-capacity check;
-3. check the recorded block still shows the recorded label and window; and
+3. check the recorded pane still shows the recorded label and tab; and
 4. send exactly one prompt.
 
 A command's exit status proves only that the keystrokes were sent, not that
@@ -376,7 +376,7 @@ timed out. Do not invent which actor resolved it.
 Wait on the completion report, not on a turn's end alone. A background agent turn can end while its
 own background test shell is still running and its completion report is unwritten.
 `scripts/rex_wait.sh` settles only when the transcript shows the turn ended
-*and* the contract's completion report section ends with its `Divergence:` line. Never
+*and* the assignment's completion report section ends with its `Divergence:` line. Never
 re-send a prompt to recover a completion signal.
 
 **Every background agent turn in flight has a watch, from the moment it starts until the
@@ -410,7 +410,7 @@ needed to validate the implementation. Then follow `pr-self-review`:
 
 - the orchestrator performs one integrated Standards, Spec, conditional Risk, and
   Ponytail review plus the acceptance-criteria sweep;
-- all validated blockers are batched into one correction contract;
+- all validated blockers are batched into one correction;
 - correction returns to this same background agent identity;
 - the orchestrator performs one complete rereview of the corrected candidate;
 - one conditional second correction is allowed only for a newly introduced or
@@ -422,7 +422,7 @@ deployment changes, add one targeted Risk reviewer only after the orchestrator g
 stabilized the candidate. A candidate change invalidates that targeted review;
 rerun it once against the corrected exact candidate.
 
-A correction contract the orchestrator writes is itself a candidate source of defects.
+A correction the orchestrator writes is itself a likely source of defects.
 Before sending it, trace every edge rule it settles (a default for "nothing
 recorded", "stay quiet when...", "fresh state on start") through the first live run
 after rollout. That first run is usually exactly the empty-history case, so a
@@ -446,10 +446,10 @@ final review is dispositioned. A closed pane forces the correction into a new
 session that lacks the implementation context.
 
 Close it with the Rex reference's "Close" steps: exit the background agent, close only the
-recorded block, confirm the block is gone, and then mark the identity closed/non-resumable.
+recorded pane, confirm the pane is gone, and then mark the identity closed/non-resumable.
 Do not ask for cleanup approval and never close the caller or an unrelated pane.
 
-Complete when the recorded block is absent.
+Complete when the recorded pane is absent.
 
 ## Running an unattended multi-workstream batch
 
@@ -464,15 +464,15 @@ batch), follow this shape:
   workstream. Independent workstreams all run in parallel. Bryan sets no cap on how many
   builders run at once (2026-10-23); only the capacity ceiling above limits
   dispatch. Don't hold a ready workstream because other builders are busy.
-- **The brief is a contract file.** Write it in the ticket state
+- **The assignment is a file.** Write it in the ticket state
   directory: authority links, settled open questions, required behaviour, tests,
   verify commands, permissions and completion report shape. The prompt is one line
   pointing at it. List the state directory first: an issue's directory outlives
-  its earlier workstreams, and its ignored `completion-report.md`, `contract.md` and identity
+  its earlier workstreams, and its ignored `completion-report.md`, `assignment.md` and identity
   files may be the only copies of that evidence. When it already holds them,
-  prefix every new file with the workstream name (`<workstream>-contract.md`,
-  `<workstream>-completion-report.md`, `<workstream>-background-agent-identity.json`), and make the contract
-  name that exact completion report path, because the background agent writes wherever the contract
+  prefix every new file with the workstream name (`<workstream>-assignment.md`,
+  `<workstream>-completion-report.md`, `<workstream>-background-agent-identity.json`), and make the assignment
+  name that exact completion report path, because the background agent writes wherever the assignment
   says. Watch every workstream as "Wait on the completion report" in step 4 says (Pi:
   `watch_background_agent`, one per workstream; Hermes: a background `rex_wait.sh` with
   `notify=true`), so each settlement wakes the orchestrator.
@@ -548,7 +548,7 @@ batch), follow this shape:
   until he decides instead of correcting twice.
 - **Predicted mutants are not results.** A read-only reviewer may be refused
   permission to execute tests and then only predict which test catches each
-  mutant. Put real mutant runs into the correction contract (or run them as the
+  mutant. Put real mutant runs into the correction (or run them as the
   orchestrator) before accepting, and name any mutant that survives today.
 - **Ask for what needs Bryan; don't park it in a list.** A "waiting for Bryan"
   line is not a question, and a gate with a deadline can sit in those lists
@@ -625,9 +625,9 @@ resume a visible Rex background agent's identity.
 1. Keeping small edits, fixture/harness repairs, or implementation tooling with the orchestrator to save background agent startup cost.
 2. Confusing per-session turn serialization with a global ban on concurrent background agent sessions.
 3. Making the prompt a second plan.
-4. Sending to a background agent without first checking that its block still matches the identity record.
+4. Sending to a background agent without first checking that its pane still matches the identity record.
 5. Treating background agent tests, idle status, or prose as orchestrator acceptance.
-6. Letting a adjacent defect a background agent discovered expand the ticket or candidate without a new user decision.
+6. Letting a adjacent defect a background agent discovered expand the ticket or the changes without a new user decision.
 7. Using "all call sites" as permission for an exhaustive domain audit rather than bounded application of the selected mechanism.
 8. Starting a fresh background agent for corrections instead of resuming the recorded one.
 9. Duplicating the orchestrator's pre-publication acceptance through a generic fresh reviewer.
@@ -654,7 +654,7 @@ resume a visible Rex background agent's identity.
 
 - [ ] A Pi background agent owns implementation regardless of task size; any alternate harness has Bryan's explicit selection
 - [ ] One verified ticket or approved plan governs the handoff
-- [ ] Brief contains locator, worktree, authority, and delivery permissions only
+- [ ] Prompt contains locator, worktree, authority, and delivery permissions only
 - [ ] Destructive/history-rewriting Git operations remain prohibited
 - [ ] Visible path uses a Rex "Background Agents" tab slot (max four, 2x2) per references/rex-claude-handoff.md, without stealing focus
 - [ ] The background agent command sets `PI_PROGRAM_STATUS=0` (Claude: `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`), so Rex raises no alerts for it
@@ -664,7 +664,7 @@ resume a visible Rex background agent's identity.
 - [ ] Delivery claims have acknowledgement evidence, not merely a background process handle
 - [ ] Every background agent turn in flight had a watch that wakes the orchestrator (Pi: `watch_background_agent`) until its completion report was read
 - [ ] Rejected or uncertain submissions were inspected and recovered without bypass or duplicate delivery
-- [ ] Orchestrator read a substantive completion report, dispositioned remaining gates in order, and tested the actual candidate
+- [ ] Orchestrator read a substantive completion report, dispositioned remaining gates in order, and tested the actual changes
 - [ ] One integrated orchestrator review and AC sweep completed
 - [ ] Corrections stayed within the one-plus-one bound
 - [ ] High-risk change received one targeted Risk review when required

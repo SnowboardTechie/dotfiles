@@ -30,7 +30,7 @@ a Worktrunk-managed worktree (`worktrunk`), not by switching the primary
 checkout. Record `base_sha`, `head_sha`, `merge_base_sha`, `diff_sha256`, and
 `expected_head_branch` as section 1 of
 [`../pr-self-review/references/review-contract.md`](../pr-self-review/references/review-contract.md)
-describes. Every link and inline anchor in the draft is pinned to that head.
+describes. Every link and inline anchor in the draft is fixed on that head.
 
 ## 2. Standards and Spec: Matt Pocock's `code-review`
 
@@ -63,7 +63,7 @@ Do not merge or rerank findings across passes.
 ## Human-facing review draft
 
 Include a clickable PR link and a source permalink for every file/line finding,
-pinned to the reviewed head. Verify the path and line or range against that
+fixed on the reviewed head. Verify the path and line or range against that
 candidate. Keep exact inline posting metadata alongside the link so the reader
 can both inspect the code and place the comment.
 
@@ -155,7 +155,7 @@ prescriptions before correction.
 
 ## Verification Checklist
 
-- [ ] PR head frozen and every link pinned to it
+- [ ] PR head frozen and every link fixed on it
 - [ ] Standards and Spec came from Matt Pocock's `code-review`
 - [ ] Risk classifier recorded; Risk ran when selected
 - [ ] Ponytail ran last and stayed narrow

@@ -3,7 +3,7 @@ name: verify
 description: Drive the dotfiles repository's setup scripts and reconcilers (setup-platform-configs.sh, scripts/setup-omarchy.sh, scripts/reconcile-*.sh, retire-agent-memory.py) the way a host runs them, --check then --apply then again, in a disposable HOME inside a macOS sandbox that can write nowhere else and reach no network, and keep evidence of every run. Use to prove a change to what setup links, appends, enables or keeps, or to see what a script would do to a home. Never touches the real HOME.
 ---
 
-# Verify the dotfiles setup scripts
+# Verify the dotfiles setup entry points and reconcilers
 
 What a user of this repository touches is its setup: `setup-platform-configs.sh` on a macOS or NixOS host after Stow,
 `scripts/setup-omarchy.sh --check|--apply` on Omarchy, and the `scripts/reconcile-*.sh` reconcilers both of them run.
@@ -79,7 +79,7 @@ on the closest of the five in `journeys/`. What it gets:
 | `stub <name> '<body>'` | A command in front of the real tools; `__CALLS__` in the body is its call log, kept outside the home |
 | `calls <home> <name>` | That stub's log for that home |
 | `stub_pi` | A `pi` that edits `packages` in `~/.pi/agent/settings.json` as `pi install`/`remove` do, and a no-op `claude` |
-| `mattpocock_upstream` | A local bare copy of Matt Pocock's skills repository at the ledger's pin (copied read-only from the real reconciler's checkout, `~/.local/share/mattpocock-skills` or the older `~/.pi/agent/upstreams/mattpocock-skills`, or `DOTFILES_VERIFY_MATTPOCOCK_SOURCE`; never fetched), and `GIT_UPSTREAM_ENV` to pass to `drive` so git's `insteadOf` uses it |
+| `mattpocock_upstream` | A local bare copy of Matt Pocock's skills repository at its source record's pin (copied read-only from the real reconciler's checkout, `~/.local/share/mattpocock-skills` or the older `~/.pi/agent/upstreams/mattpocock-skills`, or `DOTFILES_VERIFY_MATTPOCOCK_SOURCE`; never fetched), and `GIT_UPSTREAM_ENV` to pass to `drive` so git's `insteadOf` uses it |
 | `step <name>` | A heading in the log |
 
 The commands under test are the repository's own entry points with their own flags: `--check` and `--apply` for the
@@ -195,6 +195,6 @@ their evidence kept.
 
 ## Keeping it current
 
-The feature map in `features/` is the maintained list of what to verify. When a setup script changes, update the
+The feature map in `features/` is the maintained list of what to verify. When an entry point or a reconciler changes, update the
 matching feature file, journey and break in the same change. `/maintain-verification-skill` audits the map against
 the scripts.

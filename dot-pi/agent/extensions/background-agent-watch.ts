@@ -36,7 +36,7 @@ export function startsOrPromptsBackgroundAgent(command: string): boolean {
 }
 
 export const OUTCOMES: Record<number, string> = {
-	0: "settled: the turn ended and the completion report ends with its Divergence: line. Read the completion report and the candidate now.",
+	0: "settled: the turn ended and the completion report ends with its Divergence: line. Read the completion report and the changes now.",
 	1: "reached its cap without settling. Read the background agent's pane and decide; arm a new watch if it is still working.",
 	2: "the turn ended with no finished completion report for ten minutes: the background agent is asking something or stopped early. Read its pane.",
 	3: "the turn halted without ending (unanswered for eight minutes, often a safety-filter stop). Read its pane and send one short continuation.",
@@ -118,7 +118,7 @@ export default function (pi: ExtensionAPI, spawnWait: Spawn = (s, a) => spawn(s,
 			properties: {
 				label: { type: "string", description: "The background agent's name, as in its identity record." },
 				transcript: { type: "string", description: "The background agent's transcript path (background_agent_transcript in its identity record)." },
-				completion_report: { type: "string", description: "The completion report file its contract names." },
+				completion_report: { type: "string", description: "The completion report file its assignment names." },
 				marker: { type: "string", description: "For a correction or later turn: the new section's heading, such as \"Correction 1\"." },
 				cap_seconds: { type: "number", description: "Give up after this many seconds (default 14400, four hours)." },
 				release: { type: "boolean", description: "Stop watching this transcript: the background agent is closed, or settled and accepted." },

@@ -4,7 +4,7 @@
 
 Use this path only when Bryan explicitly requests background-only Claude work
 for the current run. It is not a fallback for an unavailable Rex route and
-cannot satisfy a persisted visible background-agent correction contract. Do not start it
+cannot satisfy a persisted visible background agent's correction assignment. Do not start it
 after a visible Rex background agent was successfully created.
 
 ## Dispatch a background agent
@@ -13,7 +13,7 @@ Use a positional prompt so Claude creates an attachable background session:
 
 ```sh
 claude --bg --permission-mode auto --model claude-opus-5-5 --effort medium \
-  --name "Short task name" "<concept brief>"
+  --name "Short task name" "<one-line prompt pointing at the assignment>"
 ```
 
 Do not combine `--bg` with `-p`. Preserve an explicitly requested model, effort,

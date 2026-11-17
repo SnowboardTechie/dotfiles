@@ -58,7 +58,7 @@ cross-repository work.
 
 Independence is about authorship, not process count:
 
-- When a Pi/Claude/Hermes/Qwen background agent wrote the candidate and the orchestrator (Pi or
+- When a Pi/Claude/Hermes/Qwen background agent wrote the changes and the orchestrator (Pi or
   Hermes) did not edit it, the orchestrator is the independent acceptance context and
   runs one integrated review directly.
 - When the active orchestrator wrote or changed candidate code, dispatch one fresh
@@ -288,7 +288,7 @@ must not reset it. Standalone modes initialize it to `0`.
 ### Normal correction
 
 This correction is available only when the counter is `0`. Batch every validated
-in-scope blocker into one self-contained correction contract, increment the
+in-scope blocker into one self-contained correction, increment the
 counter to `1` before submitting accepted input, and preserve the increment if
 the turn fails after submission. On a delegated implementation route, return it
 to the original background agent:

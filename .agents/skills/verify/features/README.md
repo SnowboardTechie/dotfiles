@@ -1,6 +1,6 @@
 # Dotfiles setup: verification map
 
-The maintained list of what to verify in this repository's setup scripts. Read this index before you drive them, then
+The maintained list of what to verify in this repository's setup entry points and reconcilers. Read this index before you drive them, then
 use the matching feature file as the recipe. The harness is `dotfiles-verify`, the control command in
 `../scripts/dotfiles-verify` (see `../SKILL.md`).
 
@@ -55,12 +55,12 @@ restored. Rerun them all with `../scripts/prove-breaks`. Add a row and an entry 
 | --- | --- | --- | --- |
 | `--check` creates the tool directories | `scripts/reconcile-agent-skills.sh` | `agent-skills` | check left the home unchanged |
 | draw-it dropped from Pi's curation | `scripts/reconcile-agent-skills.sh` | `agent-skills` | Pi gets draw-it (Pi-only) |
-| a dangling pool link is kept instead of pruned | `scripts/reconcile-agent-skills.sh` | `agent-skills` | dangling links to retired pool skills (vault-capture, grilling, guided-learni … |
+| a dangling skill pool link is kept instead of pruned | `scripts/reconcile-agent-skills.sh` | `agent-skills` | dangling links to skills retired from the skill pool (vault-capture, grilling, guided-learni … |
 | a foreign or broken link is pruned instead of kept | `scripts/reconcile-agent-skills.sh` | `agent-skills` | a broken foreign link is kept |
 | a foreign link on a curated name is overwritten | `scripts/reconcile-agent-skills.sh` | `agent-skills` | a foreign link on a curated name is kept, pointing where it did |
-| a pool link no longer curated is kept, not pruned | `scripts/reconcile-agent-skills.sh` | `agent-skills` | an uncurated pool link is pruned |
-| a real directory on a curated name is deleted and replaced by the pool link | `scripts/reconcile-agent-skills.sh` | `agent-skills` | a real directory on a curated name is kept with its content |
-| a regular file on a curated name is deleted and replaced by the pool link | `scripts/reconcile-agent-skills.sh` | `agent-skills` | a regular file on a curated name is kept with its content |
+| a skill pool link no longer curated is kept, not pruned | `scripts/reconcile-agent-skills.sh` | `agent-skills` | an uncurated skill pool link is pruned |
+| a real directory on a curated name is deleted and replaced by the skill pool link | `scripts/reconcile-agent-skills.sh` | `agent-skills` | a real directory on a curated name is kept with its content |
+| a regular file on a curated name is deleted and replaced by the skill pool link | `scripts/reconcile-agent-skills.sh` | `agent-skills` | a regular file on a curated name is kept with its content |
 | draw-it also curated for Hermes | `scripts/reconcile-agent-skills.sh` | `agent-skills` | .hermes/skills/personal does not get draw-it |
 | links into Matt Pocock's checkout listed as foreign instead of counted | `scripts/reconcile-agent-skills.sh` | `agent-skills` | his link is counted, not listed as foreign |
 | every host counts as Omarchy | `scripts/setup-omarchy.sh` | `omarchy-setup` | exits 1 |
