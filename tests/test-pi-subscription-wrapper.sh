@@ -28,7 +28,7 @@ check() { # <description> <expected> <actual>
     fi
 }
 
-# Skip startup files so the host's PATH and real pi stay out.
+# Skip startup files so the machine's PATH and real pi stay out.
 shell_opts() { [[ "$1" == zsh ]] && echo -f || echo --norc; }
 
 # run <shell> <home> <dir> <extra env...> -- prints the fake pi's output

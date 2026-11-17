@@ -89,4 +89,4 @@ PNG's path. The drawing supports the explanation; it doesn't replace it.
 - Rex gives a pane its real size only once a client takes it over, so `show.py`
   sizes the new pane from yours. If Bryan says the picture is small or cut off,
   run `show.py` again.
-- On a host without `uv`, use any Python that has Pillow.
+- On a machine without `uv`, use any Python that has Pillow.

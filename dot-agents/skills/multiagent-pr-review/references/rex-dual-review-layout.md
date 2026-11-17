@@ -33,7 +33,7 @@ global configuration to make the route pass.
 
 Both reviewers open in the instigating session's "Background Agents" tab, never beside
 the instigating pane, without taking focus. Start them one at a time, running
-`scripts/rex_background_agent_slot.py` right before each start as the Rex handoff
+`scripts/rex_background_agent_pane.py` right before each start as the Rex handoff
 reference shows: Claude first, then GPT. Each start re-reads the live layout,
 so the two never race for one anchor. Confirm both new pane IDs, their tab,
 labels, and working directories (`"$REX" block inspect <block>`) before either
