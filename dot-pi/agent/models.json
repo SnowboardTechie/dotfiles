@@ -26,6 +26,25 @@
           "name": "Studio Qwen3.8 27B",
           "contextWindow": 65536,
           "maxTokens": 16384
+        },
+        {
+          "id": "qwen3.8-pi:27b-q8",
+          "name": "Studio Qwen3.8 27B pi-adapted",
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "off": "none",
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": null,
+            "xhigh": null,
+            "max": null
+          },
+          "compat": {
+            "supportsReasoningEffort": true
+          },
+          "contextWindow": 65536,
+          "maxTokens": 16384
         }
       ]
     }

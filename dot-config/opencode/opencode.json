@@ -47,6 +47,17 @@
             "output": 16384
           }
         },
+        "qwen3.8-pi:27b-q8": {
+          "name": "Qwen3.8 27B pi-adapted",
+          "reasoning": false,
+          "options": {
+            "reasoningEffort": "none"
+          },
+          "limit": {
+            "context": 65536,
+            "output": 16384
+          }
+        },
         "gemma4:31b-mlx": {
           "name": "Gemma 4 31B",
           "limit": {
