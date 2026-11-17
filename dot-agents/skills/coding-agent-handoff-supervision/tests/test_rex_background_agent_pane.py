@@ -4,19 +4,19 @@ import importlib.util
 from pathlib import Path
 import unittest
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "rex_background_agent_slot.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "rex_background_agent_pane.py"
 CALLER = "block:caller"
 
 
 def load_module():
-    spec = importlib.util.spec_from_file_location("rex_background_agent_slot", SCRIPT)
+    spec = importlib.util.spec_from_file_location("rex_background_agent_pane", SCRIPT)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
-slot = load_module()
+placement = load_module()
 
 
 # A split tree is a block id or ("h"|"v", before, after); "h" is side by side.
@@ -87,13 +87,13 @@ QUADRANTS = {(0.0, 0.0, 0.5, 0.5), (0.5, 0.0, 0.5, 0.5), (0.0, 0.5, 0.5, 0.5), (
 class ChooseTest(unittest.TestCase):
     def fill(self, tree, names):
         for name in names:
-            got = slot.choose(listing(window("window:sub", "Pi Durable Background Agents", tree)), CALLER)
+            got = placement.choose(listing(window("window:sub", "Pi Durable Background Agents", tree)), CALLER)
             self.assertEqual(got["action"], "split")
             tree = split(tree, got["anchor"], got["direction"], name)
         return tree
 
     def test_no_tab_means_a_new_tab_named_after_the_caller(self):
-        self.assertEqual(slot.choose(listing(), CALLER), {"action": "new", "tab_label": "Pi Durable Background Agents"})
+        self.assertEqual(placement.choose(listing(), CALLER), {"action": "new", "tab_label": "Pi Durable Background Agents"})
 
     def test_four_background_agents_make_a_two_by_two_grid(self):
         tree = self.fill("w1", ["w2", "w3", "w4"])
@@ -105,7 +105,7 @@ class ChooseTest(unittest.TestCase):
 
     def test_a_full_tab_sends_the_fifth_background_agent_to_a_numbered_tab(self):
         tree = self.fill("w1", ["w2", "w3", "w4"])
-        got = slot.choose(listing(window("window:sub", "Pi Durable Background Agents", tree)), CALLER)
+        got = placement.choose(listing(window("window:sub", "Pi Durable Background Agents", tree)), CALLER)
         self.assertEqual(got, {"action": "new", "tab_label": "Pi Durable Background Agents 2"})
 
     def test_a_closed_background_agent_quadrant_is_refilled(self):
@@ -116,7 +116,7 @@ class ChooseTest(unittest.TestCase):
 
     def test_the_first_tab_with_room_wins(self):
         full = self.fill("w1", ["w2", "w3", "w4"])
-        got = slot.choose(
+        got = placement.choose(
             listing(
                 window("window:sub3", "Pi Durable Background Agents 3", "x1"),
                 window("window:sub", "Pi Durable Background Agents", full),
@@ -127,7 +127,7 @@ class ChooseTest(unittest.TestCase):
         self.assertEqual((got["window_id"], got["anchor"], got["direction"]), ("window:sub2", "y1", "below"))
 
     def test_other_tabs_are_never_targets(self):
-        got = slot.choose(
+        got = placement.choose(
             listing(window("window:o", "Hermes Background Agents", "z1"), window("window:p", "Pi Durable Background Agents old", "z2")),
             CALLER,
         )
@@ -135,7 +135,7 @@ class ChooseTest(unittest.TestCase):
 
     def test_unknown_caller_fails(self):
         with self.assertRaises(SystemExit):
-            slot.choose(listing(), "block:missing")
+            placement.choose(listing(), "block:missing")
 
 
 if __name__ == "__main__":
