@@ -13,7 +13,7 @@ Turn a rough idea into a well-structured, template-faithful GitHub or Forgejo is
 - File discovery: Hermes `search_files`; Pi `rg`/`find` through `bash`; other harnesses `Glob` or equivalent.
 - Public mutation: always requires explicit user approval in the active run. Unattended execution may prepare a draft but must not post.
 
-Pairs with `issue-plan` and `issue-work`. After posting, use `issue-plan {url}` when implementation details or load-bearing decisions should be settled in the project vault before work starts. Use `issue-work {url}` directly when the issue is already clear enough to pass its plan-readiness gate.
+Pairs with `issue-plan` and `issue-work`. After posting, use `issue-plan {url}` when implementation details or load-bearing decisions should be settled in the workspace's vault before work starts. Use `issue-work {url}` directly when the issue is already clear enough to pass its plan-readiness check.
 
 ---
 
@@ -27,7 +27,7 @@ Branch on the result:
 
 - **Unambiguous remote** (single origin, recognized forge) → use it.
 - **Not in a repo / multi-remote / unknown forge** → ask the user which repo to file against. Accept `{owner}/{repo}` shorthand or a full URL.
-- **User's initial message references a different repo** than cwd — ask before assuming. The ticket belongs wherever the idea lives, not necessarily wherever they're currently typing.
+- **User's initial message references a different repo** than cwd — ask before assuming. The issue belongs wherever the idea lives, not necessarily wherever they're currently typing.
 
 Parse `owner` and `repo` from the chosen remote using the `owner_repo` snippet in [../ship/references/forge-detection.md](../ship/references/forge-detection.md).
 
@@ -59,10 +59,10 @@ Capture and apply the repository's established conventions for:
 - labels and issue type;
 - milestone and project placement;
 - parent/sub-issue linkage;
-- links to the source PR, review thread, epic, dependencies, sibling tickets, and related prior work;
+- links to the source PR, review thread, epic, dependencies, sibling issues, and related prior work;
 - dependency ordering, overlap, and conditional closure or absorption.
 
-Do not copy metadata mechanically. Verify that each label and relationship fits the ticket's actual scope and that referenced issues are genuinely a parent, dependency, sibling, related work, or possible replacement. A ticket draft is incomplete until its proposed metadata and relationships are shown alongside the body. If the live forge is inaccessible, say which conventions could not be verified instead of silently omitting them.
+Do not copy metadata mechanically. Verify that each label and relationship fits the issue's actual scope and that referenced issues are genuinely a parent, dependency, sibling, related work, or possible replacement. An issue draft is incomplete until its proposed metadata and relationships are shown alongside the body. If the live forge is inaccessible, say which conventions could not be verified instead of silently omitting them.
 
 ### 1.3 Default structure (no templates)
 
@@ -101,7 +101,7 @@ When the target repo has no `ISSUE_TEMPLATE` directory, propose this six-section
 - {item}
 ```
 
-Anchor: this mirrors the structure of well-written tickets the user writes by hand — problem → proposal → scope → hints → acceptance → open questions.
+Anchor: this mirrors the structure of well-written issues the user writes by hand — problem → proposal → scope → hints → acceptance → open questions.
 
 ### 1.4 Parse the template
 
@@ -150,15 +150,15 @@ For Forgejo templates: same as legacy Markdown. Forgejo has no issue-type field,
 
 ## Stage 2 — Clarifying Q&A
 
-> **If this ticket is really a design exploration** — multiple valid approaches, unclear shape, "I'm not sure what we even want yet" — pause for conversational design exploration first, then return here to file a crisp issue. This is a soft pointer, not a hard dependency; the Q&A below handles well-formed tickets on its own.
+> **If this issue is really a design exploration** — multiple valid approaches, unclear shape, "I'm not sure what we even want yet" — pause for conversational design exploration first, then return here to file a crisp issue. This is a soft pointer, not a hard dependency; the Q&A below handles well-formed issues on its own.
 
 ### 2.0 Lock the issue mode and closure boundary
 
-Before asking questions or drafting, classify the ticket as one of:
+Before asking questions or drafting, classify the issue as one of:
 
 - **exploration** — valid approaches or the desired outcome remain open;
 - **decision** — alternatives are known, but an explicit choice is still needed;
-- **implementation** — the direction is settled and the ticket should deliver it.
+- **implementation** — the direction is settled and the issue should deliver it.
 
 Treat the user's accepted direction as authoritative. Once the conversation has settled a decision, do not reopen it with `decide`, `evaluate`, conditional `if selected`, or open-question wording in the title, summary, or acceptance criteria. State the implementation outcome directly and preserve rejected alternatives only as concise rationale when useful.
 

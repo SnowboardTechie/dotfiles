@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Validate ticket-state and implementation-worktree authority for issue-work."""
+"""Validate state-directory and implementation-worktree authority for issue-work.
+
+The `ticket_*` parameters, flags and output keys keep their names: recorded
+`context-validation.json` files and `progress.md` frontmatter already carry them.
+They name the issue repository's side.
+"""
 
 from __future__ import annotations
 
@@ -120,13 +125,13 @@ def validate_context(
     implementation_host: str,
     implementation_repo: str,
 ) -> Dict[str, object]:
-    ticket = resolve_git_context(ticket_trunk)
+    issue_checkout = resolve_git_context(ticket_trunk)
     implementation = resolve_git_context(worktree)
 
-    ticket_root = ticket["primary_checkout"].resolve()
-    requested_ticket_root = ticket_trunk.expanduser().resolve()
-    if requested_ticket_root != ticket_root:
-        fail(f"ticket_trunk is not the ticket repository's primary checkout: {requested_ticket_root}")
+    issue_root = issue_checkout["primary_checkout"].resolve()
+    requested_issue_root = ticket_trunk.expanduser().resolve()
+    if requested_issue_root != issue_root:
+        fail(f"ticket_trunk is not the issue repository's primary checkout: {requested_issue_root}")
 
     parsed_url = urlparse(ticket_url)
     if (
@@ -137,9 +142,9 @@ def validate_context(
         or parsed_url.query
         or parsed_url.fragment
     ):
-        fail(f"ticket URL is not canonical: {ticket_url}")
+        fail(f"issue URL is not canonical: {ticket_url}")
     if parsed_url.hostname.lower() != ticket_host.strip().lower():
-        fail("ticket URL hostname does not match ticket_host")
+        fail("issue URL hostname does not match ticket_host")
     url_parts = [part for part in parsed_url.path.strip("/").split("/") if part]
     if (
         len(url_parts) != 4
@@ -147,14 +152,14 @@ def validate_context(
         or not url_parts[3].isdigit()
         or not all(re.fullmatch(r"[A-Za-z0-9_.-]+", part) for part in url_parts[:2])
     ):
-        fail(f"ticket URL has an unsupported repository/ticket path: {ticket_url}")
+        fail(f"issue URL has an unsupported repository/issue path: {ticket_url}")
     if normalize_repo("/".join(url_parts[:2])) != normalize_repo(ticket_repo):
-        fail("ticket URL repository does not match ticket_repo")
+        fail("issue URL repository does not match ticket_repo")
 
-    if str(ticket["host"]).lower() != ticket_host.strip().lower():
-        fail("ticket origin hostname does not match ticket_host")
-    if normalize_repo(str(ticket["repo"])) != normalize_repo(ticket_repo):
-        fail("ticket origin repository does not match ticket_repo")
+    if str(issue_checkout["host"]).lower() != ticket_host.strip().lower():
+        fail("issue repository origin hostname does not match ticket_host")
+    if normalize_repo(str(issue_checkout["repo"])) != normalize_repo(ticket_repo):
+        fail("issue repository origin does not match ticket_repo")
     if str(implementation["host"]).lower() != implementation_host.strip().lower():
         fail("implementation origin hostname does not match implementation_host")
     if normalize_repo(str(implementation["repo"])) != normalize_repo(implementation_repo):
@@ -165,9 +170,9 @@ def validate_context(
         fail(f"state directory does not exist: {state}")
     # New state lives under .agent-work/issue-work; state started under
     # .hermes/issue-work is still resumed in place.
-    if not agent_state.is_state_path(ticket_root, "issue-work", state):
+    if not agent_state.is_state_path(issue_root, "issue-work", state):
         fail(
-            "state directory must be a per-ticket child of the ticket state root "
+            "state directory must be a per-issue child of the issue repository's issue-work directory "
             f"(.agent-work/issue-work or legacy .hermes/issue-work): {state}"
         )
 
@@ -196,7 +201,7 @@ def validate_context(
         "ticket_url": ticket_url,
         "ticket_host": ticket_host.strip().lower(),
         "ticket_repo": ticket_repo,
-        "ticket_trunk": str(ticket_root),
+        "ticket_trunk": str(issue_root),
         "state_dir": str(state),
         "implementation_host": implementation_host.strip().lower(),
         "implementation_repo": implementation_repo,
@@ -221,7 +226,7 @@ def _admit_state_path(
     try:
         resolved.relative_to(state_dir)
     except ValueError:
-        fail(f"{label} escapes the validated ticket state directory: {resolved}")
+        fail(f"{label} escapes the validated state directory: {resolved}")
     if expected_kind == "file" and not resolved.is_file():
         fail(f"{label} is not a file: {resolved}")
     if expected_kind == "directory" and not resolved.is_dir():

@@ -28,7 +28,7 @@ approval as merge approval.
 - The PR has completed review and all required checks are green. Review means
   human review, or the gates a recorded standing merge authority names in its
   place (see step 3). Where the repository has no hosted CI, the required checks
-  are its full local gate on the exact head.
+  are its full local test run on the exact head.
 - Local squash merge is required to preserve the expected signature.
 
 Do not use to bypass review, CI, branch protection, or an unresolved discussion.
@@ -50,7 +50,7 @@ by `ship`.
 No matching open PR means stop. A manual commit message is not a substitute for
 the reviewed PR record in this workflow.
 
-### 2. Enforce the merge gate
+### 2. Enforce the merge checks
 
 Read back the PR and its current checks immediately before merging. Verify:
 
@@ -82,7 +82,7 @@ Read back the PR and its current checks immediately before merging. Verify:
 If the forge cannot expose one of these facts, show the missing fact and ask the
 user to verify it. Never infer approval from silence.
 
-Two Forgejo states to clear first, once the gates have passed:
+Two Forgejo states to clear first, once review and the checks have passed:
 
 - **A draft is a `WIP: ` title prefix** (`tea pr create --draft` adds it), and
   Forgejo reports `mergeable: false` while it is there. Mark it ready with
@@ -109,7 +109,7 @@ approval may cover the complete listed sequence, including cleanup.
 
 A recorded standing merge authority is that approval. Bryan sometimes grants
 "merge once cleared" for a batch in an approved plan, naming the gates that
-replace his review (for example, orchestrator acceptance, a green full gate and a
+replace his review (for example, orchestrator acceptance, a green full test run and a
 fresh final review on the exact head). Under it, don't ask again. Verify each
 named gate on the exact head, cite the plan in your report, and proceed.
 Implementation approval alone is still not merge approval.
@@ -169,7 +169,7 @@ Then verify `git status --porcelain` is empty and `HEAD` still equals
 do not escalate to `git reset --hard` automatically.
 
 On success, inspect the staged diff before committing. Sync the PR body with the
-final gate and review results first, because the squash commit carries the body
+final test run and review results first, because the squash commit carries the body
 into `main`. Use the reviewed PR title and body:
 
 ```text
@@ -205,7 +205,7 @@ tea api \
 
 Use the exact case-sensitive Forgejo field `MergeCommitID`. The snake-case
 `merge_commit_id` field may return HTTP 200 with `{}` while leaving the PR open;
-that is not success. Always enforce the read-back gate below.
+that is not success. Always enforce the read-back check below.
 
 Run this from the same safe Tea context used for lookup. Read the PR back and
 require `state: closed`, `merged: true`, and the expected merge SHA before any
@@ -217,7 +217,7 @@ Where pushes to the default branch run CI (a full suite, a deploy check), the me
 is not finished until that run is green on the commit you pushed. Wait for it to
 finish and read it. If it is red, fixing it is the next work, ahead of cleanup
 reports and any other merge, whatever the failure looks like: read the log, find
-the cause, fix it on a branch through the same gate, merge, and wait again.
+the cause, fix it on a branch through the same review and CI, merge, and wait again.
 "Flaky" or "not this change's code" is a diagnosis to prove and fix, never a
 reason to move on or to hand the failure to the user as a proposal. Never end a
 session, or report a merge as done, on a red or still-running default branch.
@@ -254,10 +254,10 @@ state, and any retained worktree/branch.
    merge record after branch deletion.
 5. **Forcing branch deletion automatically.** Keep it when safe deletion fails.
 6. **Ending on a red default branch.** A green PR check is not a green main: the
-   push run can fail on what the PR's gate never ran (other tiers, load, merge
+   push run can fail on what the PR's CI never ran (other tiers, load, merge
    effects). Read main's run every time.
 7. **Chaining the push with the merge record.** Run `git push` as its own
-   command, then the `tea api` call as another, on every host: a separate push
+   command, then the `tea api` call as another, in every harness: a separate push
    keeps the rollback point clear. On Hermes it also avoids a refusal: its
    approval gate flags `git push` as a force push when any `-f` follows it on
    the same command line (`\bgit\s+push\b.*-f\b`), and
@@ -268,7 +268,7 @@ state, and any retained worktree/branch.
 ## Verification Checklist
 
 - [ ] Human review confirmed, or the standing authority's named gates passed on the exact head
-- [ ] Required CI (or the local full gate) green at the current head SHA
+- [ ] Required CI (or the local full test run) green at the current head SHA
 - [ ] Project planning-closeout requirements satisfied
 - [ ] Explicit merge approval obtained, or the recorded standing authority cited
 - [ ] Default worktree clean and synchronized with origin, or a detached merge worktree at origin used and removed

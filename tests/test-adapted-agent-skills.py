@@ -582,15 +582,15 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
             with self.subTest(field=field):
                 self.assertIn(field, self.handoff)
         for token in (
-            "issue-xrepo-{ticket_digest}",
+            "issue-xrepo-{issue_digest}",
             "publication-summary.md",
-            "each distinct ticket and",
+            "each distinct issue and",
             "source_issue_mode: github_shorthand",
             "wrong forge",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, self.body)
-        self.assertIn("{TICKET_PRIMARY_CHECKOUT}/repos/{repo}", self.repo_resolution)
+        self.assertIn("{ISSUE_PRIMARY_CHECKOUT}/repos/{repo}", self.repo_resolution)
         self.assertIn("Do not rescue an identity mismatch", self.repo_resolution)
 
     def test_imperative_work_authorizes_reviewable_pr_not_merge(self) -> None:

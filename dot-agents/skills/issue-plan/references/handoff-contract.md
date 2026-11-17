@@ -9,14 +9,14 @@ execution snapshot.
 A project workspace may keep its issue tracker and private vault separate from
 the public implementation repository. The contract therefore distinguishes:
 
-- **Ticket repository** — owns the canonical issue, comments, private project
+- **Issue repository** (the `Ticket repository` field) — owns the canonical issue, comments, private project
   workspace, vault discovery, and repo-scoped execution state.
 - **Implementation repository** — owns the code, fetched planning base, feature
   worktree, commits, tests, and eventual PR.
 
-The ticket repository and implementation repository may differ only when an
+The issue repository and implementation repository may differ only when an
 approved vault plan records the complete explicit binding below. An issue-as-plan
-fallback always implements in the ticket repository because it has no separate
+fallback always implements in the issue repository because it has no separate
 approved binding authority.
 
 ## Required section
@@ -40,7 +40,7 @@ Every newly written canonical issue plan contains this body section exactly once
 Forgejo uses its canonical issue URL in the same `Issue` field. `Planning status`
 is exactly `draft` or `approved`. The issue timestamp is the forge's
 `updatedAt`/`updated_at` value. `Comments checkpoint` is the canonical SHA-256
-digest defined in `issue-work`'s ticket-fetch reference.
+digest defined in `issue-work`'s issue-fetch reference.
 
 `Ticket repository` must equal the owner/repository parsed from `Issue`.
 `Implementation forge` is the lowercase hostname of the implementation clone's
@@ -81,7 +81,7 @@ the handoff note remains the canonical implementation plan.
 
 ## `issue-plan` grounding
 
-`issue-plan` first resolves the ticket repository and project vault. If the user
+`issue-plan` first resolves the issue repository and the workspace's vault. If the user
 or existing project authority identifies a different implementation repository,
 it must then:
 
@@ -93,29 +93,29 @@ it must then:
    remote revision.
 5. Record the explicit fields above before approval.
 
-The ticket clone remains the workspace/vault authority. The implementation clone
+The issue repository's clone remains the workspace/vault authority. The implementation clone
 is the code authority. A dirty checkout is never used as planning provenance.
 
 ## `issue-work` discovery and binding
 
-`issue-work` resolves the ticket primary checkout first and stores state under:
+`issue-work` resolves the issue repository's primary checkout first and stores state under:
 
 ```text
-{TICKET_PRIMARY_CHECKOUT}/.agent-work/issue-work/{ticket-owner}-{ticket-repo}-{N}/
+{ISSUE_PRIMARY_CHECKOUT}/.agent-work/issue-work/{issue-owner}-{issue-repo}-{N}/
 ```
 
-An existing legacy `.hermes/issue-work/...` directory for the same ticket is
+An existing legacy `.hermes/issue-work/...` directory for the same issue is
 resumed in place (`dot-agents/lib/agent_state.py`).
 
-It checks project-vault candidates in order:
+It checks vault candidates in order:
 
-1. A vault path explicitly named by ticket-workspace instructions.
-2. `{TICKET_PRIMARY_CHECKOUT}/vault` when it is a directory or symlink.
+1. A vault path explicitly named by the issue repository's instructions.
+2. `{ISSUE_PRIMARY_CHECKOUT}/vault` when it is a directory or symlink.
 3. For same-repository work only, an implementation-instruction path,
    `{IMPLEMENTATION_PRIMARY_CHECKOUT}/vault`, or
    `~/code/notes/{implementation-repo}` when it clearly belongs to the project.
 
-Cross-repository canonical plans must be ticket-discoverable through candidate 1
+Cross-repository canonical plans must be discoverable from the issue repository through candidate 1
 or 2. This avoids a cold-start cycle where the plan is required to discover the
 implementation repository but is stored behind that still-unknown repository.
 
@@ -150,7 +150,7 @@ Drift is **material** when it changes any of:
 - A load-bearing decision or API/DX shape.
 - Relevant implementation patterns or exact target paths.
 - Migration, rollout, compatibility, or test requirements.
-- Ticket/implementation repository identity or forge ownership.
+- Issue/implementation repository identity or forge ownership.
 
 Timestamp or commit movement by itself is not material. If drift is immaterial,
 `issue-work` records the validation in execution state and imports the plan. If
@@ -159,7 +159,7 @@ silently edits an approved vault plan during implementation intake.
 
 ## Derived execution snapshot
 
-A validated plan is copied or compiled into the ticket-root state directory. The
+A validated plan is copied or compiled into the state directory in the issue repository. The
 derived plan records:
 
 ```yaml
@@ -185,7 +185,7 @@ Repository-owned planning closeout and later `knowledge-capture` remain separate
 
 When no consumable vault plan exists, `issue-work` may use the current issue and
 comments as planning authority only if all five criteria pass. The implementation
-repository defaults to the ticket repository; issue prose alone cannot redirect
+repository defaults to the issue repository; issue prose alone cannot redirect
 execution to another repository.
 
 1. **Outcome:** the problem and externally observable result are clear.

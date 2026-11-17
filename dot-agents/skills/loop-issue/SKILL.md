@@ -6,7 +6,7 @@ author: Bryan Thompson
 license: MIT
 metadata:
   hermes:
-    tags: [issues, automation, cron, draft-pr]
+    tags: [issues, automation, scheduled-job, draft-pr]
     related_skills: [issue-work, ship]
 ---
 
@@ -19,7 +19,7 @@ successful supervised run may leave a draft PR for human review. This skill
 never merges and never recursively schedules itself.
 
 The wake mechanism is separate: a user invocation, an external loop, or a
-scheduled job (Hermes cron today; the bot service's clock later) can start a
+scheduled job (run by Hermes's cron today, by the bot service later) can start a
 run, for example as a headless `pi -p` run. Keeping one issue per run bounds
 failures and makes every result attributable.
 
@@ -27,10 +27,10 @@ failures and makes every result attributable.
 
 - Work a named queued issue under the repository's autonomous-work policy.
 - Select the oldest open `ready-for-agent` issue in the current repository.
-- Use as a self-contained prompt for a scheduled job (a Hermes cron job, or a
+- Use as a self-contained prompt for a scheduled job (one Hermes's cron runs, or a
   headless `pi -p` run) after publication permissions are explicitly chosen.
 
-Run inside the target repository so its context instructions and gate are
+Run inside the target repository so its context instructions and test suite are
 available.
 
 ## Authorization Modes
@@ -43,7 +43,7 @@ normal approval gates.
 
 ### Unattended
 
-A cron-run agent cannot ask questions. The cron prompt must explicitly state
+An agent a scheduled job runs cannot ask questions. The job's prompt must explicitly state
 which external actions, if any, Bryan pre-authorized. Authorization must name
 the repository and action class; "run autonomously" alone is insufficient.
 
@@ -70,10 +70,10 @@ Instead, deliver a local blocker or ready-to-publish report for Bryan.
    the mislabel instead of working it. If no eligible issue exists, report
    `queue empty` and stop.
 2. **Run `issue-work`.** Preserve its intake, worktree, plan, implementation,
-   verification, and self-review gates. Unattended mode must stop rather than
+   verification, and self-review steps. Unattended mode must stop rather than
    invent an answer to a load-bearing ambiguity.
 3. **Enforce acceptance criteria.** Every acceptance criterion and repository
-   test/lint/typecheck/format gate must be satisfied before publication is even
+   test/lint/typecheck/format check must be satisfied before publication is even
    proposed.
 4. **Choose the authorized finish:**
    - Green + supervised approval or explicit unattended publication authority:
@@ -82,7 +82,7 @@ Instead, deliver a local blocker or ready-to-publish report for Bryan.
      PR title/body, and exact next action; do not push.
    - Blocked or red: report the blocker locally. Commenting and changing
      `ready-for-agent` to `needs-human` are separate public actions and happen
-     only after approval or explicit cron authorization.
+     only after approval or explicit authorization in the scheduled job's prompt.
 5. **Stop after one issue.** Do not invoke another issue and do not create a new
    schedule.
 
@@ -98,16 +98,16 @@ that limitation.
 Return exactly one of:
 
 - `queue empty`;
-- a clickable draft PR URL plus verified gate summary;
+- a clickable draft PR URL plus a verified summary of the checks;
 - a ready-to-publish local branch/report;
 - a blocker report with the issue link and proposed public follow-up.
 
 ## Common Pitfalls
 
 1. **Draining the queue inside the skill.** One invocation means one issue.
-2. **Treating cron execution as publication approval.** External writes require
+2. **Treating a scheduled run as publication approval.** External writes require
    explicit action-specific authorization.
-3. **Opening a red PR.** A failed required gate blocks publication.
+3. **Opening a red PR.** A failed required check blocks publication.
 4. **Auto-commenting on failure.** Prepare the comment, but do not post it
    without authorization.
 5. **Merging.** Human review and merge remain outside this skill.
@@ -120,7 +120,7 @@ Return exactly one of:
 - [ ] Exactly one issue selected
 - [ ] Repository instructions and acceptance criteria loaded
 - [ ] Authorization mode identified
-- [ ] Required gates green before any publication
+- [ ] Required checks green before any publication
 - [ ] Every external write was explicitly authorized
 - [ ] Result uses a clickable issue/PR link
 - [ ] Run stopped without recursive scheduling
