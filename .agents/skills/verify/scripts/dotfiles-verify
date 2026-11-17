@@ -188,12 +188,15 @@ stub() {
 
 calls() { cat "$SCRATCH/calls/$(basename "$1")-$2" 2>/dev/null; }
 
-# stub_pi: a `pi` that records each call (calls <home> pi) and edits
-# packages in $HOME/.pi/agent/settings.json the way `pi install`/`pi remove` do.
+# stub_pi: a `pi` that records each call (calls <home> pi), each line led by
+# the agent directory it acted on, and edits packages in that directory's
+# settings.json the way `pi install`/`pi remove` do: $PI_CODING_AGENT_DIR when
+# set, as the real pi reads it, else $HOME/.pi/agent.
 # Plus a `claude` that does nothing, so the Claude Code reconciler runs.
 stub_pi() {
-    stub pi 'echo "$*" >>"__CALLS__"
-python3 - "$HOME/.pi/agent/settings.json" "$1" "$2" <<"PY"
+    stub pi 'dir="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
+echo "$dir $*" >>"__CALLS__"
+python3 - "$dir/settings.json" "$1" "$2" <<"PY"
 import json, os, sys
 p, op, src = sys.argv[1:]
 os.makedirs(os.path.dirname(p), exist_ok=True)
