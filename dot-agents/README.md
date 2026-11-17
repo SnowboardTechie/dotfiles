@@ -134,6 +134,19 @@ loads every promoted skill from the checkout, commits the ledger alone to
 `main` and announces the advance in Matrix with the rollback. A failed load
 puts the old pin back. Every other source's pin is still a reviewed change.
 
+Every other source is adapted, and its pin is a reviewed change:
+[pstack-claude](upstreams/pstack-claude.json) (`black-box-verification`) and
+[Ponytail](upstreams/ponytail.json), the plugin the review contract's Ponytail
+pass (also called the simplicity review) is named after and adapted from. The
+pi-bots scheduled job `adapted-skill-watch` reads every record whose
+`updatePolicy.autoApply` is false, each of which must name it as `monitor`.
+Weekly, for each source whose watched files changed since the pin, Steve posts
+in `studio-alerts` how many commits behind the pin is and which watched files
+changed; it posts nothing otherwise, and never edits a record. A refresh then
+reads each change, records it under `refreshes` as accepted or rejected with a
+reason, adopts what is accepted with the smallest edit, and advances `commit`,
+`version` and `verifiedOn`.
+
 ## Notes
 
 - Hermes's `personal/` entries are ordinary symlinks into this repository. A

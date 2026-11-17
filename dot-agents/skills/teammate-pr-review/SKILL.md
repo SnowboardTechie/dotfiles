@@ -1,6 +1,6 @@
 ---
 name: teammate-pr-review
-description: Use when reviewing someone else's pull request (a teammate's or another author's PR, on GitHub or Forgejo), including re-reviews, drafting review comments, and choosing the review event. For a PR or branch Bryan authored, use pr-self-review instead.
+description: Use when reviewing someone else's pull request (a teammate's or another author's PR, on GitHub or Forgejo), including re-reviews, a simplicity review (the Ponytail pass) of one, drafting review comments, and choosing the review event. For a PR or branch Bryan authored, use pr-self-review instead.
 version: 1.0.0
 author: Bryan Thompson
 license: MIT
@@ -42,7 +42,13 @@ produces them, under `## Standards` and `## Spec`.
 His skill covers Standards and Spec and nothing else. It has no Risk pass, no
 over-engineering pass, and no rules for drafting or posting a review.
 
-## 3. Risk and Ponytail: `pr-self-review`'s review contract
+## 3. Risk and Ponytail, the simplicity review: `pr-self-review`'s review contract
+
+Ponytail checks the PR for over-engineering only: what could be deleted or made
+smaller. It is named after the Ponytail plugin, recorded in
+[`dot-agents/upstreams/ponytail.json`](../../upstreams/ponytail.json), and
+"simplicity review" is another name for it. A request for only a simplicity
+review runs the Ponytail section alone, then drafts as below.
 
 Read
 [`../pr-self-review/references/review-contract.md`](../pr-self-review/references/review-contract.md).

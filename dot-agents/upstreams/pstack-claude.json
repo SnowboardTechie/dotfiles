@@ -1,11 +1,11 @@
 {
   "upstream": "https://github.com/michael-denyer/pstack-claude",
-  "version": "0.9.88",
-  "commit": "963781d11834918bf0951202d721c2e144777a70",
+  "version": "0.9.138",
+  "commit": "a12b04786023e762f12f5de7bb5fafb8c23f8c36",
   "license": "MIT",
   "licenseFile": "pstack-claude-LICENSE",
   "attribution": "Concepts adapted from pstack-claude, MIT licensed, Copyright (c) 2026 Lauren Tan and Copyright (c) 2026 Michael Denyer. Upstream's NOTICE.md credits create-verification-skill to cursor/plugins/pstack (Lauren Tan); blast-radius is a port-authored skill. Retained in pstack-claude-LICENSE.",
-  "verifiedOn": "2026-10-23",
+  "verifiedOn": "2026-11-16",
   "notes": [
     "Concept adaptation, not a vendored copy: the local skill is rewritten prose that folds two upstream skills into one lean skill with two disclosed references.",
     "The pstack plugin, its poteto-mode coordinator, hooks, commands, and the rest of its skills are deliberately not adopted.",
@@ -15,8 +15,8 @@
     "readOnlyDetection": true,
     "humanApprovedPinAdvance": true,
     "autoApply": false,
-    "monitor": null,
-    "description": "No automated watcher exists for this source; the adaptation is small and concept-level. Re-reading the watched files and advancing `commit` is a manual, reviewed local change."
+    "monitor": "pi-bots job adapted-skill-watch",
+    "description": "The pi-bots scheduled job `adapted-skill-watch` compares `commit` with upstream's head each week and, when a watched file changed since the pin, posts how many commits behind the pin is and which watched files changed. It never edits this file. Re-reading the watched files, deciding each change and advancing `commit`, `version` and `verifiedOn` is a reviewed local change."
   },
   "adaptations": [
     {
@@ -64,6 +64,37 @@
       "watchedFiles": [
         "plugins/pstack/skills/blast-radius/SKILL.md",
         "plugins/pstack/skills/create-verification-skill/SKILL.md"
+      ]
+    }
+  ],
+  "refreshes": [
+    {
+      "on": "2026-11-16",
+      "from": "963781d11834918bf0951202d721c2e144777a70",
+      "to": "a12b04786023e762f12f5de7bb5fafb8c23f8c36",
+      "commitsBehind": 129,
+      "changes": [
+        {
+          "upstream": "d56fdb0, e66f85f",
+          "file": "plugins/pstack/skills/create-verification-skill/SKILL.md",
+          "change": "Two lines pointing Muse and Antigravity users at those harnesses' platform mappings before following the skill.",
+          "decision": "rejected",
+          "reason": "Harness notes for harnesses not used here; the local skill carries no per-harness mapping."
+        },
+        {
+          "upstream": "none",
+          "file": "plugins/pstack/skills/blast-radius/SKILL.md",
+          "change": "Unchanged between the pins (same blob 8ee5a95).",
+          "decision": "none",
+          "reason": "Nothing to adopt."
+        },
+        {
+          "upstream": "91ab921",
+          "file": "plugins/pstack/LICENSE (not watched)",
+          "change": "Upstream now ships the plugin's MIT licence beside the plugin.",
+          "decision": "accepted",
+          "reason": "Same text as pstack-claude-LICENSE (checked with diff); nothing to change."
+        }
       ]
     }
   ]
