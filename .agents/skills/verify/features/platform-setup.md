@@ -1,6 +1,6 @@
 # macOS setup after Stow
 
-`setup-platform-configs.sh` does what Stow can't on a fully owned macOS or NixOS host: removes retired tmux links,
+`setup-platform-configs.sh` does what Stow can't on a fully owned macOS or NixOS machine: removes retired tmux links,
 makes `~/.secrets` private, links OpenCode's `AGENTS.md`, then runs the skill, Rex agent-session, Pi extension, Claude
 Code provider, Pi package, Matt Pocock skill, agent command and Pi trust reconcilers and the retired-memory cleanup. It
 has no flags: every run applies.

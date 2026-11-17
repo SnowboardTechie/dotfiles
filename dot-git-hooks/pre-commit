@@ -14,7 +14,7 @@ EOF
 fi
 
 # Secret scan of the staged diff, for every repo using this global hook.
-# Hosts without gitleaks (Omarchy) warn instead of blocking every commit.
+# Machines without gitleaks (Omarchy) warn instead of blocking every commit.
 if ! command -v gitleaks >/dev/null 2>&1; then
   echo "Warning: gitleaks not installed; staged changes were not scanned for secrets." >&2
   exit 0

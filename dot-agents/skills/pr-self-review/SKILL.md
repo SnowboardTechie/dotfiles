@@ -219,7 +219,7 @@ branch.
 
 Ponytail checks the candidate for over-engineering only: what could be deleted
 or made smaller. It is named after the Ponytail plugin, recorded in
-[`dot-agents/upstreams/ponytail.json`](../../upstreams/ponytail.json), and
+[`dot-agents/skill-sources/ponytail.json`](../../skill-sources/ponytail.json), and
 "simplicity review" is another name for it. A request for only a simplicity
 review runs the contract's Ponytail section against the frozen candidate (§2)
 and writes `review-ponytail.md`; it corrects nothing.

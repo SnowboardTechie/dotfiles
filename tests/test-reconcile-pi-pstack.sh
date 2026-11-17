@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Tests for scripts/reconcile-pi-pstack.sh. Uses stub `pi` and `claude`
-# commands and temporary HOME directories, removed on exit.
+# commands and throwaway homes, removed on exit.
 
 set -u
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RECON="$REPO_ROOT/scripts/reconcile-pi-pstack.sh"
 CC="https://github.com/earendil-works/pi-claude-code"
-PIN="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["commit"])' "$REPO_ROOT/dot-agents/upstreams/pstack-claude.json")"
+PIN="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["commit"])' "$REPO_ROOT/dot-agents/skill-sources/pstack-claude.json")"
 PSTACK="git:github.com/michael-denyer/pstack-claude@$PIN"
 SHEET="$REPO_ROOT/dot-agents/pstack-forgejo/pstack-models.md"
 INSTRUCTIONS="$REPO_ROOT/dot-pi/agent/AGENTS.md"
@@ -75,7 +75,7 @@ check "the script does not copy the pin" "no" "$(yes_if grep -qF "$PIN" "$RECON"
 check "the sheet turns the session hook off" "yes" "$(yes_if grep -qx 'session hook: off' "$SHEET")"
 check "the sheet maps sonnet to claude-sonnet-5-5" "yes" "$(yes_if grep -q 'sonnet=claude-code/claude-sonnet-5-5' "$SHEET")"
 
-# Fresh host: a main Pi directory exists, no pstack directory.
+# Fresh machine: a main Pi directory exists, no pstack directory.
 H="$TMP/home-fresh"
 mkdir -p "$H/.pi/agent"
 printf '{"defaultProvider": "anthropic", "packages": []}\n' >"$H/.pi/agent/settings.json"

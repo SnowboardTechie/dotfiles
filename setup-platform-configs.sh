@@ -43,7 +43,7 @@ remove_retired_tmux_link() {
             echo "  Removed $link_path"
             ;;
         *)
-            echo "  WARNING: $link_path is not managed by this repository, skipping"
+            echo "  WARNING: $link_path is foreign (this repository did not make it), skipping"
             ;;
     esac
 }
@@ -231,5 +231,5 @@ if [[ "$PLATFORM" == "macos" ]]; then
     echo "Additional manual step:"
     echo "  - GPG: ln -s ~/code/dotfiles/dot-gnupg/gpg-agent.conf ~/.gnupg/gpg-agent.conf"
 else
-    echo "GPG: use a host-local Linux pinentry config if enabling commit signing; do not link pinentry-mac."
+    echo "GPG: use a machine-local Linux pinentry config if enabling commit signing; do not link pinentry-mac."
 fi

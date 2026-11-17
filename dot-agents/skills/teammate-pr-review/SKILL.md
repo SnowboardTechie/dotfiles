@@ -46,7 +46,7 @@ over-engineering pass, and no rules for drafting or posting a review.
 
 Ponytail checks the PR for over-engineering only: what could be deleted or made
 smaller. It is named after the Ponytail plugin, recorded in
-[`dot-agents/upstreams/ponytail.json`](../../upstreams/ponytail.json), and
+[`dot-agents/skill-sources/ponytail.json`](../../skill-sources/ponytail.json), and
 "simplicity review" is another name for it. A request for only a simplicity
 review runs the Ponytail section alone, then drafts as below.
 

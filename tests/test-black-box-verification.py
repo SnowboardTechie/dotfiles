@@ -22,7 +22,7 @@ SKILL_POOL = REPO_ROOT / "dot-agents" / "skills"
 SKILL_DIR = SKILL_POOL / "black-box-verification"
 SKILL = SKILL_DIR / "SKILL.md"
 REFERENCES = ("change-impact.md", "project-recipe.md")
-UPSTREAMS = REPO_ROOT / "dot-agents" / "upstreams"
+UPSTREAMS = REPO_ROOT / "dot-agents" / "skill-sources"
 SOURCE_RECORD_PATH = UPSTREAMS / "pstack-claude.json"
 PINNED_COMMIT = "a12b04786023e762f12f5de7bb5fafb8c23f8c36"
 RECONCILER = REPO_ROOT / "scripts" / "reconcile-agent-skills.sh"
@@ -204,7 +204,7 @@ class ProvenanceTest(unittest.TestCase):
                 self.assertIn(term, rejected)
 
     def test_skill_points_at_the_source_record(self) -> None:
-        self.assertIn("upstreams/pstack-claude.json", read(SKILL))
+        self.assertIn("skill-sources/pstack-claude.json", read(SKILL))
 
 
 class CurationTest(unittest.TestCase):

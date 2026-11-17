@@ -35,14 +35,14 @@ one-line change to a curation array.
 
 Not every harness gets every skill. Pi gets the common core plus the workflows
 made to run from it, a set that grows as Pi becomes the primary harness
-(dotfiles-workspace#34); no shared desk skill needs a Hermes session. Pi also
+(dotfiles-workspace#34); no skill shared with the interactive Pi needs a Hermes session. Pi also
 reads Codex's `~/.agents/skills`, so Codex-set skills reach Pi without a
 `PI_SKILLS` entry; Pi skips a second link to the same skill pool file. Hermes gets adapted personal workflows but keeps its
 bundled/local `obsidian` and `vault-pkm` implementations, so those names are
 intentionally excluded from its skill pool links. Personal knowledge lives in the
-`~/second-brain` Markdown vault (Forgejo Git), written through `vault-pkm` like
+personal vault, `~/second-brain` (Forgejo Git), written through `vault-pkm` like
 any other vault, with `knowledge-capture` routing resting-point captures between
-it and project vaults. `apple-notes-pkm` (2026-10-31) and `vault-capture` are
+it and the workspaces' vaults. `apple-notes-pkm` (2026-10-31) and `vault-capture` are
 retired and removed; the reconciler prunes their stale links, as it does for the
 local `code-review` and the six skills adapted from Matt Pocock's (2026-11-16,
 see below). No skill in the skill pool takes a name one of his promoted skills holds.
@@ -96,16 +96,16 @@ trigger has been tried and still missed.
 Corollary: a reference nothing points at clearly is not a reference, it is dead
 weight. Delete it or give it a real trigger.
 
-## Upstream adaptations
+## Adaptations from skill sources
 
-Skills adapted from an external source keep a source record under
-[`upstreams/`](upstreams/): the upstream repository and commit, the license, one
-entry per adaptation mapping upstream paths to canonical local paths, what was
-changed and why, which upstream rules were accepted or rejected, and the list of
-upstream files worth watching. Each adapted `SKILL.md` carries a one-line
+Skills adapted from a skill source keep a source record under
+[`skill-sources/`](skill-sources/): the skill source's repository and commit, the license, one
+entry per adaptation mapping the source's paths to canonical local paths, what was
+changed and why, which of the source's rules were accepted or rejected, and the list of
+the source's files worth watching. Each adapted `SKILL.md` carries a one-line
 pointer to its source record rather than repeating its own adaptation history.
 
-Matt Pocock's skills ([`upstreams/mattpocock-skills.json`](upstreams/mattpocock-skills.json))
+Matt Pocock's skills ([`skill-sources/mattpocock-skills.json`](skill-sources/mattpocock-skills.json))
 are not adapted: every harness loads them as written from one checkout.
 [`../scripts/reconcile-mattpocock-skills.sh`](../scripts/reconcile-mattpocock-skills.sh)
 keeps it at the source record's `commit` in `~/.local/share/mattpocock-skills`, lists
@@ -127,16 +127,16 @@ or under his skills: `pr-self-review`'s review contract
 adapter under [`forgejo-tracker/`](forgejo-tracker/), which his `wayfinder`
 reaches through a workspace's tracker doc and the `forgejo-map` command.
 
-The pi-bots job `mattpocock-skill-watch` advances Matt Pocock's pin by itself
-(Bryan, 2026-11-16). Each week, when upstream is ahead, it moves `commit`,
+The pi-bots scheduled job `mattpocock-skill-watch` advances Matt Pocock's pin by itself
+(Bryan, 2026-11-16). Each week, when his repository's `main` is ahead of the pin, it moves `commit`,
 `version` and `verifiedOn` in the source record, runs the reconciler, checks that Pi
 loads every promoted skill from the checkout, commits the source record alone to
 `main` and announces the advance in Matrix with the rollback. A failed load
 puts the old pin back. Every other source's pin is still a reviewed change.
 
 Every other source is adapted, and its pin is a reviewed change:
-[pstack-claude](upstreams/pstack-claude.json) (`black-box-verification`) and
-[Ponytail](upstreams/ponytail.json), the plugin the review contract's Ponytail
+[pstack-claude](skill-sources/pstack-claude.json) (`black-box-verification`) and
+[Ponytail](skill-sources/ponytail.json), the plugin the review contract's Ponytail
 pass (also called the simplicity review) is named after and adapted from. The
 pi-bots scheduled job `adapted-skill-watch` reads every record whose
 `updatePolicy.autoApply` is false, each of which must name it as `monitor`.

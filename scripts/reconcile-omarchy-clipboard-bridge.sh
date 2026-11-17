@@ -92,7 +92,7 @@ if [[ -f "$UNIT" && "$(cat "$UNIT")" == "$WANTED" ]]; then
     echo "  ok: $UNIT is current"
     ok=$((ok + 1))
 elif [[ -e "$UNIT" || -L "$UNIT" ]] && ! grep -qF "reconcile-omarchy-clipboard-bridge.sh" "$UNIT" 2>/dev/null; then
-    echo "  WARNING: $UNIT exists and is not managed by this script; leaving it untouched"
+    echo "  WARNING: $UNIT exists and is foreign (this script did not write it); leaving it untouched"
     echo "  summary: 0 changed, 0 ok, 1 skipped"
     exit 0
 elif [[ "$MODE" == "check" ]]; then

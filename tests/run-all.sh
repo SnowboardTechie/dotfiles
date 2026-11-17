@@ -4,8 +4,8 @@
 # Runs each tests/*.sh with bash, each tests/*.py with python3, each tests/*.ts
 # with `node --test`, and the Forgejo Wayfinder adapter's unittest module. Prints
 # one line per file, then the output of each failure and a summary. Exits 1 if
-# any failed. Needs only PATH, HOME, TMPDIR and LANG: the ticket runner's merge
-# gate runs it under `env -i` from a fresh clone.
+# any failed. Needs only PATH, HOME, TMPDIR and LANG: the ticket runner runs it
+# before a merge under `env -i` from a fresh clone.
 
 set -u
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Tests for scripts/reconcile-pi-claude-code.sh. Uses stub `pi` and `claude`
-# commands and temporary HOME directories, removed on exit.
+# commands and throwaway homes, removed on exit.
 
 set -u
 
@@ -53,7 +53,7 @@ setting() { # <home> <key>
         "$1/.pi/agent/settings.json" "$2"
 }
 
-# Fresh host: anthropic default, direct subscription login.
+# Fresh machine: anthropic default, direct subscription login.
 H="$TMP/home-anthropic"
 mkdir -p "$H/.pi/agent"
 printf '{\n  "theme": "dark",\n  "defaultProvider": "anthropic"\n}\n' >"$H/.pi/agent/settings.json"

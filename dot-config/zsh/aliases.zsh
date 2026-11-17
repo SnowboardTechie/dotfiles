@@ -1,6 +1,6 @@
 # Aliases
 # Portable aliases live in dot-config/shell/aliases.sh, shared with bash on
-# Omarchy hosts. This file loads them and adds what only the fully-owned
+# Omarchy machines. This file loads them and adds what only the fully-owned
 # zsh machines (macOS/NixOS) should have.
 
 # Resolve the shared file relative to this (possibly symlinked) file, so it
@@ -22,7 +22,7 @@ alias lt="eza --tree --icons"
 # Nix flake update alias
 alias nix-flake-update="nix flake update --flake $HOME/code/nix-configs"
 
-# Host-detected Nix update/upgrade commands are functions in functions.zsh.
+# Machine-detected Nix update/upgrade commands are functions in functions.zsh.
 
 # Use macOS system SSH for UseKeyChain support (macOS only)
 if [[ "$OSTYPE" == "darwin"* ]]; then
