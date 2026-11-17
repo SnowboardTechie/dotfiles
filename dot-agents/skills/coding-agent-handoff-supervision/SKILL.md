@@ -14,30 +14,30 @@ metadata:
 
 ## Overview
 
-The parent (a Pi or Hermes session) orchestrates; a Pi worker implements. Hand decision-complete
-implementation to a visible Pi worker, including small changes, fixtures, harnesses, tooling,
-and repairs discovered during verification. Task size and worker startup cost
-are not exceptions. Pi is the worker for everything (Bryan, 2026-11-10):
+The orchestrator (a Pi or Hermes session) leads; a Pi background agent implements. Hand decision-complete
+implementation to a visible Pi background agent, including small changes, fixtures, harnesses, tooling,
+and repairs discovered during verification. Task size and background agent startup cost
+are not exceptions. Pi is the background agent for everything (Bryan, 2026-11-10):
 implementers, reviewers and requested read-only work alike; simple questions
-stay with the parent unless Bryan asks for a worker. Only Bryan's explicit
-selection changes the implementation role or runtime (Claude or Hermes). The parent owns scope,
+stay with the orchestrator unless Bryan asks for a background agent. Only Bryan's explicit
+selection changes the implementation role or harness (Claude or Hermes). The orchestrator owns scope,
 dependencies, handoffs, supervision, independent acceptance, authorized Git
-integration/publication, and live verification. A worker produces a candidate,
+integration/publication, and live verification. A background agent produces a candidate,
 not an accepted deliverable.
 
 The workflow optimizes for one useful implementation turn and one bundled
 correction, not a prolonged conversation. Rex mechanics are owned by
 [references/rex-claude-handoff.md](references/rex-claude-handoff.md) and its
-scripts (`scripts/rex_subagent_slot.py`, `scripts/rex_wait.sh`); follow that
+scripts (`scripts/rex_background_agent_slot.py`, `scripts/rex_wait.sh`); follow that
 procedure rather than improvising pane commands in chat.
 
 ## Select the execution surface first
 
-Visible workers run from an interactive Pi or Hermes CLI session in a Rex pane, using
+Visible background agents run from an interactive Pi or Hermes CLI session in a Rex pane, using
 the Rex procedure below. Select the transport before checking its environment.
 
 A gateway-only conversation (Matrix and similar) has no caller pane and no
-visible-worker transport. Report that blocker and the way to unblock it
+visible background-agent transport. Report that blocker and the way to unblock it
 (continue from a Pi or Hermes CLI session in a Rex pane in the project); do not offer
 a background fallback. Do not fabricate context bindings, caller-pane variables
 or authorization to make a transport work.
@@ -46,14 +46,14 @@ For a natural request such as "Have a worker take a look at the dotfiles README"
 resolve the project directory from established context; do not ask the user to
 supply internal task IDs or paths already known. For a bounded read-only review,
 the user's request is the brief authority: narrow the brief to inspection and
-reporting, prohibit edits/publication, and start the worker. Ask a question only
+reporting, prohibit edits/publication, and start the background agent. Ask a question only
 when that changes the work or a required project/permission is genuinely unknown.
 Implementation still needs the governing ticket/approved plan and the role,
-acceptance, correction, capacity and cleanup rules below. The default worker,
-for either parent and every role, is a visible Pi worker on
-`claude-code/claude-opus-5-5` with medium thinking, its seat following the
+acceptance, correction, capacity and cleanup rules below. The default background agent,
+for either orchestrator and every role, is a visible Pi background agent on
+`claude-code/claude-opus-5-5` with medium thinking, its subscription following the
 worktree.
-Bryan's explicit runtime selection overrides this
+Bryan's explicit harness selection overrides this
 policy. Do not expand a simple question into an audit: keep the brief and
 verification proportional to the requested answer.
 
@@ -68,56 +68,56 @@ Use for repository implementation of any size when all of these are true:
 
 Delegate a `single-loop` change too; right-size its brief and verification, not
 its implementation owner. For ticket work, use `issue-work`'s router with the
-standing Pi selection. Do not turn a fixture or tooling repair into parent
+standing Pi selection. Do not turn a fixture or tooling repair into orchestrator
 implementation by calling it verification.
 
 Do not use this workflow for open architecture, live incident diagnosis,
-voice-heavy writing, or exploratory research. Resolve those in the parent conversation first.
+voice-heavy writing, or exploratory research. Resolve those in the orchestrator's own conversation first.
 
-## Delivery boundary and substantive handback
+## Delivery boundary and substantive completion report
 
-Default ordinary implementation handoffs to supervised delivery. "Hand it to a worker" does not authorize dropping parent acceptance/publication or inventing
+Default ordinary implementation handoffs to supervised delivery. "Hand it to a worker" does not authorize dropping orchestrator acceptance/publication or inventing
 a separate future review invocation. Use `session-handoff` status-only or
 fire-and-forget only when Bryan explicitly chooses that boundary. Preserve
 installation, download, activation and other real safety gates without turning
 every mechanical prerequisite into a separate user decision.
 
-Require a durable handback path in the governing plan/ticket. Before settling,
-the worker writes candidate identity, changes, actual checks/results, unfinished
+Require a durable completion report path in the governing plan/ticket. Before settling,
+the background agent writes candidate identity, changes, actual checks/results, unfinished
 criteria, blockers, exact approval requests in dependency order, next owner, and
 one `Divergence:` line: how the result differs from the task as given (another
 approach, changed scope, a new agreement), or `Divergence: None`. Put that line
-in every contract's handback list. Check it against the diff and the contract
+in every contract's completion report list. Check it against the diff and the contract
 rather than recording it; an unstated difference the diff shows is a finding.
-Read the report and the real candidate before reporting completion or answering what the worker said. A lifecycle `done` event is not a handback. If the report is
-absent, retrieve the final message by reading the recorded worker's pane after
-checking its identity, or request the missing report from the same worker
+Read the report and the real candidate before reporting completion or answering what the background agent said. A lifecycle `done` event is not a completion report. If the report is
+absent, retrieve the final message by reading the recorded background agent's pane after
+checking its identity, or request the missing report from the same background agent
 within its capacity and turn boundary. Never substitute a runbook for an unread final message while
 implying that message was read.
 
-Disposition remaining items as parent verification/publication, worker
+Disposition remaining items as orchestrator verification/publication, background agent
 correction, genuinely new user permission, or later optional scope. Finish
-parent-owned prerequisites before requesting a downstream approval, and bundle
+orchestrator-owned prerequisites before requesting a downstream approval, and bundle
 independent permissions. An unmet assigned criterion cannot become complete
-merely because the worker stopped.
+merely because the background agent stopped.
 
 For bounded semantic omission checks, TypeSafe/Jev may compare criteria,
-handback and evidence through separate typed questions. Read its current API,
+completion report and evidence through separate typed questions. Read its current API,
 use authorized credentials and minimal nonsecret state, and validate any flags
 yourself. It supplements source review and real tests, never replaces the
 acceptance owner; unavailable access does not block ordinary review.
 
 ## Role Boundary
 
-The parent owns:
+The orchestrator owns:
 
 - user deliberation and material decisions;
 - plan acceptance, dependency scheduling, bounded handoffs, and risk calibration;
-- worker supervision and recovery within the existing authority;
+- background agent supervision and recovery within the existing authority;
 - independent diff inspection and finding disposition;
 - commits, publication, deployment, and live readback.
 
-The worker owns:
+The background agent owns:
 
 - repository inspection needed to execute the settled plan;
 - test-first implementation and local checks, including fixtures, test harnesses,
@@ -125,33 +125,33 @@ The worker owns:
 - one bundled correction, plus one narrowly conditional second correction when
   `pr-self-review` permits it.
 
-The parent may inspect source, run existing checks, maintain plans/review artifacts and
+The orchestrator may inspect source, run existing checks, maintain plans/review artifacts and
 perform authorized integration. Sustained prerequisite investigation that needs
-new code or a repaired harness belongs in a bounded worker handoff; do not build
-it in the coordinator while the implementer waits. A worker's failure, capacity
-limit or closed session does not transfer implementation ownership to the parent.
-Recover the permitted worker route or report its concrete blocker.
+new code or a repaired harness belongs in a bounded background agent handoff; do not build
+it in the orchestrator while the implementer waits. A background agent's failure, capacity
+limit or closed session does not transfer implementation ownership to the orchestrator.
+Recover the permitted background agent route or report its concrete blocker.
 
-Do not spend a parent implementation session before handoff and then use a worker only as reviewer. Do not use a second worker session to review the first
-by default outside Bryan's SGG closeout; the parent is already the independent
+Do not spend an orchestrator implementation session before handoff and then use a background agent only as reviewer. Do not use a second background agent session to review the first
+by default outside Bryan's SGG closeout; the orchestrator is already the independent
 pre-publication acceptance context. For SGG issue implementation, `issue-work`
-owns the required sequence: parent acceptance, verified draft PR, fresh worker final PR self-review, parent disposition, and cleanup. That post-publication final
+owns the required sequence: orchestrator acceptance, verified draft PR, fresh background agent final PR self-review, orchestrator disposition, and cleanup. That post-publication final
 gate is required, not an optional redundant pre-publication reviewer.
 
 ## Procedure
 
 ### Continuation and decision boundaries
 
-When Bryan selects a worker, settles the plan, and says to proceed, execute the
-handoff rather than returning a prompt for him to carry. Verify worker delivery;
+When Bryan selects a background agent, settles the plan, and says to proceed, execute the
+handoff rather than returning a prompt for him to carry. Verify background agent delivery;
 only a real transport/capacity blocker or an explicit prompt-only request
 justifies stopping at text. A planning artifact's earlier execution-disabled
 status must not erase a later explicit implementation instruction.
 
 For Bryan's SGG issue-implementation handoffs, "proceed" executes the established
-complete closeout through the draft PR and fresh worker final self-review, unless
+complete closeout through the draft PR and fresh background agent final self-review, unless
 he explicitly sets an earlier stopping boundary. Record that delivery authority
-and continue under `issue-work`; do not return "done" at worker settlement or a
+and continue under `issue-work`; do not return "done" at background agent settlement or a
 pushed branch. Plan-only and prompt-only requests remain non-execution requests.
 
 A scope boundary stops applying an unapproved change, not ordinary investigation
@@ -162,13 +162,13 @@ evidence-backed decision only where implementation would cross the boundary.
 Do not ask permission merely to investigate the next recovery step.
 
 When Bryan asks for follow-up issues to be filed, filing includes handing each
-one to a worker and supervising it through merge and live verification. A
+one to a background agent and supervising it through merge and live verification. A
 filed-but-undelivered issue is not the deliverable.
 
 Keep an authorized multi-issue outcome moving: dispatch ready independent work
-within the governing concurrency limit, collect handbacks, accept prerequisites,
+within the governing concurrency limit, collect completion reports, accept prerequisites,
 and advance their consumers. Routine in-scope implementation and fixture repairs
-remain the worker's under the existing completion authority, not another
+remain the background agent's under the existing completion authority, not another
 "may I proceed?" gate. Preserve actual correction counts and quality stops; ask
 Bryan only for a genuinely new decision, permission or applicable safety gate.
 
@@ -200,17 +200,17 @@ only:
 - a current blocker not already recorded in the artifact.
 
 Do not restate steps, files, tests, requirements, or safeguards from a reachable
-plan or ticket. If the worker cannot access it, make it reachable first; for a
+plan or ticket. If the background agent cannot access it, make it reachable first; for a
 true cross-machine handoff use `cross-machine-coding-agent-handoffs`.
 
-Treat the artifact's scope as closed. A worker may inspect broadly enough to
+Treat the artifact's scope as closed. A background agent may inspect broadly enough to
 implement safely, but it edits only what the settled acceptance criteria
-require. Unexpected adjacent defects are reported to the parent; the worker does not
+require. Unexpected adjacent defects are reported to the orchestrator; the background agent does not
 add characterization tests, production fixes, trackers, or "helpful" cleanup
 for them. In particular, "cover every existing call site" means apply the
 selected mechanism at every site, not exhaustively discover every latent
 behavior behind those calls unless the governing artifact explicitly requires
-conformance exhaustiveness. The parent dispositions observations against the
+conformance exhaustiveness. The orchestrator dispositions observations against the
 original contract before authorizing any correction.
 
 Destructive and history-rewriting Git operations are absolute and not
@@ -218,32 +218,32 @@ approval-eligible: forbid `git reset`, `git clean`, checkout-discard operations,
 rebase, amend, every other history rewrite, force-push, delete or overwrite any
 local ref or branch, branch deletion, and update-ref deletion.
 
-Pi workers are not approval-gated and not sandbox-confined: Pi runs every tool
-call, so a worker's limits rest on its contract's prohibitions only. That fits
+Pi background agents are not approval-gated and not sandbox-confined: Pi runs every tool
+call, so a background agent's limits rest on its contract's prohibitions only. That fits
 work in Bryan's own repositories. When a task requires an approval gate or hard
-confinement, stop and ask Bryan; he may select a Claude worker
+confinement, stop and ask Bryan; he may select a Claude background agent
 (`--permission-mode auto`) or a Hermes one (`approvals.mode: smart`, no
 `HERMES_YOLO_MODE`, no `--yolo`) for it. Stop when hard confinement is required
 but cannot be proved.
 
 Use `claude-code/claude-opus-5-5` at `medium` thinking for implementers and
-reviewers alike (Bryan, 2026-10-23). The coordinator's own thinking level does
-not carry over to workers. Use a higher level only when Bryan asks for it.
+reviewers alike (Bryan, 2026-10-23). The orchestrator's own thinking level does
+not carry over to background agents. Use a higher level only when Bryan asks for it.
 
-For an explicitly selected Claude worker, starting it in the inspected worktree
+For an explicitly selected Claude background agent, starting it in the inspected worktree
 created for Bryan's authorized task already authorizes Claude's ordinary **Yes,
 I trust this folder** startup step. Accept only that recognizable trust prompt,
 after confirming the path it shows is the exact worktree in the recorded startup
 pane. This is not blanket permission for unrelated paths, login prompts,
 destructive commands, broader permission modes, or new task decisions.
 
-Complete when the worker can identify the artifact, worktree, and authority
+Complete when the background agent can identify the artifact, worktree, and authority
 boundary without a second copy of the plan.
 
-### 3. Start the worker in Rex
+### 3. Start the background agent in Rex
 
 Require the caller's injected `REX_BLOCK` and `REX_SESSION`, and start the
-worker through the `rex` CLI as
+background agent through the `rex` CLI as
 [references/rex-claude-handoff.md](references/rex-claude-handoff.md) describes.
 Visible work has no silent Agent View, print-mode, tmux, or background fallback.
 
@@ -274,52 +274,52 @@ session (Matrix and similar) has no caller pane; see "Select the execution
 surface first". Check the transport before writing the contract so the blocker
 surfaces early; the worktree and contract stay useful for the resumed session.
 
-The worker opens in the orchestrator's "<tab label> Sub Agents" tab (then
+The background agent opens in the orchestrator's "<tab label> Background Agents" tab (then
 "... 2", "... 3"), at most four per tab in a 2x2 grid placed by
-`scripts/rex_subagent_slot.py`, a new tab's root block being the worker itself,
-never beside the coordinator's own block. The worker gets the prompt file as
-its first turn and a fixed `--session-id`. The coordinator does the checks by hand:
+`scripts/rex_background_agent_slot.py`, a new tab's root block being the background agent itself,
+never beside the orchestrator's own block. The background agent gets the prompt file as
+its first turn and a fixed `--session-id`. The orchestrator does the checks by hand:
 identity record, the capacity gate (75% of a 5-hour window, 90% of a weekly one), one turn at a time, settlement from
-transcript plus handback, close. Background `terminal` processes do not inherit
+transcript plus completion report, close. Background `terminal` processes do not inherit
 foreground exports: put the `export` (or the literal values) inside every
 background command.
 
 Never retry a refused action through another tool or infer permission from
 frustration. A still-refused action remains blocked; do not escalate to a
 broader mode or another execution route. (For an explicitly selected Claude
-worker whose approved installation auto mode misclassifies, pass a scratch file
+background agent whose approved installation auto mode misclassifies, pass a scratch file
 of only `{"autoMode":{"allow":[...]}}` as inline `--settings`, keep auto mode,
 change no deny rules, and record its hash in the identity record.)
 
-Start Claude or Hermes workers only on Bryan's explicit selection, as the
-reference's "Other worker runtimes" describes; check a Hermes worker's
+Start Claude or Hermes background agents only on Bryan's explicit selection, as the
+reference's "Other harnesses for background agents" describes; check a Hermes background agent's
 smart-approval prerequisites independently first.
 
-After the start, the coordinator computes Git identity and records, once:
+After the start, the orchestrator computes Git identity and records, once:
 
-- `worker_surface`;
-- `worker_agent_name`;
-- `worker_pane_id`;
-- `worker_kind`;
-- `worker_runtime_session_id`; and
-- `worker_worktree_identity`.
+- `background_agent_surface`;
+- `background_agent_name`;
+- `background_agent_pane_id`;
+- `background_agent_kind`;
+- `background_agent_session_id`; and
+- `background_agent_worktree_identity`.
 
-Run the live capacity gate before the block is created. A Pi worker on
-`claude-code/...` spends a Claude seat, so the gate reads the seat it uses:
-`CLAUDE_CONFIG_DIR` set to the worker's `PI_CLAUDE_CODE_CONFIG_DIR`, unset for the
-work seat. Any nonzero
+Run the live capacity gate before the block is created. A Pi background agent on
+`claude-code/...` spends a Claude subscription, so the gate reads the subscription it uses:
+`CLAUDE_CONFIG_DIR` set to the background agent's `PI_CLAUDE_CODE_CONFIG_DIR`, unset for the
+work subscription. Any nonzero
 capacity result stops before a provider turn. An empty capacity reading is a stop, never a pass.
 
 **Bryan's capacity ceiling depends on the window the gate reads: 75% consumed
 of a 5-hour window, 90% of a weekly one.** The gate reads the 5-hour window
-when the seat has one, and the weekly window when it doesn't (the reading then
-says `weekly`). The 75% was set for a 5-hour window; for a weekly-only seat
-Bryan set 90% on 2026-11-14. Do not start or prompt a worker turn at or above
+when the subscription has one, and the weekly window when it doesn't (the reading then
+says `weekly`). The 75% was set for a 5-hour window; for a weekly-only subscription
+Bryan set 90% on 2026-11-14. Do not start or prompt a background agent turn at or above
 the ceiling. Below it, dispatch: the remainder is the buffer that absorbs a
 turn's overrun. Do not forecast whether the expected turn, a concurrent session
-or past-lane costs will push past the ceiling, and do not defer dispatch to
+or past workstreams' costs will push past the ceiling, and do not defer dispatch to
 wait for a reset while below it. A self-imposed lower threshold (say, "start
-once below 55%") idles ready lanes for hours. Reviewers are worker turns too,
+once below 55%") idles ready workstreams for hours. Reviewers are background agent turns too,
 and the same rule applies to them. When usage really is at or above the
 ceiling, a background waiter may poll for it to drop below it. Parse the
 reading as `references/rex-claude-handoff.md` describes, and make an empty
@@ -328,43 +328,43 @@ reading fail the waiter at once.
 Write the identity record once, from observed values only. Do not hand-edit or reconstruct an
 identity record afterwards, and never overwrite an existing identity path,
 including a closed one. Use a new state path for a separately authorized new
-worker.
+background agent.
 
-Complete when the identity file records one ready worker in the intended
+Complete when the identity file records one ready background agent in the intended
 worktree.
 
-### 4. Submit one turn per worker session
+### 4. Submit one turn per background agent session
 
 Put the short brief in a state-root file. The first turn is that file, given to
-the worker as its start argument; a later turn (a correction) is typed into the same
+the background agent as its start argument; a later turn (a correction) is typed into the same
 block only after settlement, as the Rex reference's "A second turn" section
 shows. Before every turn:
 
-1. confirm no turn is in flight in that worker runtime session;
+1. confirm no turn is in flight in that background agent's session;
 2. perform a fresh provider-capacity check;
 3. check the recorded block still shows the recorded label and window; and
 4. send exactly one prompt.
 
 A command's exit status proves only that the keystrokes were sent, not that
-the worker accepted the prompt. Until a new `user` record appears in the
+the background agent accepted the prompt. Until a new `user` record appears in the
 transcript, report delivery as unconfirmed. A nonzero exit or rejected
 submission requires immediate inspection and authorized recovery; do not end
-with a delivery claim or an apology. A settled worker can accept its
+with a delivery claim or an apology. A settled background agent can accept its
 same-session correction; do not replace it merely because its previous turn
 completed. Never retry an uncertain submission until its delivery state is
 resolved, skip identity/capacity checks, or expand permissions to make recovery
 succeed.
 
-At most one turn may be in flight **within each worker runtime session**.
+At most one turn may be in flight **within each background agent's session**.
 Independent sessions may run concurrently in their own worktrees, including
 when they share a subscription. Another agent working on another task is not a
-handoff blocker. Capacity and exact worker/worktree identity checks still apply.
-One coordinator owns each worker, and nothing else sends to it.
+handoff blocker. Capacity and exact background agent/worktree identity checks still apply.
+One orchestrator owns each background agent, and nothing else sends to it.
 
-If the worker blocks on a question or approval, read its pane with `capture`
+If the background agent blocks on a question or approval, read its pane with `capture`
 and compare the request with the governing plan. Answer an already-settled
 question from that approved authority; ask Bryan only for a new decision or
-permission. Never treat worker-suggested input as approval (including a greyed
+permission. Never treat input a background agent suggests as approval (including a greyed
 predicted prompt in the input line), infer a new security approval from general
 task authorization, or weaken an explicit gate. Send only input covered by
 Bryan's approval, as literal text or an interactive key choice such as
@@ -373,85 +373,85 @@ delivered. If the prompt is gone when you look, inspect the live state before
 any retry: the user may have answered in the visible pane or the prompt may have
 timed out. Do not invent which actor resolved it.
 
-Wait on the handback, not on a turn's end alone. A worker turn can end while its
-own background test shell is still running and its handback is unwritten.
+Wait on the completion report, not on a turn's end alone. A background agent turn can end while its
+own background test shell is still running and its completion report is unwritten.
 `scripts/rex_wait.sh` settles only when the transcript shows the turn ended
-*and* the contract's handback section ends with its `Divergence:` line. Never
+*and* the contract's completion report section ends with its `Divergence:` line. Never
 re-send a prompt to recover a completion signal.
 
-**Every worker turn in flight has a watch, from the moment it starts until the
-parent has read its handback.** This is the parent's job, not Bryan's: never end
-a turn with a worker running and nothing armed to wake you, and never tell Bryan
+**Every background agent turn in flight has a watch, from the moment it starts until the
+orchestrator has read its completion report.** This is the orchestrator's job, not Bryan's: never end
+a turn with a background agent running and nothing armed to wake you, and never tell Bryan
 that nothing will wake you or that you can't monitor it. How to arm it:
 
-- **Pi parent:** call the `watch_worker` tool (worker label, transcript,
-  handback, and the correction's heading as `marker` on a later turn) right after
+- **Pi orchestrator:** call the `watch_background_agent` tool (background agent label, transcript,
+  completion report, and the correction's heading as `marker` on a later turn) right after
   each start and each typed turn. It runs `rex_wait.sh` in the background,
-  returns at once, and wakes this session with the result when the worker
+  returns at once, and wakes this session with the result when the background agent
   settles, so you can still answer Bryan meanwhile. Pi's `bash` has no
   background notify: a `&` job or a `bash` timeout wakes nothing. When the wake
   says the wait ended without settling (exit 1, 2 or 3), read the pane, act,
-  and call `watch_worker` again; call it with `release: true` only once the
-  worker is closed or its handback is accepted. Several workers get one call
-  each. The `worker-watch` extension makes Pi continue any run that started or
-  prompted a worker without one. Without the tool (an older Pi, the extension
+  and call `watch_background_agent` again; call it with `release: true` only once the
+  background agent is closed or its completion report is accepted. Several background agents get one call
+  each. The `background-agent-watch` extension makes Pi continue any run that started or
+  prompted a background agent without one. Without the tool (an older Pi, the extension
   not linked), block in the foreground on `rex_wait.sh` with a `bash` timeout
   just above its cap; that is the only other way to stay attached.
-- **Hermes parent:** run `rex_wait.sh` with
+- **Hermes orchestrator:** run `rex_wait.sh` with
   `terminal(background=true, notify=true)`.
 
-Complete when the original worker settles and its identity still matches the
+Complete when the original background agent settles and its identity still matches the
 record.
 
 ### 5. Treat completion as a claim
 
-Inspect the real branch, diff, worktree, and worker report. Run targeted checks
+Inspect the real branch, diff, worktree, and background agent report. Run targeted checks
 needed to validate the implementation. Then follow `pr-self-review`:
 
-- the parent performs one integrated Standards, Spec, conditional Risk, and
+- the orchestrator performs one integrated Standards, Spec, conditional Risk, and
   Ponytail review plus the acceptance-criteria sweep;
 - all validated blockers are batched into one correction contract;
-- correction returns to this same worker identity;
-- the parent performs one complete rereview of the corrected candidate;
+- correction returns to this same background agent identity;
+- the orchestrator performs one complete rereview of the corrected candidate;
 - one conditional second correction is allowed only for a newly introduced or
   newly exposed bounded implementation blocker; and
 - there is never a third correction.
 
 For security, persistence, migration, protocol, concurrency, public-contract, or
-deployment changes, add one targeted Risk reviewer only after the parent gate has
+deployment changes, add one targeted Risk reviewer only after the orchestrator gate has
 stabilized the candidate. A candidate change invalidates that targeted review;
 rerun it once against the corrected exact candidate.
 
-A correction contract the parent writes is itself a candidate source of defects.
+A correction contract the orchestrator writes is itself a candidate source of defects.
 Before sending it, trace every edge rule it settles (a default for "nothing
 recorded", "stay quiet when...", "fresh state on start") through the first live run
 after rollout. That first run is usually exactly the empty-history case, so a
 "quiet when nothing is recorded" rule can hide the one change the rollout exists to
-announce. When the parent's own instruction caused a gap, say so in the next
-correction and report it to Bryan as the parent's error.
+announce. When the orchestrator's own instruction caused a gap, say so in the next
+correction and report it to Bryan as the orchestrator's error.
 
 Missing verification or an unresolved blocker means do not publish. A stop is
 not permission to lower quality or switch providers.
 
-Complete when the parent has independently accepted one exact candidate.
+Complete when the orchestrator has independently accepted one exact candidate.
 
 ### 6. Release the pane promptly
 
-Keep the pane only while the worker is active, blocked on a specific answer, or
+Keep the pane only while the background agent is active, blocked on a specific answer, or
 has one identified same-session correction. Pending publication, merge, or live
 verification is not a concrete next turn. A pending fresh final review is: its
-in-scope blockers return to this worker as the bounded correction. So for a
-Risk-lane or high-consequence candidate, keep the implementer's pane until the
+in-scope blockers return to this background agent as the bounded correction. So for a
+Risk-reviewed or high-consequence candidate, keep the implementer's pane until the
 final review is dispositioned. A closed pane forces the correction into a new
 session that lacks the implementation context.
 
-Close it with the Rex reference's "Close" steps: exit the worker, close only the
+Close it with the Rex reference's "Close" steps: exit the background agent, close only the
 recorded block, confirm the block is gone, and then mark the identity closed/non-resumable.
 Do not ask for cleanup approval and never close the caller or an unrelated pane.
 
 Complete when the recorded block is absent.
 
-## Running an unattended multi-lane batch
+## Running an unattended multi-workstream batch
 
 When Bryan approves a queue of issues to run while he is away (an overnight
 batch), follow this shape:
@@ -460,28 +460,28 @@ batch), follow this shape:
   stop-at-PR), concurrency limit and live-uptake rule in the project vault before
   dispatch. Change that record, not just the chat, when a decision changes
   mid-run.
-- **Lanes by shared files.** Issues that touch the same files run serially in one
-  lane. Independent lanes all run in parallel. Bryan sets no cap on how many
+- **Workstreams by shared files.** Issues that touch the same files run serially in one
+  workstream. Independent workstreams all run in parallel. Bryan sets no cap on how many
   builders run at once (2026-10-23); only the capacity ceiling above limits
-  dispatch. Don't hold a ready lane because other builders are busy.
+  dispatch. Don't hold a ready workstream because other builders are busy.
 - **The brief is a contract file.** Write it in the ticket state
   directory: authority links, settled open questions, required behaviour, tests,
-  verify commands, permissions and handback shape. The prompt is one line
+  verify commands, permissions and completion report shape. The prompt is one line
   pointing at it. List the state directory first: an issue's directory outlives
-  its earlier lanes, and its ignored `handback.md`, `contract.md` and identity
+  its earlier workstreams, and its ignored `completion-report.md`, `contract.md` and identity
   files may be the only copies of that evidence. When it already holds them,
-  prefix every new file with the lane name (`<lane>-contract.md`,
-  `<lane>-handback.md`, `<lane>-worker-identity.json`), and make the contract
-  name that exact handback path, because the worker writes wherever the contract
-  says. Watch every lane as "Wait on the handback" in step 4 says (Pi:
-  `watch_worker`, one per lane; Hermes: a background `rex_wait.sh` with
-  `notify=true`), so each settlement wakes the coordinator.
+  prefix every new file with the workstream name (`<workstream>-contract.md`,
+  `<workstream>-completion-report.md`, `<workstream>-background-agent-identity.json`), and make the contract
+  name that exact completion report path, because the background agent writes wherever the contract
+  says. Watch every workstream as "Wait on the completion report" in step 4 says (Pi:
+  `watch_background_agent`, one per workstream; Hermes: a background `rex_wait.sh` with
+  `notify=true`), so each settlement wakes the orchestrator.
 - **Integrate before the gate.** Merge the current `origin/main` into the feature
   branch (a signed merge commit, never a rebase) before the canonical gate. The
   gate and final review then judge the integrated candidate.
-- **A lane that depends on two unpublished lanes.** Create its branch from one
-  prerequisite branch (`wt switch --create <lane> --base <prereq-A>`), then make a
-  signed `--no-ff` merge of the other prerequisite into it. Review only the lane's
+- **A workstream that depends on two unpublished workstreams.** Create its branch from one
+  prerequisite branch (`wt switch --create <workstream> --base <prereq-A>`), then make a
+  signed `--no-ff` merge of the other prerequisite into it. Review only the workstream's
   own changes, `<that merge commit>...<head>`, and say in the PR body which earlier
   PRs its diff against main includes and in what order they merge. When the gate
   tool a prerequisite adds isn't on main yet, run it from a clean `git archive`
@@ -493,22 +493,22 @@ batch), follow this shape:
   `git diff <base branch head> origin/main` is empty (main's only change is that
   squash), abort and `git merge -s ours --no-ff -S origin/main` with a message
   saying so, then check `git diff <gated head> HEAD` is empty: the gate evidence
-  still holds. If main has anything else, it's an integration worker turn.
+  still holds. If main has anything else, it's an integration background agent turn.
 - **Re-integrate if main moved before the merge.** Main can advance after a
-  branch's gate or review, because a sibling lane merged. Check
+  branch's gate or review, because a sibling workstream merged. Check
   `git diff --stat <branch-base> origin/main -- package.json package-lock.json tsconfig.json packages workspaces`.
   If any code path changed, merge main into the branch again and rerun the gate
   before squash-merging. A squash that git merges cleanly can still combine
   untested code. A move limited to vault or docs doesn't need a rerun.
-- **A design choice the worker raises is a decision turn, not a correction.**
-  Sometimes a handback asks the coordinator to choose between two implementations.
+- **A design choice the background agent raises is a decision turn, not a correction.**
+  Sometimes a completion report asks the orchestrator to choose between two implementations.
   When an existing rule settles the choice (an invariant from an earlier merged
   change, for example), write `decision-N.md`: the choice, the rule behind it, the
-  added assertion or mutant, and the reruns. Send it to the same worker. It
+  added assertion or mutant, and the reruns. Send it to the same background agent. It
   doesn't spend the issue's correction. Ask Bryan only when no existing authority
   settles it.
 - **Never file issues from review findings without Bryan's approval.** A finding
-  that the issue's acceptance criteria cover is fixed in that lane before merge;
+  that the issue's acceptance criteria cover is fixed in that workstream before merge;
   don't split it off, even if the issue's examples didn't name it. For other
   non-blocking or pre-existing findings, record them in the PR body, then draft
   any proposed later work in the vault plan's "Proposed for Bryan's approval"
@@ -521,42 +521,42 @@ batch), follow this shape:
   without one, queue the next gate behind the running one's PID. Stop a queued
   gate whose candidate a dispatched correction is about to change; its result
   would judge a superseded head.
-- **Clean up workers' scratch.** Worker sessions are often refused `rm -rf` of
-  their own scratch directories. The coordinator removes the paths named in the
-  handback after reading it.
+- **Clean up background agents' scratch.** Background agent sessions are often refused `rm -rf` of
+  their own scratch directories. The orchestrator removes the paths named in the
+  completion report after reading it.
 - **Hold live changes that need a human check.** An authorized behaviour change
   whose activation needs a live check, a pending experiment or a message into a
   real room can still merge as source. Hold its live uptake, and record the hold
   and why for Bryan's morning. Its PR says `Refs #N`, not `Closes #N`, so the
   merge doesn't close an issue whose live acceptance item is still open.
-- **Don't restart a shared service under another coordinator's run.** Rebuilding the shared deployment or restarting a
-  proxy cuts the in-flight model turns and replays of any other lane using it. Before a live uptake, check the
+- **Don't restart a shared service under another orchestrator's run.** Rebuilding the shared deployment or restarting a
+  proxy cuts the in-flight model turns and replays of any other workstream using it. Before a live uptake, check the
   service's own records for running case VMs and recent requests. If either shows activity, start a background waiter
   that settles once the service has been idle for about ten minutes, and do the uptake then.
-- **Conflicts with a sibling lane are a worker turn, not a correction.** When
-  `git merge origin/main` stops on conflicts because another lane landed first,
+- **Conflicts with a sibling workstream are a background agent turn, not a correction.** When
+  `git merge origin/main` stops on conflicts because another workstream landed first,
   write an `integration.md` (what landed, which files conflict, keep both sides'
   tests whole, report rather than work around a behavioural clash, one authorized
-  `git commit --no-edit`). Send it to a fresh worker identity
-  (`integration-worker-identity.json`). The parent doesn't hand-resolve code
+  `git commit --no-edit`). Send it to a fresh background agent identity
+  (`integration-background-agent-identity.json`). The orchestrator doesn't hand-resolve code
   conflicts, and the turn doesn't spend the issue's correction.
 - **Final-review findings mid-batch.** Bundle the in-scope blockers into the one
   correction right away and dispatch it. Post the items that are Bryan's call
   (scope or semantics the authority left open) on the issue, each with a
-  recommendation, and keep going. Don't hold the lane waiting for him. If the
+  recommendation, and keep going. Don't hold the workstream waiting for him. If the
   candidate changes text he must approve (laws, contracts), park the correction
   until he decides instead of correcting twice.
 - **Predicted mutants are not results.** A read-only reviewer may be refused
   permission to execute tests and then only predict which test catches each
   mutant. Put real mutant runs into the correction contract (or run them as the
-  parent) before accepting, and name any mutant that survives today.
+  orchestrator) before accepting, and name any mutant that survives today.
 - **Ask for what needs Bryan; don't park it in a list.** A "waiting for Bryan"
   line is not a question, and a gate with a deadline can sit in those lists
   across sessions until the deadline passes. The first time you report an item
   that needs him, say in plain words what it is and why it exists, what it costs,
   what his answer unblocks, and your recommendation, cancelling included. Lead
   with deadline-bearing items, before routine choices. Ask one question per
-  message, in chat, and wait for it to be settled before the next; while lanes
+  message, in chat, and wait for it to be settled before the next; while workstreams
   report in between, end each status update by restating the one open question
   rather than queuing the next.
 - **Don't ask what you can already answer.** A call whose answer is obvious from
@@ -579,7 +579,7 @@ batch), follow this shape:
 
 ## Reporting to Bryan
 
-- **Bryan doesn't do PR reviews.** PRs are for the coordinator and the worker reviewers. When something needs his
+- **Bryan doesn't do PR reviews.** PRs are for the orchestrator and the background agent reviewers. When something needs his
   approval (laws, a config file, a decision), put what he is approving in the message itself, in plain words. A link
   is welcome for the web UI, but only to the exact file at an exact commit
   (`https://<forge>/<owner>/<repo>/src/commit/<sha>/<path>`), one link per file, never a PR page.
@@ -618,61 +618,61 @@ batch), follow this shape:
 
 Only an explicit same-run background-only request may use Claude Agent View.
 Read `references/claude-agent-view.md`. It is a separate surface and cannot
-resume a visible Rex worker's identity.
+resume a visible Rex background agent's identity.
 
 ## Common Pitfalls
 
-1. Keeping small edits, fixture/harness repairs, or implementation tooling with the parent to save worker startup cost.
-2. Confusing per-session turn serialization with a global ban on concurrent worker sessions.
+1. Keeping small edits, fixture/harness repairs, or implementation tooling with the orchestrator to save background agent startup cost.
+2. Confusing per-session turn serialization with a global ban on concurrent background agent sessions.
 3. Making the prompt a second plan.
-4. Sending to a worker without first checking that its block still matches the identity record.
-5. Treating worker tests, idle status, or prose as parent acceptance.
-6. Letting a worker-discovered adjacent defect expand the ticket or candidate without a new user decision.
+4. Sending to a background agent without first checking that its block still matches the identity record.
+5. Treating background agent tests, idle status, or prose as orchestrator acceptance.
+6. Letting a adjacent defect a background agent discovered expand the ticket or candidate without a new user decision.
 7. Using "all call sites" as permission for an exhaustive domain audit rather than bounded application of the selected mechanism.
-8. Starting a fresh worker for corrections instead of resuming the recorded one.
-9. Duplicating the parent's pre-publication acceptance through a generic fresh reviewer.
+8. Starting a fresh background agent for corrections instead of resuming the recorded one.
+9. Duplicating the orchestrator's pre-publication acceptance through a generic fresh reviewer.
    Bryan's required post-draft-PR SGG final review is not this pitfall.
 10. Leaving a settled pane open as a status marker.
 11. Confusing correction allowance with provider capacity.
-12. Reading "hand it off to a subagent" as a hidden sub-agent mechanism
-    (Hermes's `delegate_task`, a cron-spawned subagent, or the like; Pi has
+12. Reading "hand it off to a subagent" as a hidden background-agent mechanism
+    (Hermes's `delegate_task`, a cron-spawned background agent, or the like; Pi has
     none). Bryan means this skill's normal visible handoff. The one Pi
     exception is read-only fan-out that a skill names: parallel research,
     candidate drafts, or review lanes returning findings only may run as
-    headless `pi -p --no-session` children limited to
-    `--tools read,grep,find,ls`. A child that must run read-only commands
+    headless `pi -p --no-session` background agents limited to
+    `--tools read,grep,find,ls`. One that must run read-only commands
     (`gh` reads, `git show`, `curl`) gets `--tools read,grep,find,ls,bash`
     with its prompt naming the only commands it may run; Pi has no approval
     gate, so any write it makes voids its result. Implementation, and any
-    independent review that acceptance rests on, stays a visible worker. A
+    independent review that acceptance rests on, stays a visible background agent. A
     deferred start ("after usage resets") changes only when the handoff
-    starts. Defer it with a reminder or a check-in back to the parent, never
+    starts. Defer it with a reminder or a check-in back to the orchestrator, never
     by delegating the work itself from a cron job. A hidden subagent also
-    inherits the delegation model instead of the worker role's.
+    inherits the delegation model instead of the background agent role's.
 
 ## Verification Checklist
 
-- [ ] A Pi worker owns implementation regardless of task size; any alternate runtime has Bryan's explicit selection
+- [ ] A Pi background agent owns implementation regardless of task size; any alternate harness has Bryan's explicit selection
 - [ ] One verified ticket or approved plan governs the handoff
 - [ ] Brief contains locator, worktree, authority, and delivery permissions only
 - [ ] Destructive/history-rewriting Git operations remain prohibited
-- [ ] Visible path uses a Rex sub-agents tab slot (max four, 2x2) per references/rex-claude-handoff.md, without stealing focus
-- [ ] The worker command sets `PI_PROGRAM_STATUS=0` (Claude: `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`), so Rex raises no alerts for it
-- [ ] The coordinator persisted all six identity fields
-- [ ] Seat capacity passed (below 75% of a 5-hour window, or 90% of a weekly one) and no other turn was in flight in the worker runtime session
+- [ ] Visible path uses a Rex "Background Agents" tab slot (max four, 2x2) per references/rex-claude-handoff.md, without stealing focus
+- [ ] The background agent command sets `PI_PROGRAM_STATUS=0` (Claude: `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`), so Rex raises no alerts for it
+- [ ] The orchestrator persisted all six identity fields
+- [ ] Subscription capacity passed (below 75% of a 5-hour window, or 90% of a weekly one) and no other turn was in flight in the background agent's session
 - [ ] No overlapping turn targeted the same session; unrelated sessions were not blocked
 - [ ] Delivery claims have acknowledgement evidence, not merely a background process handle
-- [ ] Every worker turn in flight had a watch that wakes the parent (Pi: `watch_worker`) until its handback was read
+- [ ] Every background agent turn in flight had a watch that wakes the orchestrator (Pi: `watch_background_agent`) until its completion report was read
 - [ ] Rejected or uncertain submissions were inspected and recovered without bypass or duplicate delivery
-- [ ] Parent read a substantive handback, dispositioned remaining gates in order, and tested the actual candidate
-- [ ] One integrated parent review and AC sweep completed
+- [ ] Orchestrator read a substantive completion report, dispositioned remaining gates in order, and tested the actual candidate
+- [ ] One integrated orchestrator review and AC sweep completed
 - [ ] Corrections stayed within the one-plus-one bound
 - [ ] High-risk change received one targeted Risk review when required
-- [ ] Pane closed as soon as the worker had no concrete next turn
+- [ ] Pane closed as soon as the background agent had no concrete next turn
 - [ ] Publication and live state were verified separately
 
 ## References
 
-- [Visible Pi workers in Rex](references/rex-claude-handoff.md)
+- [Visible Pi background agents in Rex](references/rex-claude-handoff.md)
 - [Design-preview promotion](references/design-preview-handoff.md)
 - [Explicit background Agent View](references/claude-agent-view.md)

@@ -30,7 +30,7 @@ class LeanIssueWorkContractTests(unittest.TestCase):
         )
 
     def test_exploration_is_conditional(self) -> None:
-        self.assertIn("zero exploration children", self.issue_work)
+        self.assertIn("zero exploration background agents", self.issue_work)
         self.assertNotIn("**always** at least one", self.issue_work)
 
     def test_imperative_work_command_carries_reviewable_pr_authority(self) -> None:
@@ -47,7 +47,7 @@ class LeanIssueWorkContractTests(unittest.TestCase):
     def test_parent_acceptance_is_the_normal_final_gate(self) -> None:
         self.assertRegex(
             self.issue_work,
-            r"(?is)the parent\s+is the independent acceptance\s+context",
+            r"(?is)the orchestrator\s+is the independent acceptance\s+context",
         )
         self.assertIn("one integrated review", self.review.lower())
         self.assertNotIn("must launch a fresh visible Claude reviewer", self.issue_work)
@@ -69,9 +69,9 @@ class LeanIssueWorkContractTests(unittest.TestCase):
         self.assertIn("`correction_passes_consumed`", self.review)
         self.assertIn("must not reset it", self.review)
 
-    def test_blocked_worker_is_read_checked_and_answered_only_from_authority(self) -> None:
+    def test_blocked_background_agent_is_read_checked_and_answered_only_from_authority(self) -> None:
         ref = " ".join(self.helper_reference.split())
-        self.assertIn("A worker blocked on a permission or question shows it in `capture`", ref)
+        self.assertIn("A background agent blocked on a permission or question shows it in `capture`", ref)
         self.assertIn("Answer only what the governing plan already settles", ref)
         self.assertIn("anything new goes to Bryan", ref)
         self.assertIn("before every `send`", ref)
@@ -120,15 +120,15 @@ class LeanIssueWorkContractTests(unittest.TestCase):
         skill = POOL / "coding-agent-handoff-supervision"
         self.assertEqual(
             sorted(p.name for p in (skill / "scripts").iterdir() if p.suffix in (".py", ".sh")),
-            ["claude-usage.sh", "rex_subagent_slot.py", "rex_wait.sh"],
+            ["claude-usage.sh", "rex_background_agent_slot.py", "rex_wait.sh"],
         )
         self.assertEqual(
             sorted(p.name for p in (skill / "tests").glob("test_*.py")),
-            ["test_rex_subagent_slot.py", "test_rex_wait.py"],
+            ["test_rex_background_agent_slot.py", "test_rex_wait.py"],
         )
         self.assertTrue((skill / "scripts" / "rex_wait.sh").stat().st_mode & 0o111)
         self.assertIn("references/rex-claude-handoff.md", self.handoff)
-        for script in ("rex_subagent_slot.py", "rex_wait.sh"):
+        for script in ("rex_background_agent_slot.py", "rex_wait.sh"):
             with self.subTest(script=script):
                 self.assertIn(script, self.handoff)
                 self.assertIn(script, self.helper_reference)

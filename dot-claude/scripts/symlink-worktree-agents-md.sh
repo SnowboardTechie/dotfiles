@@ -5,7 +5,7 @@
 #   - Whole directories listed in SHARED_DIRS (e.g. .notes)
 #
 # Idempotent: skips anything that already exists. No-op outside a worktree, or
-# in the main checkout itself. Exits 0 unconditionally so a failure here can
+# in the primary checkout itself. Exits 0 unconditionally so a failure here can
 # never block session start.
 #
 # Payload (stdin, JSON): SessionStart provides `.cwd`. Falls back to $PWD.
@@ -33,7 +33,7 @@ main=$(git -C "$worktree" worktree list --porcelain 2>/dev/null \
   | awk '/^worktree / { print $2; exit }')
 [ -n "$main" ] || { echo "RESULT: no main worktree found" >> "$LOG_FILE" 2>/dev/null; exit 0; }
 if [ "$main" = "$worktree" ]; then
-  echo "RESULT: in main checkout, skipping" >> "$LOG_FILE" 2>/dev/null
+  echo "RESULT: in primary checkout, skipping" >> "$LOG_FILE" 2>/dev/null
   exit 0
 fi
 

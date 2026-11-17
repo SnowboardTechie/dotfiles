@@ -178,7 +178,7 @@ can be rerun as often as needed, and only the applied preview's `--creation` id 
 - **Research pointer**: a research ticket's findings go on a `research/<name>` branch of this repository, pushed
   with `git push origin research/<name>` and never opened as a PR. The context pointer is a comment on the ticket
   linking the file, `https://<host>/<owner>/<repo>/src/branch/research/<name>/<path>`, posted before `resolve`;
-  the resolution answer links it again. A session with no subagent and no network can't do this: it says so in
+  the resolution answer links it again. A session with no background agent and no network can't do this: it says so in
   the answer and the gist, and leaves the pointer out.
 
 The map and ticket body shapes, the claim and index records, and how claims are decided between racing sessions

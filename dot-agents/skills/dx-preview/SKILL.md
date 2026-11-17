@@ -18,11 +18,11 @@ Read-only DX review of a branch or PR. Given a ref, show what a **plugin author*
 Follow in order. Each step is required unless marked optional.
 
 1. **Resolve the exact ref you were handed.** `/dx-preview <PR-url | PR-number | branch>` previews *that* ref — never the local checkout's current branch, unless the user explicitly passes `--local`.
-   - The PR head often lives in a git worktree while the main checkout sits on the base branch (e.g. `HOLD-filters`). Find the head ref (`gh pr view <N> --json headRefName,baseRefName`; locate the worktree with `git worktree list`) and read from there. Previewing the wrong branch = previewing stale surface. This is the single most common way to be confidently wrong.
+   - The PR head often lives in a git worktree while the primary checkout sits on the base branch (e.g. `HOLD-filters`). Find the head ref (`gh pr view <N> --json headRefName,baseRefName`; locate the worktree with `git worktree list`) and read from there. Previewing the wrong branch = previewing stale surface. This is the single most common way to be confidently wrong.
 
 2. **Classify: repo + changed surface + which personas apply.** Diff the head against its base. Identify the repo and map it to personas (table below). If a persona genuinely isn't touched by the change, say so in one line — do not manufacture a hollow example to fill the slot.
 
-3. **Ground from what the branch already ships.** Use the runtime's native file reading, search, and terminal tools. Read, in this priority order: the branch's own `examples/`, its tests, then the changed source (schemas / `.tsp` / route handler / SDK exports). For a `.tsp` change, trace it *through* to the emitted json-schema/openapi + SDK public exports — the consumer sees what it compiles to, not the `.tsp`. Derive request/response payloads from the source (the classifier/serializer/schema). Run code live ONLY if a payload genuinely can't be derived from source AND running is cheap — do not monkeypatch transports or fabricate fixtures for a DX eyeball.
+3. **Ground from what the branch already ships.** Use the harness's native file reading, search, and terminal tools. Read, in this priority order: the branch's own `examples/`, its tests, then the changed source (schemas / `.tsp` / route handler / SDK exports). For a `.tsp` change, trace it *through* to the emitted json-schema/openapi + SDK public exports — the consumer sees what it compiles to, not the `.tsp`. Derive request/response payloads from the source (the classifier/serializer/schema). Run code live ONLY if a payload genuinely can't be derived from source AND running is cheap — do not monkeypatch transports or fabricate fixtures for a DX eyeball.
 
 4. **Present the output contract** (below).
 

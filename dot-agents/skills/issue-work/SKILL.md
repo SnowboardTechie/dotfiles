@@ -18,12 +18,12 @@ Take one GitHub or Forgejo issue from current authority to a verified reviewable
 PR through Intake → Plan → Implement → Accept → Publish. Keep durable state under
 the ticket workspace and code in an isolated implementation worktree.
 
-The lean path is deliberate: the parent orchestrates and a Pi worker implements, including
+The lean path is deliberate: the orchestrator leads and a Pi background agent implements, including
 single-loop changes, fixtures, harnesses, and tooling repairs. Investigate only
 unresolved questions, use one implementation context per bounded assignment,
-run independent parent acceptance, batch corrections,
+run independent orchestrator acceptance, batch corrections,
 and run full verification once when stable. For Bryan's SGG issue implementation,
-closeout then includes a verified draft PR and a fresh worker final PR self-review;
+closeout then includes a verified draft PR and a fresh background agent final PR self-review;
 that required final gate is not a redundant pre-publication reviewer fan-out.
 
 ## Inputs and authority
@@ -78,11 +78,11 @@ Questions and corrections are not authorization. Record the authority mode in
 `progress.md` so resume does not invent or discard it.
 
 Track the complete delivery shape, not only the current phase. Bryan's established
-SGG issue-implementation closeout is parent review → verified draft PR → fresh worker final PR self-review → parent validation of findings → resource cleanup.
+SGG issue-implementation closeout is orchestrator review → verified draft PR → fresh background agent final PR self-review → orchestrator validation of findings → resource cleanup.
 Apply it when Bryan authorizes working the issue or executing its approved
 implementation handoff; he need not restate the closeout steps each time. Record
 that workflow and its draft-PR authority at intake. A pushed branch, a completed
-worker turn, and parent review are intermediate states, not completion.
+background agent turn, and orchestrator review are intermediate states, not completion.
 Explicit plan-only, prompt-only, no-publication, or other stopping instructions
 override this workflow; outside SGG preserve the ordinary publication gate.
 Preserve the global correction count through final review and do not infer merge,
@@ -95,10 +95,10 @@ verify that action, then continue the recorded delivery workflow in the same
 run. The gate action is not a replacement deliverable. Answer a readiness
 question first, then resume any unfinished authorized work instead of ending
 with an inventory of steps still owed. Before a terminal response, compare live
-evidence with the recorded terminal delivery shape: handoff, worker settlement,
+evidence with the recorded terminal delivery shape: handoff, background agent settlement,
 tracker creation, passing test subset and pushed branch are not substitutes for
 a required draft PR and final review. A necessary async yield retains its
-completion consumer and states that execution continues, not a handback or a
+completion consumer and states that execution continues, not a completion report or a
 request to proceed.
 
 Scope a pending decision to the operation it actually changes. A separate
@@ -106,7 +106,7 @@ integration, installation or commissioning prerequisite does not suspend
 independent source review, candidate freezing, targeted Risk or canonical
 verification of an unchanged source candidate. Finish those authorized gates
 and report source acceptance separately from unresolved live readiness. Do not
-make Bryan answer a scope-extension question merely to recover unfinished parent
+make Bryan answer a scope-extension question merely to recover unfinished orchestrator
 verification. Hold a particular gate only for its evidenced dependency or safety
 boundary; a concrete source blocker still requires repair before the full run.
 
@@ -115,18 +115,18 @@ boundary; a concrete source blocker still requires repair before the full run.
 Ticket state (`{TICKET_STATE_DIR}`):
 
 ```text
-{TICKET_TRUNK_ROOT}/.agent-work/issue-work/{ticket-owner}-{ticket-repo}-{N}/
+{TICKET_PRIMARY_CHECKOUT}/.agent-work/issue-work/{ticket-owner}-{ticket-repo}-{N}/
 ```
 
 State started before 2026-11-09 may sit at the legacy
-`{TICKET_TRUNK_ROOT}/.hermes/issue-work/{ticket-owner}-{ticket-repo}-{N}/`. Resume
+`{TICKET_PRIMARY_CHECKOUT}/.hermes/issue-work/{ticket-owner}-{ticket-repo}-{N}/`. Resume
 it where it is; never move or copy it, because `progress.md` and
 `context-validation.json` record absolute paths into it. Resolve the directory
 once at intake, before reading or writing anything:
 
 ```bash
 python3 ~/code/dotfiles/dot-agents/lib/agent_state.py dir --create \
-  --trunk "$TICKET_TRUNK_ROOT" --skill issue-work --key "{ticket-owner}-{ticket-repo}-{N}"
+  --primary-checkout "$TICKET_PRIMARY_CHECKOUT" --skill issue-work --key "{ticket-owner}-{ticket-repo}-{N}"
 ```
 
 Its `path` is `{TICKET_STATE_DIR}`: the existing `.agent-work/` directory, else an
@@ -139,7 +139,7 @@ may differ only through a current approved `issue-plan` handoff that explicitly
 names Ticket repository, Implementation forge, Implementation repository,
 Implementation base, and Implementation revision.
 
-Use `worktrunk` to resolve canonical trunks from Git common-directory identity.
+Use `worktrunk` to resolve primary checkouts from Git common-directory identity.
 Do not infer repository identity from path names or nearby clones.
 
 ## Phase 1 — Intake
@@ -193,23 +193,23 @@ refresh issue/comments and fetched base before reuse.
 Compare ticket URL, source plan, repository roles, branch, worktree, authority
 mode, and checkpoints. Immaterial drift is recorded; material drift stops.
 
-For visible handoffs, require the existing `worker-identity.json`. Legacy or
-incomplete visible-worker state stops; never reconstruct missing fields from a
-currently visible pane or launch a replacement worker.
+For visible handoffs, require the existing `background-agent-identity.json`. Legacy or
+incomplete visible background-agent state stops; never reconstruct missing fields from a
+currently visible pane or launch a replacement background agent.
 
 Complete when resumed state is freshly admitted or the old state has been
 rejected before mutation.
 
 ### 4. Create the isolated worktree
 
-Require the implementation trunk to have no modified or staged files; preserve
+Require the implementation primary checkout to have no modified or staged files; preserve
 unrelated untracked files. Compute the branch from project convention. For a
 private cross-repository ticket, derive `issue-xrepo-{ticket_digest}` from the
 canonical ticket URL so branch/public metadata does not expose private identity.
 
 Use `wt switch --create {branch} --base origin/{default}`. Reuse only when the
 exact branch, ticket, implementation repository, and state record match. Never
-switch trunk in place.
+switch the primary checkout in place.
 
 Write initial `progress.md` with status, authority mode, ticket/implementation
 roles, worktree, branch, base SHA, plan source, checkpoints, and start time.
@@ -218,7 +218,7 @@ Initialize one global `correction_passes` counter to `0`; it spans Phases 3 and
 
 Write machine-readable frontmatter from the start, not prose-only state. Inspect
 `scripts/validate_cross_repo_context.py` for its current required fields and
-populate them from verified identities before launching the worker. Run the
+populate them from verified identities before launching the background agent. Run the
 validator once at intake and require `ok: true`; do not defer discovering a
 malformed progress record until review admission. Keep later status updates
 consistent with that frontmatter.
@@ -228,23 +228,23 @@ recorded.
 
 ## Phase 2 — Plan efficiently
 
-### 1. Decide whether exploration earns a child
+### 1. Decide whether exploration earns a background agent
 
-Use zero exploration children when the current ticket/approved plan plus bounded
-parent inspection already identifies affected seams, consumers, tests, and
+Use zero exploration background agents when the current ticket/approved plan plus bounded
+orchestrator inspection already identifies affected seams, consumers, tests, and
 material risks.
 
-Use one exploration child only when a concrete unresolved repository question
+Use one exploration background agent only when a concrete unresolved repository question
 would otherwise make the plan guess. Add a second only for a genuinely distinct
 boundary whose answer can materially change implementation, such as application
 data flow versus an external protocol. Give each a bounded scope and distinct
-output file. Do not ask a child to remap the whole repository or reproduce a
-candidate fingerprint supplied by the parent.
+output file. Do not ask one to remap the whole repository or reproduce a
+candidate fingerprint supplied by the orchestrator.
 
 External documentation research is inline and conditional on a referenced API or
 library whose current behavior is not established by repository sources.
 
-Complete when every exploration has answered a named planning question; no child
+Complete when every exploration has answered a named planning question; no background agent
 exists merely because the phase has one.
 
 ### 2. Write the execution plan
@@ -262,7 +262,7 @@ into `{TICKET_STATE_DIR}/plan.md`. Include:
 Do not invent file paths, APIs, commands, or counts. For an approved vault plan,
 the derived plan may add executor detail but cannot supersede intent.
 
-When the coordinator settles an issue's open mechanism question in the brief,
+When the orchestrator settles an issue's open mechanism question in the brief,
 trace the failure path to what the user actually receives.
 
 - A validation failure usually retries as a fresh attempt with no feedback, and
@@ -282,10 +282,10 @@ Complete when the plan is decision-complete and authority permits execution.
 
 ## Phase 3 — Implement once
 
-### 1. Route implementation to a Pi worker
+### 1. Route implementation to a Pi background agent
 
 Classify task shape to right-size the handoff and checks, not to transfer
-implementation to the parent:
+implementation to the orchestrator:
 
 - `single-loop`: one coherent edit/test cycle, limited repository reading, and no
   security, persistence, migration, protocol, concurrency, public-contract, or
@@ -296,7 +296,7 @@ implementation to the parent:
 Run the deterministic router and preserve its JSON:
 
 ```sh
-python3 dot-agents/skills/issue-work/scripts/select_issue_worker.py \
+python3 dot-agents/skills/issue-work/scripts/select_issue_agent.py \
   --workdir "$WORKTREE" \
   --ticket-host "$TICKET_HOST" \
   --ticket-repo "$TICKET_REPO" \
@@ -310,8 +310,8 @@ Use `--task-shape substantial` when the criteria require it. Bryan's standing
 selection is Pi for both shapes (Bryan, 2026-11-10): pass `--override pi` explicitly. The
 router's legacy `auto` single-loop route does not supersede that instruction.
 Use another implementation route only when Bryan explicitly selects it; task
-size, startup cost, fixture ownership and exhausted worker capacity do not
-authorize parent implementation. Qwen is never an automatic route.
+size, startup cost, fixture ownership and exhausted background agent capacity do not
+authorize orchestrator implementation. Qwen is never an automatic route.
 
 Complete when the routing result matches verified repository identity and the
 recorded task shape, and selects Pi unless Bryan explicitly chose otherwise.
@@ -320,24 +320,24 @@ recorded task shape, and selects Pi unless Bryan explicitly chose otherwise.
 
 For the visible Pi route, or an explicit Claude or Hermes route, load
 `coding-agent-handoff-supervision` and reuse this existing governing issue; do
-not call `issue-create`. The parent may be a Pi or Hermes session; either starts a Pi worker. Require this session's Rex pane and
+not call `issue-create`. The orchestrator may be a Pi or Hermes session; either starts a Pi background agent. Require this session's Rex pane and
 follow that skill's Rex procedure (`references/rex-claude-handoff.md`). Agent View and
 background wrappers are not fallbacks for visible work.
 
 Do the checks by hand as that reference describes. Persist
-`worker-identity.json`, which owns all six fields:
+`background-agent-identity.json`, which owns all six fields:
 
-- `worker_surface`;
-- `worker_agent_name`;
-- `worker_pane_id`;
-- `worker_kind`;
-- `worker_runtime_session_id`; and
-- `worker_worktree_identity`.
+- `background_agent_surface`;
+- `background_agent_name`;
+- `background_agent_pane_id`;
+- `background_agent_kind`;
+- `background_agent_session_id`; and
+- `background_agent_worktree_identity`.
 
-The coordinator hard-gates the worker's Claude-seat capacity (below 75% of a 5-hour window, or 90% of a weekly one) before start and every
-prompt, serializes provider turns within each worker runtime session, waits for
-settlement (transcript plus handback), and records start/end capacity.
-Independent worker sessions may work concurrently in separate worktrees; another
+The orchestrator hard-gates the background agent's Claude-subscription capacity (below 75% of a 5-hour window, or 90% of a weekly one) before start and every
+prompt, serializes provider turns within each background agent's session, waits for
+settlement (transcript plus completion report), and records start/end capacity.
+Independent background agent sessions may work concurrently in separate worktrees; another
 task's active session is not a blocker. A check at or above the ceiling, or an
 unverifiable one, stops before another turn, consumes no correction pass, and
 never authorizes an automatic
@@ -347,24 +347,24 @@ Send one short artifact-backed implementation prompt. The ticket/plan is the
 self-contained authority; the prompt adds worktree and permissions, not another
 implementation plan.
 
-Default visible-worker authority forbids staging, local commit, push, and
-PR/issue mutation. The parent owns those actions under the imperative work
+Default visible background-agent authority forbids staging, local commit, push, and
+PR/issue mutation. The orchestrator owns those actions under the imperative work
 authorization. Destructive and history-rewriting Git operations are absolute and
 not approval-eligible: prohibit `git reset`, `git clean`, checkout-discard,
 rebase, amend, history rewrite, force-push, and local-ref/branch deletion.
 
-For an explicit Qwen route, use its original model-pure worker and session. A
-host-native implementation route requires Bryan's explicit selection; it is not
-a fallback when the worker is unavailable. The parent runs existing checks and independently
+For an explicit Qwen route, use its original model-pure background agent and session. A
+harness-native implementation route requires Bryan's explicit selection; it is not
+a fallback when the background agent is unavailable. The orchestrator runs existing checks and independently
 accepts results, but sends required code, fixture, harness and tooling repairs
-back through a bounded worker contract under the current authority.
+back through a bounded background agent contract under the current authority.
 
 Complete when the authorized implementation owner has produced a candidate and
-settled; worker settlement alone is not acceptance or delivery.
+settled; background agent settlement alone is not acceptance or delivery.
 
 ### 3. Inspect, test, and batch correction
 
-Treat worker output as a claim. Inspect every changed path and the actual diff.
+Treat background agent output as a claim. Inspect every changed path and the actual diff.
 Run the plan's targeted tests and adversarial probes needed to validate the
 changed behavior. Do not run the full repository gate yet.
 
@@ -378,13 +378,13 @@ When the change is to a model's instructions (a skill, prompt or result schema)
 and the issue names the real case that motivated it, acceptance is one rerun of
 that case through the real model on the current build, with scratch state and
 every outward write (posting, comments, notices) disabled. Put the rerun in the
-worker's contract or correction. A test that pins the instruction text proves
+background agent's contract or correction. A test that pins the instruction text proves
 only the text. Report the rerun's output against each criterion, and name how
 its conditions differed from the original run (missing tokens or tools, the
 upstream's state having moved), since those can explain a better result.
 
 If targeted checks find blockers that prevent a candidate commit, write one
-consolidated correction contract and resume the same worker. This consumes the
+consolidated correction contract and resume the same background agent. This consumes the
 workflow's normal correction: require the global `correction_passes` counter to
 be `0`, increment it to `1` before submission, and preserve that value even when
 the turn fails after input is accepted. For visible Pi/Claude/Hermes, follow the
@@ -441,32 +441,32 @@ Complete when repository roles and exact candidate match direct Git state.
 Load `pr-self-review` in `pre-pr` mode and pass
 `correction_passes_consumed` from the global progress counter. That workflow
 must continue from this value rather than initializing a new allowance. When a
-delegated worker authored the candidate and the parent did not edit it, review directly.
-The parent is the independent acceptance context. Do not launch a generic
-fresh worker reviewer in this pre-publication phase. Bryan's SGG final worker
+delegated background agent authored the candidate and the orchestrator did not edit it, review directly.
+The orchestrator is the independent acceptance context. Do not launch a generic
+fresh background agent reviewer in this pre-publication phase. Bryan's SGG final background agent
 review occurs after draft PR publication in Phase 5 and remains required.
 
-The parent runs one integrated review through Standards, Spec, conditional Risk,
+The orchestrator runs one integrated review through Standards, Spec, conditional Risk,
 and Ponytail, then performs the independent acceptance-criteria sweep. The
 review writes separate `review-standards.md`, `review-spec.md`, optional
 `review-risk.md`, required `review-ponytail.md`, `intent-checklist.json`, and
 `summary.md` for one exact candidate.
 
 When `correction_passes_consumed` is `0`, batch all validated blockers into the
-one normal correction for the original worker, set the counter to `1`, then run
-one complete parent rereview. When it is already `1`, the normal correction was
+one normal correction for the original background agent, set the counter to `1`, then run
+one complete orchestrator rereview. When it is already `1`, the normal correction was
 consumed in Phase 3 and only the one conditional second correction remains.
 At `2`, no correction remains. There is never a third correction. Unresolved
 blockers stop publication.
 
-If the parent authored or edited the candidate, use one independent delegated
+If the orchestrator authored or edited the candidate, use one independent delegated
 review context. For security, persistence, migration, protocol, concurrency,
 public-contract, or deployment changes, add one targeted Risk reviewer after the
-ordinary parent gate has stabilized the candidate. It reviews only that boundary.
+ordinary orchestrator gate has stabilized the candidate. It reviews only that boundary.
 
 During corrections run targeted checks. Run full repository verification once
 after the final candidate is stable: one gate per PR, on the reviewed final head,
-before merge. The final review reads the worker's targeted results, not a gate. A candidate change invalidates current
+before merge. The final review reads the background agent's targeted results, not a gate. A candidate change invalidates current
 review artifacts; replace them during the required integrated rereview.
 
 Complete when current artifacts, acceptance criteria, and final verification all
@@ -474,7 +474,7 @@ match one exact candidate with ready Ship Readiness.
 
 ### 3. Present outcome without a redundant approval
 
-Report the headline, all Critical/Major findings, Minor/Nit counts, lane
+Report the headline, all Critical/Major findings, Minor/Nit counts, review-lane
 selection, Ponytail status, acceptance result, verification, and artifact paths.
 
 If the session began with an imperative work command and authority has not
@@ -501,7 +501,7 @@ delivery authority rather than demanding an exact `work <URL>` command token.
 Publish one draft PR under `ship`; draft publication is part of that established
 handoff workflow unless Bryan explicitly withheld it.
 
-After verifying the draft PR, start one fresh visible Pi worker (Opus 5.5, medium thinking)
+After verifying the draft PR, start one fresh visible Pi background agent (Opus 5.5, medium thinking)
 for final `pr-self-review` in `pr-url` mode. Its authority is read-only review,
 not edits or live GitHub review submission. Pass the exact PR/base/head/diff
 identity, accepted outcomes, existing verification artifacts, and consumed global
@@ -511,7 +511,7 @@ of rerunning it unnecessarily. Capacity/transport failure is an incomplete final
 gate: report the blocker, never silently substitute another provider or declare
 the delivery complete.
 
-The parent reads and validates the final artifacts. Route only concrete in-scope blockers
+The orchestrator reads and validates the final artifacts. Route only concrete in-scope blockers
 through the remaining bounded correction allowance; a candidate change requires
 fresh exact-candidate review/verification and PR-body synchronization. Preserve
 draft state. Close the reviewer promptly after collection when it has no concrete
@@ -527,7 +527,7 @@ Send the terminal-completion notification from
 `references/matrix-attention-notifications.md` when that workflow was armed.
 
 Complete when the draft PR is remotely verifiable, the candidate SHA matches,
-Bryan's required final worker review is collected and dispositioned, current
+Bryan's required final background agent review is collected and dispositioned, current
 verification is accurately recorded, and handoff-owned resources are closed.
 Update and synchronize the canonical vault status/index/handoff at that boundary.
 
@@ -576,7 +576,7 @@ At terminal completion, write one machine-readable JSON object to
 ```
 
 Counts are factual totals, not estimates. Capacity values come from the helper;
-leave them null when no Claude seat was used or the end probe was unavailable. Do
+leave them null when no Claude subscription was used or the end probe was unavailable. Do
 not store prompts, transcripts, credentials, or private issue content in this
 record.
 
@@ -603,8 +603,8 @@ python3 dot-agents/skills/issue-work/scripts/record_efficiency.py record \
 ```
 
 `quota_interruptions` counts provider-capacity failures that prevented an
-otherwise eligible worker turn. (`claude_prompts` keeps its name for the
-recorded history; it counts worker prompts.) `escaped_critical_major` is owned by the
+otherwise eligible background agent turn. (`claude_prompts` and `exploration_children` keep their names for the
+recorded history; they count background agent prompts and exploration background agents.) `escaped_critical_major` is owned by the
 aggregator and starts empty. If later PR feedback, CI, merge preparation, or
 live verification proves an escaped Critical/Major defect, the issue-work owner
 must run `record-escape` with the severity, evidence reference, and assessment
@@ -616,15 +616,15 @@ After five records are present, run `report`. The pilot is evaluation-ready only
 when all five have `escaped_assessed_at`; until then, report escaped-defect data
 as pending rather than zero.
 
-Compare time to reviewable PR, worker prompts, review invocations, quota
+Compare time to reviewable PR, background agent prompts, review invocations, quota
 interruptions, and later escaped Critical/Major findings. Improvement means
 fewer turns and shorter delivery with no increase in escaped blockers; do not
 optimize for low counts by weakening a gate.
 
 **A decision Bryan makes is work to finish, not a new question.** When his answer settles how something must behave
 and the code doesn't match it yet, record the decision and start the change in the same turn, through the full delivery
-(worker, gate, final review, merge, redeploy). Don't ask whether to do it now or save it for a later slice. Do the
-complete work. (Bryan, 2026-11-05: after he ruled that bot approvals stay, the coordinator asked whether to start the
+(background agent, gate, final review, merge, redeploy). Don't ask whether to do it now or save it for a later slice. Do the
+complete work. (Bryan, 2026-11-05: after he ruled that bot approvals stay, the orchestrator asked whether to start the
 code change. "We should be doing the complete work, not saving small pieces for later.")
 
 **An approved plan plus "proceed" authorizes every step in it.** A task the
@@ -638,9 +638,9 @@ safety gate. (Bryan, 2026-11-09, #1387: the hold branch sat in Task 0 of an
 approved plan and was still held for a "go"; a Served/OkT choice the ADR draft
 already made was asked as a planning question.)
 
-**A blocked tool call blocks that call, not the lane.** When an approval gate refuses or times out on one command,
+**A blocked tool call blocks that call, not the workstream.** When an approval gate refuses or times out on one command,
 don't retry it or reach the same result another way, but keep doing every authorized step that doesn't need it. Never
-turn it into a question that reconfirms work the run already covers: a defect found in verification is fixed in-lane
+turn it into a question that reconfirms work the run already covers: a defect found in verification is fixed in the same workstream
 under the same authority. Mention the blocked call in the next report. (Bryan, 2026-11-03: a timed-out read of a
 replay log became an hour-long "go?" card for an obvious in-scope fix the diagnosis didn't even need.)
 
@@ -652,8 +652,8 @@ Stop when:
 - a material decision remains open for the operation being attempted (continue
   independently authorized gates that do not depend on that decision);
 - selected provider capacity is exhausted or unverifiable;
-- another turn targets the same worker runtime session and holds its lease;
-- a visible-worker identity is missing or mismatched;
+- another turn targets the same background agent's session and holds its lease;
+- a visible background-agent identity is missing or mismatched;
 - a plan, architecture, or scope defect is being presented as another correction;
 - correction allowance is exhausted with a blocker;
 - acceptance authority is unreadable or unswept;
@@ -669,9 +669,9 @@ weaker review, or fabricated completion claim.
 1. Spawning exploration because the phase exists rather than because a question
    exists.
 2. Letting the legacy single-loop router default override Bryan's standing Pi implementation role.
-3. Treating independent worker issue sessions as a global concurrency conflict.
+3. Treating independent background agent issue sessions as a global concurrency conflict.
 4. Duplicating pre-publication acceptance through another generic reviewer.
-   This warning does not apply to the required post-draft-PR SGG final worker review.
+   This warning does not apply to the required post-draft-PR SGG final background agent review.
 4b. Gating only the package you edited. Before the gate, read the `on.pull_request.paths` of every
    workflow in `.github/workflows/` and run the local equivalent of each one the diff triggers; a
    sibling package's tests can hard-code the current contract (the Python SDK's
@@ -682,26 +682,26 @@ weaker review, or fabricated completion claim.
 5. Running full CI after every correction. The full gate runs **once per PR**, on the final reviewed head, right
    before merge (Bryan, 2026-11-07: "it was always supposed to be just one gate run at the end"; a gate takes 20+
    minutes). Don't start it on the first candidate beside the final review, or again after each correction: the
-   review and corrections use the worker's targeted checks, and the contract's checks must already include every
+   review and corrections use the background agent's targeted checks, and the contract's checks must already include every
    suite the change can break (for SGG grant builders, `packages/foundation/test`), so the one gate rarely fails.
-   On #243 slice 3 the coordinator ran 11 gates for 4 PRs. For a small PR in durable-pi-workspace (Bryan,
+   On #243 slice 3 the orchestrator ran 11 gates for 4 PRs. For a small PR in durable-pi-workspace (Bryan,
    2026-11-07): one review, Minor findings recorded in the PR body rather than corrected in another round, a
    correction only for a real blocker, then the one gate. In durable-pi-workspace that gate is the PR head's
    `Typecheck and tests` check in Forgejo Actions (affected mode against the base, full mode on main after merge):
    push the final head and merge once it is green, with no local gate. If main moved after the green run, merge main
    in and let the check run on that head (`self-hosted-ci-runners`).
 6. Asking for plan or PR permission already carried by an imperative work command.
-7. Treating a worker report or green focused test as final acceptance.
+7. Treating a background agent report or green focused test as final acceptance.
 8. Keeping panes open through publication or merge.
 9. Merging a PR that makes the live service's current config invalid (a newly
    required field, a now-refused key) before its live config change is ready.
    Anything that rebuilds the deployment from main then breaks a running
    service. State the merge order in the PR body and merge it together with, and
    immediately before, the uptake that changes the config.
-10. Running a stacked follow-up PR in the first PR's worktree. Worker identity
+10. Running a stacked follow-up PR in the first PR's worktree. Background agent identity
     is bound to worktree and branch, so stack the next PR on its own branch and
     worktree (`wt switch --create <next> --base <first-branch>`) with a fresh
-    worker, and close the first worker once its corrections are spent. Carry the
+    background agent, and close the first background agent once its corrections are spent. Carry the
     first PR's remaining final-review Minors into the stacked PR's correction
     when the first has none left.
 11. Gating in a worktree whose `node_modules` predates the lockfile. A checkout
@@ -716,10 +716,10 @@ weaker review, or fabricated completion claim.
     "stacked branch after its base PR is squash-merged" rule. Merge the stack in
     dependency order, and merge a reviewed stacked PR's main-integration before
     its final gate so the gate judges what lands.
-13. Leaving a worker's whole-slice contract shapes implicit when later PRs build
-    on it in parallel. Have the first PR's handback list the config, record and
+13. Leaving a background agent's whole-slice contract shapes implicit when later PRs build
+    on it in parallel. Have the first PR's completion report list the config, record and
     API shapes, and point the parallel contracts at that list; any change to a
-    shape is then additive and named in the later handback.
+    shape is then additive and named in the later completion report.
 
 ## Verification Checklist
 
@@ -728,10 +728,10 @@ weaker review, or fabricated completion claim.
 - [ ] Imperative/advisory authority recorded exactly
 - [ ] Exploration count follows unresolved questions, including zero
 - [ ] Task shape and router output preserved
-- [ ] A Pi worker authored implementation, fixtures and tooling repairs unless Bryan explicitly selected otherwise
-- [ ] At most one turn targeted each worker runtime session; independent sessions may overlap
-- [ ] Worker identity remained complete and unchanged
-- [ ] Parent inspected actual bytes and ran targeted checks
+- [ ] A Pi background agent authored implementation, fixtures and tooling repairs unless Bryan explicitly selected otherwise
+- [ ] At most one turn targeted each background agent's session; independent sessions may overlap
+- [ ] Background agent identity remained complete and unchanged
+- [ ] Orchestrator inspected actual bytes and ran targeted checks
 - [ ] Repository planning closeout completed
 - [ ] One independent integrated review and AC sweep completed
 - [ ] Corrections stayed within one normal plus one conditional pass
@@ -739,9 +739,9 @@ weaker review, or fabricated completion claim.
 - [ ] Full verification ran once on the stable candidate
 - [ ] Review artifacts match exact candidate identity
 - [ ] Reviewable PR pushed and read back without a redundant approval
-- [ ] SGG closeout includes collected, parent-dispositioned fresh worker final PR self-review
+- [ ] SGG closeout includes collected, orchestrator-dispositioned fresh background agent final PR self-review
 - [ ] No merge or unapproved issue/deployment mutation occurred
-- [ ] Worker pane and watcher were released
+- [ ] Background agent pane and watcher were released
 - [ ] Private-repo issues worked are closed, or wait only on a named person's review or action
 - [ ] Compact efficiency record contains factual totals
 

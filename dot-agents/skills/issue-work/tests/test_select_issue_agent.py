@@ -7,60 +7,60 @@ import tempfile
 import unittest
 
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "select_issue_worker.py"
-SPEC = importlib.util.spec_from_file_location("select_issue_worker", SCRIPT)
+SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "select_issue_agent.py"
+SPEC = importlib.util.spec_from_file_location("select_issue_agent", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
-select_issue_worker = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(select_issue_worker)
+select_issue_agent = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(select_issue_agent)
 
 
-class SelectIssueWorkerTests(unittest.TestCase):
+class SelectIssueAgentTests(unittest.TestCase):
     def test_top_level_routing_error_has_two_blank_lines(self) -> None:
         source = SCRIPT.read_text(encoding="utf-8")
         self.assertIn("from urllib.parse import urlparse\n\n\nclass RoutingError", source)
 
     def test_auto_routes_sgg_to_pi(self) -> None:
-        result = select_issue_worker.select_worker(
+        result = select_issue_agent.select_agent(
             ticket_repo="HHS/simpler-grants-protocol",
             remote_url="git@github.com:HHS/simpler-grants-protocol.git",
             override="auto",
             task_shape="substantial",
         )
 
-        self.assertEqual(result["selected_worker"], "pi")
+        self.assertEqual(result["selected_agent"], "pi")
         self.assertEqual(
             result["implementation_loop"],
             "coding-agent-handoff-supervision",
         )
 
-    def test_auto_routes_single_loop_work_to_parent(self) -> None:
-        result = select_issue_worker.select_worker(
+    def test_auto_routes_single_loop_work_to_orchestrator(self) -> None:
+        result = select_issue_agent.select_agent(
             ticket_repo="HHS/simpler-grants-protocol",
             remote_url="git@github.com:HHS/simpler-grants-protocol.git",
             override="auto",
             task_shape="single-loop",
         )
 
-        self.assertEqual(result["selected_worker"], "gpt")
+        self.assertEqual(result["selected_agent"], "gpt")
         self.assertIsNone(result["implementation_loop"])
-        self.assertEqual(result["reason"], "single-loop work stays with the parent")
+        self.assertEqual(result["reason"], "single-loop work stays with the orchestrator")
 
     def test_explicit_claude_overrides_single_loop_shape(self) -> None:
-        result = select_issue_worker.select_worker(
+        result = select_issue_agent.select_agent(
             ticket_repo="bryan/cairn-os",
             remote_url="git@git.snowboardtechie.com:bryan/cairn-os.git",
             override="claude",
             task_shape="single-loop",
         )
 
-        self.assertEqual(result["selected_worker"], "claude")
+        self.assertEqual(result["selected_agent"], "claude")
         self.assertEqual(
             result["implementation_loop"],
             "coding-agent-handoff-supervision",
         )
 
     def test_cross_repo_routing_uses_implementation_identity(self) -> None:
-        result = select_issue_worker.select_worker(
+        result = select_issue_agent.select_agent(
             ticket_repo="HHS/private-planning-workspace",
             implementation_repo="HHS/simpler-grants-protocol",
             implementation_host="github.com",
@@ -68,94 +68,94 @@ class SelectIssueWorkerTests(unittest.TestCase):
             override="auto",
         )
 
-        self.assertEqual(result["selected_worker"], "pi")
+        self.assertEqual(result["selected_agent"], "pi")
         self.assertNotIn("sgg_allowlisted", result)
 
     def test_auto_route_has_no_obsolete_sgg_policy_fields(self) -> None:
-        result = select_issue_worker.select_worker(
+        result = select_issue_agent.select_agent(
             ticket_repo="HHS/simpler-grants-gov",
             remote_url="git@evil.example:HHS/simpler-grants-gov.git",
             override="auto",
         )
 
-        self.assertEqual(result["selected_worker"], "pi")
+        self.assertEqual(result["selected_agent"], "pi")
         self.assertNotIn("sgg_allowlisted", result)
         self.assertEqual(result["remote_host"], "evil.example")
 
     def test_auto_routes_forgejo_repository_to_visible_pi_handoff(self) -> None:
-        result = select_issue_worker.select_worker(
+        result = select_issue_agent.select_agent(
             ticket_repo="bryan/cairn-os",
             remote_url="ssh://forgejo@git.snowboardtechie.com/bryan/cairn-os.git",
             override="auto",
         )
 
-        self.assertEqual(result["selected_worker"], "pi")
+        self.assertEqual(result["selected_agent"], "pi")
         self.assertEqual(
             result["implementation_loop"],
             "coding-agent-handoff-supervision",
         )
 
     def test_nested_github_path_cannot_spoof_allowlisted_repository(self):
-        with self.assertRaises(select_issue_worker.RoutingError):
-            select_issue_worker.select_worker(
+        with self.assertRaises(select_issue_agent.RoutingError):
+            select_issue_agent.select_agent(
                 ticket_repo="HHS/simpler-grants-protocol",
                 remote_url="https://github.com/attacker/HHS/simpler-grants-protocol.git",
                 override="auto",
             )
 
-    def test_explicit_gpt_uses_host_native_path(self) -> None:
-        result = select_issue_worker.select_worker(
+    def test_explicit_gpt_uses_harness_native_path(self) -> None:
+        result = select_issue_agent.select_agent(
             ticket_repo="example/public-project",
             remote_url="git@forge.example:example/public-project.git",
             override="gpt",
         )
 
-        self.assertEqual(result["selected_worker"], "gpt")
+        self.assertEqual(result["selected_agent"], "gpt")
         self.assertIsNone(result["implementation_loop"])
 
     def test_explicit_qwen_overrides_visible_pi_default(self) -> None:
-        result = select_issue_worker.select_worker(
+        result = select_issue_agent.select_agent(
             ticket_repo="HHS/simpler-grants-gov",
             remote_url="https://github.com/HHS/simpler-grants-gov.git",
             override="qwen",
         )
 
-        self.assertEqual(result["selected_worker"], "qwen")
+        self.assertEqual(result["selected_agent"], "qwen")
 
     def test_explicit_claude_uses_visible_handoff(self) -> None:
-        result = select_issue_worker.select_worker(
+        result = select_issue_agent.select_agent(
             ticket_repo="bryan/cairn-os",
             remote_url="git@git.snowboardtechie.com:bryan/cairn-os.git",
             override="claude",
         )
 
-        self.assertEqual(result["selected_worker"], "claude")
+        self.assertEqual(result["selected_agent"], "claude")
         self.assertEqual(
             result["implementation_loop"],
             "coding-agent-handoff-supervision",
         )
 
     def test_explicit_hermes_uses_visible_handoff(self) -> None:
-        result = select_issue_worker.select_worker(
+        result = select_issue_agent.select_agent(
             ticket_repo="bryan/cairn-os",
             remote_url="git@git.snowboardtechie.com:bryan/cairn-os.git",
             override="hermes",
         )
 
-        self.assertEqual(result["selected_worker"], "hermes")
+        self.assertEqual(result["selected_agent"], "hermes")
         self.assertEqual(
             result["implementation_loop"],
             "coding-agent-handoff-supervision",
         )
 
     def test_explicit_pi_uses_visible_handoff(self) -> None:
-        result = select_issue_worker.select_worker(
+        result = select_issue_agent.select_agent(
             ticket_repo="bryan/cairn-os",
             remote_url="git@git.snowboardtechie.com:bryan/cairn-os.git",
             override="pi",
         )
 
-        self.assertEqual(result["selected_worker"], "pi")
+        self.assertEqual(result["selected_agent"], "pi")
         self.assertEqual(result["reason"], "explicit visible Pi selection")
         self.assertEqual(
             result["implementation_loop"],
@@ -164,17 +164,17 @@ class SelectIssueWorkerTests(unittest.TestCase):
 
     def test_ticket_and_remote_must_match_without_explicit_implementation_repo(self) -> None:
         with self.assertRaisesRegex(
-            select_issue_worker.RoutingError,
+            select_issue_agent.RoutingError,
             "does not match",
         ):
-            select_issue_worker.select_worker(
+            select_issue_agent.select_agent(
                 ticket_repo="HHS/simpler-grants-gov",
                 remote_url="git@github.com:someone/simpler-grants-gov.git",
                 override="auto",
             )
 
     def test_explicit_implementation_repo_allows_cross_repo_ticket(self) -> None:
-        result = select_issue_worker.select_worker(
+        result = select_issue_agent.select_agent(
             ticket_repo="example/private-workspace",
             implementation_repo="example/public-project",
             implementation_host="forge.example",
@@ -186,14 +186,14 @@ class SelectIssueWorkerTests(unittest.TestCase):
         self.assertEqual(result["implementation_repo"], "example/public-project")
         self.assertEqual(result["implementation_host"], "forge.example")
         self.assertEqual(result["remote_repo"], "example/public-project")
-        self.assertEqual(result["selected_worker"], "pi")
+        self.assertEqual(result["selected_agent"], "pi")
 
     def test_explicit_implementation_repo_must_match_remote(self) -> None:
         with self.assertRaisesRegex(
-            select_issue_worker.RoutingError,
+            select_issue_agent.RoutingError,
             "implementation repository .* does not match",
         ):
-            select_issue_worker.select_worker(
+            select_issue_agent.select_agent(
                 ticket_repo="example/private-workspace",
                 implementation_repo="example/other-project",
                 implementation_host="forge.example",
@@ -202,8 +202,8 @@ class SelectIssueWorkerTests(unittest.TestCase):
             )
 
     def test_cross_repo_requires_explicit_implementation_host(self) -> None:
-        with self.assertRaisesRegex(select_issue_worker.RoutingError, "requires --implementation-host"):
-            select_issue_worker.select_worker(
+        with self.assertRaisesRegex(select_issue_agent.RoutingError, "requires --implementation-host"):
+            select_issue_agent.select_agent(
                 ticket_repo="example/private-workspace",
                 implementation_repo="example/public-project",
                 remote_url="ssh://git@forge.example/example/public-project.git",
@@ -211,8 +211,8 @@ class SelectIssueWorkerTests(unittest.TestCase):
             )
 
     def test_explicit_implementation_host_must_match_remote(self) -> None:
-        with self.assertRaisesRegex(select_issue_worker.RoutingError, "forge .* does not match"):
-            select_issue_worker.select_worker(
+        with self.assertRaisesRegex(select_issue_agent.RoutingError, "forge .* does not match"):
+            select_issue_agent.select_agent(
                 ticket_repo="example/private-workspace",
                 implementation_repo="example/public-project",
                 implementation_host="github.com",
@@ -221,7 +221,7 @@ class SelectIssueWorkerTests(unittest.TestCase):
             )
 
     def test_same_repo_name_on_different_forge_is_cross_repository(self) -> None:
-        result = select_issue_worker.select_worker(
+        result = select_issue_agent.select_agent(
             ticket_repo="example/project",
             ticket_host="private.example",
             implementation_repo="example/project",
@@ -234,8 +234,8 @@ class SelectIssueWorkerTests(unittest.TestCase):
         self.assertEqual(result["ticket_host"], "private.example")
 
     def test_cross_forge_same_repo_requires_explicit_implementation_host(self) -> None:
-        with self.assertRaisesRegex(select_issue_worker.RoutingError, "requires --implementation-host"):
-            select_issue_worker.select_worker(
+        with self.assertRaisesRegex(select_issue_agent.RoutingError, "requires --implementation-host"):
+            select_issue_agent.select_agent(
                 ticket_repo="example/project",
                 ticket_host="private.example",
                 implementation_repo="example/project",
@@ -253,29 +253,29 @@ class SelectIssueWorkerTests(unittest.TestCase):
         for url in urls:
             with self.subTest(url=url):
                 self.assertEqual(
-                    select_issue_worker.repo_from_remote(url),
+                    select_issue_agent.repo_from_remote(url),
                     "HHS/simpler-grants-gov",
                 )
 
     def test_repository_identity_uses_worktree_common_dir_and_origin(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
-            trunk = Path(temp_dir) / "repo"
+            primary = Path(temp_dir) / "repo"
             worktree = Path(temp_dir) / "worktree"
-            trunk.mkdir()
-            subprocess.run(["git", "init", "-q", "-b", "main"], cwd=trunk, check=True)
+            primary.mkdir()
+            subprocess.run(["git", "init", "-q", "-b", "main"], cwd=primary, check=True)
             subprocess.run(
-                ["git", "config", "user.email", "worker-test@example.com"],
-                cwd=trunk,
+                ["git", "config", "user.email", "agent-test@example.com"],
+                cwd=primary,
                 check=True,
             )
             subprocess.run(
-                ["git", "config", "user.name", "Worker Test"],
-                cwd=trunk,
+                ["git", "config", "user.name", "Agent Test"],
+                cwd=primary,
                 check=True,
             )
-            (trunk / "README.md").write_text("test\n", encoding="utf-8")
-            subprocess.run(["git", "add", "README.md"], cwd=trunk, check=True)
-            subprocess.run(["git", "commit", "-qm", "Add test"], cwd=trunk, check=True)
+            (primary / "README.md").write_text("test\n", encoding="utf-8")
+            subprocess.run(["git", "add", "README.md"], cwd=primary, check=True)
+            subprocess.run(["git", "commit", "-qm", "Add test"], cwd=primary, check=True)
             subprocess.run(
                 [
                     "git",
@@ -284,18 +284,18 @@ class SelectIssueWorkerTests(unittest.TestCase):
                     "origin",
                     "git@github.com:example/project.git",
                 ],
-                cwd=trunk,
+                cwd=primary,
                 check=True,
             )
             subprocess.run(
                 ["git", "worktree", "add", "-q", "-b", "feature", str(worktree)],
-                cwd=trunk,
+                cwd=primary,
                 check=True,
             )
 
-            common_dir, remote = select_issue_worker.repository_identity(worktree)
+            common_dir, remote = select_issue_agent.repository_identity(worktree)
 
-            self.assertEqual(common_dir, (trunk / ".git").resolve())
+            self.assertEqual(common_dir, (primary / ".git").resolve())
             self.assertEqual(remote, "git@github.com:example/project.git")
 
 

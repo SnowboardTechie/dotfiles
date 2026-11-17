@@ -17,7 +17,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from select_issue_worker import identity_from_remote, normalize_repo  # noqa: E402
+from select_issue_agent import identity_from_remote, normalize_repo  # noqa: E402
 
 sys.path.insert(0, str(SCRIPT_DIR.parents[2] / "lib"))
 import agent_state  # noqa: E402
@@ -29,7 +29,7 @@ class ContextError(RuntimeError):
 
 class GitContext(TypedDict):
     top: Path
-    trunk: Path
+    primary_checkout: Path
     host: str
     repo: str
     branch: str
@@ -68,7 +68,7 @@ def resolve_git_context(path: Path) -> GitContext:
     host, repo = identity_from_remote(remote)
     return {
         "top": top,
-        "trunk": common.parent,
+        "primary_checkout": common.parent,
         "host": host,
         "repo": repo,
         "branch": git_output(candidate, "branch", "--show-current"),
@@ -123,10 +123,10 @@ def validate_context(
     ticket = resolve_git_context(ticket_trunk)
     implementation = resolve_git_context(worktree)
 
-    ticket_root = ticket["trunk"].resolve()
+    ticket_root = ticket["primary_checkout"].resolve()
     requested_ticket_root = ticket_trunk.expanduser().resolve()
     if requested_ticket_root != ticket_root:
-        fail(f"ticket_trunk is not the canonical Git trunk: {requested_ticket_root}")
+        fail(f"ticket_trunk is not the ticket repository's primary checkout: {requested_ticket_root}")
 
     parsed_url = urlparse(ticket_url)
     if (
@@ -173,7 +173,7 @@ def validate_context(
 
     progress = read_frontmatter(state / "progress.md")
     worktree_root = implementation["top"].resolve()
-    implementation_trunk = implementation["trunk"].resolve()
+    implementation_trunk = implementation["primary_checkout"].resolve()
     require_equal(progress, "ticket", ticket_url)
     require_path_equal(progress, "worktree", worktree_root)
     require_equal(progress, "branch", str(implementation["branch"]))

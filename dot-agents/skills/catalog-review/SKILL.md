@@ -120,16 +120,16 @@ Use this decision model:
 
 “Fix in the PR” is a recommendation, not authorization to edit or publish. Present the attributable breakage, proposed scope, affected downstream packages, and full catalog validation plan, then ask whether to implement it.
 
-If the user approves and the current host is a Pi parent or a Codex-backed Hermes parent:
+If the user approves and the current harness is a Pi orchestrator or a Codex-backed Hermes orchestrator:
 
-1. Create or reuse an isolated worktree for the catalog PR; never switch the trunk checkout in place.
-2. Load `coding-agent-handoff-supervision`, reuse or create the governing project-workspace ticket, and launch the normal visible Pi worker handoff through Rex. An unavailable Rex route stops the handoff; do not silently choose a background worker.
-3. Give the worker the ticket/PR URLs, exact implementation repository and worktree, explicit authority boundaries, and the downstream impact and validation outcome from Steps 2–3. Do not duplicate a self-contained implementation plan into the prompt.
-4. The parent reviews the actual diff and independently reruns the full relevant validation path, including audit and every affected downstream package. Then return to Step 4 and recompute the merge/hold/reject decision.
+1. Create or reuse an isolated worktree for the catalog PR; never switch the primary checkout in place.
+2. Load `coding-agent-handoff-supervision`, reuse or create the governing project-workspace ticket, and launch the normal visible Pi background agent handoff through Rex. An unavailable Rex route stops the handoff; do not silently choose a hidden background route instead.
+3. Give the background agent the ticket/PR URLs, exact implementation repository and worktree, explicit authority boundaries, and the downstream impact and validation outcome from Steps 2–3. Do not duplicate a self-contained implementation plan into the prompt.
+4. The orchestrator reviews the actual diff and independently reruns the full relevant validation path, including audit and every affected downstream package. Then return to Step 4 and recompute the merge/hold/reject decision.
 
-The worker's local commit, push, and PR/issue permissions must each be stated explicitly; the normal route forbids all three and leaves local commit creation and every PR mutation parent-owned. The explicit public-action approval in Hard Rules still applies. On other hosts, use the approved host-native implementation workflow with the same downstream-validation contract.
+The background agent's local commit, push, and PR/issue permissions must each be stated explicitly; the normal route forbids all three and leaves local commit creation and every PR mutation orchestrator-owned. The explicit public-action approval in Hard Rules still applies. In other harnesses, use the approved harness-native implementation workflow with the same downstream-validation contract.
 
-**Explicit background-only alternative.** Use `codex-claude-implementation-loop` only when Bryan explicitly requests a background wrapper for that same run. It is never an automatic substitute for the visible Rex handoff, and wrapper unavailability stops rather than changing workers.
+**Explicit background-only alternative.** Use `codex-claude-implementation-loop` only when Bryan explicitly requests a background wrapper for that same run. It is never an automatic substitute for the visible Rex handoff, and wrapper unavailability stops rather than switching to another background agent.
 
 ---
 

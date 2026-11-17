@@ -62,7 +62,7 @@ default isolation mechanism.
 ## Worktrunk / Git Worktrees
 
 Use linked worktrees for feature implementation so the primary checkout remains
-a stable trunk. The primary checkout may still be synchronized and maintained
+a stable primary checkout. The primary checkout may still be synchronized and maintained
 with the safe operations listed above; Worktrunk is a workflow default, not a
 blanket tool restriction.
 
@@ -72,26 +72,26 @@ blanket tool restriction.
 - **Never** use `git checkout` or `git switch` to change branches — use `wt switch` instead
 - **Never** delete or modify the `.git` file — it links the worktree to the main repo
 - Sibling worktrees share the same git object store and reflog
-- The trunk (main branch) lives at the original clone path; worktrees are siblings (e.g., `repo.feat-auth`)
+- The primary checkout (main branch) lives at the original clone path; worktrees are siblings (e.g., `repo.feat-auth`)
 
-**Resolving the trunk root (for `.notes` and project identity):**
+**Resolving the primary checkout root (for `.notes` and project identity):**
 
-When you need the project root or `.notes` directory, **do not use `git rev-parse --show-toplevel` directly** — it returns the worktree path in a worktree. Instead, resolve the trunk:
+When you need the project root or `.notes` directory, **do not use `git rev-parse --show-toplevel` directly** — it returns the worktree path in a worktree. Instead, resolve the primary checkout:
 
 ```bash
 toplevel=$(git rev-parse --show-toplevel)
 if [ -f "${toplevel}/.git" ]; then
-  # Worktree: resolve trunk via shared git dir
-  TRUNK_ROOT=$(dirname "$(git rev-parse --git-common-dir)")
+  # Worktree: resolve primary checkout via shared git dir
+  PRIMARY_CHECKOUT=$(dirname "$(git rev-parse --git-common-dir)")
 else
-  # Trunk: use directly
-  TRUNK_ROOT="$toplevel"
+  # Primary checkout: use directly
+  PRIMARY_CHECKOUT="$toplevel"
 fi
 ```
 
-- **Project name:** `basename "$TRUNK_ROOT"` (not `basename "$PWD"`)
-- **`.notes` location:** `${TRUNK_ROOT}/.notes` — `.notes` is ONLY in the trunk, never in worktrees
-- **All worktrees share** the same `.notes` symlink via the trunk
+- **Project name:** `basename "$PRIMARY_CHECKOUT"` (not `basename "$PWD"`)
+- **`.notes` location:** `${PRIMARY_CHECKOUT}/.notes` — `.notes` is ONLY in the primary checkout, never in worktrees
+- **All worktrees share** the same `.notes` symlink via the primary checkout
 
 **Available commands:** `wt switch`, `wt list`, `wt merge`, `wt remove`, `wt step commit`
 
@@ -124,17 +124,17 @@ fi
 
 ---
 
-## Subagent Output Verification (MANDATORY)
+## Background Agent Output Verification (MANDATORY)
 
-**Subagent output is unverified.** Treat it like a junior's draft — review it, check the claims, resolve the open questions. Never relay it to the user without verification.
+**Background agent output is unverified.** Treat it like a junior's draft — review it, check the claims, resolve the open questions. Never relay it to the user without verification.
 
-**Before presenting ANY subagent finding:**
+**Before presenting ANY background agent finding:**
 1. If a finding references a file → read the file yourself
 2. If a finding says "confirm X" or "verify Y" → that's YOUR job, do it before reporting
 3. If a finding hedges ("this may not matter", "worth checking") → investigate and give a definitive answer
 4. If a finding doesn't pass a basic smell test → look at the actual code before repeating it
 
-**This applies to all delegated work** — code reviews, exploration results, research summaries, implementation output. You are the senior engineer. The subagent is a tool. Verify before you report.
+**This applies to all delegated work** — code reviews, exploration results, research summaries, implementation output. You are the senior engineer. The background agent is a tool. Verify before you report.
 
 ---
 

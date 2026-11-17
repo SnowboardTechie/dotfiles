@@ -5,7 +5,7 @@ five coding agents he runs: **Claude Code**, **Pi**, **OpenCode**, **Hermes**, a
 
 ## How it works
 
-`skills/` is a flat pool — one directory per skill, one canonical copy. Each tool
+`skills/` is a flat pool — one directory per skill, one canonical copy. Each harness
 gets a *curated subset* via per-skill symlinks created by
 [`../scripts/reconcile-agent-skills.sh`](../scripts/reconcile-agent-skills.sh):
 
@@ -26,14 +26,14 @@ The legacy `setup-platform-configs.sh` delegates its agent-skill step to this
 reconciler, and `scripts/setup-omarchy.sh` invokes it as one payload in the
 additive Omarchy setup.
 
-Why a flat pool instead of per-tool subfolders: most skills are wanted by 2+ tools.
+Why a flat pool instead of per-harness subfolders: most skills are wanted by 2+ harnesses.
 Subfolders would force either duplicate copies or a `common/` + cross-folder symlink
-layer. A flat pool keeps one copy of each skill and makes "give tool X skill Y" a
+layer. A flat pool keeps one copy of each skill and makes "give harness X skill Y" a
 one-line change to a curation array.
 
 ## Curation
 
-Not every tool gets every skill. Pi gets the common core plus the workflows
+Not every harness gets every skill. Pi gets the common core plus the workflows
 made to run from it, a set that grows as Pi becomes the primary harness
 (dotfiles-workspace#34); no shared desk skill needs a Hermes session. Pi also
 reads Codex's `~/.agents/skills`, so Codex-set skills reach Pi without a
@@ -49,9 +49,9 @@ see below). No pool skill takes a name one of his promoted skills holds.
 
 The **single authoritative curation source** is the set of `*_SKILLS` Bash arrays
 in [`../scripts/reconcile-agent-skills.sh`](../scripts/reconcile-agent-skills.sh):
-`COMMON_SKILLS` (the core shared by Claude, OpenCode, Pi, and Codex) plus per-tool
+`COMMON_SKILLS` (the core shared by Claude, OpenCode, Pi, and Codex) plus per-harness
 additions, and Hermes's independent list. A skill existing in the pool does not
-mean every tool receives it. This README intentionally does not mirror the
+mean every harness receives it. This README intentionally does not mirror the
 membership lists or counts — read the arrays.
 
 Codex receives the portable coding, issue delivery, review, knowledge, and
@@ -77,7 +77,7 @@ specified by each skill; installing a skill does not grant those capabilities.
 3. Run `./scripts/reconcile-agent-skills.sh --check`, review the plan, then
    re-run with `--apply` to (re)build the symlinks.
 
-To pull a skill from a tool, drop it from that tool's array and re-run `--apply`
+To pull a skill from a harness, drop it from that harness's array and re-run `--apply`
 — the prune step removes the now-stale symlink.
 
 ## Writing a skill that actually gets loaded
@@ -142,5 +142,5 @@ puts the old pin back. Every other source's pin is still a reviewed change.
 - Some skills carry **local-only, gitignored** content (e.g. `voice-bryan`'s
   verbatim corpus under `references/`). It lives in the pool dir on each machine but
   is never committed; a fresh clone starts without it.
-- This pool replaced two former per-tool copies (`dot-claude/skills/`,
+- This pool replaced two former per-harness copies (`dot-claude/skills/`,
   `dot-config/opencode/skills/`) that drifted out of sync.

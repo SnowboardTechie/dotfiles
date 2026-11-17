@@ -2,7 +2,7 @@
 
 # Claude subscription usage: the capacity gate (75% of a 5-hour window, 90% of a weekly one) in references/rex-claude-handoff.md.
 # It reports the 5-hour window when the response carries one, and the weekly (7-day)
-# window when it carries only that, as a weekly-only plan does. Which seat has which
+# window when it carries only that, as a weekly-only plan does. Which subscription has which
 # windows is never assumed: a plan can gain or lose its 5-hour window.
 # Render mode prints " 42% ↻1:30" for the 5-hour window and
 # " 25% weekly ↻6d 3h" for the weekly one; the first NN% is the utilization.
@@ -32,7 +32,7 @@ command -v jq >/dev/null 2>&1 || usage_unavailable
 command -v curl >/dev/null 2>&1 || usage_unavailable
 
 # Follows CLAUDE_CONFIG_DIR, as Claude Code does: unset reads the default login (on Studio,
-# the work seat); CLAUDE_CONFIG_DIR=~/.claude-personal reads the personal subscription. An
+# the work subscription); CLAUDE_CONFIG_DIR=~/.claude-personal reads the personal subscription. An
 # explicit directory's Keychain item is suffixed with the first 8 hex of sha256(path).
 CONFIG_DIR="${CLAUDE_CONFIG_DIR:-}"
 KEYCHAIN_SERVICE="Claude Code-credentials"

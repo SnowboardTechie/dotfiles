@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # reconcile-agent-skills.sh — link the curated personal agent-skill pool
-# (dot-agents/skills/) into each tool's skills directory.
+# (dot-agents/skills/) into each harness's skills directory.
 #
 # The *_SKILLS arrays below are the single canonical curation source.
 # dot-agents/README.md documents the rationale; it does not duplicate the lists.
@@ -22,14 +22,14 @@ usage() {
     cat <<'EOF'
 Usage: reconcile-agent-skills.sh (--check | --apply)
 
-  --check   Report the per-tool operations that --apply would perform.
+  --check   Report the per-harness operations that --apply would perform.
             Never mutates the filesystem.
   --apply   Create/refresh curated skill links and prune stale pool-owned
             links. Never touches real files, real directories, or symlinks
             that do not resolve into this repository's skill pool.
 
   RECONCILE_OPENCODE_SKILLS=0 retires only pool-owned OpenCode skill links
-            on hosts that no longer run OpenCode; other tools are unchanged.
+            on hosts that no longer run OpenCode; other harnesses are unchanged.
   RECONCILE_HERMES_SKILLS=0 skips Hermes entirely: no links are created or
             pruned in ~/.hermes/skills/personal.
 EOF
@@ -105,7 +105,7 @@ fi
 # and knowledge-capture (the router that decides personal vs. project).
 # apple-notes-pkm was removed 2026-10-31.
 # black-box-verification is a shared verification method (see
-# dot-agents/upstreams/pstack-claude.json), so every tool, Pi included, receives it.
+# dot-agents/upstreams/pstack-claude.json), so every harness, Pi included, receives it.
 COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review teammate-pr-review
     vault-pkm knowledge-capture session-handoff
     black-box-verification)
@@ -123,7 +123,7 @@ NON_CLAUDE_COMMON=(skill-retrospective obsidian)
 # the common core as each workflow is made to run from Pi.
 # next-session: Pi launches the next Pi in a Rex pane.
 # draw-it: Pi draws a picture into a Rex pane beside the conversation.
-# Delivery skills: a Pi coordinator runs the issue workflows, the visible
+# Delivery skills: a Pi orchestrator runs the issue workflows, the visible
 # handoff they delegate through, and the DX planning step issue-plan loads,
 # then reviews, publishes and merges (manual-merge).
 # Desk skills that were Hermes-only, so no shared desk workflow needs a Hermes
@@ -190,7 +190,7 @@ op() {
     fi
 }
 
-# Reconcile one tool's skills directory against its curated list.
+# Reconcile one harness's skills directory against its curated list.
 # Check and apply share every decision; apply additionally executes the
 # owned operations (rm/mkdir/ln) that check only reports.
 reconcile_tool() {

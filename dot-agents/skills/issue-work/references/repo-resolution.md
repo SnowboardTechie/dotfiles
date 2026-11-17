@@ -31,7 +31,7 @@ candidate's origin; the declaration is discovery evidence, not identity proof.
 ### 2. Ticket-workspace checkout
 
 For an implementation repository bound by a private workspace, check
-`{TICKET_TRUNK_ROOT}/repos/{repo}`. This is the intended
+`{TICKET_PRIMARY_CHECKOUT}/repos/{repo}`. This is the intended
 `private-workspace/repos/public-project`-style topology. Verify both forge hostname and
 owner/repository before accepting it.
 
@@ -44,10 +44,10 @@ Glob(pattern="$HOME/code/*/.git")
 
 For each match, the parent dir basename is the clone name. If the basename equals
 `{repo}`, parse `git remote get-url origin` with
-`scripts/select_issue_worker.py`'s identity rules and require the exact expected
+`scripts/select_issue_agent.py`'s identity rules and require the exact expected
 hostname and owner/repository. Do not use a substring match.
 
-If the remote matches, use `$CANDIDATE` as the trunk. Done.
+If the remote matches, use `$CANDIDATE` as the primary checkout. Done.
 
 ### 4. One directory deeper (org subdirs)
 
@@ -75,7 +75,7 @@ same exact identity rules. This catches renamed local directories without
 accepting substring or suffix lookalikes.
 
 Enumerate `.git` candidates under `~/code/` at the supported depths with the
-host's file-search tool, read each origin, and compare exact parsed identity in
+harness's file-search tool, read each origin, and compare exact parsed identity in
 the orchestrator. Never embed an agent tool call in a shell command.
 
 ---
@@ -89,7 +89,7 @@ Prompt:
 ```
 I don't see {owner}/{repo} cloned locally under:
   - the explicit workspace path or manifest
-  - {TICKET_TRUNK_ROOT}/repos/{repo}
+  - {TICKET_PRIMARY_CHECKOUT}/repos/{repo}
   - ~/code/
   - ~/code/*/
   - ~/projects/ / ~/src/
@@ -113,30 +113,30 @@ On no, stop and report: "Cannot proceed without a local clone."
 
 The explicit approved handoff supplies the implementation forge and
 owner/repository. Verify both against the candidate clone's `origin` before
-binding `{IMPLEMENTATION_TRUNK_ROOT}`. The ticket clone remains
-`{TICKET_TRUNK_ROOT}` and owns `.agent-work/issue-work/` (and any legacy
+binding `{IMPLEMENTATION_PRIMARY_CHECKOUT}`. The ticket clone remains
+`{TICKET_PRIMARY_CHECKOUT}` and owns `.agent-work/issue-work/` (and any legacy
 `.hermes/issue-work/` state); the implementation clone
 owns the feature worktree. A missing implementation clone follows the same
 clone-if-missing approval rule. Legacy `Repository` handoffs may resolve only a
 same-repository target.
 
-## Trunk vs worktree
+## Primary checkout vs worktree
 
-The resolution above gives you the **trunk** (the main checkout). The `issue-work` skill will then create a **worktree** for the ticket.
+The resolution above gives you the **primary checkout** (the copy that is not a linked worktree). The `issue-work` skill will then create a **worktree** for the ticket.
 
 Rules:
-- Do not create a worktree on top of a worktree. If the resolved path is already a worktree (`.git` is a file, not a dir), find its trunk first:
+- Do not create a worktree on top of a worktree. If the resolved path is already a worktree (`.git` is a file, not a dir), find its primary checkout first:
 
   ```bash
   git -C "$CANDIDATE" rev-parse --git-common-dir
-  # The git-common-dir is {trunk}/.git — strip /.git for the trunk path
+  # The git-common-dir is {primary checkout}/.git — strip /.git for the primary checkout path
   ```
 
-- Ticket state and vault discovery use `{TICKET_TRUNK_ROOT}`.
+- Ticket state and vault discovery use `{TICKET_PRIMARY_CHECKOUT}`.
 - Git fetch, dirty-tree checks, default-branch lookup, and worktree creation use
-  `{IMPLEMENTATION_TRUNK_ROOT}`.
+  `{IMPLEMENTATION_PRIMARY_CHECKOUT}`.
 - Prefer `wt` for creation/switching. The controlled fallback is `git -C
-  "{IMPLEMENTATION_TRUNK_ROOT}" worktree add -b {branch} {path}
+  "{IMPLEMENTATION_PRIMARY_CHECKOUT}" worktree add -b {branch} {path}
   origin/{DEFAULT_BRANCH}`. See `issue-work` Phase 1.7.
 
 ---
@@ -155,7 +155,7 @@ base, and publication remotes; until then, stop rather than guessing.
 ## Cache (optional future work)
 
 If resolution becomes slow, consider a cache at
-`{TICKET_TRUNK_ROOT}/.agent-work/issue-work/.repo-cache.json` keyed by forge host and
+`{TICKET_PRIMARY_CHECKOUT}/.agent-work/issue-work/.repo-cache.json` keyed by forge host and
 owner/repository:
 
 ```json

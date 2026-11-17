@@ -109,7 +109,7 @@ approval may cover the complete listed sequence, including cleanup.
 
 A recorded standing merge authority is that approval. Bryan sometimes grants
 "merge once cleared" for a batch in an approved plan, naming the gates that
-replace his review (for example, parent acceptance, a green full gate and a
+replace his review (for example, orchestrator acceptance, a green full gate and a
 fresh final review on the exact head). Under it, don't ask again. Verify each
 named gate on the exact head, cite the plan in your report, and proceed.
 Implementation approval alone is still not merge approval.

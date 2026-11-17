@@ -37,9 +37,9 @@ test("placeholders are Rex's generated labels and the /split launcher's names", 
 	for (const l of ["dawn-canyon", "wandering-bay"]) assert.ok(placeholder.session(l), l);
 	for (const l of ["Pi Durable", "Pi > Hermes", "PiRex", "Containerize Pi?", "planning-agents-vms", "work"]) assert.ok(!placeholder.session(l), l);
 	assert.ok(placeholder.tab("Window 1bd453b0"));
-	for (const l of ["Lane A pi-bots", "PiRex", "Window"]) assert.ok(!placeholder.tab(l), l);
+	for (const l of ["Subscription Rename", "PiRex", "Window"]) assert.ok(!placeholder.tab(l), l);
 	for (const l of ["shell", "split-ab12", "fork-0001"]) assert.ok(placeholder.pane(l), l);
-	for (const l of ["w31-9", "lane-b", "pi-next", "w31-9-review"]) assert.ok(!placeholder.pane(l), l);
+	for (const l of ["w31-9", "relay-tests", "pi-next", "w31-9-review"]) assert.ok(!placeholder.pane(l), l);
 });
 
 test("names are cleaned for the level they go to", () => {
@@ -74,10 +74,10 @@ test("a fresh session gets all three names, in Rex's rename commands", async () 
 });
 
 test("names the user or a launcher set are kept", async () => {
-	const rex = fakeRex(view("Pi > Hermes", "Lane A pi-bots", "w31-9"));
+	const rex = fakeRex(view("Pi > Hermes", "Subscription Rename", "w31-9"));
 	const report = await applyNames(rex.run, S, B, { pane: "x", tab: "Y", session: "Z" }, memoryClaims());
 	assert.deepEqual(rex.renames(), []);
-	assert.deepEqual(report, ['pane: kept "w31-9" (already named)', 'tab: kept "Lane A pi-bots" (already named)', 'session: kept "Pi > Hermes" (already named)']);
+	assert.deepEqual(report, ['pane: kept "w31-9" (already named)', 'tab: kept "Subscription Rename" (already named)', 'session: kept "Pi > Hermes" (already named)']);
 });
 
 test("only the first agent names the session", async () => {
@@ -126,14 +126,14 @@ test("the note asks only for the levels that are still placeholders", () => {
 	assert.match(fresh, /`tab`/);
 	assert.match(fresh, /`session`/);
 	assert.match(fresh, /same name/);
-	const lane = namingNote({ session: "Pi > Hermes", windowId: W, tab: "Window 1bd453b0", pane: "split-ab12", tabs: 4 }, false);
-	assert.match(lane, /`pane`/);
-	assert.match(lane, /`tab`/);
-	assert.doesNotMatch(lane, /`session`:/);
-	assert.doesNotMatch(lane, /same name/);
+	const partlyNamed = namingNote({ session: "Pi > Hermes", windowId: W, tab: "Window 1bd453b0", pane: "split-ab12", tabs: 4 }, false);
+	assert.match(partlyNamed, /`pane`/);
+	assert.match(partlyNamed, /`tab`/);
+	assert.doesNotMatch(partlyNamed, /`session`:/);
+	assert.doesNotMatch(partlyNamed, /same name/);
 	const claimed = namingNote({ session: "dawn-canyon", windowId: W, tab: "PiRex", pane: "shell", tabs: 1 }, true);
 	assert.doesNotMatch(claimed, /`session`:/);
-	const named = namingNote({ session: "Pi > Hermes", windowId: W, tab: "Lane A pi-bots", pane: "w31-9", tabs: 4 }, false);
+	const named = namingNote({ session: "Pi > Hermes", windowId: W, tab: "Subscription Rename", pane: "w31-9", tabs: 4 }, false);
 	assert.match(named, /already named/);
 	assert.doesNotMatch(named, /rex_name/);
 });
@@ -163,7 +163,7 @@ test("outside Rex the extension registers nothing", () => {
 });
 
 test("a headless Pi in a Rex pane gets no tool, no briefing and renames nothing", async () => {
-	const fake = fakePi("child");
+	const fake = fakePi("headless");
 	const rex = fakeRex(view("dawn-canyon", "Window 1bd453b0", "shell"));
 	init(fake.pi, rex.run, memoryClaims(), { REX_SESSION: S, REX_BLOCK: B });
 	await fake.handlers.session_start({}, { mode: "print" });
@@ -251,7 +251,7 @@ test("the tool names the pane and gives an unnamed Pi session the same slug", as
 
 test("a Pi session that already has a name labels its pane at start", async () => {
 	const fake = fakePi("w31-9-review");
-	const rex = fakeRex(view("Pi > Hermes", "Lane A pi-bots Sub Agents", "split-ab12"));
+	const rex = fakeRex(view("Pi > Hermes", "Subscription Rename Background Agents", "split-ab12"));
 	init(fake.pi, rex.run, memoryClaims(), { REX_SESSION: S, REX_BLOCK: B });
 	await fake.handlers.session_start({}, { mode: "tui" });
 	assert.deepEqual(rex.renames(), [["block", "rename", "-s", S, B, "w31-9-review"]]);

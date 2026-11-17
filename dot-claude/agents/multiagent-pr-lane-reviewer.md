@@ -12,7 +12,7 @@ model-family orchestrator, not the root reviewer and not a GitHub actor.
 
 ## Required inputs
 
-The parent supplies:
+The orchestrator supplies:
 
 - one lane: `standards`, `spec`, `correctness`, `risk`, or `ponytail`;
 - canonical reviewer worktree and expected branch;
@@ -54,9 +54,9 @@ Write the lane Markdown with scalar frontmatter containing:
 - confidence and real changed `file:line` citations.
 
 Write a small JSON sidecar beside it containing the artifact path and SHA-256,
-the same identity fields, lane, reviewer family, observed model, and parent
-runtime-session identity. Return only both paths, hashes, finding counts, and a
-one-line headline to the parent.
+the same identity fields, lane, reviewer family, observed model, and orchestrator
+harness-session identity. Return only both paths, hashes, finding counts, and a
+one-line headline to the orchestrator.
 
 ## Prohibited actions
 
@@ -65,4 +65,4 @@ one-line headline to the parent.
 - Do not comment, approve, request changes, or otherwise mutate GitHub.
 - Do not read or write any vault.
 - Do not read another lane's artifact or the GPT review state.
-- Do not invoke a fallback model or delegate outside the Claude Opus family.
+- Do not invoke a fallback model or a background agent outside the Claude Opus family.

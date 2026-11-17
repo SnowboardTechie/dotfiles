@@ -71,21 +71,21 @@ review is mandatory before publication:
 - otherwise, run the integrated review contract in `pr-self-review`'s
   `references/review-contract.md` against immutable base/head SHAs:
   Standards and Spec, conditional Risk, then mandatory Ponytail in one review
-  context; use an independent delegate when the active parent authored the code;
+  context; use an independent background agent when the active orchestrator authored the code;
 - require every artifact to identify the same base SHA, head SHA, merge-base SHA,
   diff hash, expected branch, and clean worktree;
 - invalidate the review after any candidate change and rerun the complete gate.
 
-When dispatching the delegate, hand it the spec as acceptance criteria stated as
+When dispatching that background agent, hand it the spec as acceptance criteria stated as
 outcomes, one line each (`the release gate blocks at high`, `the job graph is
 unchanged`, `nothing consumer-facing moves`). The diff is the inventory of edits.
 A spec that lists the edits (`with a comment recording why`) pre-approves their
 form and blinds Ponytail to it.
 
-A worker's self-check, an unstructured skim, build output, or an artifact that
-omits Ponytail never satisfies this gate. A systematic parent review of a
-worker-authored candidate does satisfy independence; a parent-authored candidate
-requires an independent review context (on Pi, a visible read-only Pi worker;
+A background agent's self-check, an unstructured skim, build output, or an artifact that
+omits Ponytail never satisfies this gate. A systematic orchestrator review of a
+background-agent-authored candidate does satisfy independence; an orchestrator-authored candidate
+requires an independent review context (on Pi, a visible read-only Pi background agent;
 see `pr-self-review` §1). Missing or stale Ponytail evidence blocks
 publication.
 
@@ -258,7 +258,7 @@ Report the PR as a Markdown link.
    bounded authenticated HTTPS retry in Step 5 and verify the remote SHA; preserve
    the developer's configured remote.
 
-7. **Writing the delegate's spec as an inventory of edits.** State outcomes; the
+7. **Writing the background agent's spec as an inventory of edits.** State outcomes; the
    diff lists the edits. Named forms in the spec exempt themselves from Ponytail.
 8. **Publishing analysis jargon.** Squash merges usually make the PR title the
    changelog line. Before publishing, read the title, body, test names, and new

@@ -117,7 +117,7 @@ class RiskTriggerTest(unittest.TestCase):
 
 class AmbiguityTest(unittest.TestCase):
     def test_an_unrecognized_security_adjacent_path_includes_risk(self) -> None:
-        """A false Risk lane costs one child agent; a missed one ships the defect."""
+        """A false Risk lane costs one background agent; a missed one ships the defect."""
         for path in (
             "src/sanitize_untrusted_payload.ts",
             "lib/privacy_filter.py",

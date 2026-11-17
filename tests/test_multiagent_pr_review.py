@@ -160,10 +160,10 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
         self.assert_matches(
             self.layout,
             r"pi -p --mode json --no-session --model \"\$GPT_ROUTE\" --thinking high.*--tools read,grep,find,ls",
-            "a Pi GPT worker's leaves are read-only headless Pi runs on the same route",
+            "a Pi GPT background agent's leaves are read-only headless Pi runs on the same route",
         )
 
-    def test_rex_layout_uses_the_sub_agents_tab_without_focus(self) -> None:
+    def test_rex_layout_uses_the_background_agents_tab_without_focus(self) -> None:
         self.assertIn("rex-claude-handoff.md", self.layout)
         self.assert_matches(
             self.layout,
@@ -172,12 +172,12 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
         )
         self.assert_matches(
             self.layout,
-            r"sub-agents tab.*never beside.*instigating block.*without taking focus",
-            "reviewers open in the sub-agents tab and never steal focus",
+            r"\"Background Agents\" tab.*never beside.*instigating block.*without taking focus",
+            "reviewers open in the \"Background Agents\" tab and never steal focus",
         )
         self.assert_matches(
             self.layout,
-            r"one at a time.*rex_subagent_slot\.py.*Claude first, then GPT",
+            r"one at a time.*rex_background_agent_slot\.py.*Claude first, then GPT",
             "reviewers are placed one at a time from the live layout",
         )
         self.assert_matches(self.layout, r"surface: rex", "identity records name the Rex surface")

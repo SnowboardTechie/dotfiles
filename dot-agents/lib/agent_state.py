@@ -1,9 +1,9 @@
-"""Where a skill keeps resumable state inside a repository's trunk.
+"""Where a skill keeps resumable state inside a repository's primary checkout.
 
 Skills such as issue-work, issue-create and pr-self-review keep per-item state
 (plans, progress, drafts, review evidence) beside the repository, ignored by
-Git. The place is ``{trunk}/.agent-work/<skill>/<key>/``; it used to be
-``{trunk}/.hermes/<skill>/<key>/``, when Hermes was the primary harness.
+Git. The place is ``{primary checkout}/.agent-work/<skill>/<key>/``; it used to be
+``{primary checkout}/.hermes/<skill>/<key>/``, when Hermes was the primary harness.
 
 Rules, in order:
 
@@ -20,9 +20,9 @@ that scan (issue-create's drafts, the type-ID cache) can read legacy entries.
 CLI (prints JSON, creates nothing unless ``--create``)::
 
     python3 ~/code/dotfiles/dot-agents/lib/agent_state.py dir \
-        --trunk "$TRUNK_ROOT" --skill issue-work --key bryan-dotfiles-workspace-34
+        --primary-checkout "$PRIMARY_CHECKOUT" --skill issue-work --key bryan-dotfiles-workspace-34
     python3 ~/code/dotfiles/dot-agents/lib/agent_state.py roots \
-        --trunk "$TRUNK_ROOT" --skill issue-create
+        --primary-checkout "$PRIMARY_CHECKOUT" --skill issue-create
 
 Import from a skill script with:
 
@@ -50,16 +50,16 @@ def _check_name(label: str, value: str) -> str:
     return value
 
 
-def roots(trunk: Path, skill: str) -> List[Path]:
+def roots(primary: Path, skill: str) -> List[Path]:
     """The skill's state roots, current first, then legacy. Exist or not."""
     _check_name("skill", skill)
-    base = Path(trunk).expanduser().resolve()
+    base = Path(primary).expanduser().resolve()
     return [base / STATE_DIR / skill, base / LEGACY_STATE_DIR / skill]
 
 
-def resolve(trunk: Path, skill: str, key: Optional[str] = None) -> dict:
+def resolve(primary: Path, skill: str, key: Optional[str] = None) -> dict:
     """Pick the state directory for one item (or the skill root without a key)."""
-    current_root, legacy_root = roots(trunk, skill)
+    current_root, legacy_root = roots(primary, skill)
     if key is not None:
         _check_name("key", key)
         current, legacy = current_root / key, legacy_root / key
@@ -79,10 +79,10 @@ def resolve(trunk: Path, skill: str, key: Optional[str] = None) -> dict:
     }
 
 
-def is_state_path(trunk: Path, skill: str, path: Path) -> bool:
+def is_state_path(primary: Path, skill: str, path: Path) -> bool:
     """True when ``path`` is a per-item child of either of the skill's roots."""
     target = Path(path).expanduser().resolve()
-    for root in roots(trunk, skill):
+    for root in roots(primary, skill):
         try:
             relative = target.relative_to(root.resolve())
         except ValueError:
@@ -96,19 +96,19 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     sub = parser.add_subparsers(dest="command", required=True)
     one = sub.add_parser("dir", help="state directory for one item")
-    one.add_argument("--trunk", type=Path, required=True)
+    one.add_argument("--primary-checkout", type=Path, required=True)
     one.add_argument("--skill", required=True)
     one.add_argument("--key")
     one.add_argument("--create", action="store_true", help="mkdir -p the chosen path")
     both = sub.add_parser("roots", help="current and legacy roots for scanning")
-    both.add_argument("--trunk", type=Path, required=True)
+    both.add_argument("--primary-checkout", type=Path, required=True)
     both.add_argument("--skill", required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "roots":
-            result: object = [str(p) for p in roots(args.trunk, args.skill)]
+            result: object = [str(p) for p in roots(args.primary_checkout, args.skill)]
         else:
-            result = resolve(args.trunk, args.skill, args.key)
+            result = resolve(args.primary_checkout, args.skill, args.key)
             if args.create:
                 Path(result["path"]).mkdir(parents=True, exist_ok=True)
                 result["exists"] = True

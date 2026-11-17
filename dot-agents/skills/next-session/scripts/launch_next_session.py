@@ -15,9 +15,9 @@ focus stays where it was unless ``--focus`` is given.
 
 From a Pi session (``PI_SESSION_ID`` set, no ``HERMES_SESSION_ID``) the new
 session is ``pi --name N [--model M] [--thinking T] @<prompt>``: the file is the
-first message. ``--seat personal`` runs it on the personal Claude plan
-(``PI_CLAUDE_CODE_CONFIG_DIR=~/.claude-personal``); ``--seat work`` unsets that
-variable so the default login is used. Without ``--seat`` the pane's shell
+first message. ``--subscription personal`` runs it on the personal Claude plan
+(``PI_CLAUDE_CODE_CONFIG_DIR=~/.claude-personal``); ``--subscription work`` unsets that
+variable so the default login is used. Without ``--subscription`` the pane's shell
 decides. Pi finds its own skills, so ``--skills`` is not passed on.
 ``--fork <session file>`` starts the new Pi on a copy of that session
 (``pi --fork``), so it carries the conversation so far. For Pi the prompt file is
@@ -26,7 +26,7 @@ optional: without one the new session waits for input.
 Commands:
   whoami                       print this session's id and Rex block
   launch [--prompt-file F] --name N [--cwd D] [--skills S] [--focus] [--dry-run]
-         [--agent hermes|pi] [--model M] [--thinking T] [--seat personal|work]
+         [--agent hermes|pi] [--model M] [--thinking T] [--subscription personal|work]
          [--fork SESSION_FILE]
 
 Gateway: when this process has no REX_* variables (the agent's commands run
@@ -197,8 +197,8 @@ def fork_source(path: str) -> Path:
 
 def agent_argv(args: argparse.Namespace, prompt: Path | None) -> list[str]:
     if args.agent == "hermes":
-        if args.model or args.thinking or args.seat or args.fork:
-            raise Refused("--model, --thinking, --seat and --fork apply only to a Pi session")
+        if args.model or args.thinking or args.subscription or args.fork:
+            raise Refused("--model, --thinking, --subscription and --fork apply only to a Pi session")
         return ["hermes", "chat", "--query-file", str(prompt)] + (["--skills", args.skills] if args.skills else [])
     argv = ["pi", "--name", args.name]
     if args.fork:
@@ -209,9 +209,9 @@ def agent_argv(args: argparse.Namespace, prompt: Path | None) -> list[str]:
         argv += ["--thinking", args.thinking]
     if prompt is not None:
         argv.append(f"@{prompt}")
-    if args.seat == "personal":
+    if args.subscription == "personal":
         return ["env", f"PI_CLAUDE_CODE_CONFIG_DIR={Path.home() / '.claude-personal'}"] + argv
-    if args.seat == "work":
+    if args.subscription == "work":
         return ["env", "-u", "PI_CLAUDE_CODE_CONFIG_DIR"] + argv
     return argv
 
@@ -291,7 +291,7 @@ def main(argv: list[str] | None = None) -> int:
     start.add_argument("--agent", choices=("hermes", "pi"))
     start.add_argument("--model")
     start.add_argument("--thinking")
-    start.add_argument("--seat", choices=("personal", "work"))
+    start.add_argument("--subscription", choices=("personal", "work"))
     start.add_argument("--fork")
     args = parser.parse_args(argv)
 

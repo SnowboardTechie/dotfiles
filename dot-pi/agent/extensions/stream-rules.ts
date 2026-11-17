@@ -36,7 +36,7 @@ export const RULES: Rule[] = [
 		// "lane A", "track B", "probe 3": labels of the agent's own making.
 		pattern: /\b([Ll]ane|[Tt]rack|[Pp]robe|[Ww]orker)\s+([A-Z]|\d+)\b/,
 		instruction:
-			"Don't use labels of your own making such as \"lane A\" or \"probe 3\". Call each work item, session or agent what it is in the project's own words.",
+			"Don't use labels of your own making such as \"track B\" or \"probe 3\". Call each work item, session or agent what it is in the project's own words.",
 	},
 	{
 		id: "local-web-link",

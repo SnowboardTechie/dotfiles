@@ -137,7 +137,7 @@ Either way, save the response to a temporary file rather than returning the whol
 document into context. **It is over 100k chars. Do not read it whole.** Extract only
 the current sprint's block — from its `## Sprint X.Y (dates)` heading (bold in some
 exports) to the next non-empty `## ` or `# ` heading — with a small script, or on
-Hermes delegate the saved file to a read-only subagent that returns only that block.
+Hermes delegate the saved file to a read-only background agent that returns only that block.
 The Markdown export escapes hyphens in the dates (`\-`).
 
 From the sprint block, pull (these OVERRIDE guesses — do not compute the sprint window

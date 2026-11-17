@@ -31,7 +31,7 @@ manifest and this contract are instructions.
 2. Dispatch isolated same-family leaves for `standards`, `spec`, and
    `correctness` in parallel. Use the canonical briefs from
    `pr-self-review/references/review-contract.md`. A Pi
-   reviewer has no sub-agent; its leaves are separate headless `pi -p` processes
+   reviewer has no built-in background agent; its leaves are separate headless `pi -p` processes
    on the same route, as the Rex layout reference describes.
 3. Dispatch `risk` only when selected. Do not create a placeholder or substitute
    another lane when it is not selected.
@@ -39,7 +39,7 @@ manifest and this contract are instructions.
    identity and evidence manifest.
 5. Dispatch final `ponytail` only after all selected primary lanes settle, using
    the same identity and the canonical Ponytail brief from that review contract.
-6. A failed or invalid lane may be retried once, in the same parent session,
+6. A failed or invalid lane may be retried once, in the same orchestrator session,
    with the same model family and exact candidate. There is no second retry and
    no model-family fallback.
 7. Recompute candidate and evidence identities before synthesis. Any drift makes
@@ -49,11 +49,11 @@ manifest and this contract are instructions.
 9. Write one self-contained advisory Markdown report and one machine-readable
    sidecar. Return only paths, hashes, counts, and a headline to the root.
 
-Claude parent and leaves must all be `claude-opus-5-5`. GPT parent and leaves
+Claude orchestrator and leaves must all be `claude-opus-5-5`. GPT orchestrator and leaves
 must all use the GPT route the root fixed (a Hermes root's active GPT
 model/provider/base URL, or the `openai-codex` model a Pi root named) and high
 reasoning.
-Record launch route plus every available parent/leaf runtime model identity. A
+Record launch route plus every available orchestrator/leaf model identity. A
 missing provenance surface is a stated certification limit, never inferred from
 prose. A mismatched observed model invalidates the report.
 

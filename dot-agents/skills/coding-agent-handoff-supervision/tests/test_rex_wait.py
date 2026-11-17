@@ -1,4 +1,4 @@
-"""rex_wait.sh settles Pi and Claude worker turns the same way."""
+"""rex_wait.sh settles Pi and Claude background agent turns the same way."""
 
 import json
 import os
@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "rex_wait.sh"
-HANDBACK = "Changes: done.\n\nDivergence: None\n"
+COMPLETION_REPORT = "Changes: done.\n\nDivergence: None\n"
 
 
 def pi(role, stop=None):
@@ -23,34 +23,34 @@ def claude(kind, stop=None):
 
 
 class RexWaitTest(unittest.TestCase):
-    def run_wait(self, records, handback=None, cap=3, **env):
+    def run_wait(self, records, completion_report=None, cap=3, **env):
         with tempfile.TemporaryDirectory() as tmp:
             transcript = Path(tmp, "t.jsonl")
             transcript.write_text("".join(json.dumps(r) + "\n" for r in records))
-            hb = Path(tmp, "h.md")
-            if handback is not None:
-                hb.write_text(handback)
+            report = Path(tmp, "h.md")
+            if completion_report is not None:
+                report.write_text(completion_report)
             full_env = {**os.environ, "REX_WAIT_POLL_SECONDS": "0.1", "REX_WAIT_ENDED_POLLS": "3", **env}
             return subprocess.run(
-                ["sh", str(SCRIPT), str(transcript), str(hb), str(cap)],
+                ["sh", str(SCRIPT), str(transcript), str(report), str(cap)],
                 env=full_env, capture_output=True, text=True, timeout=30,
             )
 
-    def test_pi_turn_that_stopped_with_handback_settles(self):
-        got = self.run_wait([pi("user"), pi("assistant", "toolUse"), pi("toolResult"), pi("assistant", "stop")], HANDBACK)
+    def test_pi_turn_that_stopped_with_completion_report_settles(self):
+        got = self.run_wait([pi("user"), pi("assistant", "toolUse"), pi("toolResult"), pi("assistant", "stop")], COMPLETION_REPORT)
         self.assertEqual(got.returncode, 0, got.stdout)
         self.assertIn("SETTLED", got.stdout)
 
     def test_pi_turn_still_calling_tools_does_not_settle(self):
-        got = self.run_wait([pi("user"), pi("assistant", "toolUse")], HANDBACK, cap=1)
+        got = self.run_wait([pi("user"), pi("assistant", "toolUse")], COMPLETION_REPORT, cap=1)
         self.assertEqual(got.returncode, 1, got.stdout)
 
-    def test_pi_turn_ended_without_handback_exits_2(self):
+    def test_pi_turn_ended_without_completion_report_exits_2(self):
         got = self.run_wait([pi("user"), pi("assistant", "stop")])
         self.assertEqual(got.returncode, 2, got.stdout)
 
     def test_pi_errored_turn_counts_as_ended(self):
-        got = self.run_wait([pi("user"), pi("assistant", "error")], HANDBACK)
+        got = self.run_wait([pi("user"), pi("assistant", "error")], COMPLETION_REPORT)
         self.assertEqual(got.returncode, 0, got.stdout)
 
     def test_pi_unanswered_tool_result_stalls(self):
@@ -58,7 +58,7 @@ class RexWaitTest(unittest.TestCase):
         self.assertEqual(got.returncode, 3, got.stdout)
 
     def test_claude_transcript_still_settles(self):
-        got = self.run_wait([claude("user"), claude("assistant", "end_turn")], HANDBACK)
+        got = self.run_wait([claude("user"), claude("assistant", "end_turn")], COMPLETION_REPORT)
         self.assertEqual(got.returncode, 0, got.stdout)
 
     def test_claude_unanswered_user_record_stalls(self):

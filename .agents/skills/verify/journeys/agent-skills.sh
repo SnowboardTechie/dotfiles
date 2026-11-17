@@ -1,5 +1,5 @@
 # agent-skills.sh
-# Skill links for every tool: check writes nothing, apply links the curated pool, repeats are no-ops, foreign entries survive.
+# Skill links for every harness: check writes nothing, apply links the curated pool, repeats are no-ops, foreign entries survive.
 R="$REPO/scripts/reconcile-agent-skills.sh"
 POOL="$REPO/dot-agents/skills"
 

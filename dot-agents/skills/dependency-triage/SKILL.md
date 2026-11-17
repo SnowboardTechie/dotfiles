@@ -167,7 +167,7 @@ If two PRs overlap the same dependency lane, prefer the newer PR and note when t
 
 ## Step 3b: Fan out parallel review (all reviewable lanes)
 
-Once the queue is classified (Step 2) and ordered (Step 3), review **every PR worth reviewing in parallel** rather than serially. Dispatch one read-only review task per PR through the runtime's native delegation mechanism, routed to the right reviewer skill. In Hermes, use `delegate_task` in foreground batches of **at most three concurrent tasks**. Wait for all three before dispatching the next batch; never use background tasks that emit per-review commentary. Pi has no sub-agent: run each review as a headless `pi -p --no-session` process that loads the reviewer skill, in the same batches of three, and wait for the batch before the next. It needs `bash` for `gh`, so it runs under the read-only-command exception in `coding-agent-handoff-supervision` (pitfall 12): its prompt limits it to read-only `gh` calls, and any comment, approval, push or merge makes that review invalid. The fan-out parallelizes the slow, context-heavy *investigation* (reading CI logs, diffs, changelogs); it never runs builds.
+Once the queue is classified (Step 2) and ordered (Step 3), review **every PR worth reviewing in parallel** rather than serially. Dispatch one read-only review task per PR through the harness's native delegation mechanism, routed to the right reviewer skill. In Hermes, use `delegate_task` in foreground batches of **at most three concurrent tasks**. Wait for all three before dispatching the next batch; never use background tasks that emit per-review commentary. Pi has no background agent: run each review as a headless `pi -p --no-session` process that loads the reviewer skill, in the same batches of three, and wait for the batch before the next. It needs `bash` for `gh`, so it runs under the read-only-command exception in `coding-agent-handoff-supervision` (pitfall 12): its prompt limits it to read-only `gh` calls, and any comment, approval, push or merge makes that review invalid. The fan-out parallelizes the slow, context-heavy *investigation* (reading CI logs, diffs, changelogs); it never runs builds.
 
 ### What to review
 
@@ -180,20 +180,20 @@ Cap **concurrency, not coverage**. Delegation is capped at three concurrent task
 
 ### Routing
 
-| PR | Reviewer skill | What the subagent runs | Serial follow-up by the main agent |
+| PR | Reviewer skill | What the background agent runs | Serial follow-up by the main agent |
 |----|----------------|------------------------|-------------------------------------|
 | Catalog workflow PR | `catalog-review` | the whole skill — it has no local-build step (it judges the CI validation path) | none; the verdict is complete |
 | Every other lane (green isolated, website-framework, tooling, runtime, GitHub Actions, major bump, broad grouped) | `dependency-review` | **read-only analysis only — its Steps 0–4** (metadata, lane, fix-status, CI-log diagnosis, release attribution) | local verification, if and only if the verdict warrants it (below) |
 
-The only routing decision you make here is *catalog vs. not* (a catalog PR changes `pnpm-workspace.yaml` / catalog-managed versions). Each subagent self-classifies its finer lane, so triage and the reviewer never diverge.
+The only routing decision you make here is *catalog vs. not* (a catalog PR changes `pnpm-workspace.yaml` / catalog-managed versions). Each background agent self-classifies its finer lane, so triage and the reviewer never diverge.
 
-Each subagent returns: its decision (Safe to merge / Fix in this PR / Hold / Close), the lane it classified, and a one-line reason.
+Each background agent returns: its decision (Safe to merge / Fix in this PR / Hold / Close), the lane it classified, and a one-line reason.
 
 ### Do NOT fan out local verification
 
 `dependency-review` Step 5 (`gh pr checkout` + `pnpm ci`) mutates a single shared working tree; running it in parallel corrupts checkouts. **Local verification stays serial.** After the parallel review returns, run Step 5 yourself, one PR at a time, only on the candidates whose read-only verdict was *Safe to merge* or *Fix in this PR*.
 
-Broadening the *review* fan-out does **not** broaden the *build* fan-out. No matter how many PRs you reviewed in parallel, the local builds run one at a time. (`catalog-review` has no checkout/build step, so catalog subagents need no serial follow-up.)
+Broadening the *review* fan-out does **not** broaden the *build* fan-out. No matter how many PRs you reviewed in parallel, the local builds run one at a time. (`catalog-review` has no checkout/build step, so catalog background agents need no serial follow-up.)
 
 ### Report once, when the whole batch returns
 

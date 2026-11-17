@@ -158,11 +158,11 @@ class RexLaunchTest(unittest.TestCase):
         self.assertEqual(typed, ["pi", "--name", "wf-9", "--model", "claude-code/claude-opus-5-5", "--thinking", "medium",
                                  f"@{self.prompt.resolve()}"])
 
-    def test_pi_seat_selects_the_subscription(self) -> None:
-        _, _, typed = self.pi_launch("--seat", "personal")
+    def test_pi_subscription_flag_selects_the_subscription(self) -> None:
+        _, _, typed = self.pi_launch("--subscription", "personal")
         self.assertEqual(typed[:2], ["env", f"PI_CLAUDE_CODE_CONFIG_DIR={Path.home() / '.claude-personal'}"])
         self.log.unlink()
-        _, _, typed = self.pi_launch("--seat", "work")
+        _, _, typed = self.pi_launch("--subscription", "work")
         self.assertEqual(typed[:3], ["env", "-u", "PI_CLAUDE_CODE_CONFIG_DIR"])
 
     def test_pi_fork_starts_on_a_copy_of_the_session(self) -> None:
@@ -201,7 +201,7 @@ class RexLaunchTest(unittest.TestCase):
         self.assertIn("Pi did not start", out["reason"])
 
     def test_hermes_refuses_pi_only_flags(self) -> None:
-        code, out = self.run_script("launch", "--prompt-file", str(self.prompt), "--name", "wf-9", "--seat", "personal")
+        code, out = self.run_script("launch", "--prompt-file", str(self.prompt), "--name", "wf-9", "--subscription", "personal")
         self.assertEqual(code, 1)
         self.assertIn("only to a Pi session", out["reason"])
 

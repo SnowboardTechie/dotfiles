@@ -6,9 +6,9 @@ worktree="${1:-$PWD}"
 worktree=$(cd "$worktree" && pwd)
 git -C "$worktree" rev-parse --is-inside-work-tree >/dev/null
 
-trunk=$(dirname "$(git -C "$worktree" rev-parse --path-format=absolute --git-common-dir)")
+primary=$(dirname "$(git -C "$worktree" rev-parse --path-format=absolute --git-common-dir)")
 
-if [[ -z "$trunk" || "$trunk" == "$worktree" ]]; then
+if [[ -z "$primary" || "$primary" == "$worktree" ]]; then
     printf 'linked=0\n'
     exit 0
 fi
@@ -30,9 +30,9 @@ link_if_absent() {
 }
 
 while IFS= read -r source; do
-    relative="${source#"$trunk"/}"
+    relative="${source#"$primary"/}"
     link_if_absent "$source" "$worktree/$relative"
-done < <(find "$trunk" -name AGENTS.md \
+done < <(find "$primary" -name AGENTS.md \
     -not -path '*/node_modules/*' \
     -not -path '*/.git/*' \
     -not -path '*/.worktrees/*' \
@@ -43,16 +43,16 @@ while IFS= read -r source; do
     if [[ -L "$source" && "$source" -ef "$(dirname "$source")/AGENTS.md" ]]; then
         continue
     fi
-    relative="${source#"$trunk"/}"
+    relative="${source#"$primary"/}"
     link_if_absent "$source" "$worktree/$relative"
-done < <(find "$trunk" -name CLAUDE.md \
+done < <(find "$primary" -name CLAUDE.md \
     -not -path '*/node_modules/*' \
     -not -path '*/.git/*' \
     -not -path '*/.worktrees/*' \
     -not -path '*/.claude/worktrees/*' 2>/dev/null)
 
 for shared_dir in vault .notes; do
-    link_if_absent "$trunk/$shared_dir" "$worktree/$shared_dir"
+    link_if_absent "$primary/$shared_dir" "$worktree/$shared_dir"
 done
 
-printf 'trunk=%s\nworktree=%s\nlinked=%s\n' "$trunk" "$worktree" "$linked"
+printf 'primary_checkout=%s\nworktree=%s\nlinked=%s\n' "$primary" "$worktree" "$linked"

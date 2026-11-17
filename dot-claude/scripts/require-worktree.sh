@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # PreToolUse guard: work repos (GitHub HHS, common-grants, agilesix) take
-# changes only in linked worktrees. In their main checkout it denies edits to
+# changes only in linked worktrees. In their primary checkout it denies edits to
 # non-ignored files, commits, and in-place branch switches.
 # Test: bash tests/test-require-worktree.sh
 
@@ -15,7 +15,7 @@ deny() {
 }
 
 hint() {
-  echo "$1 is the main checkout of a work repo, so changes go in a worktree." \
+  echo "$1 is the primary checkout of a work repo, so changes go in a worktree." \
     "From $1 run \`wt switch --create bryan/<issue-id>-<subject>\` (or reuse" \
     "one from \`wt list\`), then $2 in that worktree."
 }
@@ -26,7 +26,7 @@ near_dir() {
   echo "$d"
 }
 
-# Echo the checkout root if $1 is inside the main checkout of a guarded repo.
+# Echo the checkout root if $1 is inside the primary checkout of a guarded repo.
 guarded_trunk() {
   local top
   top=$(git -C "$(near_dir "$1")" rev-parse --show-toplevel 2>/dev/null) || return 1

@@ -42,8 +42,8 @@ if [[ "$_local_hostname" == "Bryans-Mac-Studio" ]] && command -v claude >/dev/nu
   # Claude Code on Bryan's personal Max subscription, from any directory.
   alias claude-personal='CLAUDE_CONFIG_DIR="$HOME/.claude-personal" claude'
   # Same split as hermes below: under ~/code/sgg plain `claude` uses the default login
-  # (the Agile Six work seat); everywhere else it uses the personal subscription. An
-  # explicit CLAUDE_CONFIG_DIR always wins; `command claude` reaches the work seat anywhere.
+  # (the Agile Six work subscription); everywhere else it uses the personal subscription. An
+  # explicit CLAUDE_CONFIG_DIR always wins; `command claude` reaches the work subscription anywhere.
   claude() {
     if [[ -z "$CLAUDE_CONFIG_DIR" ]]; then
       case "$PWD/" in
@@ -83,10 +83,11 @@ if [[ "$_local_hostname" == "Bryans-Mac-Studio" ]] && command -v hermes >/dev/nu
 fi
 unset _local_hostname
 # Pi follows the claude rule above: under ~/code/sgg plain `pi` uses the default Claude
-# login (the work seat); everywhere else the personal plan. pi-claude-code passes
-# PI_CLAUDE_CODE_CONFIG_DIR on as CLAUDE_CONFIG_DIR; the work seat means leaving it
+# login (the work subscription); everywhere else the personal plan. pi-claude-code passes
+# PI_CLAUDE_CODE_CONFIG_DIR on as CLAUDE_CONFIG_DIR; the work subscription means leaving it
 # unset. An explicit PI_CLAUDE_CODE_CONFIG_DIR or CLAUDE_CONFIG_DIR wins, and
-# `command pi` reaches the work seat anywhere. `/seat` inside Pi shows the seat in use.
+# `command pi` reaches the work subscription anywhere. `/subscription` inside Pi shows the
+# subscription in use.
 # Only defined where the personal login exists.
 if [[ -d "$HOME/.claude-personal" ]] && command -v pi >/dev/null 2>&1; then
   pi() {
@@ -185,7 +186,7 @@ if [[ -d "$HOME/code/sgg/HHS/simpler-grants-protocol" ]]; then
 fi
 if [[ -d "$HOME/second-brain" ]]; then
   # Opens Pi in the vault, the only thing done there. The subshell keeps the
-  # caller's directory, and the pi() wrapper above picks the personal seat.
+  # caller's directory, and the pi() wrapper above picks the personal subscription.
   # `|| true`: with no such alias, unalias fails, and that would end a shell sourcing this under `set -e`.
   unalias second-brain 2>/dev/null || true
   second-brain() { (cd ~/second-brain && pi "$@"); }

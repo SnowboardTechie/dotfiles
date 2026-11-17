@@ -11,12 +11,12 @@ This skill teaches agents how to operate within a worktrunk-managed worktree env
 
 ## Detecting a Worktree
 
-Check whether you're in a worktree or the main checkout:
+Check whether you're in a worktree or the primary checkout:
 
 ```bash
 # Worktree: .git is a FILE containing "gitdir: /path/to/main/.git/worktrees/<name>"
-# Main checkout: .git is a DIRECTORY
-test -f .git && echo "worktree" || echo "main checkout"
+# Primary checkout: .git is a DIRECTORY
+test -f .git && echo "worktree" || echo "primary checkout"
 ```
 
 If in a worktree, you can find the main repo path:
@@ -27,25 +27,25 @@ git worktree list --porcelain | head -1
 
 ---
 
-## Canonical trunk resolution
+## Primary checkout resolution
 
-This skill **owns** trunk/worktree resolution for the whole shared pool. Other
+This skill **owns** primary checkout/worktree resolution for the whole shared pool. Other
 skills cite this section; none of them re-spell the logic. Anything that needs
-the trunk — repo-scoped state directories, project vaults, shared caches,
+the primary checkout — repo-scoped state directories, project vaults, shared caches,
 per-repo config — resolves it here first.
 
 `git rev-parse --show-toplevel` gives the *current* checkout, which is the
-worktree when you are inside one. The trunk is the parent of the shared
+worktree when you are inside one. The primary checkout is the parent of the shared
 `--git-common-dir`:
 
 ```bash
-resolve_trunk_root() {
+resolve_primary_checkout() {
   local toplevel common_dir
   toplevel=$(git rev-parse --show-toplevel) || return 1
 
   if [ -f "$toplevel/.git" ]; then
     # Inside a worktree: .git is a regular file pointing at the shared store.
-    # --git-common-dir is the trunk's .git directory; its parent is the trunk.
+    # --git-common-dir is the primary checkout's .git directory; its parent is the primary checkout.
     common_dir=$(git rev-parse --path-format=absolute --git-common-dir) || return 1
     dirname "$common_dir"
   else
@@ -53,22 +53,22 @@ resolve_trunk_root() {
   fi
 }
 
-TRUNK_ROOT=$(resolve_trunk_root)
-PROJECT_NAME=$(basename "$TRUNK_ROOT")
+PRIMARY_CHECKOUT=$(resolve_primary_checkout)
+PROJECT_NAME=$(basename "$PRIMARY_CHECKOUT")
 ```
 
-| Where you are | `--show-toplevel` | `resolve_trunk_root` |
+| Where you are | `--show-toplevel` | `resolve_primary_checkout` |
 |---|---|---|
-| Trunk `simpler-grants-protocol/` | `…/simpler-grants-protocol` | `…/simpler-grants-protocol` |
+| Primary checkout `simpler-grants-protocol/` | `…/simpler-grants-protocol` | `…/simpler-grants-protocol` |
 | Worktree `simpler-grants-protocol.feat-auth/` | `…/simpler-grants-protocol.feat-auth` | `…/simpler-grants-protocol` |
 
 Pass `--path-format=absolute` explicitly: without it Git may return
 `--git-common-dir` relative to the current directory, and `dirname` on a
-relative path silently yields the wrong trunk.
+relative path silently yields the wrong primary checkout.
 
-**Repo-scoped state lives in the trunk, never per worktree.** Sibling worktrees
+**Repo-scoped state lives in the primary checkout, never per worktree.** Sibling worktrees
 of one repository share it, so a review, plan, or cache written from a worktree
-must be written under `{TRUNK_ROOT}` to be visible to the next session. Reading
+must be written under `{PRIMARY_CHECKOUT}` to be visible to the next session. Reading
 that state is not permission to create it: a skill that finds no state directory
 reports the absence and continues, rather than scaffolding one.
 
@@ -80,7 +80,7 @@ Worktrunk uses a **sibling directory layout** by default:
 
 ```
 ~/code/org/
-├── simpler-grants-protocol/                # Trunk (main branch)
+├── simpler-grants-protocol/                # Primary checkout (main branch)
 ├── simpler-grants-protocol.feat-auth/      # Worktree for feat-auth branch
 ├── simpler-grants-protocol.fix-nav/        # Worktree for fix-nav branch
 └── simpler-grants-protocol.chore-deps/     # Worktree for chore-deps branch
@@ -103,7 +103,7 @@ The pattern is `{repo}.{branch}` as a sibling directory. All worktrees share the
 | Remove specific | `wt remove <branch>` | Removes named worktree |
 | Merge to target | `wt merge <target>` | Local repos only — for remotes, see "Wrapping Up" |
 | Commit with LLM msg | `wt step commit` | Uses configured LLM for commit message |
-| Copy build caches | `wt step copy-ignored` | Copies node_modules, target/, etc. from trunk |
+| Copy build caches | `wt step copy-ignored` | Copies node_modules, target/, etc. from primary checkout |
 
 ### Important Flags
 
@@ -168,7 +168,7 @@ Hooks support **template variables**: `{{ branch }}`, `{{ branch | sanitize }}`,
 Personal `AGENTS.md` and vault links may be globally ignored and therefore
 absent from a new worktree. After creation, run the linked
 `scripts/link-shared-context.sh` helper against the new worktree. It links only
-missing context files/directories from the trunk and never replaces existing
+missing context files/directories from the primary checkout and never replaces existing
 paths.
 
 Do not create or propagate `CLAUDE.md` symlinks that alias `AGENTS.md`: Claude
@@ -231,8 +231,8 @@ When operating inside a worktree:
 
 1. **You're on a feature branch** — the branch name matches the worktree suffix
 2. **Other agents may be working in sibling worktrees** — don't modify shared resources (main branch, tags)
-3. **Build caches may be shared** — `node_modules/`, `target/`, `.next/` may have been copied from trunk
-4. **The trunk worktree has the main branch** — it lives at the unsuffixed directory path
+3. **Build caches may be shared** — `node_modules/`, `target/`, `.next/` may have been copied from primary checkout
+4. **The primary checkout has the main branch** — it lives at the unsuffixed directory path
 
 ---
 
@@ -260,7 +260,7 @@ criteria, and warn Bryan about any unmet box or any issue that will stay open
 | No remote | Fall back to `wt merge` |
 | Not authenticated | Bail: "Run `gh auth login` or `tea login`" |
 | PR already exists | Show URL via `gh pr view --web` or `tea pr view`, skip creation |
-| On trunk branch | Warn user, do not create PR |
+| On the main branch | Warn user, do not create PR |
 | Forgejo merge requested | Do not use `wt merge` for a remote PR. Load `manual-merge`, require reviewed/CI-green state plus explicit approval, and serialize merges against the same base. |
 
 ---

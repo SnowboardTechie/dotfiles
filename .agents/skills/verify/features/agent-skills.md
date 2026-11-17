@@ -1,6 +1,6 @@
 # Agent skill links
 
-`scripts/reconcile-agent-skills.sh` links the curated skills in `dot-agents/skills/` into each tool's skills directory:
+`scripts/reconcile-agent-skills.sh` links the curated skills in `dot-agents/skills/` into each harness's skills directory:
 `~/.claude/skills`, `~/.config/opencode/skills`, `~/.agents/skills` (Codex, also read by Pi), `~/.pi/agent/skills` and
 `~/.hermes/skills/personal`. The `*_SKILLS` arrays in the script decide which tool gets which skill. Both setup scripts
 run it.
@@ -8,7 +8,7 @@ run it.
 ## Sub-features
 
 - `check`: reports the links it would make and writes nothing, not even the directories.
-- `apply`: `ship` links into the pool for each of the five tools; `draw-it` reaches Pi and none of the other four.
+- `apply`: `ship` links into the pool for each of the five harnesses; `draw-it` reaches Pi and none of the other four.
   Other curated names are not asserted one by one. Matt Pocock's skills are not in any list here: his checkout serves
   every harness through `scripts/reconcile-mattpocock-skills.sh` (see `omarchy-setup.md` and `platform-setup.md`).
 - `repeat`: a second apply changes no path; a check after apply proposes nothing.

@@ -26,7 +26,7 @@ Instead, we:
 4. **Adapt** it into the canonical pool if the user wants to keep it
 
 **Adopted skills are authored in the canonical pool, never written straight into
-a runtime directory.** `~/.claude/skills/`, `~/.config/opencode/skills/`,
+a harness's directory.** `~/.claude/skills/`, `~/.config/opencode/skills/`,
 `~/.pi/agent/skills/`, `~/.agents/skills/`, and `~/.hermes/skills/personal/` are
 *outputs*: they hold per-skill symlinks that
 `scripts/reconcile-agent-skills.sh` creates from `dot-agents/skills/`. A file
@@ -40,7 +40,7 @@ So an adoption lands in three places, all of them in the repository:
 |---|---|
 | The adapted skill | `dot-agents/skills/{name}/SKILL.md` |
 | Its upstream provenance | `dot-agents/upstreams/{source}.json` |
-| Which runtimes get it | the `*_SKILLS` arrays in `scripts/reconcile-agent-skills.sh` |
+| Which harnesses get it | the `*_SKILLS` arrays in `scripts/reconcile-agent-skills.sh` |
 
 ---
 
@@ -180,10 +180,10 @@ paths, what was changed locally and why, which upstream rules were accepted or
 rejected, and the upstream files worth watching. See
 [`dot-agents/README.md`](../../README.md) → *Upstream adaptations*.
 
-### Curate the runtimes
+### Curate the harnesses
 
 Add the name to the `*_SKILLS` array(s) in
-`scripts/reconcile-agent-skills.sh` for the runtimes that should receive it.
+`scripts/reconcile-agent-skills.sh` for the harnesses that should receive it.
 Curating nothing means nothing loads it. Pi is deliberately lean — do not add to
 it without a reason.
 
@@ -199,12 +199,12 @@ load, and the reconciler owns it:
 ./scripts/reconcile-agent-skills.sh --apply     # after the plan looks right
 ```
 
-`--check` must show `would create link: {skill-name}` for each intended runtime.
+`--check` must show `would create link: {skill-name}` for each intended harness.
 If it says `WARNING: skill '{skill-name}' not in pool`, the file is in the wrong
 place. If it says nothing about the skill at all, it is not curated.
 
 Then confirm the link resolves back into the pool, and start a fresh session so
-the runtime rescans:
+the harness rescans:
 
 ```bash
 readlink ~/.claude/skills/{skill-name}      # -> …/dot-agents/skills/{skill-name}

@@ -38,7 +38,7 @@ if [[ "${MOCK_NO_HEADERS:-0}" == 1 ]]; then
     printf '%s\r\n' 'HTTP/2 503' ''
     exit 0
 fi
-# MOCK_WINDOWS picks the headers: 5h (the default), 7d (a weekly-only seat), or both.
+# MOCK_WINDOWS picks the headers: 5h (the default), 7d (a weekly-only subscription), or both.
 printf '%s\r\n' 'HTTP/2 200'
 if [[ "${MOCK_WINDOWS:-5h}" == 5h || "${MOCK_WINDOWS:-5h}" == both ]]; then
     printf '%s\r\n' \
@@ -127,7 +127,7 @@ if [[ $status -ne 69 || "$out" != *"could not be verified"* ]]; then
 fi
 echo "ok   capacity check fails closed when live usage is unavailable"
 
-# --- Weekly-only seats (a plan with no 5-hour window) ---
+# --- Weekly-only subscriptions (a plan with no 5-hour window) ---
 
 CACHE="$TMP_ROOT/runtime/claude-usage-cache"
 fail() {
@@ -165,7 +165,7 @@ run_tracker MOCK_WINDOWS=7d MOCK_WEEKLY_UTILIZATION=0.25 MOCK_WEEKLY_RESET_EPOCH
 [[ $status -eq 0 && "$out" == "$ICON 25% weekly ↻6d 3h" ]] \
     || fail "expected a weekly-only render line"
 [[ "$(first_pct "$out")" == "25%" ]] || fail "expected the callers' parse to read the weekly figure"
-echo "ok   weekly-only seat renders the weekly window, and the parse reads it"
+echo "ok   weekly-only subscription renders the weekly window, and the parse reads it"
 
 rm -f "$CACHE"
 run_tracker MOCK_WINDOWS=7d MOCK_WEEKLY_UTILIZATION=0.25 MOCK_WEEKLY_RESET_EPOCH="$SIX_DAYS" -- --check-capacity
@@ -237,7 +237,7 @@ run_tracker MOCK_NO_HEADERS=1 --
 [[ "$out" == "$ICON 61% ↻"* && "$out" != *weekly* ]] || fail "expected a stale two-line fallback to read as 5-hour"
 echo "ok   a two-line cache is read as a 5-hour reading"
 
-# A seat moving from 5-hour to weekly-only.
+# A subscription moving from 5-hour to weekly-only.
 rm -f "$CACHE"
 run_tracker MOCK_WINDOWS=5h MOCK_UTILIZATION=0.42 --
 age_cache

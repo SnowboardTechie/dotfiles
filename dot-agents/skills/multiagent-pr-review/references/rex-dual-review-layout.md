@@ -2,7 +2,7 @@
 
 Extend, do not duplicate, the established
 [Rex Claude handoff](../../coding-agent-handoff-supervision/references/rex-claude-handoff.md).
-That reference owns caller identity, focus preservation, sub-agents tab
+That reference owns caller identity, focus preservation, "Background Agents" tab
 placement, startup inspection, settlement, and ownership-safe cleanup. This
 reference defines only the two-reviewer delta.
 
@@ -29,11 +29,11 @@ conflicting `delegation.*` override; or, from a Pi root, the named
 `openai-codex` model at high thinking, proven by a one-turn probe. Never rewrite
 global configuration to make the route pass.
 
-## Place both reviewers in the sub-agents tab
+## Place both reviewers in the "Background Agents" tab
 
-Both reviewers open in the instigating session's sub-agents tab, never beside
+Both reviewers open in the instigating session's "Background Agents" tab, never beside
 the instigating block, without taking focus. Start them one at a time, running
-`scripts/rex_subagent_slot.py` right before each start as the Rex handoff
+`scripts/rex_background_agent_slot.py` right before each start as the Rex handoff
 reference shows: Claude first, then GPT. Each start re-reads the live layout,
 so the two never race for one anchor. Confirm both new block IDs, their window,
 labels, and working directories (`"$REX" block inspect <block>`) before either
@@ -42,22 +42,22 @@ reviewer blocks.
 
 ## Start exact reviewer routes
 
-Choose two unique block labels. Claude starts with the Rex reference's worker
+Choose two unique block labels. Claude starts with the Rex reference's background-agent
 command (`--permission-mode auto --model claude-opus-5-5 --effort medium`, a
 fixed `--session-id`) in `$CLAUDE_WORKTREE`. GPT starts in `$GPT_WORKTREE` as a
-worker of the root's own kind: a Hermes worker, as that reference's Hermes
-paragraph describes, or a Pi worker, as its Pi paragraph describes but with
-`--model <GPT route> --thinking high` and no Claude seat variable. A Pi GPT
-worker spends the Codex subscription, so the Claude capacity gate does not apply
-to it. Each worker's
+background agent of the root's own kind: a Hermes background agent, as that reference's Hermes
+paragraph describes, or a Pi background agent, as its Pi paragraph describes but with
+`--model <GPT route> --thinking high` and no Claude subscription variable. A Pi GPT
+background agent spends the Codex subscription, so the Claude capacity gate does not apply
+to it. Each background agent's
 first turn is the review prompt, so write both prompt files and verify both
 worktrees before the first start.
 
 The dedicated `multiagent-pr-lane-reviewer` agent must be available to the
-Claude orchestrator. A Hermes GPT worker must use smart approvals, no `--yolo`,
+Claude orchestrator. A Hermes GPT background agent must use smart approvals, no `--yolo`,
 the root's active GPT model/provider/base URL, high reasoning, and delegation
-inherited or exactly pinned to that same GPT route. A Pi GPT worker has no
-sub-agent, so each lane leaf is its own headless process in the worker's
+inherited or exactly pinned to that same GPT route. A Pi GPT background agent has no
+built-in background agent of its own, so each lane leaf is its own headless process in its
 worktree, limited to read-only tools:
 
 ```sh
@@ -65,18 +65,18 @@ pi -p --mode json --no-session --model "$GPT_ROUTE" --thinking high \
   --tools read,grep,find,ls "@$STATE/<lane>-prompt.md" > "$STATE/<lane>.jsonl"
 ```
 
-The primary lanes run in parallel as background jobs the worker waits on, and
-`ponytail` runs after them. The worker takes each leaf's findings from its last
+The primary lanes run in parallel as background jobs the background agent waits on, and
+`ponytail` runs after them. The background agent takes each leaf's findings from its last
 `message_end` and records the provider and model those events report; a leaf
-that reports any other route invalidates the report. A Pi worker has no
+that reports any other route invalidates the report. A Pi background agent has no
 approval gate; the contract's prohibitions and the clean-worktree check are its
-only limits. No fallback is allowed for either parent or any leaf.
+only limits. No fallback is allowed for either orchestrator or any leaf.
 
 Persist two distinct identity records as each start returns. Each record
 includes:
 
 - `surface: rex`, block label (agent name), block ID (pane ID), Rex session and
-  window, kind, and runtime session ID;
+  window, kind, and harness session ID;
 - canonical worktree root, absolute Git common directory, and branch;
 - launch model, provider, base URL where applicable, and reasoning/effort;
 - dedicated reviewer state root.
@@ -113,7 +113,7 @@ Never focus either pane automatically.
 
 Keep reviewer outputs isolated: neither reviewer receives the other's state
 root, report, transcript, or eventual root disposition. Do not substitute a
-background worker or another model when one fails. Continue the same recorded
+background agent or another model when one fails. Continue the same recorded
 reviewer for at most one bounded same-model retry.
 
 Handle each reviewer independently. As soon as its report is admitted—or that

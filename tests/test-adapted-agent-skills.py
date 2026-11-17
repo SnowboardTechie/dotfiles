@@ -8,7 +8,7 @@ load-bearing contract surfaces:
 the retired adapted cores staying out of `dot-agents/skills/` (Matt Pocock's
 own skills replace them), a machine-readable provenance ledger, the Forgejo
 adapter beside its tracker doc, deterministic review-lane selection, curation that
-matches the intended per-runtime roles, and a timestamp-free upstream
+matches the intended per-harness roles, and a timestamp-free upstream
 monitor. They deliberately assert structure and authority wording, not
 prose style — a skill body may be rewritten freely as long as the
 contract below still holds.
@@ -108,14 +108,14 @@ def skill_dirs() -> list[Path]:
     return sorted(p for p in POOL.iterdir() if p.is_dir() and (p / "SKILL.md").is_file())
 
 
-# Arrays in the reconciler that are *not* a per-tool curation list. They are
+# Arrays in the reconciler that are *not* a per-harness curation list. They are
 # inputs to one (a shared set of names) or operational allowlists, so asserting
 # curation rules against them is a category error.
 _NON_CURATION_ARRAYS = frozenset({"RETIRED_POOL_TARGETS"})
 
 
 def curation_arrays() -> dict[str, list[str]]:
-    """The reconciler's per-tool curation arrays, with `${…[@]}` expanded.
+    """The reconciler's per-harness curation arrays, with `${…[@]}` expanded.
 
     The reconciler is the single curation authority, so the contract is asserted
     against its literal arrays rather than a mirrored list. Every uppercase array
@@ -160,7 +160,7 @@ def active_markdown() -> list[Path]:
     paths += sorted((REPO_ROOT / "dot-config" / "opencode" / "agents").glob("*.md"))
     paths += sorted((REPO_ROOT / "dot-claude" / "agents").glob("*.md"))
     # The Git-backed Hermes pool routes too, and it is ours to change —
-    # including its worker scripts, which select skills by name at launch.
+    # including its background agent scripts, which select skills by name at launch.
     paths += sorted((REPO_ROOT / "hermes" / "skills").glob("*/*/SKILL.md"))
     paths += sorted((REPO_ROOT / "hermes" / "skills").glob("*/*/scripts/*.py"))
     paths.append(REPO_ROOT / "dot-agents" / "README.md")
@@ -179,7 +179,7 @@ class _MatchMixin:
 
 
 class SkillFrontmatterTest(unittest.TestCase):
-    """Every pooled skill must be discoverable by every runtime."""
+    """Every pooled skill must be discoverable by every harness."""
 
     def test_every_pool_skill_has_name_and_description(self) -> None:
         for skill in skill_dirs():
@@ -301,14 +301,14 @@ class SessionHandoffEngagementContractTest(unittest.TestCase):
                 self.assertIn(phrase, self.handoff)
 
     def test_tripwire_forbids_review_but_permits_the_tracked_wait(self) -> None:
-        for phrase in ("cannot send the worker another turn", "read its pane, answer it, or close it",
+        for phrase in ("cannot send the background agent another turn", "read its pane, answer it, or close it",
                        "Retain only the status watch", "rex_wait.sh", "Do not poll",
-                       "do **not** start the worker again"):
+                       "do **not** start the background agent again"):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, self.handoff)
 
     def test_completion_distinguishes_delivered_settled_and_accepted(self) -> None:
-        for phrase in ("Handoff delivered", "Delegated turn settled",
+        for phrase in ("Handoff delivered", "Background agent's turn settled",
                        "Candidate independently accepted", "the qualifier is mandatory"):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, self.handoff)
@@ -466,16 +466,16 @@ class RetiredRouteTest(unittest.TestCase):
                             f"retired '{route}': {paragraph.strip()[:160]}"
                         )
 
-    def test_trunk_resolution_has_a_canonical_owner(self) -> None:
+    def test_primary_checkout_resolution_has_one_owner(self) -> None:
         body = read(POOL / "worktrunk" / "SKILL.md")
-        self.assertIn("resolve_trunk_root", body, "worktrunk must own trunk/worktree resolution")
+        self.assertIn("resolve_primary_checkout", body, "worktrunk must own primary checkout/worktree resolution")
         self.assertIn("--git-common-dir", body)
 
-    def test_consumers_cite_worktrunk_for_trunk_resolution(self) -> None:
+    def test_consumers_cite_worktrunk_for_primary_checkout_resolution(self) -> None:
         for name in ("issue-work", "pr-self-review"):
             with self.subTest(skill=name):
                 body = read(POOL / name / "SKILL.md")
-                self.assertIn("worktrunk", body, f"{name} must cite worktrunk for trunk resolution")
+                self.assertIn("worktrunk", body, f"{name} must cite worktrunk for primary checkout resolution")
 
 
 class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
@@ -486,7 +486,7 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
         cls.body = read(POOL / "issue-work" / "SKILL.md")
         cls.handoff = read(POOL / "issue-plan" / "references" / "handoff-contract.md")
         cls.repo_resolution = read(POOL / "issue-work" / "references" / "repo-resolution.md")
-        cls.router = read(POOL / "issue-work" / "scripts" / "select_issue_worker.py")
+        cls.router = read(POOL / "issue-work" / "scripts" / "select_issue_agent.py")
         cls.handoff_supervision = read(
             POOL / "coding-agent-handoff-supervision" / "SKILL.md"
         )
@@ -510,7 +510,7 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
         ):
             with self.subTest(token=token):
                 self.assertIn(token, self.body)
-        self.assertIn("{TICKET_TRUNK_ROOT}/repos/{repo}", self.repo_resolution)
+        self.assertIn("{TICKET_PRIMARY_CHECKOUT}/repos/{repo}", self.repo_resolution)
         self.assertIn("Do not rescue an identity mismatch", self.repo_resolution)
 
     def test_imperative_work_authorizes_reviewable_pr_not_merge(self) -> None:
@@ -535,7 +535,7 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
         )
 
     def test_exploration_is_question_driven_and_may_be_zero(self) -> None:
-        self.assertIn("Use zero exploration children", self.body)
+        self.assertIn("Use zero exploration background agents", self.body)
         self.assertIn("concrete unresolved repository question", self.body)
         self.assertNotIn("**always** at least one", self.body)
 
@@ -545,12 +545,12 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
                 self.assertIn(token, self.body)
                 self.assertIn(token.replace("--", ""), self.router)
         # Since d426970 (2026-10-19) task shape right-sizes the handoff, not the
-                # implementer: a Pi worker implements both shapes unless Bryan selects
+                # implementer: a Pi background agent implements both shapes unless Bryan selects
         # otherwise (Claude until 2026-11-10).
         self.assert_matches(
             self.body,
             r"(?is)Bryan's standing\s+selection is Pi for both shapes",
-            "a Pi worker must implement both task shapes by default",
+            "a Pi background agent must implement both task shapes by default",
         )
         self.assert_matches(
             self.body,
@@ -564,20 +564,20 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
         )
         self.assert_matches(self.body, r"Qwen is\s+never an automatic route", "Qwen is never automatic")
 
-    def test_visible_worker_uses_the_rex_procedure_and_complete_identity(self) -> None:
+    def test_visible_background_agent_uses_the_rex_procedure_and_complete_identity(self) -> None:
         self.assertIn("references/rex-claude-handoff.md", self.body)
         for field in (
-            "worker_surface",
-            "worker_agent_name",
-            "worker_pane_id",
-            "worker_kind",
-            "worker_runtime_session_id",
-            "worker_worktree_identity",
+            "background_agent_surface",
+            "background_agent_name",
+            "background_agent_pane_id",
+            "background_agent_kind",
+            "background_agent_session_id",
+            "background_agent_worktree_identity",
         ):
             with self.subTest(field=field):
                 self.assertIn(field, self.body)
                 self.assertIn(field, self.handoff_supervision)
-        self.assertIn("serializes provider turns within each worker runtime session", self.body)
+        self.assertIn("serializes provider turns within each background agent's session", self.body)
         self.assertIn("never authorizes an automatic\nprovider switch", self.body)
 
     def test_destructive_git_remains_absolutely_prohibited(self) -> None:
@@ -632,7 +632,7 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
             POOL
             / "coding-agent-handoff-supervision"
             / "tests"
-            / "test_rex_subagent_slot.py"
+            / "test_rex_background_agent_slot.py"
         )
 
     def test_preparation_reuses_or_creates_one_ticket(self) -> None:
@@ -654,36 +654,36 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
         )
 
     def test_sol_claude_boundary_is_explicit(self) -> None:
-                # The Sol pairing was replaced by the parent/Claude-worker split in
-        # d426970 (2026-10-19); the parent is Pi or Hermes since 4ea4140, and
-        # the worker is Pi since 2026-11-10.
+                # The Sol pairing was replaced by the orchestrator/Claude-background-agent split in
+        # d426970 (2026-10-19); the orchestrator is Pi or Hermes since 4ea4140, and
+        # the background agent is Pi since 2026-11-10.
         # Authorship and acceptance must still stay distinct.
         for token in ("decision-complete", "single-loop", "independent acceptance"):
             with self.subTest(token=token):
                 self.assertIn(token.lower(), self.body.lower())
         self.assert_matches(
             self.body,
-            r"(?is)The parent \(a Pi or Hermes session\) orchestrates; a Pi worker implements",
-            "the parent/worker roles must be explicit",
+            r"(?is)The orchestrator \(a Pi or Hermes session\) leads; a Pi background agent implements",
+            "the orchestrator/background agent roles must be explicit",
         )
         self.assert_matches(
             self.body,
-            r"(?is)a worker produces a\s+candidate,\s+not an accepted deliverable",
-            "worker authorship and parent acceptance must stay distinct",
+            r"(?is)a background agent produces a\s+candidate,\s+not an accepted deliverable",
+            "background agent authorship and orchestrator acceptance must stay distinct",
         )
 
     def test_rex_scripts_and_tests_exist(self) -> None:
-        self.assertTrue((self.scripts / "rex_subagent_slot.py").is_file())
+        self.assertTrue((self.scripts / "rex_background_agent_slot.py").is_file())
         self.assertTrue((self.scripts / "rex_wait.sh").stat().st_mode & 0o111)
         self.assertTrue(self.tests.is_file())
-        for script in ("rex_subagent_slot.py", "rex_wait.sh"):
+        for script in ("rex_background_agent_slot.py", "rex_wait.sh"):
             with self.subTest(script=script):
                 self.assertIn(script, self.body)
                 self.assertIn(script, self.rex)
 
     def test_capacity_and_session_turn_serialization_are_hard_gates(self) -> None:
         for token in (
-            "within each worker runtime session",
+            "within each background agent's session",
             "Independent sessions may run concurrently",
             "Any nonzero\ncapacity result stops",
             "never switch providers",
@@ -751,14 +751,14 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
                 self.assertIn(token, self.body + self.code_review)
         self.assertNotIn("parallel children", self.code_review)
         self.assertIn("model: claude-opus-5-5", self.reviewer)
-        self.assertIn("Do not spend another subagent", self.reviewer)
+        self.assertIn("Do not spend another background agent", self.reviewer)
 
-    def test_parent_is_independent_for_worker_authored_candidate(self) -> None:
-        self.assertIn("The parent is the independent acceptance context", self.issue_work)
+    def test_orchestrator_is_independent_for_background_agent_authored_candidate(self) -> None:
+        self.assertIn("The orchestrator is the independent acceptance context", self.issue_work)
         self.assertNotRegex(self.issue_work, r"\bSol\b")
-        self.assertIn("systematic parent review", self.ship)
-        self.assertIn("the parent is the independent acceptance context", self.body)
-        self.assertIn("parent-authored candidate\nrequires an independent review context", self.ship)
+        self.assertIn("systematic orchestrator review", self.ship)
+        self.assertIn("the orchestrator is the independent acceptance context", self.body)
+        self.assertIn("orchestrator-authored candidate\nrequires an independent review context", self.ship)
         self.assertNotIn("must launch a fresh visible Claude reviewer", self.issue_work)
 
     def test_targeted_risk_deepening_is_conditional_and_late(self) -> None:

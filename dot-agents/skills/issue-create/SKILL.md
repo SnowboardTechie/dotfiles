@@ -7,10 +7,10 @@ description: Draft a GitHub/Forgejo issue from a rough idea via Q&A, then post i
 
 Turn a rough idea into a well-structured, template-faithful GitHub or Forgejo issue through four stages: **Detect → Q&A → Draft → Post**. The user reviews and approves before anything is posted.
 
-## Runtime mappings
+## Harness mappings
 
 - Interactive choices: Hermes `clarify`; Claude/OpenCode `AskUserQuestion` or conversational equivalent; Pi a plain question in chat (it has no choice tool).
-- File discovery: Hermes `search_files`; Pi `rg`/`find` through `bash`; other hosts `Glob` or equivalent.
+- File discovery: Hermes `search_files`; Pi `rg`/`find` through `bash`; other harnesses `Glob` or equivalent.
 - Public mutation: always requires explicit user approval in the active run. Unattended execution may prepare a draft but must not post.
 
 Pairs with `issue-plan` and `issue-work`. After posting, use `issue-plan {url}` when implementation details or load-bearing decisions should be settled in the project vault before work starts. Use `issue-work {url}` directly when the issue is already clear enough to pass its plan-readiness gate.
@@ -387,20 +387,20 @@ In Stage 3.2's frontmatter, write `parent: {N}` (or empty when not chosen). The 
 
 ### 3.1 Resolve the drafts directory
 
-Resolve the trunk worktree directly so drafts remain stable across feature worktrees:
+Resolve the primary checkout directly so drafts remain stable across feature worktrees:
 
 ```bash
-# Keep resumable workflow state in the trunk workspace even when invoked from a worktree.
-TRUNK_ROOT=$(git worktree list --porcelain | python3 -c '
+# Keep resumable workflow state in the primary checkout even when invoked from a worktree.
+PRIMARY_CHECKOUT=$(git worktree list --porcelain | python3 -c '
 import sys
 for line in sys.stdin:
     if line.startswith("worktree "):
         print(line.removeprefix("worktree ").rstrip())
         break
 ')
-[[ -n "$TRUNK_ROOT" ]] || { echo "Could not resolve trunk worktree" >&2; exit 1; }
-DRAFTS_DIR="$TRUNK_ROOT/.agent-work/issue-create/drafts"
-LEGACY_DRAFTS_DIR="$TRUNK_ROOT/.hermes/issue-create/drafts"
+[[ -n "$PRIMARY_CHECKOUT" ]] || { echo "Could not resolve primary checkout" >&2; exit 1; }
+DRAFTS_DIR="$PRIMARY_CHECKOUT/.agent-work/issue-create/drafts"
+LEGACY_DRAFTS_DIR="$PRIMARY_CHECKOUT/.hermes/issue-create/drafts"
 mkdir -p "$DRAFTS_DIR"
 ```
 
@@ -625,8 +625,8 @@ If the resolved template has a `type:` field (e.g., `type: Task`), set it via Gr
 
 #### 4.3.1 Resolve the issue-type ID
 
-Lazy cache at `$TRUNK_ROOT/.agent-work/issue-create/type-ids.md` (read the legacy
-`$TRUNK_ROOT/.hermes/issue-create/type-ids.md` when the new one is missing):
+Lazy cache at `$PRIMARY_CHECKOUT/.agent-work/issue-create/type-ids.md` (read the legacy
+`$PRIMARY_CHECKOUT/.hermes/issue-create/type-ids.md` when the new one is missing):
 
 ```markdown
 ---
@@ -805,7 +805,7 @@ verified_parent=$(gh api graphql \
 On successful post — i.e., the issue was created in 4.2, regardless of whether 4.3 (type-set), 4.4 (type-verify), and 4.5 (parent-link + verify) all succeeded. The issue exists; archival is unconditional once 4.2 returns a URL:
 
 ```bash
-ARCHIVE_DIR="$TRUNK_ROOT/.agent-work/issue-create/archive"
+ARCHIVE_DIR="$PRIMARY_CHECKOUT/.agent-work/issue-create/archive"
 mkdir -p "$ARCHIVE_DIR"
 DATE=$(date +%Y-%m-%d)
 mv "$DRAFT_PATH" "$ARCHIVE_DIR/${DATE}-${slug}.md"
@@ -882,5 +882,5 @@ Archived draft: {archive path}
 
 - [issue-plan/SKILL.md](../issue-plan/SKILL.md) — optional pre-implementation deliberation and vault-backed planning for the posted issue
 - [issue-work/SKILL.md](../issue-work/SKILL.md) — the implementation half; consumes an approved vault plan or requires the issue itself to be plan-ready
-- [worktrunk/SKILL.md](../worktrunk/SKILL.md) — canonical trunk resolution for the trunk-scoped `.agent-work/issue-create/drafts` directory
+- [worktrunk/SKILL.md](../worktrunk/SKILL.md) — primary checkout resolution for the primary-checkout-scoped `.agent-work/issue-create/drafts` directory
 - [ship/SKILL.md](../ship/SKILL.md) — source of the forge-detection pattern reused here

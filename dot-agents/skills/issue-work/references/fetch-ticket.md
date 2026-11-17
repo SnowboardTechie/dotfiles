@@ -1,6 +1,6 @@
 # Fetching Tickets — CLI Reference
 
-Long-form fetch recipes. Use them from an isolated intake child (`delegate_task`, `Task`, `Agent`, or a visible Pi worker) or inline when delegation is unavailable. On Pi, run them inline unless a worker is warranted. Loaded on demand from SKILL.md.
+Long-form fetch recipes. Use them from an isolated intake background agent (`delegate_task`, `Task`, `Agent`, or a visible Pi background agent) or inline when delegation is unavailable. On Pi, run them inline unless a background agent is warranted. Loaded on demand from SKILL.md.
 
 ---
 
@@ -248,7 +248,7 @@ git -C "$LOCAL_CLONE" log -1 --format='%h %s' "{sha}" 2>/dev/null
 
 If not cloned, skip silently.
 
-**Arbitrary URL** — fetch the title with the host's read-only web fetch/browser tool (Hermes: browser/web tooling; Pi: `curl` through `bash`; other hosts: `WebFetch` or equivalent). Skip on failure.
+**Arbitrary URL** — fetch the title with the harness's read-only web fetch/browser tool (Hermes: browser/web tooling; Pi: `curl` through `bash`; other harnesses: `WebFetch` or equivalent). Skip on failure.
 
 ### No-recursion rule
 

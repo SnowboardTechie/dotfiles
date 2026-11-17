@@ -12,7 +12,7 @@ description: >
 # Voice: Bryan
 
 How Bryan writes to teammates and collaborators. The corpus, not any agent or
-runtime, is the source of truth. Drafts should be concise, direct, and ready to
+harness, is the source of truth. Drafts should be concise, direct, and ready to
 send, with zero em-dashes. PR review has the richest positive and correction
 coverage; Slack is also well represented. Email, GitHub/Forgejo issues, and
 standups remain placeholders pending samples in those channels.
@@ -118,5 +118,5 @@ closer to target.
 
 ## For non-Skill agents
 
-Plain markdown. Agents without a Skill runtime read `SKILL.md` plus all four
+Plain markdown. Agents without a skill-loading harness read `SKILL.md` plus all four
 files in `references/`. Mechanism differs; content is the same.

@@ -4,12 +4,12 @@ import importlib.util
 from pathlib import Path
 import unittest
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "rex_subagent_slot.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "rex_background_agent_slot.py"
 CALLER = "block:caller"
 
 
 def load_module():
-    spec = importlib.util.spec_from_file_location("rex_subagent_slot", SCRIPT)
+    spec = importlib.util.spec_from_file_location("rex_background_agent_slot", SCRIPT)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -87,28 +87,28 @@ QUADRANTS = {(0.0, 0.0, 0.5, 0.5), (0.5, 0.0, 0.5, 0.5), (0.0, 0.5, 0.5, 0.5), (
 class ChooseTest(unittest.TestCase):
     def fill(self, tree, names):
         for name in names:
-            got = slot.choose(listing(window("window:sub", "Pi Durable Sub Agents", tree)), CALLER)
+            got = slot.choose(listing(window("window:sub", "Pi Durable Background Agents", tree)), CALLER)
             self.assertEqual(got["action"], "split")
             tree = split(tree, got["anchor"], got["direction"], name)
         return tree
 
     def test_no_tab_means_a_new_tab_named_after_the_caller(self):
-        self.assertEqual(slot.choose(listing(), CALLER), {"action": "new", "tab_label": "Pi Durable Sub Agents"})
+        self.assertEqual(slot.choose(listing(), CALLER), {"action": "new", "tab_label": "Pi Durable Background Agents"})
 
-    def test_four_workers_make_a_two_by_two_grid(self):
+    def test_four_background_agents_make_a_two_by_two_grid(self):
         tree = self.fill("w1", ["w2", "w3", "w4"])
         self.assertEqual(set(rects(tree).values()), QUADRANTS)
 
-    def test_two_workers_sit_side_by_side(self):
+    def test_two_background_agents_sit_side_by_side(self):
         tree = self.fill("w1", ["w2"])
         self.assertEqual(rects(tree), {"w1": (0.0, 0.0, 0.5, 1.0), "w2": (0.5, 0.0, 0.5, 1.0)})
 
-    def test_a_full_tab_sends_the_fifth_worker_to_a_numbered_tab(self):
+    def test_a_full_tab_sends_the_fifth_background_agent_to_a_numbered_tab(self):
         tree = self.fill("w1", ["w2", "w3", "w4"])
-        got = slot.choose(listing(window("window:sub", "Pi Durable Sub Agents", tree)), CALLER)
-        self.assertEqual(got, {"action": "new", "tab_label": "Pi Durable Sub Agents 2"})
+        got = slot.choose(listing(window("window:sub", "Pi Durable Background Agents", tree)), CALLER)
+        self.assertEqual(got, {"action": "new", "tab_label": "Pi Durable Background Agents 2"})
 
-    def test_a_closed_worker_quadrant_is_refilled(self):
+    def test_a_closed_background_agent_quadrant_is_refilled(self):
         tree = self.fill("w1", ["w2", "w3", "w4"])
         for gone in ["w1", "w2", "w3", "w4"]:
             refilled = self.fill(close(tree, gone), ["w5"])
@@ -118,9 +118,9 @@ class ChooseTest(unittest.TestCase):
         full = self.fill("w1", ["w2", "w3", "w4"])
         got = slot.choose(
             listing(
-                window("window:sub3", "Pi Durable Sub Agents 3", "x1"),
-                window("window:sub", "Pi Durable Sub Agents", full),
-                window("window:sub2", "Pi Durable Sub Agents 2", ("h", "y1", "y2")),
+                window("window:sub3", "Pi Durable Background Agents 3", "x1"),
+                window("window:sub", "Pi Durable Background Agents", full),
+                window("window:sub2", "Pi Durable Background Agents 2", ("h", "y1", "y2")),
             ),
             CALLER,
         )
@@ -128,10 +128,10 @@ class ChooseTest(unittest.TestCase):
 
     def test_other_tabs_are_never_targets(self):
         got = slot.choose(
-            listing(window("window:o", "Hermes Sub Agents", "z1"), window("window:p", "Pi Durable Sub Agents old", "z2")),
+            listing(window("window:o", "Hermes Background Agents", "z1"), window("window:p", "Pi Durable Background Agents old", "z2")),
             CALLER,
         )
-        self.assertEqual(got, {"action": "new", "tab_label": "Pi Durable Sub Agents"})
+        self.assertEqual(got, {"action": "new", "tab_label": "Pi Durable Background Agents"})
 
     def test_unknown_caller_fails(self):
         with self.assertRaises(SystemExit):

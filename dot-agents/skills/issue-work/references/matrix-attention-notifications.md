@@ -9,7 +9,7 @@ inline checkpoint, blocker report, review summary, or completion report.
 Arm attention notifications immediately before the first Phase 2-or-later
 delegated, background, or visible task or finite watcher is launched, including
 Phase 2 exploration, visible Rex Claude/Hermes/Pi work, Qwen work, or the fresh review
-worker. A short-lived Phase 1 intake child does not arm them. Keep notifications
+background agent. A short-lived Phase 1 intake background agent does not arm them. Keep notifications
 armed through the terminal end of the workflow. Record the armed timestamp and
 resolved target under `## Attention notifications` in `progress.md`.
 
@@ -43,7 +43,7 @@ Do not send routine startup or progress notices.
 After notifications are armed, send one alert when either condition becomes
 true:
 
-- **Action needed / blocked:** the parent cannot continue without Bryan's answer,
+- **Action needed / blocked:** the orchestrator cannot continue without Bryan's answer,
   approval, correction, credentials, local-tree decision, or other intervention;
   or the run reaches a persistent blocker or retry/review bound. Plan approval
   and the ready-to-ship approval checkpoint count as action needed even though
@@ -51,13 +51,13 @@ true:
 - **Complete:** the user-requested terminal result has been verified and no
   further issue-work step remains. On the default path this means `/ship` has
   created the draft PR, remote readback succeeded, and handoff-owned panes whose
-  work is over have been released. A settled worker, green implementation,
+  work is over have been released. A settled background agent, green implementation,
   completed review, or `ready to ship` state is not completion. If Bryan
   explicitly limits the requested scope to a pre-publication result, that
   verified result may be terminal completion.
 
-Do not alert for routine phase changes, successful worker settlement that the
-parent can process, test passes, correction iterations, or informational
+Do not alert for routine phase changes, successful background agent settlement that the
+orchestrator can process, test passes, correction iterations, or informational
 progress. Continue the normal inline response at every action-needed or complete
 transition.
 

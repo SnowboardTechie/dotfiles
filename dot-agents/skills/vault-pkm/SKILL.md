@@ -83,7 +83,7 @@ that informs every other choice.
 
 ## For non-Skill agents
 
-This skill's content is plain markdown. Agents without a Skill runtime (aider, codex
+This skill's content is plain markdown. Agents without a skill-loading harness (aider, codex
 when not using its own skills system, Cursor) can read `SKILL.md` directly, and
 should also read all files under `references/` since they won't follow the
 routing table dynamically. The mechanism differs; the content is the same.

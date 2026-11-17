@@ -150,7 +150,7 @@ echo "Setting up Rex agent-session restore..."
 "$REPO_ROOT/scripts/reconcile-rex-agent-sessions.sh" --apply || \
     echo "  (Rex agent-session restore incomplete; resolve the reported file and re-run)"
 
-# Pi extensions owned by this repository (e.g. /seat, the Claude seat in use).
+# Pi extensions owned by this repository (e.g. /subscription, the Claude subscription in use).
 echo ""
 echo "Setting up Pi extensions..."
 "$REPO_ROOT/scripts/reconcile-pi-extensions.sh" --apply || \
@@ -207,7 +207,7 @@ echo "Setting up Hermes managed assets..."
 
 HERMES_INSTALLER="$REPO_ROOT/hermes/install.py"
 if [[ "$PLATFORM" != "macos" ]]; then
-    echo "  Skipped (the managed Hermes runtime is on Studio)"
+    echo "  Skipped (the managed Hermes install is on Studio)"
 elif [[ ! -f "$HERMES_INSTALLER" ]]; then
     echo "  ERROR: Hermes installer not found at $HERMES_INSTALLER"
 elif [[ "$(scutil --get LocalHostName 2>/dev/null || hostname -s)" != "Bryans-Mac-Studio" ]]; then

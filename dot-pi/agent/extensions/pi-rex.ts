@@ -4,12 +4,12 @@
 //     agents (`rex __internal session-start`), so a Rex upgrade updates it;
 //   - names its pane, its tab and the Rex session through the `rex_name` tool.
 // Naming follows how the work is laid out: a session is one initiative ("Pi Durable"), a
-// tab is one lane of it ("Lane A pi-bots"), a pane is one agent ("w31-9-review", the same
+// tab is one workstream of it ("Subscription Rename"), a pane is one agent ("w31-9-review", the same
 // slug as the Pi session name). Every level is named once, and only while it still carries
 // a placeholder: Rex's generated label, or the /split launcher's `split-ab12`. A label set
 // by hand or by a launcher is never replaced. The session has one more guard: the first Pi
 // to name it leaves a marker, and no Pi names that session again.
-// Headless Pi children (`pi -p`) inherit REX_BLOCK from their parent's pane, so everything
+// Headless Pis (`pi -p`) a session starts inherit REX_BLOCK from its pane, so everything
 // here is limited to the TUI.
 import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
@@ -87,7 +87,7 @@ export function namingNote(loc: Location, sessionClaimed: boolean): string {
 		open.push("`pane`: a lowercase hyphenated slug of one to three words for this agent's task, such as `w31-9-review`");
 	}
 	if (placeholder.tab(loc.tab)) {
-		open.push("`tab`: a short Title Case name for the lane of work in this tab, such as `Lane A pi-bots`");
+		open.push("`tab`: a short Title Case name for the workstream in this tab, such as `Subscription Rename`");
 	}
 	if (sessionOpen) {
 		open.push("`session`: a short Title Case name for the whole initiative, such as `Pi Durable`");
@@ -211,7 +211,7 @@ export default function (pi: ExtensionAPI, run: Run = rexRunner(rexCommand()), c
 				type: "object",
 				properties: {
 					pane: { type: "string", description: "Lowercase hyphenated slug for this agent's task, one to three words." },
-					tab: { type: "string", description: "Short Title Case name for the lane of work in this tab." },
+					tab: { type: "string", description: "Short Title Case name for the workstream in this tab." },
 					session: { type: "string", description: "Short Title Case name for the whole initiative." },
 				},
 				additionalProperties: false,

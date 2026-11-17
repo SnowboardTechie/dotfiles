@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Select the issue-work implementation worker from verified repository identity."""
+"""Select the issue-work implementation agent from verified repository identity."""
 
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ def normalize_repo(repo: str) -> str:
     return value.lower()
 
 
-def select_worker(
+def select_agent(
     *,
     ticket_repo: str,
     remote_url: str,
@@ -93,7 +93,7 @@ def select_worker(
 
     if override == "auto" and task_shape == "single-loop":
         selected = "gpt"
-        reason = "single-loop work stays with the parent"
+        reason = "single-loop work stays with the orchestrator"
     elif override == "auto":
         selected = "pi"
         reason = "substantial work uses the visible Rex Pi handoff"
@@ -111,9 +111,9 @@ def select_worker(
         reason = "explicit local Qwen selection"
     elif override == "gpt":
         selected = "gpt"
-        reason = "explicit host-native GPT selection"
+        reason = "explicit harness-native GPT selection"
     else:
-        raise RoutingError(f"unsupported worker override: {override}")
+        raise RoutingError(f"unsupported agent override: {override}")
 
     loops = {
         "claude": "coding-agent-handoff-supervision",
@@ -132,7 +132,7 @@ def select_worker(
         "remote_repo": remote_repo,
         "cross_repository": cross_repository,
         "task_shape": task_shape,
-        "selected_worker": selected,
+        "selected_agent": selected,
         "implementation_loop": loops[selected],
         "reason": reason,
     }
@@ -195,7 +195,7 @@ def main() -> int:
         return 1
     try:
         common_dir, remote = repository_identity(workdir)
-        result = select_worker(
+        result = select_agent(
             ticket_repo=args.ticket_repo,
             ticket_host=args.ticket_host,
             implementation_repo=args.implementation_repo,

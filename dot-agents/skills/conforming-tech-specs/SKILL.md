@@ -97,7 +97,7 @@ artifact itself is unnecessary.
    wrappers, error shapes, identifier types, status semantics.
 2. For each shape, look it up in the repo's conventions index.
 3. Search the source-of-truth directories for shapes the index doesn't cover,
-   using the runtime's native file-reading and search tools (and terminal only
+   using the harness's native file-reading and search tools (and terminal only
    where repository commands are needed).
    In `simpler-grants-protocol`, that means:
    - `lib/core/lib/core/routes/` for verbs, paths, headers, parameter names
@@ -109,7 +109,7 @@ artifact itself is unnecessary.
 
 **Scaling the gather (judgment call):** when the spec touches many shape
 categories across a large source tree, dispatch this gather via
-the runtime's native delegation mechanism — in Hermes, `delegate_task`; on Pi,
+the harness's native delegation mechanism — in Hermes, `delegate_task`; on Pi,
 a headless `pi -p --no-session --tools read,grep,find,ls` process — one
 independent task per shape-category (routes / models / fields / prior-ADRs),
 in batches of at most three, each returning only
@@ -253,7 +253,7 @@ prevented), not a generic "more flexible."
 
 This pass re-greps the same shape-categories as Phase 1; the same scaling
 judgment applies — for a draft touching many shapes, dispatch the checklist
-through the runtime's native delegation mechanism (Hermes: `delegate_task`;
+through the harness's native delegation mechanism (Hermes: `delegate_task`;
 Pi: a headless read-only `pi -p` process),
 one independent task per category in batches of at most three, each returning
 only its divergence flags, to keep the annotation pass out
@@ -276,7 +276,7 @@ declarative sentence in the opening context and decision rationale as one of:
 
 Record this as a temporary review ledger, not content to paste into the ADR.
 Any sentence without an admissible classification blocks finalization. Do not
-upgrade an inference because it sounds plausible, repeat a worker's explanation
+upgrade an inference because it sounds plausible, repeat a background agent's explanation
 as fact, or let several agents agreeing substitute for primary evidence.
 
 **Output:** an annotated draft where every potential divergence from prior

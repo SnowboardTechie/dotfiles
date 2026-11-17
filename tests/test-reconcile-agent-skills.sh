@@ -73,13 +73,13 @@ link_resolves_to() { # <link> <expected-target>
     [[ -L "$1" && "$(readlink -f "$1")" == "$(readlink -f "$2")" ]]
 }
 
-# --- Test 1: expected curated links are created for all five tools -----------
+# --- Test 1: expected curated links are created for all five harnesses -------
 H="$(new_home)"
 TMP_HOMES+=("$H")
 out="$(HOME="$H" "$RECONCILER" --apply 2>&1)"; rc=$?
 check "t1: apply exits 0 on a fresh home" test "$rc" -eq 0
 check "t1: Codex receives 23 pool links" test "$(links_into_pool "$H/.agents/skills")" -eq 23
-check "t1: no tool gets a retired adapted skill" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do for n in grilling wayfinder tdd diagnosing-bugs codebase-architecture guided-learning; do [[ ! -e "$d/$n" && ! -L "$d/$n" ]] || exit 1; done; done' _ "$H"
+check "t1: no harness gets a retired adapted skill" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do for n in grilling wayfinder tdd diagnosing-bugs codebase-architecture guided-learning; do [[ ! -e "$d/$n" && ! -L "$d/$n" ]] || exit 1; done; done' _ "$H"
 check "t1: Codex gets ADR coaching" link_resolves_to "$H/.agents/skills/adr-and-spec-coach" "$POOL/adr-and-spec-coach"
 check "t1: Codex gets conforming specs" link_resolves_to "$H/.agents/skills/conforming-tech-specs" "$POOL/conforming-tech-specs"
 check "t1: Codex gets shared handoff" link_resolves_to "$H/.agents/skills/session-handoff" "$POOL/session-handoff"
@@ -110,11 +110,11 @@ check "t1: Pi gets handoff supervision"     link_resolves_to "$H/.pi/agent/skill
 check "t1: Pi gets manual-merge"            link_resolves_to "$H/.pi/agent/skills/manual-merge" "$POOL/manual-merge"
 check "t1: Hermes excludes obsidian"        test ! -e "$H/.hermes/skills/personal/obsidian"
 check "t1: Hermes excludes vault-pkm"       test ! -e "$H/.hermes/skills/personal/vault-pkm"
-check "t1: every tool gets knowledge-capture" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ -L "$d/knowledge-capture" ]] || exit 1; done' _ "$H"
-check "t1: no tool gets retired apple-notes-pkm" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ ! -e "$d/apple-notes-pkm" ]] || exit 1; done' _ "$H"
-check "t1: every tool gets black-box-verification" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ -L "$d/black-box-verification" ]] || exit 1; done' _ "$H"
-check "t1: no tool gets retired local code-review" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ ! -e "$d/code-review" ]] || exit 1; done' _ "$H"
-check "t1: no tool gets retired vault-capture" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ ! -e "$d/vault-capture" ]] || exit 1; done' _ "$H"
+check "t1: every harness gets knowledge-capture" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ -L "$d/knowledge-capture" ]] || exit 1; done' _ "$H"
+check "t1: no harness gets retired apple-notes-pkm" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ ! -e "$d/apple-notes-pkm" ]] || exit 1; done' _ "$H"
+check "t1: every harness gets black-box-verification" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ -L "$d/black-box-verification" ]] || exit 1; done' _ "$H"
+check "t1: no harness gets retired local code-review" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ ! -e "$d/code-review" ]] || exit 1; done' _ "$H"
+check "t1: no harness gets retired vault-capture" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do [[ ! -e "$d/vault-capture" ]] || exit 1; done' _ "$H"
 
 # --- Test 8: re-running --apply is idempotent --------------------------------
 before="$(snapshot "$H")"
@@ -170,7 +170,7 @@ check "Codex: bundled skills untouched" test -f "$H2/.codex/skills/.system/marke
 
 # Links an older curation left for the six skills adapted from Matt Pocock's,
 # now retired and gone from the pool: reported under check, pruned under apply,
-# in every tool. A same-named link to his checkout is not the pool's and stays.
+# in every harness. A same-named link to his checkout is not the pool's and stays.
 RETIRED_ADAPTED="grilling wayfinder tdd diagnosing-bugs codebase-architecture guided-learning"
 mkdir -p "$H2/his/tdd" "$H2/.config/opencode/skills" "$H2/.hermes/skills/personal"
 for d in "$H2/.agents/skills" "$H2/.claude/skills" "$H2/.config/opencode/skills" "$H2/.pi/agent/skills" "$H2/.hermes/skills/personal"; do
@@ -182,7 +182,7 @@ out="$(HOME="$H2" "$RECONCILER" --check 2>&1)"
 check "retired adapted: check reports every stale link" test "$(grep -cE "would prune (stale|retired) pool link: (${RETIRED_ADAPTED// /|})$" <<<"$out")" -eq 29
 check "retired adapted: check changes nothing" test "$before_retired" = "$(snapshot "$H2")"
 out="$(HOME="$H2" "$RECONCILER" --apply 2>&1)"
-check "retired adapted: apply prunes them in every tool" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do for n in $2; do [[ "$d/$n" == "$1/.claude/skills/tdd" ]] && continue; [[ ! -L "$d/$n" ]] || exit 1; done; done' _ "$H2" "$RETIRED_ADAPTED"
+check "retired adapted: apply prunes them in every harness" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do for n in $2; do [[ "$d/$n" == "$1/.claude/skills/tdd" ]] && continue; [[ ! -L "$d/$n" ]] || exit 1; done; done' _ "$H2" "$RETIRED_ADAPTED"
 check "retired adapted: a same-named link elsewhere survives" link_resolves_to "$H2/.claude/skills/tdd" "$H2/his/tdd"
 
 # Links into Matt Pocock's checkout belong to scripts/reconcile-mattpocock-skills.sh:

@@ -68,7 +68,7 @@ expect "shell.json keeps Omarchy's plugin and adds ours once" \
     test "$(jq -c '[.plugins[].id]' "$H/.config/omarchy/shell.json")" = '["omarchy.foreign","snowboardtechie.auto-suspend"]'
 expect "shell.json was backed up first" test -f "$H/.config/omarchy/shell.json.pre-auto-suspend"
 expect "Bryan's own Pi AGENTS.md is kept" bash -c '[[ ! -L "$1" && "$(cat "$1")" == "Bryan'"'"'s own Pi rules" ]]' _ "$H/.pi/agent/AGENTS.md"
-expect "Pi extensions linked" links_to "$H/.pi/agent/extensions/worker-watch.ts" "$REPO/dot-pi/agent/extensions/worker-watch.ts"
+expect "Pi extensions linked" links_to "$H/.pi/agent/extensions/background-agent-watch.ts" "$REPO/dot-pi/agent/extensions/background-agent-watch.ts"
 expect "the pinned Pi packages are installed" test "$(jq -c '[.packages[] | select(startswith("npm:"))]' "$H/.pi/agent/settings.json")" = \
     "$(grep -oE '"(pi-web-access|@deathbeam/pi-hashline)@[^"]+"' "$REPO/scripts/reconcile-pi-packages.sh" | tr -d '"' | sed 's/^/npm:/' | jq -Rsc 'split("\n") | map(select(. != ""))')"
 expect "the retired Hindsight extension is removed from Pi's settings, Bryan's kept" \

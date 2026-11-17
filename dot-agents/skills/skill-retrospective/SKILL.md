@@ -46,7 +46,7 @@ open-ended retrospective discovery.
    external publication, or permission/configuration changes. If the host needs
    further approval or lacks durable storage, report the exact blocker.
 4. Read back the saved content and exercise the corrected behavior in a fresh
-   context or representative case. Check that the intended runtime can discover
+   context or representative case. Check that the intended harness can discover
    the owner; file presence alone does not prove future loading.
 5. Report the saved target and verification. Distinguish a saved lesson from a
    proposed or blocked one, and state its retrieval scope. An acknowledgment or
@@ -125,8 +125,8 @@ If compression, missing tool output, or an unavailable source limits coverage,
 say so. Never reconstruct absent events from the final summary alone.
 
 Analyze the source in the current agent. Do not delegate the core audit unless
-the full transcript is explicitly passed to the child; subagents do not inherit
-the parent conversation. Delegation is acceptable for an independent overlap
+the full transcript is explicitly passed to the background agent; background agents do not inherit
+the orchestrator's conversation. Delegation is acceptable for an independent overlap
 check once candidate details and target files are supplied.
 
 **Complete when:** the response can state exactly which conversation material
@@ -205,7 +205,7 @@ For a repeated-workflow candidate, record its **current maturity** and the
    instructions own durable context, a Desktop Project owns the local working
    boundary, and a dedicated messaging room or thread owns remote interaction;
    use a separate profile only when tools, memory, or permissions must differ;
-4. independent evidence lanes may become focused subagent work only when their
+4. independent evidence workstreams may become focused background agent work only when their
    bounded reports improve context or decision quality;
 5. a proven on-demand loop may become a cron when time is the natural trigger,
    a webhook when an external state transition is the natural trigger, or a
@@ -297,12 +297,12 @@ For each approved ID:
 1. Re-read the target and its supporting files to avoid a stale patch. If the
    target drifted after approval, show the revised delta and ask again rather
    than adapting silently.
-2. Load the runtime's authoring workflow. In Hermes, use
+2. Load the harness's authoring workflow. In Hermes, use
    `hermes-agent-skill-authoring` and treat current Hermes documentation as the
    source of truth. In Pi, read Pi's `docs/skills.md`. A pooled skill follows
    `dot-agents/README.md` either way.
-3. Use host-native equivalents for session retrieval, skill discovery,
-   mutation, and approval. If a host lacks durable memory or prior-session
+3. Use harness-native equivalents for session retrieval, skill discovery,
+   mutation, and approval. If a harness lacks durable memory or prior-session
    retrieval, report that route as unsupported rather than inventing storage.
 4. Confirm the canonical writable source. Patch a tracked or shared source
    rather than a generated symlink. For bundled or hub-installed skills,

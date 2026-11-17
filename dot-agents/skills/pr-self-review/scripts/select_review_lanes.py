@@ -11,7 +11,7 @@ Two rules make this worth being code rather than a judgment call:
 
 * **Standards and Spec cannot be suppressed.** No input turns them off.
 * **Ambiguity includes Risk, never excludes it.** An unrecognized signal that
-  looks security-adjacent selects the lane. A false Risk lane costs one child
+  looks security-adjacent selects the lane. A false Risk lane costs one background
   agent; a missed one ships the defect.
 
 CairnOS always selects Risk regardless of what the diff touches: it is Bryan's

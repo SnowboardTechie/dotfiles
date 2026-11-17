@@ -30,21 +30,21 @@ The other role lines keep `/setup-pstack`'s defaults (`opus`, with `fable` for
 the strongest judgment and `sonnet` for features and refactoring). A full
 `provider/id` in a role line is passed through unchanged by the port's `agent`
 tool. Panels are two wide, one Claude and one OpenCode Go, sized for one
-machine. Arena's cross-judge takes only a family other than the parent's, so
+machine. Arena's cross-judge takes only a family other than the orchestrator's, so
 its pool lists only OpenCode Go models.
 
 Proven:
 
 - Each mapped Claude model (`opus`, `fable`, `sonnet`, `haiku` above) and
   `opencode-go/kimi-k3.1-pro` and `opencode-go/glm-5.3` ran two tool calls and
-  answered in `pi --mode rpc`, the mode the port starts subagents in.
-- A headless `pi -p` on Claude started a subagent through the port's `agent`
+  answered in `pi --mode rpc`, the mode the port starts background agents in.
+- A headless `pi -p` on Claude started a background agent through the port's `agent`
   tool with `model: "opencode-go/kimi-k3.1-pro"`. It read a file and answered
   correctly; its transcript records `opencode-go` / `kimi-k3.1-pro` on every
   turn.
 - `/skill:interrogate` from a headless `pi -p`, on a two-file diff in a scratch
   repository with an off-by-one bug planted, ran both reviewers in their own
-  worktrees. Each reported the bug with a failing test as proof, the parent
+  worktrees. Each reported the bug with a failing test as proof, the orchestrator
   reran both proofs, and merged them into one finding.
 
 Not proven: a reviewer from the other family catching a bug Claude missed. On
@@ -53,7 +53,7 @@ models without a comparison between them.
 
 ## What failed, and why
 
-`sonnet` mapped to `claude-code/claude-sonnet-5` fails as a subagent with:
+`sonnet` mapped to `claude-code/claude-sonnet-5` fails as a background agent with:
 
 ```text
 Incomplete Claude Code upstream response (status 400, capture incomplete,
@@ -78,7 +78,7 @@ thinking type between_tools instead"); `claude-sonnet-5-5` takes `off`.
 ## The OpenCode key in a headless run
 
 Pi lists no `opencode-go` models until it has a key. pi-bots jobs export
-`OPENCODE_API_KEY` from `~/.secrets/opencode-api-key` into the child's
+`OPENCODE_API_KEY` from `~/.secrets/opencode-api-key` into the background agent's
 environment. For pstack, put a command in the agent directory's `auth.json`
 instead:
 
@@ -92,13 +92,13 @@ instead:
 ```
 
 Keep `auth.json` mode 600. Pi runs the command when the key is first needed and
-keeps the output in memory for the process. Subagents are their own `pi` process
+keeps the output in memory for the process. Background agents are their own `pi` process
 reading the same agent directory, so each resolves the key itself; nothing is
 passed on a command line or in the environment. Checked:
 
 - A model on `opencode-go`, asked to run `env | grep -i opencode` in its tool
   shell, saw only `PI_PROVIDER=opencode-go`.
-- A search of every session and subagent transcript in the trial directory for
+- A search of every session and background agent transcript in the trial directory for
   the key's opening characters found none.
 
 Never `export OPENCODE_API_KEY` in the shell that starts a pstack run: the

@@ -2,7 +2,7 @@
 
 A recipe is how a project's real application gets driven and proven, written for
 an agent that arrives cold mid-task. Write one only when a project keeps needing
-it; a one-off check belongs in the plan or the handback, not a new file.
+it; a one-off check belongs in the plan or the completion report, not a new file.
 
 ## Reuse before generating
 
@@ -18,10 +18,10 @@ Choose where the recipe lives deliberately and record why:
 
 - a section or reference in the project's existing docs or `AGENTS.md`, when it
   is short;
-- a project-owned skill, when several runtimes should discover it — under the
+- a project-owned skill, when several harnesses should discover it — under the
   path the project's own agent conventions use, not unconditionally
   `.claude/skills/verify/` (that name shadows a Claude Code built-in and is
-  invisible to the other runtimes);
+  invisible to the other harnesses);
 - in a monorepo, beside the package it drives.
 
 Creating the file is a repository change under the project's normal authority

@@ -98,10 +98,10 @@ is the code authority. A dirty checkout is never used as planning provenance.
 
 ## `issue-work` discovery and binding
 
-`issue-work` resolves the ticket trunk first and stores state under:
+`issue-work` resolves the ticket primary checkout first and stores state under:
 
 ```text
-{TICKET_TRUNK_ROOT}/.agent-work/issue-work/{ticket-owner}-{ticket-repo}-{N}/
+{TICKET_PRIMARY_CHECKOUT}/.agent-work/issue-work/{ticket-owner}-{ticket-repo}-{N}/
 ```
 
 An existing legacy `.hermes/issue-work/...` directory for the same ticket is
@@ -110,9 +110,9 @@ resumed in place (`dot-agents/lib/agent_state.py`).
 It checks project-vault candidates in order:
 
 1. A vault path explicitly named by ticket-workspace instructions.
-2. `{TICKET_TRUNK_ROOT}/vault` when it is a directory or symlink.
+2. `{TICKET_PRIMARY_CHECKOUT}/vault` when it is a directory or symlink.
 3. For same-repository work only, an implementation-instruction path,
-   `{IMPLEMENTATION_TRUNK_ROOT}/vault`, or
+   `{IMPLEMENTATION_PRIMARY_CHECKOUT}/vault`, or
    `~/code/notes/{implementation-repo}` when it clearly belongs to the project.
 
 Cross-repository canonical plans must be ticket-discoverable through candidate 1

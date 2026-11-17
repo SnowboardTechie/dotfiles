@@ -62,7 +62,7 @@ with its stable ID and update timestamp, labels, linked references one level
 deep, and acceptance criteria. Compute the canonical comment checkpoint defined
 in the ticket-fetch reference.
 
-Resolve the ticket repository's local trunk first. It owns issue identity,
+Resolve the ticket repository's local primary checkout first. It owns issue identity,
 workspace instructions, vault discovery, and planning state. Then determine the
 implementation repository: default it to the ticket repository, or use a
 different repository only when the user or existing project authority names it
@@ -80,7 +80,7 @@ If default-branch resolution or fetch fails, stop and surface the authentication
 or remote error. Never fall back to a stale local ref.
 
 **Complete when:** the canonical issue URL, issue update timestamp, comment
-checkpoint, ticket repository/trunk, implementation forge/repository/trunk,
+checkpoint, ticket repository and primary checkout, implementation forge, repository and primary checkout,
 implementation default branch, and fetched base revision are known.
 
 ### 2. Resolve the project vault
@@ -89,9 +89,9 @@ Load `vault-pkm`; it owns vault discovery, local instructions, topology,
 frontmatter, linking, and synchronization. Resolve in this order:
 
 1. A vault path explicitly named by ticket-workspace instructions.
-2. `{TICKET_TRUNK_ROOT}/vault` when it is a directory or symlink.
+2. `{TICKET_PRIMARY_CHECKOUT}/vault` when it is a directory or symlink.
 3. For same-repository work only, a path named by implementation instructions,
-   `{IMPLEMENTATION_TRUNK_ROOT}/vault`, or
+   `{IMPLEMENTATION_PRIMARY_CHECKOUT}/vault`, or
    `~/code/notes/{implementation-repo}` when it clearly belongs to the project.
 
 Cross-repository canonical plans must be ticket-discoverable through step 1 or
@@ -113,11 +113,11 @@ note location are known, with local rules loaded.
 
 Read implementation-repository instructions, manifests, relevant files, nearby
 patterns, tests, and repository-owned specs/ADRs. Trace named symbols to their
-definitions and usages. Use one or two bounded exploration delegates when the
-issue spans distinct areas; delegates return findings only and must not write to
-the repository or vault. On Pi, a delegate is a visible Pi worker in a Rex pane
+definitions and usages. Use one or two bounded exploration background agents when the
+issue spans distinct areas; they return findings only and must not write to
+the repository or vault. On Pi, each is a visible Pi background agent in a Rex pane
 (`coding-agent-handoff-supervision`), a headless read-only `pi -p --no-session
---tools read,grep,find,ls` child that returns findings only, or do the
+--tools read,grep,find,ls` run that returns findings only, or do the
 exploration inline.
 
 Do not invent exact file paths or APIs. External research is conditional: use
@@ -143,7 +143,7 @@ are composable, not mutually exclusive:
 | The design rests on an unproven claim about code across a boundary ("X already handles Y", "nothing else reads this") | `black-box-verification` → its change-impact reference: prove the one or two load-bearing facts read-only; plan any execution-level check as a verification step |
 | Concrete implementation sequence, files, and checks | `plan` after design decisions are settled |
 
-Runtime mapping is explicit:
+Harness mapping is explicit:
 
 | Capability | Pi | Hermes | Claude / OpenCode |
 |---|---|---|---|
@@ -315,7 +315,7 @@ strategy drift is material.
 
 - [ ] Current issue body, update timestamp, and all comment IDs/update timestamps fetched
 - [ ] Canonical comment checkpoint computed
-- [ ] Ticket repository/trunk and implementation forge/repository/trunk verified
+- [ ] Ticket repository and primary checkout, and implementation forge, repository and primary checkout verified
 - [ ] Implementation default branch fetched and plan grounded against its remote revision
 - [ ] Project vault resolved without guessing
 - [ ] Vault-local instructions, index/MOC, and related notes read

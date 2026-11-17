@@ -41,11 +41,11 @@ For someone else's PR use `teammate-pr-review`, not this correction workflow.
 Standalone state lives at:
 
 ```text
-{TRUNK_ROOT}/.agent-work/pr-self-review/{owner}-{repo}-{pr-or-branch}/
+{PRIMARY_CHECKOUT}/.agent-work/pr-self-review/{owner}-{repo}-{pr-or-branch}/
 ```
 
 Resolve it with `python3 ~/code/dotfiles/dot-agents/lib/agent_state.py dir
---create --trunk "$TRUNK_ROOT" --skill pr-self-review --key
+--create --primary-checkout "$PRIMARY_CHECKOUT" --skill pr-self-review --key
 "{owner}-{repo}-{pr-or-branch}"` (a `/` in a branch name becomes `-`). It
 resumes an existing legacy `.hermes/pr-self-review/...` directory in place.
 
@@ -58,22 +58,22 @@ cross-repository work.
 
 Independence is about authorship, not process count:
 
-- When a Pi/Claude/Hermes/Qwen worker wrote the candidate and the parent (Pi or
-  Hermes) did not edit it, the parent is the independent acceptance context and
+- When a Pi/Claude/Hermes/Qwen background agent wrote the candidate and the orchestrator (Pi or
+  Hermes) did not edit it, the orchestrator is the independent acceptance context and
   runs one integrated review directly.
-- When the active parent wrote or changed candidate code, dispatch one fresh
-  independent review context after the candidate is frozen. Use the host's
+- When the active orchestrator wrote or changed candidate code, dispatch one fresh
+  independent review context after the candidate is frozen. Use the harness's
   normal independent delegation surface; do not require Claude or Rex. Pi has
-  no hidden sub-agent, and acceptance rests on this review, so on Pi that
-  surface is a visible read-only Pi worker
+  no hidden subagent mechanism, and acceptance rests on this review, so on Pi that
+  surface is a visible read-only Pi background agent
   started through `coding-agent-handoff-supervision`, given the same
   exact-candidate inputs, and allowed to write only its review artifacts and
-  handback into the given state directory.
-- A worker's self-review never satisfies acceptance.
+  completion report into the given state directory.
+- A background agent's self-review never satisfies acceptance.
 
 If no context independent of the candidate author is available, stop before
 publication. Do not manufacture independence by launching another session of
-the same implementation worker.
+the same implementation background agent.
 
 In `pre-pr`, validate the caller's ticket/implementation repository identities
 with `issue-work/scripts/validate_cross_repo_context.py`. Require the supplied
@@ -81,18 +81,18 @@ worktree, state root, branch, ticket URL/host/repository, and implementation
 host/repository to match its fresh parsed JSON. Private ticket identity must not
 flow into a public artifact.
 
-When an independent delegate is required for a cross-repository candidate, pass
+When an independent background agent is required for a cross-repository candidate, pass
 the exact `ticket_trunk_root`, `state_dir`, `context_validation_path`, ticket
 URL/host/repository, implementation host/repository, and canonical absolute
 `context_validator_path` from the loaded `issue-work` skill alongside the
-ordinary candidate inputs. The delegate invokes that absolute validator before
+ordinary candidate inputs. The background agent invokes that absolute validator before
 admitting a plan or output path beneath that exact validated ticket state
 directory; it never resolves the helper from the implementation checkout.
 
-When the delegate is a Claude Code subagent, tell it to run long verification
-in the foreground. A subagent that backgrounds a job and goes idle doesn't
-resume on its own. A subagent can't write report files, so the parent writes
-`summary.md` from the delegate's final message.
+When that background agent is a Claude Code subagent, tell it to run long verification
+in the foreground. A Claude Code subagent that backgrounds a job and goes idle doesn't
+resume on its own. It can't write report files, so the orchestrator writes
+`summary.md` from the background agent's final message.
 
 Complete when one acceptance owner is independent of the candidate author and
 all repository roles are verified.
@@ -282,16 +282,16 @@ This correction is available only when the counter is `0`. Batch every validated
 in-scope blocker into one self-contained correction contract, increment the
 counter to `1` before submitting accepted input, and preserve the increment if
 the turn fails after submission. On a delegated implementation route, return it
-to the original worker:
+to the original background agent:
 
-- visible Pi/Claude/Hermes uses the existing `worker-identity.json` with the
+- visible Pi/Claude/Hermes uses the existing `background-agent-identity.json` with the
   correction steps in
   `coding-agent-handoff-supervision/references/rex-claude-handoff.md`;
 - Qwen uses its original session ID;
-- a native parent correction follows normal host editing only when that parent
+- a native orchestrator correction follows normal harness editing only when that orchestrator
   remains the authorized editor.
 
-The correcting worker does not publish. The parent inspects the real diff, runs
+The correcting background agent does not publish. The orchestrator inspects the real diff, runs
 affected targeted checks, commits only accepted paths when authorized, freezes
 the new candidate, and performs one complete integrated rereview.
 
@@ -313,9 +313,9 @@ freeze the resulting candidate and run one complete integrated rereview. Apply
 no further correction. Any validated blocker sets the result to
 `Correction bound reached — do not merge.`
 
-Provider capacity is an independent hard gate. Before every worker correction,
-the coordinator must verify capacity and confirm no other turn is in flight in
-that worker runtime session. Unrelated worker sessions are not a concurrency blocker. Exhausted
+Provider capacity is an independent hard gate. Before every background agent correction,
+the orchestrator must verify capacity and confirm no other turn is in flight in
+that background agent's session. Unrelated background agent sessions are not a concurrency blocker. Exhausted
 or unverifiable capacity consumes no correction and never permits an automatic
 provider switch.
 
@@ -346,7 +346,7 @@ expected_head_branch: {expected_head_branch}
 base_sha: {base_sha}
 merge_base_sha: {merge_base_sha}
 diff_sha256: {diff_sha256}
-review_context: {parent | independent-delegate}
+review_context: {orchestrator | independent-delegate}
 dimensions: [standards, spec, risk?]
 quality_gates: [ponytail]
 review_invocations: {N}
@@ -380,8 +380,8 @@ merge.
 
 ## Common Pitfalls
 
-1. Launching a fresh worker reviewer after the parent already independently
-   reviewed the worker's candidate.
+1. Launching a fresh background agent reviewer after the orchestrator already independently
+   reviewed the background agent's candidate.
 2. Paying for one reviewer per dimension instead of one integrated context.
 3. Running final full CI after every correction instead of once when stable.
 4. Rebuilding acceptance criteria from a body excerpt or memory.

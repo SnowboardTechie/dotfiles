@@ -4,7 +4,7 @@
 Locks the accepted shape from the adoption plan, not the prose: the skill is
 discoverable, its two references are reachable from explicit triggers, the
 issue workflows route to it conditionally, its pstack provenance is pinned and
-licensed, and the reconciler curates it for every runtime without installing
+licensed, and the reconciler curates it for every harness without installing
 pstack itself.
 
 Run: python3 -m unittest tests/test-black-box-verification.py
@@ -207,7 +207,7 @@ class ProvenanceTest(unittest.TestCase):
 
 
 class CurationTest(unittest.TestCase):
-    def test_curated_for_every_runtime(self) -> None:
+    def test_curated_for_every_harness(self) -> None:
         arrays = curation_arrays()
         for tool in CURATED_FOR:
             with self.subTest(tool=tool):

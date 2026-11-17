@@ -9,14 +9,14 @@ description: >
   whether the frontier is one separable slice or several, and emits a handoff
   prompt per slice. Needs no ticket. Decides slicing and agent topology.
   Ordinary implementation handoffs retain supervised delivery; status-only or
-  separate acceptance requires Bryan's explicit choice and a durable handback.
+  separate acceptance requires Bryan's explicit choice and a durable completion report.
 ---
 
 # Session Handoff
 
 Slice untracked implementation work out of this session's head and into fresh
 contexts. First select the delivery boundary: ordinary requests to implement or
-hand work to a worker route to `coding-agent-handoff-supervision`, retaining parent
+hand work to a background agent route to `coding-agent-handoff-supervision`, retaining orchestrator
 review, correction and authorized publication. Use the handoff-only procedure
 below only when Bryan explicitly chooses separate acceptance, status-only
 notification, or fire-and-forget. Do not infer that stopping boundary from
@@ -38,44 +38,44 @@ All of these:
 
 Do not use it for open questions. If the work is not decision-complete, handing
 it off produces a confident wrong implementation. Say so and stop — route to
-`grilling` or brainstorming if this runtime carries one.
+`grilling` or brainstorming if this harness carries one.
 
 Do not use it to plan decisions (`wayfinder`), and do not use it for work that
 already has a ticket (`issue-work`, `loop-issue`). Each of those routing targets
-is curated per runtime; when one is not installed here, still stop and name the
+is curated per harness; when one is not installed here, still stop and name the
 problem rather than handing off anyway.
 
 ## The boundary this skill exists to hold
 
-> **Tripwire: this handoff-only route cannot send the worker another turn,
+> **Tripwire: this handoff-only route cannot send the background agent another turn,
 > read its pane, answer it, or close it, or review, correct, or accept
-> the candidate. Retain only the status watch and read its durable handback
+> the candidate. Retain only the status watch and read its durable completion report
 > artifact to communicate the result; neither grants acceptance authority.**
 
 Three engagement modes exist, and they never mix:
 
-- **status-only** (explicit handoff-only boundary): delegate, keep one bounded terminal-status watch,
-  notify Bryan once when the turn settles, ends without a handback (possibly
+- **status-only** (explicit handoff-only boundary): hand off, keep one bounded terminal-status watch,
+  notify Bryan once when the turn settles, ends without a completion report (possibly
   blocked), or times out. No review or acceptance duty.
 - **fire-and-forget** (explicit only — Bryan says "fire and forget", "do not
-  monitor", or equivalent): delegate and retain no watcher at all.
+  monitor", or equivalent): hand off and retain no watcher at all.
 - **supervised** (ordinary implementation default): `coding-agent-handoff-supervision`, with its
   inspection, review, correction, acceptance, and cleanup responsibilities.
 
 In explicit status-only and fire-and-forget modes this session does not read the
-worker pane, answer questions, judge the diff, or close the pane. Require a
-durable handback path in the governing artifact: candidate identity, actual
+background agent pane, answer questions, judge the diff, or close the pane. Require a
+durable completion report path in the governing artifact: candidate identity, actual
 checks/results, unfinished work, blockers, approval requests in dependency order,
-and next acceptance owner. After a status-only turn settles, read that handback
-(not the pane) and report its substantive outcome, labeling worker claims as
-unverified. A missing handback means result unavailable, not completion.
+and next acceptance owner. After a status-only turn settles, read that completion report
+(not the pane) and report its substantive outcome, labeling background agent claims as
+unverified. A missing completion report means result unavailable, not completion.
 Acceptance remains a **future invocation** only because Bryan chose that boundary.
 A settled watch proves turn settlement, never task completion. A blocked
 notification names the pane and identity without scraping its prompt.
 
-If Bryan wants a supervised worker whose output he accepts in this session, that
+If Bryan wants a supervised background agent whose output he accepts in this session, that
 is `coding-agent-handoff-supervision` — use it instead of this one, and never
-combine them. Where that skill is not installed for this runtime, say that the
+combine them. Where that skill is not installed for this harness, say that the
 request is supervision rather than handoff, and stop.
 
 ## 1. Reconcile the record
@@ -116,17 +116,17 @@ the prompt is.
 
 One judgment, not two. What makes something a separate slice is exactly what
 makes it parallelizable, so deciding "what is next" and "how many agents" is a
-single test applied to each candidate piece.
+single test applied to each candidate slice.
 
-A piece stands alone only if **all four** hold:
+A candidate slice stands alone only if **all four** hold:
 
-1. it touches files no other live piece touches;
+1. it touches files no other live slice touches;
 2. nothing must land before or after it;
-3. its own tests can go green without the other pieces;
+3. its own tests can go green without the other slices;
 4. it is decision-complete by itself.
 
-Fail any one and it is not a slice — it is part of the piece beside it. Merge it
-into that piece and re-test.
+Fail any one and it is not a separate slice — it is part of the slice beside it,
+in the same workstream. Merge it into that slice and re-test.
 
 The output is **N prompts**, and N is usually one. Reach that by applying the
 test, not by preferring single agents.
@@ -165,7 +165,7 @@ it autoloads. A second copy of the specification is the copy that goes stale.
 
 ### On explicit handoff-only launch: status watch
 
-Only when Bryan asks for the worker to be started, **and** this runtime is
+Only when Bryan asks for the background agent to be started, **and** this harness is
 sitting in a Rex pane. Check first: non-empty `REX_BLOCK` and `REX_SESSION`
 (found as `coding-agent-handoff-supervision` describes when the tool shell
 lacks them). Without them there is no launch route — emit the prompt as above,
@@ -178,46 +178,46 @@ independent content, so a vault copy would be exactly the second copy the
 pointer contract forbids.
 
 The procedure lives in the dotfiles repo and is reached by its pool path,
-because `coding-agent-handoff-supervision` is not curated into every runtime's
-skills directory. Start the worker exactly as the "Start" section of
+because `coding-agent-handoff-supervision` is not curated into every harness's
+skills directory. Start the background agent exactly as the "Start" section of
 `dot-agents/skills/coding-agent-handoff-supervision/references/rex-claude-handoff.md`
-describes: the capacity gate, a slot in this session's sub-agents tab, the
-prompt file as the Pi worker's first turn (so it is submitted exactly once), and the
+describes: the capacity gate, a slot in this session's "Background Agents" tab, the
+prompt file as the Pi background agent's first turn (so it is submitted exactly once), and the
 identity record. Add `engagement_mode: status-only` to that record.
 
-The worker is Pi (Bryan, 2026-11-10) on `claude-code/claude-opus-5-5`. When
-Bryan explicitly selects another model or runtime, pass its exact full name and
+The background agent is Pi (Bryan, 2026-11-10) on `claude-code/claude-opus-5-5`. When
+Bryan explicitly selects another model or harness, pass its exact full name and
 carry that choice in the prompt; never add a fallback model. Thinking defaults
 to `medium` (Bryan, 2026-10-23); pass a higher value only when Bryan asks for one.
 
-The status watch is that skill's `scripts/rex_wait.sh <transcript> <handback>
-<cap seconds>`. It prints one line — `SETTLED` (exit 0), `ENDTURN-NO-HANDBACK`
-(exit 2), or `TIMEOUT` (exit 1) — and never returns worker output. The worker
+The status watch is that skill's `scripts/rex_wait.sh <transcript> <completion report>
+<cap seconds>`. It prints one line — `SETTLED` (exit 0), `ENDTURN-NO-COMPLETION-REPORT`
+(exit 2), or `TIMEOUT` (exit 1) — and never returns background agent output. The background agent
 and pane are left intact for a future independent acceptance.
 
-**Run it as your runtime's tracked background process with completion
+**Run it as your harness's tracked background process with completion
 notification** — the turn can outlast any foreground time budget. End your
-conversational turn; when the completion event arrives, read the durable handback
-and report its remaining gates in order, distinguishing worker claims from
+conversational turn; when the completion event arrives, read the durable completion report
+and report its remaining gates in order, distinguishing background agent claims from
 independent verification. Include locators and stop at Bryan's chosen boundary.
-Do not poll. If this runtime cannot
+Do not poll. If this harness cannot
 arrange a completion event, either keep the wait attached until it settles or
 emit the pointer prompt and say plainly that automatic notification is
 unavailable — never claim a watch that does not exist.
 
-If the caller dies mid-wait, do **not** start the worker again — that would be a
+If the caller dies mid-wait, do **not** start the background agent again — that would be a
 second prompt. When the identity record exists, the prompt was already
 submitted with the start; rerun only `rex_wait.sh` against the recorded
-transcript and handback. It never resends.
+transcript and completion report. It never resends.
 
 **Explicit fire-and-forget** (Bryan said "fire and forget", "do not monitor",
-or equivalent): start the worker the same way, record
+or equivalent): start the background agent the same way, record
 `engagement_mode: fire-and-forget`, and start no wait. Then terminate: report
 what was handed off, where the record lives, and the identity path — and stop.
 
-Nothing in Rex refuses a later `send` to a handed-off worker, so the tripwire
+Nothing in Rex refuses a later `send` to a handed-off background agent, so the tripwire
 above is the whole boundary. Do not type into, read, or close a status-only or
-fire-and-forget worker's pane, and do not retry into a supervision loop.
+fire-and-forget background agent's pane, and do not retry into a supervision loop.
 
 ## Completion
 
@@ -227,9 +227,9 @@ Three distinct states; never collapse them:
    every required vault artifact is reachable from the synchronized commit with
    no handoff-only working-tree delta; each slice passed all four parts of the
    test; one prompt exists per slice, each a pointer rather than a copy; and
-   the prompt reached the worker (or was emitted for Bryan to carry).
-2. **Delegated turn settled** — the status-only watch reported a terminal
-   status. Say "the worker's turn is done" (or blocked/failed), never "done":
+   the prompt reached the background agent (or was emitted for Bryan to carry).
+2. **Background agent's turn settled** — the status-only watch reported a terminal
+   status. Say "the background agent's turn is done" (or blocked/failed), never "done":
    the qualifier is mandatory, because this is not evidence that tests passed, a
    commit exists, or the candidate is correct.
 3. **Candidate independently accepted** — a separate, later invocation reviewed
@@ -237,4 +237,4 @@ Three distinct states; never collapse them:
 
 For fire-and-forget, responsibility ends after state 1's delivery report. For
 status-only, it ends only after state 2 AND reading and communicating the durable
-handback (or explicitly reporting it missing). Neither authorizes acceptance.
+completion report (or explicitly reporting it missing). Neither authorizes acceptance.

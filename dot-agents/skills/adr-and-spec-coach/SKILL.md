@@ -106,7 +106,7 @@ trivial ones just go fast.
 **Co-authored artifacts.** When the work is split between authors ("you own
 discovery, I own the request mechanism"), map every agenda item to an owner.
 Items nobody owns default to the author you are helping, absorbed into their
-lane. Do not turn the gap into critique of the collaborator's split unless the
+workstream. Do not turn the gap into critique of the collaborator's split unless the
 author asks for that.
 
 Before the authors split up the drafting, recommend that they agree in **one
@@ -124,15 +124,15 @@ Say that plainly, and leave the timing to the author and their co-author.
 ### Phase 2b — Research fan-out (when evidence is thin)
 
 If several load-bearing decisions need fresh evidence (precedents, source
-constraints, standards), dispatch parallel **read-only** research subagents
-before Phase 3 (on Pi, headless `pi -p --no-session` children under the
+constraints, standards), dispatch parallel **read-only** research background agents
+before Phase 3 (on Pi, headless `pi -p --no-session` background agents under the
 read-only-command exception in `coding-agent-handoff-supervision` pitfall 12,
 so they can run `git show` and fetch sources; each returns its draft in its
-final message and you write the file). Split them by decision cluster, not by source. Each child
+final message and you write the file). Split them by decision cluster, not by source. Each background agent
 returns options, trade-offs, a recommendation, and the exact question the
 author must answer, and writes one draft file. Dispatch needs the author's go
 ahead ("get to work" counts). Verify consequential claims yourself before
-presenting them, because child summaries are self-reports. Then descend Phase 3
+presenting them, because background agents' summaries are self-reports. Then descend Phase 3
 as usual. The research does not replace one-decision-per-turn deliberation.
 Brief template and source-pinning recipe: `references/research-fanout.md`.
 
@@ -155,7 +155,7 @@ Top of the agenda first. For **each** decision, in its own turn:
    **Visibility gate:** put the decision context, options, trade-offs, and
    recommendation in the normal user-visible answer before opening a form. Do
    not rely on commentary, progress text, tool output, or an earlier turn to make
-   the question intelligible. If the host can separate a form from surrounding
+   the question intelligible. If the harness can separate a form from surrounding
    prose, make the question itself contain a compact statement of what is being
    decided and why.
 

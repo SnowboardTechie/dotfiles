@@ -2,7 +2,7 @@
 // split-fork.ts in mitsuhiko/agent-stuff (Ghostty AppleScript swapped for Rex).
 //   /split [prompt]       a fresh Pi
 //   /split-fork [prompt]  a Pi on a copy of this conversation (`pi --fork`)
-// The new Pi runs on this session's model, thinking level and Claude seat; the
+// The new Pi runs on this session's model, thinking level and Claude subscription; the
 // prompt, if any, is its first message. Focus stays here.
 // The Rex work (split, typed command, wait for Pi to start) is done by the
 // next-session launcher, dot-agents/skills/next-session/scripts/launch_next_session.py,
@@ -21,10 +21,10 @@ export function launcherPath(extensionFile: string): string {
 	return join(repo, "dot-agents", "skills", "next-session", "scripts", "launch_next_session.py");
 }
 
-export function seatFlag(env: NodeJS.ProcessEnv = process.env, home = homedir()): string[] {
+export function subscriptionFlag(env: NodeJS.ProcessEnv = process.env, home = homedir()): string[] {
 	const dir = (env.PI_CLAUDE_CODE_CONFIG_DIR || env.CLAUDE_CONFIG_DIR || "").replace(/\/+$/, "");
-	if (!dir || dir === join(home, ".claude")) return ["--seat", "work"];
-	if (dir === join(home, ".claude-personal")) return ["--seat", "personal"];
+	if (!dir || dir === join(home, ".claude")) return ["--subscription", "work"];
+	if (dir === join(home, ".claude-personal")) return ["--subscription", "personal"];
 	return []; // an unfamiliar config dir: leave it to the new pane's shell
 }
 
@@ -46,7 +46,7 @@ export function launchArgs(r: SplitRequest): string[] {
 	if (r.forkFile) args.push("--fork", r.forkFile);
 	if (r.model) args.push("--model", `${r.model.provider}/${r.model.id}`);
 	if (r.thinking) args.push("--thinking", r.thinking);
-	args.push(...seatFlag(r.env, r.home));
+	args.push(...subscriptionFlag(r.env, r.home));
 	return args;
 }
 
@@ -113,6 +113,6 @@ export default function (pi: ExtensionAPI) {
 			},
 		});
 
-	register("split", false, "Open a fresh Pi in a Rex pane to the right, same model and seat. Usage: /split [prompt]");
+	register("split", false, "Open a fresh Pi in a Rex pane to the right, same model and subscription. Usage: /split [prompt]");
 	register("split-fork", true, "Open a Pi on a copy of this conversation in a Rex pane to the right. Usage: /split-fork [prompt]");
 }

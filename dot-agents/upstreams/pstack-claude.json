@@ -55,7 +55,7 @@
       ],
       "rejectedUpstreamRules": [
         "Running a wide change as an `arena` across multiple models — no additional reviewer or model fan-out; review stays with the owning workflow.",
-        "Always naming the generated skill `verify` under `.claude/skills/` to shadow Claude Code's built-in; placement is chosen per project and must be visible to every runtime.",
+        "Always naming the generated skill `verify` under `.claude/skills/` to shadow Claude Code's built-in; placement is chosen per project and must be visible to every harness.",
         "Fixing a broken checkout or creating scaffolding assets before generating a recipe without separate authority.",
         "The `maintain-verification-skill` loop and a feature-map directory per project as a default; a recipe stays as small as the project's real need.",
         "Writing the report through `unslop` and the poteto-mode playbooks, autonomy, and shipping flow that surround these skills upstream.",

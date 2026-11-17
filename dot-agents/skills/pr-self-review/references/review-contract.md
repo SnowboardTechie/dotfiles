@@ -20,10 +20,10 @@ skill, which was adapted from Matt Pocock's `code-review`. Matt Pocock's own
 
 Use for branch, PR, or pre-publication review after the candidate is stable.
 
-Do not use an implementation worker's self-review as independent acceptance. If
-the active parent wrote the candidate, run this contract in one independent
-review context (on Pi, a visible read-only Pi worker; see `pr-self-review` §1).
-If a worker wrote it and the parent (Pi or Hermes) only supervised, the parent is
+Do not use an implementation background agent's self-review as independent acceptance. If
+the active orchestrator wrote the candidate, run this contract in one independent
+review context (on Pi, a visible read-only Pi background agent; see `pr-self-review` §1).
+If a background agent wrote it and the orchestrator (Pi or Hermes) only supervised, the orchestrator is
 the independent acceptance context and should run it directly.
 
 ## 1. Freeze the candidate
@@ -148,7 +148,7 @@ code is not automatically over-engineered.
 
 ## 5. Targeted Risk deepening
 
-After the parent has dispositioned the integrated review and stabilized the
+After the orchestrator has dispositioned the integrated review and stabilized the
 candidate, add one targeted Risk reviewer for security, persistence, migration,
 protocol, concurrency, public-contract, or deployment changes. Give it only the
 exact candidate, governing authority, and implicated boundary.
@@ -197,7 +197,7 @@ prescriptions before correction.
 ## Common Pitfalls
 
 1. Spending one model invocation per dimension.
-2. Reviewing before the parent has stabilized the candidate.
+2. Reviewing before the orchestrator has stabilized the candidate.
 3. Treating conventional green tests as adversarial boundary coverage.
 4. Treating reviewer convergence as independent proof.
 5. Letting Ponytail smuggle in correctness or security findings.

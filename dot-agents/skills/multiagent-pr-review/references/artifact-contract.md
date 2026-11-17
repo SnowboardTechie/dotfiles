@@ -29,7 +29,7 @@ the evidence-manifest SHA-256. The model-family orchestrator emits:
 - one JSON sidecar naming reviewer family, provider, primary model,
   `models_used`, candidate identity, manifest digest, exact required lanes,
   lane artifact paths/hashes, report path/hash, and Rex route evidence;
-- complete route identity: surface, agent name, pane ID, runtime session ID,
+- complete route identity: surface, agent name, pane ID, harness session ID,
   launch route, canonical worktree root/common-dir/branch, and state root.
 
 Run `scripts/validate-review-artifacts.py` with caller-supplied model predicates.

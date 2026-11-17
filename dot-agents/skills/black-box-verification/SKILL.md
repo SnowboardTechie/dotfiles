@@ -50,7 +50,7 @@ rejected upstream rules live in
   customer write, no outbound message, no long-running process launch beyond
   what the current authority already permits. Use the project's existing tools
   and harnesses. When the proof needs more, name the permission and stop.
-- Existing outbound, destructive-Git, model, worker, finite-correction, and
+- Existing outbound, destructive-Git, model, background agent, finite-correction, and
   publication gates remain authoritative.
 
 ## Black-box procedure

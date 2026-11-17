@@ -4,10 +4,10 @@
 
 Use this path only when Bryan explicitly requests background-only Claude work
 for the current run. It is not a fallback for an unavailable Rex route and
-cannot satisfy a persisted visible-worker correction contract. Do not start it
-after a visible Rex worker was successfully created.
+cannot satisfy a persisted visible background-agent correction contract. Do not start it
+after a visible Rex background agent was successfully created.
 
-## Dispatch a background worker
+## Dispatch a background agent
 
 Use a positional prompt so Claude creates an attachable background session:
 
@@ -25,20 +25,20 @@ claude agents --json --all
 
 Check the returned session ID, intended repository `cwd`, display name, and
 `working` state. Do not treat a command returning successfully as proof that the
-right worker exists.
+right background agent exists.
 
 ## Monitoring contract
 
-Claude's background supervisor and parent-runtime notifications are separate.
-If the parent must report completion, start a tracked watcher supported by the
-current runtime or inspect at explicit named gates:
+Claude's background supervisor and the orchestrator harness's notifications are separate.
+If the orchestrator must report completion, start a tracked watcher supported by the
+current harness or inspect at explicit named gates:
 
 ```sh
 claude agents --json --all
 claude logs <id>
 ```
 
-A worker in `done` or `blocked` has finished its current turn. Inspect its actual
+A background agent in `done` or `blocked` has finished its current turn. Inspect its actual
 branch before accepting the result.
 
 ## Continue the original session
@@ -50,7 +50,7 @@ monitorable terminal and send the correction there:
 ```sh
 tmux new-session -d -s claude-followup -x 160 -y 50
 tmux send-keys -t claude-followup \
-  'cd <worker-cwd> && claude attach <id>' Enter
+  'cd <background-agent-cwd> && claude attach <id>' Enter
 ```
 
 After the prompt appears, paste the follow-up through a tmux buffer rather than
@@ -60,12 +60,12 @@ Claude may have generated it as an automatic suggestion.
 
 ## Cleanup
 
-After parent acceptance and publication:
+After orchestrator acceptance and publication:
 
 ```sh
 claude stop <id>
 claude rm <id>
 ```
 
-Verify the worker row and worktree are gone before deleting a merged remote
-branch. Kill only helper tmux sessions created by the parent.
+Verify the background agent row and worktree are gone before deleting a merged remote
+branch. Kill only helper tmux sessions created by the orchestrator.

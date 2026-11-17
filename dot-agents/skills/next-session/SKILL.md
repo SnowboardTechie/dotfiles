@@ -12,9 +12,9 @@ does that handoff for him: it splits this session's Rex pane to the right
 it with the suggested prompt as its first turn. Bryan then closes this session
 and carries on in the new one.
 
-It hands over the **conversation**, not a worker. The new session is Bryan's to
+It hands over the **conversation**, not a background agent. The new session is Bryan's to
 drive; nothing here supervises it, reads its pane or waits on it. For a
-supervised coding worker use `coding-agent-handoff-supervision`; for untracked
+supervised coding background agent use `coding-agent-handoff-supervision`; for untracked
 implementation slices use `session-handoff`.
 
 ## When
@@ -74,7 +74,7 @@ Pi-only flags:
 
 - `--model <provider/model>` and `--thinking <level>`: the new session's model.
   Without them it starts on Pi's defaults.
-- `--seat personal|work`: which Claude subscription pays. `personal` sets
+- `--subscription personal|work`: which Claude subscription pays. `personal` sets
   `PI_CLAUDE_CODE_CONFIG_DIR=~/.claude-personal`; `work` unsets it. Without the
   flag the pane's shell decides.
 - `--skills` is ignored: Pi finds its own skills, so name the skill in the prompt.
