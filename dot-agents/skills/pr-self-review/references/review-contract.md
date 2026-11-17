@@ -1,7 +1,7 @@
 # Review contract
 
 The review semantics `pr-self-review` §4 and `teammate-pr-review` run, and that
-`ship`, `multiagent-pr-review` and the Claude lane-reviewer agents point to.
+`ship`, `multiagent-pr-review` and the Claude dimension-reviewer agents point to.
 
 Review one immutable candidate through distinct dimensions without paying for a
 separate model invocation per dimension. One review context reads the diff and
@@ -46,7 +46,7 @@ review. Recompute the same identity immediately before writing artifacts.
 ## 2. Select dimensions deterministically
 
 Standards and Spec always run. Use `pr-self-review`'s
-`scripts/select_review_lanes.py` with both authoritative inputs. Resolve it from
+`scripts/select_review_dimensions.py` with both authoritative inputs. Resolve it from
 the `pr-self-review` skill directory (`../scripts/` from this file), not the
 current repository, so it works from any checkout:
 
@@ -55,7 +55,7 @@ git diff --name-status -z -M -C --find-copies-harder \
   "$base_sha...$head_sha" -- > "$name_status_file"
 git diff -M -C --find-copies-harder \
   "$base_sha...$head_sha" -- > "$unified_diff_file"
-python3 <pr-self-review-skill-dir>/scripts/select_review_lanes.py \
+python3 <pr-self-review-skill-dir>/scripts/select_review_dimensions.py \
   --repo "$OWNER_REPO" \
   --name-status-from "$name_status_file" \
   --diff-from "$unified_diff_file" --json
@@ -75,7 +75,7 @@ for a dedicated behavior trace. It is not automatically added to
 ## 3. Read authorities once
 
 Read the complete diff, commit list, repository instructions, neighboring code,
-and the approved ticket/plan/spec. Trace consumers for changed behavior. Read the
+and the approved issue/plan/spec. Trace consumers for changed behavior. Read the
 diff a second time for omissions and surprising scope.
 
 Do not build broad related-issue or vault-topic caches during ordinary review.
@@ -91,7 +91,7 @@ separate and execute Ponytail last. One reviewer writes:
 - `review-spec.md`;
 - `review-risk.md` only when selected;
 - `review-ponytail.md`; and
-- a concise integrated finding list for disposition.
+- a concise integrated finding list for resolution.
 
 Each artifact records `base_sha`, `head_sha`, `merge_base_sha`, `diff_sha256`,
 `expected_head_branch`, confidence, and reviewed paths. Findings use real
@@ -164,7 +164,7 @@ code is not automatically over-engineered.
 
 ## 5. Targeted Risk deepening
 
-After the orchestrator has dispositioned the integrated review and stabilized the
+After the orchestrator has resolved the integrated review's findings and stabilized the
 candidate, add one targeted Risk reviewer for security, persistence, migration,
 protocol, concurrency, public-contract, or deployment changes. Give it only the
 exact candidate, governing authority, and implicated boundary.
@@ -181,7 +181,7 @@ multi-dimension workflow in several model contexts.
 - Minor: non-blocking quality issue worth addressing.
 - Nit: optional wording, naming, or local simplification.
 
-### Finding gate
+### Finding bar
 
 Zero findings is a valid successful review. Report only concrete defects: the
 candidate violates an authority or causes an observable failure or risk, the
@@ -196,7 +196,7 @@ For test-quality comments, a surviving mutation establishes a coverage gap,
 not a current implementation defect. Check legitimate inputs and the stated
 assertion or requirement, then explain the meaningful consequence. Distinguish
 a mis-scoped existing assertion from a request for extra assertions; withdraw
-marginal coverage requests that fail the finding gate. Do not imply that an
+marginal coverage requests that fail the finding bar. Do not imply that an
 artificially broken variant is the current code or that a future regression
 will occur if the suggestion is left unaddressed.
 
@@ -219,8 +219,8 @@ prescriptions before correction.
 5. Letting Ponytail smuggle in correctness or security findings.
 6. Re-running every dimension when only a final targeted Risk boundary remains.
 7. Passing a form (comment, doc paragraph, wrapper) because the spec named it.
-8. Measuring a whole slice against the approved plan instead of the ticket's
-   acceptance criteria. When the ticket owner has already declared one side
+8. Measuring a whole slice against the approved plan instead of the issue's
+   acceptance criteria. When the issue owner has already declared one side
    done and that side's production code is unchanged, its added tests and docs
    are a Ponytail `yagni` candidate as a unit, not file by file (PR 1308: TS
    tests and README after #1290 had landed the TS side; dropped, 2026-10-14).
@@ -235,7 +235,7 @@ prescriptions before correction.
 - [ ] Spec lines that name a form were judged by Ponytail, not exempted
 - [ ] Acceptance criteria were swept independently
 - [ ] Targeted Risk reviewer used only for a qualifying boundary
-- [ ] Every reported finding passed the concrete-defect gate
+- [ ] Every reported finding passed the finding bar
 - [ ] Every challenged finding was defended with evidence or withdrawn
 - [ ] Every blocking finding was independently validated
-- [ ] Artifacts still match the candidate at disposition
+- [ ] Artifacts still match the candidate at resolution

@@ -23,7 +23,7 @@ class LeanIssueWorkContractTests(unittest.TestCase):
         cls.review = read("dot-agents/skills/pr-self-review/SKILL.md")
         cls.code_review = read("dot-agents/skills/pr-self-review/references/review-contract.md")
         cls.ship = read("dot-agents/skills/ship/SKILL.md")
-        cls.lane_reviewer = read("dot-claude/agents/lane-reviewer.md")
+        cls.dimension_reviewer = read("dot-claude/agents/dimension-reviewer.md")
         cls.helper_reference = read(
             "dot-agents/skills/coding-agent-handoff-supervision/"
             "references/rex-claude-handoff.md"
@@ -90,8 +90,8 @@ class LeanIssueWorkContractTests(unittest.TestCase):
             "validate_cross_repo_context.py",
         ):
             with self.subTest(field=field):
-                self.assertIn(field, self.lane_reviewer)
-        self.assertIn("exact validated ticket state directory", self.lane_reviewer)
+                self.assertIn(field, self.dimension_reviewer)
+        self.assertIn("exact validated issue state directory", self.dimension_reviewer)
 
     def test_ship_has_narrow_issue_work_authority_mode(self) -> None:
         self.assertIn("issue-work-authorized", self.ship)

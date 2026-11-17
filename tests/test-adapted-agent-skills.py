@@ -7,7 +7,7 @@ canonical output strings, and fail-closed shell shapes asserted below are
 load-bearing contract surfaces:
 the retired adapted cores staying out of `dot-agents/skills/` (Matt Pocock's
 own skills replace them), a machine-readable source record, the Forgejo
-adapter beside its tracker doc, deterministic review-lane selection, curation that
+adapter beside its tracker doc, deterministic review-dimension selection, curation that
 matches the intended per-harness roles, and a timestamp-free upstream
 monitor. They deliberately assert structure and authority wording, not
 prose style — a skill body may be rewritten freely as long as the
@@ -806,17 +806,17 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
         cls.teammate = read(SKILL_POOL / "teammate-pr-review" / "SKILL.md")
         cls.issue_work = read(SKILL_POOL / "issue-work" / "SKILL.md")
         cls.ship = read(SKILL_POOL / "ship" / "SKILL.md")
-        cls.reviewer = read(REPO_ROOT / "dot-claude" / "agents" / "lane-reviewer.md")
+        cls.reviewer = read(REPO_ROOT / "dot-claude" / "agents" / "dimension-reviewer.md")
 
-    def test_lane_selector_and_tests_exist(self) -> None:
+    def test_dimension_selector_and_tests_exist(self) -> None:
         self.assertTrue(
-            (SKILL_POOL / "pr-self-review" / "scripts" / "select_review_lanes.py").is_file()
+            (SKILL_POOL / "pr-self-review" / "scripts" / "select_review_dimensions.py").is_file()
         )
         self.assertTrue(
-            (SKILL_POOL / "pr-self-review" / "tests" / "test_select_review_lanes.py").is_file()
+            (SKILL_POOL / "pr-self-review" / "tests" / "test_select_review_dimensions.py").is_file()
         )
-        self.assertIn("select_review_lanes.py", self.body)
-        self.assertIn("select_review_lanes.py", self.code_review)
+        self.assertIn("select_review_dimensions.py", self.body)
+        self.assertIn("select_review_dimensions.py", self.code_review)
 
     def test_review_is_integrated_but_artifacts_stay_separate(self) -> None:
         for token in (
@@ -917,9 +917,9 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
         self.assertIn("validate_cross_repo_context.py", self.body)
         self.assertIn("validate_cross_repo_context.py", self.issue_work)
         for identity in (
-            "ticket URL/host/repository",
+            "issue URL/host/repository",
             "implementation\nhost/repository",
-            "state root",
+            "state directory",
             "worktree",
         ):
             with self.subTest(identity=identity):
@@ -940,7 +940,7 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
         normalized = " ".join(self.teammate.split())
         self.assertIn("Matt Pocock's `code-review` skill supplies only the Standards and Spec passes", normalized)
         self.assertIn("../pr-self-review/references/review-contract.md", self.teammate)
-        for heading in ("## Human-facing review draft", "## Finding gate"):
+        for heading in ("## Human-facing review draft", "## Finding bar"):
             with self.subTest(heading=heading):
                 self.assertIn(heading, self.teammate)
         description = frontmatter_fields(SKILL_POOL / "teammate-pr-review" / "SKILL.md")["description"]

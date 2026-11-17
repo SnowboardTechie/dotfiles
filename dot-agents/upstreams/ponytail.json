@@ -7,11 +7,11 @@
   "attribution": "The Ponytail review pass is named after and adapted from Ponytail, a Claude Code plugin, MIT licensed, Copyright (c) 2026 DietrichGebert. Retained in ponytail-LICENSE.",
   "verifiedOn": "2026-11-16",
   "notes": [
-    "Concept adaptation, not a vendored copy: the pass is rewritten prose inside `pr-self-review`'s review contract, and no plugin, command, hook or skill of upstream's is installed.",
+    "Concept adaptation, not a vendored copy: the pass is rewritten prose inside `pr-self-review`'s review contract, and no plugin, command, hook or skill of the skill source's is installed.",
     "History, from this repository's log: the plugin was installed on 2026-06-17 (`ponytail@ponytail` in `dot-claude/settings.json`, f206612); `pr-self-review` gained a required over-engineering lens carrying `ponytail:ponytail-review` inline on 2026-06-18 (762aa05); the pass was rewritten into the shared `code-review` skill on 2026-08-21 so it needs no plugin (f521786); the plugin and its marketplace were uninstalled on 2026-10-16 (96d500b); local `code-review` retired on 2026-11-16 and the pass moved into `pr-self-review`'s review contract, which `teammate-pr-review` also runs.",
-    "No commit was recorded when the pass was adapted. `adaptedFrom` is upstream's `main` when 762aa05 was made (2026-06-18 18:15 UTC): 91aef5d, version 4.7.0. Upstream's `skills/ponytail-review/SKILL.md` changed only in scope wording between then and the 2026-08-21 rewrite (bd6176a).",
+    "No commit was recorded when the pass was adapted. `adaptedFrom` is the skill source's `main` when 762aa05 was made (2026-06-18 18:15 UTC): 91aef5d, version 4.7.0. The skill source's `skills/ponytail-review/SKILL.md` changed only in scope wording between then and the 2026-08-21 rewrite (bd6176a).",
     "\"Simplicity review\" is another name for the Ponytail pass (Bryan, 2026-11-16). Bryan keeps the name Ponytail.",
-    "Upstream paths are relative to the repository root at the pinned commit."
+    "The skill source's paths are relative to the repository root at the pinned commit."
   ],
   "adaptedFrom": "91aef5dfefa986cb87e4557b95970eeb6b149c03",
   "updatePolicy": {
@@ -19,7 +19,7 @@
     "humanApprovedPinAdvance": true,
     "autoApply": false,
     "monitor": "pi-bots job adapted-skill-watch",
-    "description": "The pi-bots scheduled job `adapted-skill-watch` compares `commit` with upstream's head each week and, when a watched file changed since the pin, posts how many commits behind the pin is and which watched files changed. It never edits this file. Re-reading the watched files, deciding each change and advancing `commit`, `version` and `verifiedOn` is a reviewed local change."
+    "description": "The pi-bots scheduled job `adapted-skill-watch` compares `commit` with the skill source's head each week and, when a watched file changed since the pin, posts how many commits behind the pin is and which watched files changed. It never edits this file. Re-reading the watched files, deciding each change and advancing `commit`, `version` and `verifiedOn` is a reviewed local change."
   },
   "adaptations": [
     {
@@ -35,7 +35,7 @@
       ],
       "localChanges": [
         "A review pass inside one integrated review (Standards, Spec, conditional Risk, then Ponytail last), not a plugin command or an always-on mode.",
-        "Findings use the review contract's artifact (`review-ponytail.md`), severity scale and finding gate, not upstream's own output format.",
+        "Findings use the review contract's artifact (`review-ponytail.md`), severity scale and finding bar, not the skill source's own output format.",
         "Reads the spec for outcomes, not form: a spec line that names a form Ponytail would cut is reported as over-specified.",
         "Reports over-engineering only; correctness, security, spec conformance, coverage, naming, formatting and generic maintainability belong to the other passes.",
         "`teammate-pr-review` runs the same pass on other people's pull requests."
@@ -50,7 +50,7 @@
       ],
       "rejectedUpstreamRules": [
         "Ponytail 5's full quality review (bug, risk, scale, missing test, speed, then lean): correctness and risk are separate passes here, so Ponytail stays narrow.",
-        "Upstream's output format (plain-English four-part findings in Must/Should/Nice groups, numbered for \"fix 2 and 5\", `Verdict:` and `Lean: -N lines possible.` lines): the review contract's artifacts, severity and Bryan's drafting rules own the shape.",
+        "The skill source's output format (plain-English four-part findings in Must/Should/Nice groups, numbered for \"fix 2 and 5\", `Verdict:` and `Lean: -N lines possible.` lines): the review contract's artifacts, severity and Bryan's drafting rules own the shape.",
         "The always-on authoring persona (`/ponytail lite|full|ultra|off`, triggering on any coding task, ending each reply with what was skipped): only the review pass is adopted.",
         "Writing code to the ladder, comprehension-first bug fixing and leaving `shortcut:` comments in new code: rules for authoring, not review.",
         "`merge:` and `split:` findings: duplicated code and functions mixing jobs belong to Standards.",
@@ -89,7 +89,7 @@
           "file": "skills/ponytail-review/SKILL.md",
           "change": "Number findings across the report so the user can say \"fix 2 and 5\".",
           "decision": "rejected",
-          "reason": "Findings here go to the acceptance owner for disposition and into `integrated-review.json`, not to Bryan to pick by number."
+          "reason": "Findings here go to the acceptance owner for resolution and into `integrated-review.json`, not to Bryan to pick by number."
         },
         {
           "upstream": "01cbf81",
@@ -110,7 +110,7 @@
           "file": "skills/ponytail-review/SKILL.md",
           "change": "Plain-English output, four-part findings in Must/Should/Nice groups, `Verdict:`; `Lean already. Ship.` becomes `Looks good. Ship.` and `net:` becomes `Lean: -N lines possible.`",
           "decision": "rejected",
-          "reason": "The artifact shape, severity scale and clean-summary string are load-bearing for `ship`, the lane-reviewer agents and tests; Bryan's drafting rules own the human-facing text."
+          "reason": "The artifact shape, severity scale and clean-summary string are load-bearing for `ship`, the dimension-reviewer agents and tests; Bryan's drafting rules own the human-facing text."
         },
         {
           "upstream": "01cbf81",

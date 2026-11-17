@@ -20,16 +20,16 @@ conditional second correction. The workflow preserves Standards, Spec,
 conditional Risk, Ponytail, acceptance criteria, exact-candidate identity, and
 final verification without multiplying those checks across several reviewers.
 
-The review semantics (candidate freeze, lane selection, the Standards, Spec,
+The review semantics (candidate freeze, dimension selection, the Standards, Spec,
 optional Correctness, conditional Risk and Ponytail sections, targeted Risk
-deepening, severity, and the finding gate) live in
+deepening, severity, and the finding bar) live in
 [`references/review-contract.md`](references/review-contract.md). `ship`,
-`teammate-pr-review`, `multiagent-pr-review` and the Claude lane-reviewer
+`teammate-pr-review`, `multiagent-pr-review` and the Claude dimension-reviewer
 agents use the same contract.
 
 ## Entry Modes
 
-- `pre-pr`: `issue-work` supplies state directory, worktree, ticket/plan, branch,
+- `pre-pr`: `issue-work` supplies state directory, worktree, issue/plan, branch,
   base, implementation route, candidate identity, and the global
   `correction_passes_consumed` value (`0`, `1`, or `2`).
 - `pr-url`: resolve an authored GitHub or Forgejo PR, then use a controlled
@@ -49,9 +49,9 @@ Resolve it with `python3 ~/code/dotfiles/dot-agents/lib/agent_state.py dir
 "{owner}-{repo}-{pr-or-branch}"` (a `/` in a branch name becomes `-`). It
 resumes an existing legacy `.hermes/pr-self-review/...` directory in place.
 
-`pre-pr` reuses the caller's existing ticket-root `issue-work` state directory
+`pre-pr` reuses the caller's existing `issue-work` state directory in the issue repository
 (`.agent-work/issue-work/{owner}-{repo}-{N}/`, or its legacy `.hermes/` one).
-Never create a second review state root in the implementation repository for
+Never create a second review state directory in the implementation repository for
 cross-repository work.
 
 ## 1. Establish independent acceptance
@@ -75,18 +75,18 @@ If no context independent of the candidate author is available, stop before
 publication. Do not manufacture independence by launching another session of
 the same implementation background agent.
 
-In `pre-pr`, validate the caller's ticket/implementation repository identities
+In `pre-pr`, validate the caller's issue/implementation repository identities
 with `issue-work/scripts/validate_cross_repo_context.py`. Require the supplied
-worktree, state root, branch, ticket URL/host/repository, and implementation
-host/repository to match its fresh parsed JSON. Private ticket identity must not
+worktree, state directory, branch, issue URL/host/repository, and implementation
+host/repository to match its fresh parsed JSON. Private issue identity must not
 flow into a public artifact.
 
 When an independent background agent is required for a cross-repository candidate, pass
-the exact `ticket_trunk_root`, `state_dir`, `context_validation_path`, ticket
+the exact `ticket_trunk_root`, `state_dir`, `context_validation_path`, issue
 URL/host/repository, implementation host/repository, and canonical absolute
 `context_validator_path` from the loaded `issue-work` skill alongside the
 ordinary candidate inputs. The background agent invokes that absolute validator before
-admitting a plan or output path beneath that exact validated ticket state
+admitting a plan or output path beneath that exact validated issue state
 directory; it never resolves the helper from the implementation checkout.
 
 When that background agent is a Claude Code subagent, tell it to run long verification
@@ -127,7 +127,7 @@ fi
 ```
 
 Record `base_sha`, `head_sha`, `merge_base_sha`, `diff_sha256`, and
-`expected_head_branch`. Before every review and disposition boundary, recompute
+`expected_head_branch`. Before every review and resolution boundary, recompute
 them and require the branch and worktree to remain unchanged. A candidate change
 invalidates prior review artifacts; the next rereview writes replacements for
 the new identity.
@@ -194,7 +194,7 @@ Complete when every criterion has a candidate-bound verdict and evidence.
 ## 4. Run one integrated review
 
 Read [`references/review-contract.md`](references/review-contract.md). Use this
-skill's `scripts/select_review_lanes.py` classifier, then run one integrated
+skill's `scripts/select_review_dimensions.py` classifier, then run one integrated
 review in this order:
 
 ```sh
@@ -234,13 +234,13 @@ candidate and implicated boundary only. It is not another generic pass.
 
 Complete when all selected artifacts and the checklist match the exact candidate.
 
-## 5. Validate and disposition findings
+## 5. Validate and resolve findings
 
 Reviewer output is advice. The acceptance owner validates each observation,
 explanation, and prescription against code, tests, reproductions, and intent.
 Several dimensions reading the same files are correlated evidence, not votes.
 
-Use these dispositions:
+Use these resolutions:
 
 - `fix`: valid, in scope, and preserves documented intent;
 - `reject`: false, speculative, already handled, or worse than the code;
@@ -248,7 +248,7 @@ Use these dispositions:
 - `escalate`: blocking and every reasonable correction materially contradicts
   approved product, architecture, public-contract, or security intent.
 
-Routine findings do not go back to Bryan for individual disposition. Batch all
+Routine findings do not go back to Bryan for individual resolution. Batch all
 validated fixes. Ask only for a material intent conflict, with one recommendation
 and the exact authority it would change.
 
@@ -276,7 +276,7 @@ Run the acceptance-criteria sweep independently of reviewer findings. An omitted
 feature may have no diff line for Spec to flag.
 
 Complete when every unsuppressed finding and criterion has an evidence-backed
-disposition.
+resolution.
 
 ## 6. Correct within a one-plus-one bound
 
@@ -322,7 +322,7 @@ freeze the resulting candidate and run one complete integrated rereview. Apply
 no further correction. Any validated blocker sets the result to
 `Correction bound reached — do not merge.`
 
-Provider capacity is an independent hard gate. Before every background agent correction,
+Provider capacity is an independent hard limit. Before every background agent correction,
 the orchestrator must verify capacity and confirm no other turn is in flight in
 that background agent's session. Unrelated background agent sessions are not a concurrency blocker. Exhausted
 or unverifiable capacity consumes no correction and never permits an automatic
@@ -336,7 +336,7 @@ During corrections run focused tests only. After the candidate is stable and all
 reviews are clean, run the full repository test, lint, typecheck, build, and
 required runtime probes once in a context independent of the code author.
 
-A failed final gate blocks readiness. Fixing it consumes the remaining correction
+A failed final verification blocks readiness. Fixing it consumes the remaining correction
 allowance and requires candidate freeze plus integrated rereview; if no allowance
 remains, report the bound rather than extending it.
 
@@ -349,7 +349,7 @@ Write `{state-dir}/summary.md` with:
 ```markdown
 ---
 status: reviewed
-ticket: {ticket-or-pr}
+ticket: {issue-or-pr}
 candidate: {head_sha}
 expected_head_branch: {expected_head_branch}
 base_sha: {base_sha}
@@ -365,7 +365,7 @@ correction_passes: {0|1|2}
 ## Headline
 ## Critical and Major Findings
 ## Minor and Nit
-## Lane Selection
+## Dimension Selection
 ## Ponytail
 ## Acceptance Criteria
 ## Corrections
@@ -401,13 +401,13 @@ merge.
 ## Verification Checklist
 
 - [ ] Review context is independent of the candidate author
-- [ ] Ticket/worktree/repository identities verified
+- [ ] Issue/worktree/repository identities verified
 - [ ] Named branch and clean tracked/untracked state verified
 - [ ] Exact candidate recorded and rechecked at each boundary
 - [ ] `intent-checklist.json` includes every available authority
 - [ ] Standards, Spec, conditional Risk, and Ponytail ran in one context
 - [ ] Targeted Risk reviewer used only for a qualifying stable boundary
-- [ ] Every finding was validated and dispositioned
+- [ ] Every finding was validated and given a resolution
 - [ ] Corrections did not exceed one normal plus one conditional pass
 - [ ] Final full verification ran once against the stable candidate
 - [ ] Current artifacts and summary match the exact candidate

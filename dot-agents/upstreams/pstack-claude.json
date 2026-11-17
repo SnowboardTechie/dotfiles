@@ -4,19 +4,19 @@
   "commit": "a12b04786023e762f12f5de7bb5fafb8c23f8c36",
   "license": "MIT",
   "licenseFile": "pstack-claude-LICENSE",
-  "attribution": "Concepts adapted from pstack-claude, MIT licensed, Copyright (c) 2026 Lauren Tan and Copyright (c) 2026 Michael Denyer. Upstream's NOTICE.md credits create-verification-skill to cursor/plugins/pstack (Lauren Tan); blast-radius is a port-authored skill. Retained in pstack-claude-LICENSE.",
+  "attribution": "Concepts adapted from pstack-claude, MIT licensed, Copyright (c) 2026 Lauren Tan and Copyright (c) 2026 Michael Denyer. The skill source's NOTICE.md credits create-verification-skill to cursor/plugins/pstack (Lauren Tan); blast-radius is a port-authored skill. Retained in pstack-claude-LICENSE.",
   "verifiedOn": "2026-11-16",
   "notes": [
-    "Concept adaptation, not a vendored copy: the local skill is rewritten prose that folds two upstream skills into one lean skill with two disclosed references.",
+    "Concept adaptation, not a vendored copy: the local skill is rewritten prose that folds two of the skill source's skills into one lean skill with two disclosed references.",
     "The pstack plugin, its poteto-mode coordinator, hooks, commands, and the rest of its skills are deliberately not adopted.",
-    "Upstream paths are relative to the repository root at the pinned commit."
+    "The skill source's paths are relative to the repository root at the pinned commit."
   ],
   "updatePolicy": {
     "readOnlyDetection": true,
     "humanApprovedPinAdvance": true,
     "autoApply": false,
     "monitor": "pi-bots job adapted-skill-watch",
-    "description": "The pi-bots scheduled job `adapted-skill-watch` compares `commit` with upstream's head each week and, when a watched file changed since the pin, posts how many commits behind the pin is and which watched files changed. It never edits this file. Re-reading the watched files, deciding each change and advancing `commit`, `version` and `verifiedOn` is a reviewed local change."
+    "description": "The pi-bots scheduled job `adapted-skill-watch` compares `commit` with the skill source's head each week and, when a watched file changed since the pin, posts how many commits behind the pin is and which watched files changed. It never edits this file. Re-reading the watched files, deciding each change and advancing `commit`, `version` and `verifiedOn` is a reviewed local change."
   },
   "adaptations": [
     {
@@ -51,14 +51,14 @@
         "Read back side effects and verify by observation what a dry run actually skips.",
         "Kill only what the run started, never by process name; cleanup never deletes the evidence.",
         "A journey whose precondition is missing reports the gap; it is never weakened to pass.",
-        "A generated recipe is proven once end to end before it is called done; a stand-in target leaves its target-only steps unverified."
+        "A generated recipe is proven once end to end before it is called done; a fake target leaves its target-only steps unverified."
       ],
       "rejectedUpstreamRules": [
         "Running a wide change as an `arena` across multiple models — no additional reviewer or model fan-out; review stays with the owning workflow.",
         "Always naming the generated skill `verify` under `.claude/skills/` to shadow Claude Code's built-in; placement is chosen per project and must be visible to every harness.",
         "Fixing a broken checkout or creating scaffolding assets before generating a recipe without separate authority.",
         "The `maintain-verification-skill` loop and a feature-map directory per project as a default; a recipe stays as small as the project's real need.",
-        "Writing the report through `unslop` and the poteto-mode playbooks, autonomy, and shipping flow that surround these skills upstream.",
+        "Writing the report through `unslop` and the poteto-mode playbooks, autonomy, and shipping flow that surround these skills in the skill source.",
         "Plugin installation, slash-command stubs, and hooks; distribution is the local skill reconciler only."
       ],
       "watchedFiles": [
@@ -91,7 +91,7 @@
         {
           "upstream": "91ab921",
           "file": "plugins/pstack/LICENSE (not watched)",
-          "change": "Upstream now ships the plugin's MIT licence beside the plugin.",
+          "change": "The skill source now ships the plugin's MIT licence beside the plugin.",
           "decision": "accepted",
           "reason": "Same text as pstack-claude-LICENSE (checked with diff); nothing to change."
         }

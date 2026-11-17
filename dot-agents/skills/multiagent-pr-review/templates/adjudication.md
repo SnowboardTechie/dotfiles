@@ -40,7 +40,7 @@ ready or clean for INCOMPLETE, STALE, or unadmitted evidence.>
 ## Confirmed Findings
 
 Order Critical, Major, Minor, then Nit. For each: root finding ID, all source
-IDs/models/lanes, real `file:line`, violated invariant, root evidence, failure
+IDs/models/dimensions, real `file:line`, violated invariant, root evidence, failure
 mode, and smallest reasonable correction.
 
 ## Rejected Leads

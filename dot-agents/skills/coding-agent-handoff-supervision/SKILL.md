@@ -638,7 +638,7 @@ resume a visible Rex background agent's identity.
     (Hermes's `delegate_task`, a cron-spawned background agent, or the like; Pi has
     none). Bryan means this skill's normal visible handoff. The one Pi
     exception is read-only fan-out that a skill names: parallel research,
-    candidate drafts, or review lanes returning findings only may run as
+    candidate drafts, or review dimensions returning findings only may run as
     headless `pi -p --no-session` background agents limited to
     `--tools read,grep,find,ls`. One that must run read-only commands
     (`gh` reads, `git show`, `curl`) gets `--tools read,grep,find,ls,bash`

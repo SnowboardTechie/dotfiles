@@ -15,8 +15,13 @@ from typing import Any, NoReturn
 
 CANDIDATE_FIELDS = ("base_sha", "head_sha", "merge_base_sha", "diff_sha256")
 ROUTE_FIELDS = ("surface", "agent_name", "pane_id", "runtime_session_id")
-PRIMARY_LANES = ("standards", "spec", "correctness")
-FINAL_LANE = "ponytail"
+PRIMARY_DIMENSIONS = ("standards", "spec", "correctness")
+FINAL_DIMENSION = "ponytail"
+
+# Recorded review bundles name each dimension with the keys `lane_selection`,
+# `required_lanes`, `lane_artifacts`, `lane` (per artifact entry) and the `lane:`
+# frontmatter field. Those keys keep their recorded names; only this module's
+# own names say "dimension".
 
 
 class ValidationError(Exception):
@@ -122,15 +127,15 @@ def expected_models(values: list[str]) -> dict[str, re.Pattern[str]]:
     return predicates
 
 
-def derived_lanes(manifest: dict[str, Any]) -> list[str]:
+def derived_dimensions(manifest: dict[str, Any]) -> list[str]:
     selection = manifest.get("lane_selection")
     if not isinstance(selection, dict) or not isinstance(selection.get("risk_selected"), bool):
         raise ValidationError("INVALID_MANIFEST")
-    lanes: list[str] = list(PRIMARY_LANES)
+    dimensions: list[str] = list(PRIMARY_DIMENSIONS)
     if selection["risk_selected"]:
-        lanes.append("risk")
-    lanes.append(FINAL_LANE)
-    return lanes
+        dimensions.append("risk")
+    dimensions.append(FINAL_DIMENSION)
+    return dimensions
 
 
 def verify_manifest_files(root: Path, manifest: dict[str, Any]) -> None:
@@ -174,55 +179,55 @@ def verify_models(
         raise ValidationError("MODEL_MISMATCH")
 
 
-def verify_lanes(
+def verify_dimensions(
     root: Path,
     sidecar: dict[str, Any],
     family: str,
     expected_candidate: dict[str, str],
     manifest_sha: str,
-    required_lanes: list[str],
+    required_dimensions: list[str],
 ) -> None:
     artifacts = sidecar.get("lane_artifacts")
     if not isinstance(artifacts, list):
-        raise ValidationError("MISSING_LANE")
-    by_lane: dict[str, dict[str, Any]] = {}
+        raise ValidationError("MISSING_DIMENSION")
+    by_dimension: dict[str, dict[str, Any]] = {}
     for item in artifacts:
         if not isinstance(item, dict) or not isinstance(item.get("lane"), str):
-            raise ValidationError("INVALID_LANE_ARTIFACT")
-        lane = item["lane"]
-        if lane in by_lane:
-            raise ValidationError("DUPLICATE_LANE")
-        by_lane[lane] = item
+            raise ValidationError("INVALID_DIMENSION_ARTIFACT")
+        dimension = item["lane"]
+        if dimension in by_dimension:
+            raise ValidationError("DUPLICATE_DIMENSION")
+        by_dimension[dimension] = item
 
-    expected_set = set(required_lanes)
-    actual_set = set(by_lane)
+    expected_set = set(required_dimensions)
+    actual_set = set(by_dimension)
     if "risk" in actual_set and "risk" not in expected_set:
-        raise ValidationError("UNEXPECTED_LANE")
+        raise ValidationError("UNEXPECTED_DIMENSION")
     if expected_set - actual_set:
-        raise ValidationError("MISSING_LANE")
+        raise ValidationError("MISSING_DIMENSION")
     if actual_set - expected_set:
-        raise ValidationError("UNEXPECTED_LANE")
+        raise ValidationError("UNEXPECTED_DIMENSION")
 
     declared = sidecar.get("required_lanes")
-    if declared != required_lanes:
-        raise ValidationError("REQUIRED_LANES_MISMATCH")
+    if declared != required_dimensions:
+        raise ValidationError("REQUIRED_DIMENSIONS_MISMATCH")
 
-    for lane in required_lanes:
-        item = by_lane[lane]
+    for dimension in required_dimensions:
+        item = by_dimension[dimension]
         relative = item.get("path")
         expected_hash = item.get("sha256")
         if not isinstance(relative, str) or not isinstance(expected_hash, str):
-            raise ValidationError("INVALID_LANE_ARTIFACT")
+            raise ValidationError("INVALID_DIMENSION_ARTIFACT")
         path = confined_path(root, relative)
         if sha256(path) != expected_hash:
-            raise ValidationError("LANE_HASH_MISMATCH")
+            raise ValidationError("DIMENSION_HASH_MISMATCH")
         fields = parse_frontmatter(path)
         if (
-            fields.get("lane") != lane
+            fields.get("lane") != dimension
             or fields.get("reviewer_family") != family
             or fields.get("evidence_manifest_sha256") != manifest_sha
         ):
-            raise ValidationError("LANE_IDENTITY_MISMATCH")
+            raise ValidationError("DIMENSION_IDENTITY_MISMATCH")
         require_candidate_fields(fields, expected_candidate)
 
 
@@ -263,7 +268,7 @@ def validate_sidecar(
     predicate: re.Pattern[str],
     manifest: dict[str, Any],
     manifest_sha: str,
-    required_lanes: list[str],
+    required_dimensions: list[str],
 ) -> dict[str, str]:
     sidecar = load_json(path)
     if sidecar.get("reviewer_family") != family:
@@ -277,13 +282,13 @@ def validate_sidecar(
     verify_route(sidecar)
     verify_models(sidecar, predicate)
     expected_candidate = candidate_identity(manifest.get("candidate_identity"))
-    verify_lanes(
+    verify_dimensions(
         root,
         sidecar,
         family,
         expected_candidate,
         manifest_sha,
-        required_lanes,
+        required_dimensions,
     )
     report_hash = verify_report(
         root,
@@ -298,7 +303,7 @@ def validate_sidecar(
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = JsonArgumentParser(description=__doc__)
-    parser.add_argument("--state-root", required=True)
+    parser.add_argument("--state-dir", required=True)
     parser.add_argument("--manifest", required=True)
     parser.add_argument("--manifest-sha256", required=True)
     parser.add_argument("--report-sidecar", action="append", default=[])
@@ -309,7 +314,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def run(argv: list[str]) -> dict[str, Any]:
     args = parse_args(argv)
     try:
-        root = Path(args.state_root).resolve(strict=True)
+        root = Path(args.state_dir).resolve(strict=True)
     except OSError as error:
         raise ValidationError("PATH_MISSING") from error
     if not root.is_dir():
@@ -323,7 +328,7 @@ def run(argv: list[str]) -> dict[str, Any]:
         raise ValidationError("INVALID_MANIFEST")
     candidate_identity(manifest.get("candidate_identity"))
     verify_manifest_files(root, manifest)
-    required_lanes = derived_lanes(manifest)
+    required_dimensions = derived_dimensions(manifest)
     predicates = expected_models(args.expected_model)
 
     sidecars: dict[str, Path] = {}
@@ -351,7 +356,7 @@ def run(argv: list[str]) -> dict[str, Any]:
             predicate,
             manifest,
             args.manifest_sha256,
-            required_lanes,
+            required_dimensions,
         )
         for family, predicate in predicates.items()
     ]

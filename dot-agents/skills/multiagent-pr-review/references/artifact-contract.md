@@ -1,44 +1,48 @@
 # Review Artifact Contract
 
-The root owns candidate evidence, report admission, disposition, and all vault
+The root owns candidate evidence, report admission, resolution, and all vault
 writes. Reviewers own only isolated scratch artifacts beneath their designated
-state roots.
+state directories.
 
 ## Evidence manifest
 
 The root writes one immutable JSON manifest under the confined review state
-root. It contains:
+directory. It contains:
 
 - PR URL/repository/number/author and `expected_pr_head_ref`;
 - `base_sha`, `head_sha`, `merge_base_sha`, and `diff_sha256`;
 - canonical worktree identities and complete changed-path inventory;
-- deterministic `lane_selection.risk_selected` plus `risk_reason`;
-- every bound evidence file's state-root-relative path and SHA-256.
+- deterministic `lane_selection.risk_selected` plus `risk_reason` (the recorded
+  key for the dimension selection);
+- every bound evidence file's path relative to the state directory, and its SHA-256.
 
 The manifest excludes itself from its file map. Record its exact digest as
-`evidence_manifest_sha256`. Resolve every path canonically under the state root;
+`evidence_manifest_sha256`. Resolve every path canonically under the state directory;
 reject missing files, symlink escapes, and hash mismatches.
 
-## Lane and model bundles
+## Dimension and model bundles
 
-Each selected lane emits Markdown plus a JSON identity/hash sidecar. Lane
-frontmatter carries the lane, reviewer family, all four candidate fields, and
-the evidence-manifest SHA-256. The model-family orchestrator emits:
+Each selected dimension emits Markdown plus a JSON identity/hash sidecar. Its
+frontmatter carries the dimension (under the recorded key `lane`), reviewer
+family, all four candidate fields, and the evidence-manifest SHA-256. The
+model-family orchestrator emits:
 
 - one advisory Markdown report using `templates/model-review.md`;
 - one JSON sidecar naming reviewer family, provider, primary model,
-  `models_used`, candidate identity, manifest digest, exact required lanes,
-  lane artifact paths/hashes, report path/hash, and Rex route evidence;
+  `models_used`, candidate identity, manifest digest, exact required dimensions
+  (`required_lanes`), dimension artifact paths/hashes (`lane_artifacts`),
+  report path/hash, and Rex route evidence;
 - complete route identity: surface, agent name, pane ID, harness session ID,
-  launch route, canonical worktree root/common-dir/branch, and state root.
+  launch route, canonical worktree root/common-dir/branch, and state directory
+  (recorded as `state_root`).
 
 Run `scripts/validate-review-artifacts.py` with caller-supplied model predicates.
-It validates paths, hashes, exact identities, deterministic lanes, advisory
+It validates paths, hashes, exact identities, deterministic dimensions, advisory
 frontmatter, Rex route completeness, and observed models. A missing, stale,
 model-mismatched, or malformed report yields `INCOMPLETE` and no verdict. Both
 Claude and GPT reports are required before root adjudication.
 
-## Root disposition
+## Root resolution
 
 The root copies admitted Claude and GPT Markdown byte-for-byte. It never edits
 an advisory report and verifies the copied hash. The root alone writes the

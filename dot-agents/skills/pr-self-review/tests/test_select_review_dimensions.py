@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for deterministic review-lane selection.
+"""Tests for deterministic review-dimension selection.
 
 The contract these lock:
 
@@ -7,9 +7,9 @@ The contract these lock:
 * Risk runs on a real signal in the changed paths.
 * Risk always runs for CairnOS, whatever the diff touches.
 * Ambiguity includes Risk rather than excluding it.
-* Selection reports its reasons, so a reviewer can see why a lane ran.
+* Selection reports its reasons, so a reviewer can see why a dimension ran.
 
-Run: python3 -m unittest dot-agents/skills/pr-self-review/tests/test_select_review_lanes.py
+Run: python3 -m unittest dot-agents/skills/pr-self-review/tests/test_select_review_dimensions.py
 """
 
 from __future__ import annotations
@@ -25,43 +25,43 @@ import tempfile
 import unittest
 from pathlib import Path
 
-MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts" / "select_review_lanes.py"
-SPEC = importlib.util.spec_from_file_location("select_review_lanes", MODULE_PATH)
+MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts" / "select_review_dimensions.py"
+SPEC = importlib.util.spec_from_file_location("select_review_dimensions", MODULE_PATH)
 assert SPEC and SPEC.loader
-LANES = importlib.util.module_from_spec(SPEC)
+SELECTOR = importlib.util.module_from_spec(SPEC)
 # Register before exec: @dataclass resolves annotations through sys.modules.
-sys.modules["select_review_lanes"] = LANES
-SPEC.loader.exec_module(LANES)
+sys.modules["select_review_dimensions"] = SELECTOR
+SPEC.loader.exec_module(SELECTOR)
 
 ORDINARY = ["README.md", "src/format_date.ts", "docs/usage.md", "src/format_date.test.ts"]
 
 
-class AlwaysLanesTest(unittest.TestCase):
+class AlwaysDimensionsTest(unittest.TestCase):
     def test_standards_and_spec_run_on_an_ordinary_change(self) -> None:
-        selection = LANES.select_lanes("bryan/notes", ORDINARY)
-        self.assertEqual(selection.lanes, ["standards", "spec"])
+        selection = SELECTOR.select_dimensions("bryan/notes", ORDINARY)
+        self.assertEqual(selection.dimensions, ["standards", "spec"])
 
     def test_standards_and_spec_run_on_an_empty_diff(self) -> None:
-        selection = LANES.select_lanes("bryan/notes", [])
-        self.assertEqual(selection.lanes, ["standards", "spec"])
+        selection = SELECTOR.select_dimensions("bryan/notes", [])
+        self.assertEqual(selection.dimensions, ["standards", "spec"])
 
     def test_standards_and_spec_cannot_be_suppressed_by_any_input(self) -> None:
         for changed in ([], [""], ["   "], ["src/auth.py"], ["../../etc/passwd"]):
             with self.subTest(changed=changed):
-                lanes = LANES.select_lanes("bryan/anything", changed).lanes
-                self.assertIn("standards", lanes)
-                self.assertIn("spec", lanes)
+                dimensions = SELECTOR.select_dimensions("bryan/anything", changed).dimensions
+                self.assertIn("standards", dimensions)
+                self.assertIn("spec", dimensions)
 
-    def test_lane_order_is_stable(self) -> None:
-        selection = LANES.select_lanes("bryan/cairn-os", ORDINARY)
-        self.assertEqual(selection.lanes, ["standards", "spec", "risk"])
+    def test_dimension_order_is_stable(self) -> None:
+        selection = SELECTOR.select_dimensions("bryan/cairn-os", ORDINARY)
+        self.assertEqual(selection.dimensions, ["standards", "spec", "risk"])
 
 
 class RiskTriggerTest(unittest.TestCase):
     def assert_risk(self, path: str) -> None:
-        selection = LANES.select_lanes("bryan/notes", [path])
+        selection = SELECTOR.select_dimensions("bryan/notes", [path])
         self.assertTrue(
-            selection.risk_selected, f"{path} should have selected the Risk lane"
+            selection.risk_selected, f"{path} should have selected the Risk dimension"
         )
         self.assertTrue(selection.reasons["risk"], "Risk must report why it ran")
 
@@ -107,17 +107,17 @@ class RiskTriggerTest(unittest.TestCase):
         self.assert_risk("internal/locking/mutex.go")
 
     def test_an_ordinary_change_does_not_select_risk(self) -> None:
-        self.assertFalse(LANES.select_lanes("bryan/notes", ORDINARY).risk_selected)
+        self.assertFalse(SELECTOR.select_dimensions("bryan/notes", ORDINARY).risk_selected)
 
     def test_windows_separators_are_normalized(self) -> None:
         self.assertTrue(
-            LANES.select_lanes("bryan/notes", ["src\\auth\\session.ts"]).risk_selected
+            SELECTOR.select_dimensions("bryan/notes", ["src\\auth\\session.ts"]).risk_selected
         )
 
 
 class AmbiguityTest(unittest.TestCase):
     def test_an_unrecognized_security_adjacent_path_includes_risk(self) -> None:
-        """A false Risk lane costs one background agent; a missed one ships the defect."""
+        """A false Risk dimension costs one background agent; a missed one ships the defect."""
         for path in (
             "src/sanitize_untrusted_payload.ts",
             "lib/privacy_filter.py",
@@ -125,11 +125,11 @@ class AmbiguityTest(unittest.TestCase):
             "src/pii_scrubber.rb",
         ):
             with self.subTest(path=path):
-                selection = LANES.select_lanes("bryan/notes", [path])
+                selection = SELECTOR.select_dimensions("bryan/notes", [path])
                 self.assertTrue(selection.risk_selected)
 
     def test_the_ambiguous_reason_is_labelled_as_such(self) -> None:
-        selection = LANES.select_lanes("bryan/notes", ["src/sanitize_input.ts"])
+        selection = SELECTOR.select_dimensions("bryan/notes", ["src/sanitize_input.ts"])
         self.assertTrue(
             any("ambiguous" in reason for reason in selection.reasons["risk"]),
             "an ambiguous match must say so, so a reviewer can judge it",
@@ -141,38 +141,38 @@ class CairnOsTest(unittest.TestCase):
         """A cosmetic-looking change can still alter boot, permissions, or updates."""
         for repo in ("bryan/cairn-os", "cairn-os", "someone/cairn_os", "bryan/cairnos"):
             with self.subTest(repo=repo):
-                selection = LANES.select_lanes(repo, ["README.md"])
+                selection = SELECTOR.select_dimensions(repo, ["README.md"])
                 self.assertTrue(selection.risk_selected)
 
     def test_cairnos_risk_reason_names_the_repository_rule(self) -> None:
-        selection = LANES.select_lanes("bryan/cairn-os", ["README.md"])
+        selection = SELECTOR.select_dimensions("bryan/cairn-os", ["README.md"])
         self.assertTrue(
             any("always runs Risk" in reason for reason in selection.reasons["risk"])
         )
 
     def test_a_similarly_named_repository_is_not_swept_in(self) -> None:
-        self.assertFalse(LANES.select_lanes("bryan/cairn-os-docs-site", ["README.md"]).risk_selected)
+        self.assertFalse(SELECTOR.select_dimensions("bryan/cairn-os-docs-site", ["README.md"]).risk_selected)
 
     def test_cairnos_risk_survives_alongside_path_reasons(self) -> None:
-        selection = LANES.select_lanes("bryan/cairn-os", ["src/auth/session.ts"])
+        selection = SELECTOR.select_dimensions("bryan/cairn-os", ["src/auth/session.ts"])
         self.assertGreaterEqual(len(selection.reasons["risk"]), 2)
 
 
 class ReasonTest(unittest.TestCase):
     def test_reasons_are_deduplicated_by_cause_not_by_file(self) -> None:
         many = [f"src/auth/handler_{i}.ts" for i in range(10)]
-        selection = LANES.select_lanes("bryan/notes", many)
+        selection = SELECTOR.select_dimensions("bryan/notes", many)
         auth = [r for r in selection.reasons["risk"] if "authentication" in r]
         self.assertEqual(len(auth), 1)
 
     def test_reasons_are_sorted_so_output_is_stable(self) -> None:
         changed = ["src/queue/worker.py", "src/auth/session.ts", "Dockerfile"]
-        first = LANES.select_lanes("bryan/notes", changed).reasons["risk"]
-        second = LANES.select_lanes("bryan/notes", list(reversed(changed))).reasons["risk"]
+        first = SELECTOR.select_dimensions("bryan/notes", changed).reasons["risk"]
+        second = SELECTOR.select_dimensions("bryan/notes", list(reversed(changed))).reasons["risk"]
         self.assertEqual(first, second)
 
-    def test_always_lanes_state_why_they_ran(self) -> None:
-        selection = LANES.select_lanes("bryan/notes", ORDINARY)
+    def test_always_dimensions_state_why_they_ran(self) -> None:
+        selection = SELECTOR.select_dimensions("bryan/notes", ORDINARY)
         self.assertEqual(selection.reasons["standards"], ["always runs"])
         self.assertEqual(selection.reasons["spec"], ["always runs"])
 
@@ -184,7 +184,7 @@ class ContentSignalTest(unittest.TestCase):
         return [f"--- a/{path}", f"+++ b/{path}"] + [f"+{line}" for line in added]
 
     def assert_content_risk(self, path: str, line: str, expect: str) -> None:
-        selection = LANES.select_lanes("bryan/notes", [], self.diff(path, line))
+        selection = SELECTOR.select_dimensions("bryan/notes", [], self.diff(path, line))
         self.assertTrue(
             selection.risk_selected,
             f"{line!r} in {path} should have selected Risk",
@@ -222,7 +222,7 @@ class ContentSignalTest(unittest.TestCase):
                 self.assert_content_risk(path, line, expect)
 
     def test_unknown_security_adjacent_content_fails_closed_to_risk(self) -> None:
-        selection = LANES.select_lanes(
+        selection = SELECTOR.select_dimensions(
             "bryan/notes", [], self.diff("src/util.py", "flag = is_untrusted_origin(x)")
         )
         self.assertTrue(selection.risk_selected)
@@ -232,8 +232,8 @@ class ContentSignalTest(unittest.TestCase):
         )
 
     def test_an_ordinary_diff_does_not_select_risk(self) -> None:
-        """An always-on Risk lane carries no signal."""
-        selection = LANES.select_lanes(
+        """An always-on Risk dimension carries no signal."""
+        selection = SELECTOR.select_dimensions(
             "bryan/notes",
             [],
             self.diff(
@@ -247,18 +247,18 @@ class ContentSignalTest(unittest.TestCase):
     def test_comments_and_blank_lines_do_not_trigger(self) -> None:
         for line in ("# TODO: think about security later", "// sanitize this eventually", ""):
             with self.subTest(line=line):
-                selection = LANES.select_lanes(
+                selection = SELECTOR.select_dimensions(
                     "bryan/notes", [], self.diff("src/util.py", line)
                 )
                 self.assertFalse(selection.risk_selected)
 
     def test_removed_lines_cannot_introduce_risk(self) -> None:
         diff = ["--- a/src/util.py", "+++ b/src/util.py", "-subprocess.run(cmd, shell=True)"]
-        self.assertFalse(LANES.select_lanes("bryan/notes", [], diff).risk_selected)
+        self.assertFalse(SELECTOR.select_dimensions("bryan/notes", [], diff).risk_selected)
 
     def test_the_file_header_is_not_treated_as_content(self) -> None:
         diff = ["--- a/src/auth_notes.md", "+++ b/src/auth_notes.md", "+plain prose"]
-        selection = LANES.select_lanes("bryan/notes", [], diff)
+        selection = SELECTOR.select_dimensions("bryan/notes", [], diff)
         # The *path* is what triggers here, not the `+++` line.
         self.assertTrue(selection.risk_selected)
         self.assertTrue(any("authentication" in r for r in selection.reasons["risk"]))
@@ -270,38 +270,38 @@ class ContentSignalTest(unittest.TestCase):
         read only the `+++` header saw no paths at all.
         """
         diff = ["--- a/src/auth/session.py", "+++ /dev/null", "-def login(): ..."]
-        selection = LANES.select_lanes("bryan/notes", [], diff)
-        self.assertEqual(LANES.changed_files_from_diff(diff), ["src/auth/session.py"])
+        selection = SELECTOR.select_dimensions("bryan/notes", [], diff)
+        self.assertEqual(SELECTOR.changed_files_from_diff(diff), ["src/auth/session.py"])
         self.assertTrue(selection.risk_selected)
         self.assertTrue(any("authentication" in r for r in selection.reasons["risk"]))
 
     def test_a_deleted_neutral_path_does_not_select_risk(self) -> None:
         diff = ["--- a/docs/notes.md", "+++ /dev/null", "-just prose"]
-        self.assertFalse(LANES.select_lanes("bryan/notes", [], diff).risk_selected)
+        self.assertFalse(SELECTOR.select_dimensions("bryan/notes", [], diff).risk_selected)
 
     def test_an_added_risky_path_selects_risk(self) -> None:
         diff = ["--- /dev/null", "+++ b/src/auth/session.py", "+def login(): ..."]
-        self.assertEqual(LANES.changed_files_from_diff(diff), ["src/auth/session.py"])
-        self.assertTrue(LANES.select_lanes("bryan/notes", [], diff).risk_selected)
+        self.assertEqual(SELECTOR.changed_files_from_diff(diff), ["src/auth/session.py"])
+        self.assertTrue(SELECTOR.select_dimensions("bryan/notes", [], diff).risk_selected)
 
     def test_a_rename_reports_both_sides(self) -> None:
         """The old location can carry a signal the new one does not."""
         diff = ["--- a/src/auth/session.py", "+++ b/src/util/session.py"]
         self.assertEqual(
-            LANES.changed_files_from_diff(diff),
+            SELECTOR.changed_files_from_diff(diff),
             ["src/auth/session.py", "src/util/session.py"],
         )
-        self.assertTrue(LANES.select_lanes("bryan/notes", [], diff).risk_selected)
+        self.assertTrue(SELECTOR.select_dimensions("bryan/notes", [], diff).risk_selected)
 
     def test_a_modified_file_is_not_double_counted(self) -> None:
         diff = ["--- a/src/auth/session.py", "+++ b/src/auth/session.py", "+x = 1"]
-        self.assertEqual(LANES.changed_files_from_diff(diff), ["src/auth/session.py"])
-        reasons = LANES.select_lanes("bryan/notes", [], diff).reasons["risk"]
+        self.assertEqual(SELECTOR.changed_files_from_diff(diff), ["src/auth/session.py"])
+        reasons = SELECTOR.select_dimensions("bryan/notes", [], diff).reasons["risk"]
         self.assertEqual(len([r for r in reasons if "authentication or authorization" in r]), 1)
 
     def test_both_dev_null_sides_are_excluded(self) -> None:
         self.assertEqual(
-            LANES.changed_files_from_diff(["--- /dev/null", "+++ /dev/null"]), []
+            SELECTOR.changed_files_from_diff(["--- /dev/null", "+++ /dev/null"]), []
         )
 
     def test_added_lines_attach_to_the_new_path_only(self) -> None:
@@ -310,7 +310,7 @@ class ContentSignalTest(unittest.TestCase):
             "--- a/gone.py", "+++ /dev/null", "-secret = load()",
             "--- a/src/parser.py", "+++ b/src/parser.py", "+data = json.loads(raw)",
         ]
-        pairs = LANES.added_lines_with_paths(diff)
+        pairs = SELECTOR.added_lines_with_paths(diff)
         self.assertEqual(pairs, [("src/parser.py", "data = json.loads(raw)")])
 
     def test_a_multi_file_diff_classifies_every_touched_path(self) -> None:
@@ -319,18 +319,18 @@ class ContentSignalTest(unittest.TestCase):
             "--- a/src/auth/session.py", "+++ /dev/null",
             "--- /dev/null", "+++ b/db/migrations/001.sql", "+CREATE TABLE t (id int);",
         ]
-        paths = LANES.changed_files_from_diff(diff)
+        paths = SELECTOR.changed_files_from_diff(diff)
         self.assertEqual(
             paths, ["README.md", "src/auth/session.py", "db/migrations/001.sql"]
         )
-        reasons = " ".join(LANES.select_lanes("bryan/notes", [], diff).reasons["risk"])
+        reasons = " ".join(SELECTOR.select_dimensions("bryan/notes", [], diff).reasons["risk"])
         self.assertIn("authentication", reasons)
         self.assertIn("persistence", reasons)
 
     def test_paths_are_derived_from_the_diff_when_not_supplied(self) -> None:
         diff = ["--- a/src/auth/session.ts", "+++ b/src/auth/session.ts", "+const x = 1;"]
-        self.assertEqual(LANES.changed_files_from_diff(diff), ["src/auth/session.ts"])
-        self.assertTrue(LANES.select_lanes("bryan/notes", [], diff).risk_selected)
+        self.assertEqual(SELECTOR.changed_files_from_diff(diff), ["src/auth/session.ts"])
+        self.assertTrue(SELECTOR.select_dimensions("bryan/notes", [], diff).risk_selected)
 
     def test_content_reasons_are_deduplicated_and_stable(self) -> None:
         diff = self.diff(
@@ -339,45 +339,45 @@ class ContentSignalTest(unittest.TestCase):
             "b = json.loads(two)",
             "c = json.loads(three)",
         )
-        reasons = LANES.select_lanes("bryan/notes", [], diff).reasons["risk"]
+        reasons = SELECTOR.select_dimensions("bryan/notes", [], diff).reasons["risk"]
         parsing = [r for r in reasons if "parsing" in r]
         self.assertEqual(len(parsing), 1)
         self.assertEqual(
-            reasons, LANES.select_lanes("bryan/notes", [], diff).reasons["risk"]
+            reasons, SELECTOR.select_dimensions("bryan/notes", [], diff).reasons["risk"]
         )
 
     def test_omitting_the_diff_is_reported_as_a_weaker_selection(self) -> None:
         """Silence about a skipped sweep would read as a clean sweep."""
-        selection = LANES.select_lanes("bryan/notes", ["README.md"])
+        selection = SELECTOR.select_dimensions("bryan/notes", ["README.md"])
         self.assertTrue(any("content signals were not evaluated" in n for n in selection.notes))
         self.assertIn("note:", selection.render())
 
     def test_supplying_a_diff_leaves_no_content_sweep_note(self) -> None:
-        selection = LANES.select_lanes("bryan/notes", [], self.diff("README.md", "hello"))
+        selection = SELECTOR.select_dimensions("bryan/notes", [], self.diff("README.md", "hello"))
         self.assertFalse([n for n in selection.notes if "content signals" in n])
 
     def test_a_diff_alone_is_still_flagged_as_a_weaker_path_authority(self) -> None:
         """Content is covered; path identity is not. Both facts must be said."""
-        selection = LANES.select_lanes("bryan/notes", [], self.diff("README.md", "hello"))
+        selection = SELECTOR.select_dimensions("bryan/notes", [], self.diff("README.md", "hello"))
         self.assertTrue([n for n in selection.notes if "unified diff headers" in n])
 
     def test_name_status_plus_diff_is_the_complete_pair(self) -> None:
-        selection = LANES.select_lanes(
+        selection = SELECTOR.select_dimensions(
             "bryan/notes",
             None,
             self.diff("README.md", "hello"),
-            LANES.parse_name_status("M\0README.md\0"),
+            SELECTOR.parse_name_status("M\0README.md\0"),
         )
         self.assertEqual(selection.notes, [])
 
     def test_a_prose_only_signal_is_marked_as_prose(self) -> None:
         """Discussing authentication and changing it deserve different attention."""
-        selection = LANES.select_lanes(
+        selection = SELECTOR.select_dimensions(
             "bryan/notes",
             [],
             self.diff("docs/design.md", "The service handles authentication by ..."),
         )
-        self.assertTrue(selection.risk_selected, "prose still selects the lane")
+        self.assertTrue(selection.risk_selected, "prose still selects the dimension")
         self.assertTrue(any(" in prose (" in r for r in selection.reasons["risk"]))
         self.assertTrue(any("came from documentation" in n for n in selection.notes))
 
@@ -386,7 +386,7 @@ class ContentSignalTest(unittest.TestCase):
             self.diff("docs/design.md", "we use json.loads on the payload")
             + self.diff("src/parser.py", "data = json.loads(raw)")
         )
-        selection = LANES.select_lanes("bryan/notes", [], diff)
+        selection = SELECTOR.select_dimensions("bryan/notes", [], diff)
         parsing = [r for r in selection.reasons["risk"] if "parsing" in r]
         self.assertEqual(len(parsing), 1)
         self.assertNotIn(" in prose (", parsing[0])
@@ -397,13 +397,13 @@ class ContentSignalTest(unittest.TestCase):
         )
 
     def test_reasons_name_the_file_they_came_from(self) -> None:
-        selection = LANES.select_lanes(
+        selection = SELECTOR.select_dimensions(
             "bryan/notes", [], self.diff("src/parser.py", "data = json.loads(raw)")
         )
         self.assertIn("src/parser.py", " ".join(selection.reasons["risk"]))
 
     def test_cairnos_still_always_selects_risk_with_a_clean_diff(self) -> None:
-        selection = LANES.select_lanes(
+        selection = SELECTOR.select_dimensions(
             "bryan/cairn-os", [], self.diff("README.md", "just docs")
         )
         self.assertTrue(selection.risk_selected)
@@ -430,10 +430,10 @@ class NameStatusTest(unittest.TestCase):
     )
 
     def paths(self, raw: str) -> list[str]:
-        return LANES.changed_files_from_name_status(LANES.parse_name_status(raw))
+        return SELECTOR.changed_files_from_name_status(SELECTOR.parse_name_status(raw))
 
     def test_it_parses_every_status_shape(self) -> None:
-        changes = LANES.parse_name_status(self.REAL)
+        changes = SELECTOR.parse_name_status(self.REAL)
         self.assertEqual(
             [(c.status, c.paths) for c in changes],
             [
@@ -448,8 +448,8 @@ class NameStatusTest(unittest.TestCase):
         """The source path carries the signal the destination laundered away."""
         raw = "R100\0src/auth/session.py\0src/util/session.py\0"
         self.assertEqual(self.paths(raw), ["src/auth/session.py", "src/util/session.py"])
-        selection = LANES.select_lanes(
-            "bryan/notes", None, None, LANES.parse_name_status(raw)
+        selection = SELECTOR.select_dimensions(
+            "bryan/notes", None, None, SELECTOR.parse_name_status(raw)
         )
         self.assertTrue(selection.risk_selected)
         self.assertTrue(any("authentication" in r for r in selection.reasons["risk"]))
@@ -457,29 +457,29 @@ class NameStatusTest(unittest.TestCase):
     def test_a_rename_is_invisible_to_unified_headers(self) -> None:
         """The regression, stated against the weaker path."""
         unified = ["--- /dev/null", "+++ b/src/util/session.py", "+def login(): ..."]
-        self.assertEqual(LANES.changed_files_from_diff(unified), ["src/util/session.py"])
-        self.assertNotIn("src/auth/session.py", LANES.changed_files_from_diff(unified))
+        self.assertEqual(SELECTOR.changed_files_from_diff(unified), ["src/util/session.py"])
+        self.assertNotIn("src/auth/session.py", SELECTOR.changed_files_from_diff(unified))
 
     def test_a_binary_deletion_classifies(self) -> None:
         """A binary delete emits no unified headers at all."""
         raw = "D\0src/auth/blob.bin\0"
         self.assertEqual(self.paths(raw), ["src/auth/blob.bin"])
         self.assertTrue(
-            LANES.select_lanes("bryan/notes", None, None, LANES.parse_name_status(raw)).risk_selected
+            SELECTOR.select_dimensions("bryan/notes", None, None, SELECTOR.parse_name_status(raw)).risk_selected
         )
 
     def test_a_copy_classifies_both_sides(self) -> None:
         raw = "C075\0src/auth/session.py\0src/util/copy.py\0"
         self.assertEqual(self.paths(raw), ["src/auth/session.py", "src/util/copy.py"])
         self.assertTrue(
-            LANES.select_lanes("bryan/notes", None, None, LANES.parse_name_status(raw)).risk_selected
+            SELECTOR.select_dimensions("bryan/notes", None, None, SELECTOR.parse_name_status(raw)).risk_selected
         )
 
     def test_ordinary_add_modify_delete(self) -> None:
         raw = "A\0src/a.py\0M\0src/b.py\0D\0src/c.py\0"
         self.assertEqual(self.paths(raw), ["src/a.py", "src/b.py", "src/c.py"])
         self.assertFalse(
-            LANES.select_lanes("bryan/notes", None, None, LANES.parse_name_status(raw)).risk_selected
+            SELECTOR.select_dimensions("bryan/notes", None, None, SELECTOR.parse_name_status(raw)).risk_selected
         )
 
     def test_no_double_count(self) -> None:
@@ -489,8 +489,8 @@ class NameStatusTest(unittest.TestCase):
             "M\0src/auth/session.py\0"
         )
         self.assertEqual(self.paths(raw), ["src/auth/session.py", "src/util/session.py"])
-        reasons = LANES.select_lanes(
-            "bryan/notes", None, None, LANES.parse_name_status(raw)
+        reasons = SELECTOR.select_dimensions(
+            "bryan/notes", None, None, SELECTOR.parse_name_status(raw)
         ).reasons["risk"]
         self.assertEqual(len([r for r in reasons if "authentication or authorization" in r]), 1)
 
@@ -503,42 +503,42 @@ class NameStatusTest(unittest.TestCase):
     def test_a_path_with_a_control_character_is_refused(self) -> None:
         for bad in ("src/a\nb.py", "src/a\x01b.py", "src/a\x7f.py"):
             with self.subTest(path=bad), self.assertRaises(ValueError):
-                LANES.parse_name_status(f"M\0{bad}\0")
+                SELECTOR.parse_name_status(f"M\0{bad}\0")
 
     def test_a_truncated_inventory_is_refused(self) -> None:
         for bad in ("R100\0only-one-path\0", "M\0"):
             with self.subTest(raw=bad), self.assertRaises(ValueError):
-                LANES.parse_name_status(bad)
+                SELECTOR.parse_name_status(bad)
 
     def test_an_unknown_status_is_refused(self) -> None:
         with self.assertRaises(ValueError):
-            LANES.parse_name_status("Z\0src/a.py\0")
+            SELECTOR.parse_name_status("Z\0src/a.py\0")
 
     def test_an_empty_path_is_refused(self) -> None:
         with self.assertRaises(ValueError):
-            LANES.parse_name_status("M\0\0")
+            SELECTOR.parse_name_status("M\0\0")
 
     def test_an_empty_inventory_parses_to_nothing(self) -> None:
-        self.assertEqual(LANES.parse_name_status(""), [])
+        self.assertEqual(SELECTOR.parse_name_status(""), [])
         self.assertEqual(self.paths(""), [])
 
     def test_name_status_is_the_authority_over_the_diff(self) -> None:
         """Both inputs supplied: paths come from name-status, content from the diff."""
-        changes = LANES.parse_name_status(self.REAL)
+        changes = SELECTOR.parse_name_status(self.REAL)
         diff = ["--- a/src/parser.py", "+++ b/src/parser.py", "+data = json.loads(raw)"]
-        selection = LANES.select_lanes("bryan/notes", None, diff, changes)
+        selection = SELECTOR.select_dimensions("bryan/notes", None, diff, changes)
         reasons = " ".join(selection.reasons["risk"])
         self.assertIn("authentication", reasons, "path authority came from name-status")
         self.assertIn("parsing", reasons, "content signal came from the diff")
         self.assertEqual(selection.notes, [], "a complete pair needs no weakness note")
 
     def test_a_caller_supplied_path_list_is_marked_weaker(self) -> None:
-        selection = LANES.select_lanes("bryan/notes", ["README.md"])
+        selection = SELECTOR.select_dimensions("bryan/notes", ["README.md"])
         self.assertTrue(any("not `git diff --name-status`" in n for n in selection.notes))
 
     def test_header_derived_paths_are_marked_weaker(self) -> None:
         diff = ["--- a/README.md", "+++ b/README.md", "+x"]
-        selection = LANES.select_lanes("bryan/notes", None, diff)
+        selection = SELECTOR.select_dimensions("bryan/notes", None, diff)
         self.assertTrue(any("unified diff headers" in n for n in selection.notes))
 
     def test_the_cli_accepts_a_name_status_inventory(self) -> None:
@@ -547,18 +547,18 @@ class NameStatusTest(unittest.TestCase):
         with contextlib.redirect_stdout(out):
             original, sys.stdin = sys.stdin, io.StringIO(payload)
             try:
-                code = LANES.main(
+                code = SELECTOR.main(
                     ["--repo", "bryan/notes", "--name-status-from", "-", "--json"]
                 )
             finally:
                 sys.stdin = original
         self.assertEqual(code, 0)
         payload = json.loads(out.getvalue())
-        self.assertEqual(payload["lanes"], ["standards", "spec", "risk"])
+        self.assertEqual(payload["dimensions"], ["standards", "spec", "risk"])
 
     def test_the_cli_refuses_two_stdin_readers(self) -> None:
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-            LANES.main(
+            SELECTOR.main(
                 ["--repo", "bryan/notes", "--diff-from", "-", "--name-status-from", "-"]
             )
 
@@ -567,7 +567,7 @@ class NameStatusTest(unittest.TestCase):
         with contextlib.redirect_stderr(out), self.assertRaises(SystemExit):
             original, sys.stdin = sys.stdin, io.StringIO("R100\0only-one\0")
             try:
-                LANES.main(["--repo", "bryan/notes", "--name-status-from", "-"])
+                SELECTOR.main(["--repo", "bryan/notes", "--name-status-from", "-"])
             finally:
                 sys.stdin = original
         self.assertIn("unusable name-status inventory", out.getvalue())
@@ -579,7 +579,7 @@ class CliTest(unittest.TestCase):
         with contextlib.redirect_stdout(out):
             original, sys.stdin = sys.stdin, io.StringIO(stdin)
             try:
-                code = LANES.main(argv)
+                code = SELECTOR.main(argv)
             finally:
                 sys.stdin = original
         self.assertEqual(code, 0)
@@ -591,7 +591,7 @@ class CliTest(unittest.TestCase):
             stdin="src/auth/session.ts\nREADME.md\n",
         )
         payload = json.loads(output)
-        self.assertEqual(payload["lanes"], ["standards", "spec", "risk"])
+        self.assertEqual(payload["dimensions"], ["standards", "spec", "risk"])
 
     def test_accepts_repeated_changed_file_arguments(self) -> None:
         payload = json.loads(
@@ -599,11 +599,11 @@ class CliTest(unittest.TestCase):
                 ["--repo", "bryan/notes", "--changed-file", "README.md", "--json"]
             )
         )
-        self.assertEqual(payload["lanes"], ["standards", "spec"])
+        self.assertEqual(payload["dimensions"], ["standards", "spec"])
 
-    def test_text_output_names_the_lanes_and_reasons(self) -> None:
+    def test_text_output_names_the_dimensions_and_reasons(self) -> None:
         output = self.run_cli(["--repo", "bryan/cairn-os", "--changed-file", "README.md"])
-        self.assertIn("lanes: standards, spec, risk", output)
+        self.assertIn("dimensions: standards, spec, risk", output)
         self.assertIn("always runs Risk", output)
 
     def test_reads_a_diff_from_stdin_and_derives_its_paths(self) -> None:
@@ -611,7 +611,7 @@ class CliTest(unittest.TestCase):
         result = json.loads(
             self.run_cli(["--repo", "bryan/notes", "--diff-from", "-", "--json"], stdin=payload)
         )
-        self.assertEqual(result["lanes"], ["standards", "spec", "risk"])
+        self.assertEqual(result["dimensions"], ["standards", "spec", "risk"])
         self.assertTrue(any("parsing" in r for r in result["reasons"]["risk"]))
 
     def test_json_output_carries_the_weaker_selection_note(self) -> None:
@@ -622,13 +622,13 @@ class CliTest(unittest.TestCase):
 
     def test_two_stdin_readers_are_refused(self) -> None:
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-            LANES.main(
+            SELECTOR.main(
                 ["--repo", "bryan/notes", "--changed-files-from", "-", "--diff-from", "-"]
             )
 
     def test_repo_is_required(self) -> None:
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-            LANES.main(["--changed-file", "README.md"])
+            SELECTOR.main(["--changed-file", "README.md"])
 
 
 class RealGitInventoryTest(unittest.TestCase):
@@ -637,7 +637,7 @@ class RealGitInventoryTest(unittest.TestCase):
     Hand-written fixtures encode what I *believe* Git emits. These run the
     literal command from `NAME_STATUS_COMMAND` in a throwaway repo and classify
     whatever Git actually produces, so a wrong belief fails here rather than in
-    a review that quietly skipped its Risk lane.
+    a review that quietly skipped its Risk dimension.
     """
 
     def git(self, *args: str) -> str:
@@ -683,14 +683,14 @@ class RealGitInventoryTest(unittest.TestCase):
     def inventory(self) -> list:
         """Exactly the documented authority command, run for real."""
         base = self.git("rev-parse", "main").strip()
-        command = LANES.NAME_STATUS_COMMAND.format(base=base)
+        command = SELECTOR.NAME_STATUS_COMMAND.format(base=base)
         self.assertEqual(
             command.split()[:7],
             ["git", "diff", "--name-status", "-z", "-M", "-C", "--find-copies-harder"],
             "the documented authority command changed shape",
         )
         raw = self.git(*command.split()[1:])
-        return LANES.parse_name_status(raw)
+        return SELECTOR.parse_name_status(raw)
 
     def branch(self) -> None:
         self.git("checkout", "-q", "-b", "work")
@@ -710,14 +710,14 @@ class RealGitInventoryTest(unittest.TestCase):
         changes = self.inventory()
         statuses = {c.kind for c in changes}
         self.assertEqual(statuses, {"R"}, f"expected one rename, got {changes}")
-        paths = LANES.changed_files_from_name_status(changes)
+        paths = SELECTOR.changed_files_from_name_status(changes)
         self.assertIn("src/auth/session.py", paths, "the risky source vanished")
         self.assertIn("src/util/helper.py", paths)
 
-        selection = LANES.select_lanes("bryan/thing", name_status=changes)
-        self.assertIn(LANES.RISK, selection.lanes)
+        selection = SELECTOR.select_dimensions("bryan/thing", name_status=changes)
+        self.assertIn(SELECTOR.RISK, selection.dimensions)
         self.assertTrue(
-            any("auth" in reason for reason in selection.reasons[LANES.RISK])
+            any("auth" in reason for reason in selection.reasons[SELECTOR.RISK])
         )
 
     def test_a_binary_deletion_reports_its_path(self) -> None:
@@ -730,12 +730,12 @@ class RealGitInventoryTest(unittest.TestCase):
         self.commit("drop the keystore")
 
         base = self.git("rev-parse", "main").strip()
-        unified = self.git(*LANES.UNIFIED_DIFF_COMMAND.format(base=base).split()[1:])
+        unified = self.git(*SELECTOR.UNIFIED_DIFF_COMMAND.format(base=base).split()[1:])
         self.assertNotIn(
             "--- ", unified, "premise broken: this binary delete has path headers"
         )
         self.assertEqual(
-            LANES.changed_files_from_diff(unified),
+            SELECTOR.changed_files_from_diff(unified),
             [],
             "premise broken: the unified diff exposed the deleted path",
         )
@@ -743,10 +743,10 @@ class RealGitInventoryTest(unittest.TestCase):
         changes = self.inventory()
         self.assertEqual([c.kind for c in changes], ["D"])
         self.assertEqual(
-            LANES.changed_files_from_name_status(changes), ["src/auth/keystore.p12"]
+            SELECTOR.changed_files_from_name_status(changes), ["src/auth/keystore.p12"]
         )
-        selection = LANES.select_lanes("bryan/thing", name_status=changes)
-        self.assertIn(LANES.RISK, selection.lanes)
+        selection = SELECTOR.select_dimensions("bryan/thing", name_status=changes)
+        self.assertIn(SELECTOR.RISK, selection.dimensions)
 
     def test_a_copy_from_an_untouched_risky_source_emits_C(self) -> None:
         """This is what `--find-copies-harder` buys.
@@ -767,11 +767,11 @@ class RealGitInventoryTest(unittest.TestCase):
         self.assertEqual(
             kinds, {"C"}, f"--find-copies-harder did not report a copy: {changes}"
         )
-        paths = LANES.changed_files_from_name_status(changes)
+        paths = SELECTOR.changed_files_from_name_status(changes)
         self.assertIn("src/auth/credentials.py", paths, "the untouched source vanished")
         self.assertIn("src/util/copy_of_credentials.py", paths)
         self.assertIn(
-            LANES.RISK, LANES.select_lanes("bryan/thing", name_status=changes).lanes
+            SELECTOR.RISK, SELECTOR.select_dimensions("bryan/thing", name_status=changes).dimensions
         )
 
     def test_a_plain_copy_flag_would_have_missed_that_source(self) -> None:
@@ -784,7 +784,7 @@ class RealGitInventoryTest(unittest.TestCase):
         self.commit("copy it")
 
         base = self.git("rev-parse", "main").strip()
-        weaker = LANES.parse_name_status(
+        weaker = SELECTOR.parse_name_status(
             self.git("diff", "--name-status", "-z", "-M", "-C", f"{base}...HEAD", "--")
         )
         self.assertEqual(
@@ -794,7 +794,7 @@ class RealGitInventoryTest(unittest.TestCase):
         )
         self.assertNotIn(
             "src/auth/credentials.py",
-            LANES.changed_files_from_name_status(weaker),
+            SELECTOR.changed_files_from_name_status(weaker),
             "premise broken: plain -C exposed the source anyway",
         )
 
@@ -813,7 +813,7 @@ class RealGitInventoryTest(unittest.TestCase):
         self.assertEqual(by_path["src/auth/session.py"], "M")
         self.assertEqual(by_path["docs/new.md"], "A")
         self.assertEqual(by_path["docs/old.md"], "D")
-        paths = LANES.changed_files_from_name_status(changes)
+        paths = SELECTOR.changed_files_from_name_status(changes)
         self.assertEqual(len(paths), len(set(paths)), "a path was double-counted")
 
     def test_an_unusual_filename_survives_the_nul_stream(self) -> None:
@@ -827,7 +827,7 @@ class RealGitInventoryTest(unittest.TestCase):
 
         changes = self.inventory()
         self.assertEqual(
-            LANES.changed_files_from_name_status(changes),
+            SELECTOR.changed_files_from_name_status(changes),
             [odd],
             "the path was quoted or mangled rather than passed through",
         )
@@ -842,7 +842,7 @@ class StrictStatusParsingTest(unittest.TestCase):
     def test_one_path_statuses_are_exactly_one_letter(self) -> None:
         for status in ("A", "D", "M", "T", "U", "X", "B"):
             with self.subTest(status=status):
-                changes = LANES.parse_name_status(self.z(status, "a.py"))
+                changes = SELECTOR.parse_name_status(self.z(status, "a.py"))
                 self.assertEqual(changes[0].kind, status)
 
     def test_a_suffixed_one_path_status_is_refused(self) -> None:
@@ -850,43 +850,43 @@ class StrictStatusParsingTest(unittest.TestCase):
         for bad in ("MM", "AM", "M1", "A100", "DD", "M "):
             with self.subTest(status=bad):
                 with self.assertRaises(ValueError):
-                    LANES.parse_name_status(self.z(bad, "a.py", "b.py"))
+                    SELECTOR.parse_name_status(self.z(bad, "a.py", "b.py"))
 
     def test_rename_and_copy_require_a_three_digit_score(self) -> None:
         for good in ("R000", "R100", "R087", "C000", "C100", "C050"):
             with self.subTest(status=good):
-                changes = LANES.parse_name_status(self.z(good, "a.py", "b.py"))
+                changes = SELECTOR.parse_name_status(self.z(good, "a.py", "b.py"))
                 self.assertEqual(changes[0].paths, ("a.py", "b.py"))
         for bad in ("R", "R1", "R12", "R1000", "R101", "R999", "Rxyz", "C", "C1001"):
             with self.subTest(status=bad):
                 with self.assertRaises(ValueError):
-                    LANES.parse_name_status(self.z(bad, "a.py", "b.py"))
+                    SELECTOR.parse_name_status(self.z(bad, "a.py", "b.py"))
 
     def test_a_leading_empty_field_is_refused_not_skipped(self) -> None:
         """An empty status field means the stream is misaligned."""
         with self.assertRaises(ValueError) as caught:
-            LANES.parse_name_status(self.z("", "M", "a.py"))
+            SELECTOR.parse_name_status(self.z("", "M", "a.py"))
         self.assertIn("misaligned", str(caught.exception))
 
     def test_truncation_is_refused(self) -> None:
         for data in (self.z("M"), self.z("R100", "only-one.py"), self.z("C050")):
             with self.subTest(data=data):
                 with self.assertRaises(ValueError) as caught:
-                    LANES.parse_name_status(data)
+                    SELECTOR.parse_name_status(data)
                 self.assertIn("truncated", str(caught.exception))
 
     def test_an_empty_path_is_refused(self) -> None:
         with self.assertRaises(ValueError) as caught:
-            LANES.parse_name_status(self.z("M", ""))
+            SELECTOR.parse_name_status(self.z("M", ""))
         self.assertIn("empty path", str(caught.exception))
         with self.assertRaises(ValueError):
-            LANES.parse_name_status(self.z("R100", "a.py", ""))
+            SELECTOR.parse_name_status(self.z("R100", "a.py", ""))
 
     def test_a_control_character_in_a_path_is_refused(self) -> None:
         for bad in ("a\npy", "a\rpy", "a\x01py", "a\x7fpy", "a\tpy".replace("\t", "\x0b")):
             with self.subTest(path=bad):
                 with self.assertRaises(ValueError) as caught:
-                    LANES.parse_name_status(self.z("M", bad))
+                    SELECTOR.parse_name_status(self.z("M", bad))
                 self.assertIn("control character", str(caught.exception))
 
     def test_a_tab_in_a_path_is_refused(self) -> None:
@@ -895,7 +895,7 @@ class StrictStatusParsingTest(unittest.TestCase):
         in a real repository path is overwhelmingly a mangled or adversarial
         stream, not a file."""
         with self.assertRaises(ValueError) as caught:
-            LANES.parse_name_status(self.z("M", "src/a\tb.py"))
+            SELECTOR.parse_name_status(self.z("M", "src/a\tb.py"))
         self.assertIn("control character", str(caught.exception))
 
     def test_a_whitespace_mutated_status_is_refused(self) -> None:
@@ -907,7 +907,7 @@ class StrictStatusParsingTest(unittest.TestCase):
         for bad in (" M", "M ", "M\n", "\tM", "\tM ", " R100", "R100\n"):
             with self.subTest(status=bad):
                 with self.assertRaises(ValueError):
-                    LANES.parse_name_status(self.z(bad, "a.py", "b.py"))
+                    SELECTOR.parse_name_status(self.z(bad, "a.py", "b.py"))
 
     def test_undecodable_bytes_are_refused_rather_than_substituted(self) -> None:
         """A path decoded with U+FFFD names a different file than Git meant."""
@@ -915,7 +915,7 @@ class StrictStatusParsingTest(unittest.TestCase):
             path = Path(tmp) / "inventory.z"
             path.write_bytes(b"M\x00src/auth/\xff\xfe.py\x00")
             with self.assertRaises(ValueError) as caught:
-                LANES.read_raw(str(path))
+                SELECTOR.read_raw(str(path))
             self.assertIn("not valid UTF-8", str(caught.exception))
 
     def test_the_cli_reports_undecodable_input_as_an_error(self) -> None:
@@ -925,12 +925,12 @@ class StrictStatusParsingTest(unittest.TestCase):
             with contextlib.redirect_stderr(io.StringIO()) as err, self.assertRaises(
                 SystemExit
             ):
-                LANES.main(["--repo", "bryan/x", "--name-status-from", str(path)])
+                SELECTOR.main(["--repo", "bryan/x", "--name-status-from", str(path)])
         self.assertIn("unusable name-status inventory", err.getvalue())
 
     def test_documented_commands_preserve_the_load_bearing_flags(self) -> None:
         """Orchestrators fix a review on exact SHAs, but none may weaken the Git inventory flags."""
-        command = LANES.NAME_STATUS_COMMAND
+        command = SELECTOR.NAME_STATUS_COMMAND
         self.assertEqual(
             command,
             "git diff --name-status -z -M -C --find-copies-harder {base}...HEAD --",
@@ -949,11 +949,11 @@ class StrictStatusParsingTest(unittest.TestCase):
                     "the skill's invocation contract does not use the authority command",
                 )
                 self.assertIn("--find-copies-harder", text)
-        help_text = LANES.main.__doc__ or ""
+        help_text = SELECTOR.main.__doc__ or ""
         del help_text, literal  # help is asserted through the parser below
         parser_help = io.StringIO()
         with contextlib.redirect_stdout(parser_help), self.assertRaises(SystemExit):
-            LANES.main(["--help"])
+            SELECTOR.main(["--help"])
         self.assertIn("--find-copies-harder", parser_help.getvalue())
 
 

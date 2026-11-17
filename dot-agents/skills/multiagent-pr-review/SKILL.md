@@ -47,7 +47,7 @@ The PR, teammate branch, and GitHub are read-only for the whole workflow:
 Do not fix findings. Do not mutate the harness's global model, provider, fallback,
 delegation, or approval configuration. Reviewers write only isolated scratch
 artifacts. Only the instigating root may later write and synchronize the proven
-target-project vault.
+vault of the target workspace.
 
 ## Phase 0 — Intake, authority, and route preflight
 
@@ -110,7 +110,7 @@ the PR branch in place, reuse its local branch, or share one worktree between
 reviewers. Record each canonical root, absolute Git common directory, branch,
 and clean status.
 
-Create only this ignored, confined state root:
+Create only this ignored, confined state directory:
 
 ```text
 <PRIMARY_CHECKOUT>/.agent-work/multiagent-pr-review/<owner>-<repo>-pr-<number>/<head-sha8>/
@@ -121,14 +121,14 @@ Create only this ignored, confined state root:
 
 Generate canonical name-status and unified-diff inputs with the immutable
 base/head pair. Run
-`pr-self-review/scripts/select_review_lanes.py` to select Risk. Standards, Spec,
+`pr-self-review/scripts/select_review_dimensions.py` to select Risk. Standards, Spec,
 and Correctness always run here; Risk follows that deterministic result; final
 Ponytail always runs.
 
 Gather bounded review inputs: complete changed-path inventory and canonical
 binary diff, PR body, linked issue criteria, existing review discussion, current
 checks, repository instructions, relevant specs/ADRs, and only relevant
-read-only project-vault context. Write each input under the state root. Build one
+read-only context from the workspace's vault. Write each input under the state directory. Build one
 JSON evidence manifest using the schema in the
 [artifact contract](references/artifact-contract.md), hash every bound file, and
 do not include the manifest in its own file map. Then record
@@ -149,7 +149,7 @@ pane/label/harness-session/worktree/state identities as each start returns.
 
 Pass both reviewers the same candidate and manifest identity plus the same
 [reviewer-orchestrator contract](references/reviewer-orchestrator-contract.md).
-Pass distinct worktrees, state roots, and output paths. Claude uses Opus 5.5/medium
+Pass distinct worktrees, state directories, and output paths. Claude uses Opus 5.5/medium
 effort in auto permission mode and Opus 5.5 leaves. GPT uses the route fixed in
 Phase 0 at high reasoning: from a Hermes root, a Hermes background agent with smart
 approvals, no yolo, and leaves that inherit or exactly match that route; from a
@@ -164,14 +164,14 @@ one bounded, silent completion supervisor for each. A reviewer-orchestrator can
 end a turn between asynchronous leaves, so the first settled turn is not
 completion: require that model family's final report sidecar plus a
 settled matching agent before releasing its supervisor. Use one root-owned
-process handle per family, never one notification process per lane/stage, and do
+process handle per family, never one notification process per dimension/stage, and do
 not set terminal `notify=true` when the root will await completion in this same
 turn. While they run, the root may investigate only read-only, unbound material;
 it must not edit candidate bytes, evidence, the manifest, or either review
 bundle. If either agent blocks on an approval or question, inspect and ask Bryan
 rather than answering automatically.
 
-Neither reviewer may see the other's report, transcript, state root, or root
+Neither reviewer may see the other's report, transcript, state directory, or root
 adjudication. Do not issue a verdict until both settle.
 
 ## Phase 3 — Admit exact reports or stop incomplete
@@ -179,13 +179,13 @@ adjudication. Do not issue a verdict until both settle.
 For each model-family report:
 
 1. Re-read the Rex pane identity and compare surface, name, pane, kind, harness
-   session, launch route, worktree identity, and state root.
+   session, launch route, worktree identity, and state directory.
 2. Recompute the reviewer worktree branch, clean tracked/untracked status, all
    candidate fields, expected PR head ref, evidence files, and manifest hash.
 3. Run [validate-review-artifacts.py](scripts/validate-review-artifacts.py) with
-   that state root, manifest path/digest, report sidecar, and a caller-supplied
+   that state directory, manifest path/digest, report sidecar, and a caller-supplied
    exact model-family predicate. Never infer model family from prose.
-4. If one lane or report is missing or invalid, continue that same recorded
+4. If one dimension or report is missing or invalid, continue that same recorded
    reviewer once for one bounded same-model retry against the exact candidate.
    There is no second retry and no substitute root/model.
 5. Missing, stale, model-mismatched, malformed, or still-invalid output yields
@@ -213,7 +213,7 @@ Only after both reports are admitted:
    `STALE`, preserve candidate-bound evidence, and ask Bryan whether to rerun.
    Candidate drift requires user choice. Do not restart automatically.
 2. Build a source-ID ledger from both reports. Deduplicate only the same violated
-   invariant while retaining every source model and lane.
+   invariant while retaining every source model and dimension.
 3. Investigate Critical, Major, Minor, then Nit. For every lead, reread the exact
    cited code and governing intent. Separate observation, explanation, and
    prescription.
@@ -221,7 +221,7 @@ Only after both reports are admitted:
    root verification worktree. Reviewer-reported commands and cross-model
    agreement are not proof.
 5. Classify every lead `confirmed`, `rejected`, or `unresolved` with root-owned
-   evidence. No plausible lead may remain undispositioned.
+   evidence. No plausible lead may remain without a resolution.
 6. Independently sweep every authoritative acceptance criterion. Then account
    for every changed path and behavior omission, including obligations that
    leave no changed line.
@@ -233,7 +233,7 @@ Use the [adjudication template](templates/adjudication.md). A missing report,
 unadmitted report, stale candidate, or unresolved identity conflict cannot say
 clean, ready, approved, or changes requested.
 
-Completion: every lead has a root disposition, every confirmed runtime claim has
+Completion: every lead has a root resolution, every confirmed runtime claim has
 a discriminating trace or probe, all criteria/paths are swept, and the candidate
 is still current.
 
@@ -269,7 +269,7 @@ terminal timeout, or as silent background processes explicitly awaited by the
 root. Never finish with a notification-enabled process that can post a stale
 completion message after the review and push the verdict out of view.
 
-The two reviewer panes must already be closed under Phase 3's lifecycle gate.
+The two reviewer panes must already be closed under Phase 3's lifecycle rule.
 Do not ask Bryan to authorize pane cleanup or leave completed reviewers visible
 as status markers. Worktree and scratch-state cleanup remains a separate,
 ownership-verified action with its own authorization and retention rules.
@@ -277,7 +277,7 @@ ownership-verified action with its own authorization and retention rules.
 ## Terminal states
 
 - `COMPLETE`: two admitted reports, current candidate, root adjudication done.
-- `INCOMPLETE`: a required route, lane, report, identity, or proof is absent; no
+- `INCOMPLETE`: a required route, dimension, report, identity, or proof is absent; no
   verdict.
 - `STALE`: candidate or bound evidence moved; ask before any rerun.
 - `UNSTABLE`: repeated exact-candidate attempts cannot earn reproducible evidence;
@@ -287,12 +287,12 @@ ownership-verified action with its own authorization and retention rules.
 
 - [ ] Explicit teammate GitHub PR and authenticated author check
 - [ ] PR/GitHub/teammate branch remained read-only
-- [ ] Three isolated exact-head worktrees and confined state roots
+- [ ] Three isolated exact-head worktrees and confined state directories
 - [ ] Four-field candidate plus expected head ref and manifest digest
 - [ ] Claude Opus and the fixed GPT route verified with no fallback
-- [ ] Same required lanes and evidence, isolated outputs, one retry maximum
+- [ ] Same required dimensions and evidence, isolated outputs, one retry maximum
 - [ ] Validator admitted both exact reports
-- [ ] Root independently dispositioned every lead and swept criteria/paths
+- [ ] Root independently resolved every lead and swept criteria/paths
 - [ ] Final remote head still equals `head_sha`
 - [ ] Two immutable advisory notes and one canonical adjudication note
 - [ ] Each reviewer pane closed and its absence verified as soon as that reviewer had no retry remaining

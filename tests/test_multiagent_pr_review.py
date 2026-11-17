@@ -18,7 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILL_POOL = REPO_ROOT / "dot-agents" / "skills"
 SKILL_ROOT = SKILL_POOL / "multiagent-pr-review"
 SKILL_PATH = SKILL_ROOT / "SKILL.md"
-CLAUDE_AGENT = REPO_ROOT / "dot-claude" / "agents" / "multiagent-pr-lane-reviewer.md"
+CLAUDE_AGENT = REPO_ROOT / "dot-claude" / "agents" / "multiagent-pr-dimension-reviewer.md"
 RECONCILER = REPO_ROOT / "scripts" / "reconcile-agent-skills.sh"
 VALIDATOR = SKILL_ROOT / "scripts" / "validate-review-artifacts.py"
 
@@ -119,10 +119,10 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
             "an invalid report bundle must fail closed",
         )
 
-    def test_both_reviewers_share_all_lanes_and_identity(self) -> None:
-        for lane in ("standards", "spec", "correctness", "risk", "ponytail"):
-            with self.subTest(lane=lane):
-                self.assertIn(lane, self.orchestrator.lower())
+    def test_both_reviewers_share_all_dimensions_and_identity(self) -> None:
+        for dimension in ("standards", "spec", "correctness", "risk", "ponytail"):
+            with self.subTest(dimension=dimension):
+                self.assertIn(dimension, self.orchestrator.lower())
         self.assert_matches(
             self.orchestrator,
             r"same.*candidate identity.*evidence manifest",
@@ -131,7 +131,7 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
         self.assert_matches(
             self.orchestrator,
             r"Ponytail.*after.*selected primary",
-            "Ponytail must remain the final lane",
+            "Ponytail must remain the final dimension",
         )
 
     def test_reports_are_isolated_and_root_validates_leads(self) -> None:
@@ -267,7 +267,7 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
             "advisory notes must be immutable",
         )
 
-    def test_templates_capture_identity_route_and_dispositions(self) -> None:
+    def test_templates_capture_identity_route_and_resolutions(self) -> None:
         for token in (
             "pr_url",
             "repository",
@@ -305,20 +305,20 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
             with self.subTest(adjudication_field=token):
                 self.assertIn(token, self.adjudication_template)
 
-    def test_claude_lane_agent_is_opus_and_confined(self) -> None:
+    def test_claude_dimension_agent_is_opus_and_confined(self) -> None:
         self.assertTrue(CLAUDE_AGENT.is_file())
         fields = frontmatter(self.agent)
         # Pinned to the exact model since d23a229 ("Pin Opus handoffs to Claude 5.5").
         self.assertEqual(fields.get("model"), "claude-opus-5-5")
         self.assertIn("Write", fields.get("tools", ""))
-        for lane in ("standards", "spec", "correctness", "risk", "ponytail"):
-            self.assertIn(f"`{lane}`", self.agent)
+        for dimension in ("standards", "spec", "correctness", "risk", "ponytail"):
+            self.assertIn(f"`{dimension}`", self.agent)
         self.assertIn("references/review-contract.md", self.agent)
         self.assertNotIn("`code-review`", self.agent)
         self.assertIn("evidence_manifest_sha256", self.agent)
-        self.assert_matches(self.agent, r"only.*reviewer state root|write only.*state root", "writes must be confined")
+        self.assert_matches(self.agent, r"only.*reviewer state directory|write only.*state directory", "writes must be confined")
         self.assert_matches(self.agent, r"untrusted data", "PR-provided text must be data")
-        self.assert_matches(self.agent, r"sidecar", "each lane must emit an identity/hash sidecar")
+        self.assert_matches(self.agent, r"sidecar", "each dimension must emit an identity/hash sidecar")
 
     def test_expected_linked_files_exist_and_markdown_links_resolve(self) -> None:
         expected = (
@@ -407,11 +407,12 @@ class ReviewArtifactValidatorTest(unittest.TestCase):
     def write_json(path: Path, value: object) -> None:
         path.write_text(json.dumps(value, sort_keys=True) + "\n", encoding="utf-8")
 
-    def lane_markdown(self, family: str, lane: str) -> str:
+    def dimension_markdown(self, family: str, dimension: str) -> str:
         identity = "\n".join(f"{key}: {value}" for key, value in self.candidate.items())
+        # `lane:` is the frontmatter key recorded bundles carry; the validator reads it.
         return (
             "---\n"
-            f"lane: {lane}\n"
+            f"lane: {dimension}\n"
             f"reviewer_family: {family}\n"
             f"evidence_manifest_sha256: {self.manifest_sha}\n"
             f"{identity}\n"
@@ -437,16 +438,18 @@ class ReviewArtifactValidatorTest(unittest.TestCase):
 
     def create_report_bundle(self, family: str) -> Path:
         family_root = self.root / family
-        lane_root = family_root / "lanes"
-        lane_root.mkdir(parents=True)
-        lanes = ["standards", "spec", "correctness", "risk", "ponytail"]
-        lane_artifacts = []
-        for lane in lanes:
-            path = lane_root / f"{lane}.md"
-            path.write_text(self.lane_markdown(family, lane), encoding="utf-8")
-            lane_artifacts.append(
+        # Recorded bundles keep dimension artifacts under `lanes/` and name them
+        # with the `lane`, `required_lanes` and `lane_artifacts` keys.
+        dimension_root = family_root / "lanes"
+        dimension_root.mkdir(parents=True)
+        dimensions = ["standards", "spec", "correctness", "risk", "ponytail"]
+        dimension_artifacts = []
+        for dimension in dimensions:
+            path = dimension_root / f"{dimension}.md"
+            path.write_text(self.dimension_markdown(family, dimension), encoding="utf-8")
+            dimension_artifacts.append(
                 {
-                    "lane": lane,
+                    "lane": dimension,
                     "path": str(path.relative_to(self.root)),
                     "sha256": self.sha256(path),
                 }
@@ -463,8 +466,8 @@ class ReviewArtifactValidatorTest(unittest.TestCase):
             "models_used": [model],
             "candidate_identity": self.candidate,
             "evidence_manifest_sha256": self.manifest_sha,
-            "required_lanes": lanes,
-            "lane_artifacts": lane_artifacts,
+            "required_lanes": dimensions,
+            "lane_artifacts": dimension_artifacts,
             "report_path": str(report_path.relative_to(self.root)),
             "report_sha256": self.sha256(report_path),
             "route_evidence": {
@@ -495,7 +498,7 @@ class ReviewArtifactValidatorTest(unittest.TestCase):
         command = [
             sys.executable,
             str(VALIDATOR),
-            "--state-root",
+            "--state-dir",
             str(self.root),
             "--manifest",
             str(self.manifest_path),
@@ -554,27 +557,27 @@ class ReviewArtifactValidatorTest(unittest.TestCase):
         self.save_sidecar("claude", sidecar)
         self.assert_error("CANDIDATE_MISMATCH", families=("claude",), sidecar_families=("claude",))
 
-    def test_lane_candidate_mismatch_is_rejected(self) -> None:
+    def test_dimension_candidate_mismatch_is_rejected(self) -> None:
         sidecar = self.load_sidecar("claude")
-        lane = self.root / sidecar["lane_artifacts"][0]["path"]
-        lane.write_text(
-            lane.read_text(encoding="utf-8").replace("head_sha: " + "b" * 40, "head_sha: " + "e" * 40),
+        artifact = self.root / sidecar["lane_artifacts"][0]["path"]
+        artifact.write_text(
+            artifact.read_text(encoding="utf-8").replace("head_sha: " + "b" * 40, "head_sha: " + "e" * 40),
             encoding="utf-8",
         )
-        sidecar["lane_artifacts"][0]["sha256"] = self.sha256(lane)
+        sidecar["lane_artifacts"][0]["sha256"] = self.sha256(artifact)
         self.save_sidecar("claude", sidecar)
         self.assert_error("CANDIDATE_MISMATCH", families=("claude",), sidecar_families=("claude",))
 
     def test_evidence_manifest_hash_mismatch_is_rejected(self) -> None:
         self.assert_error("MANIFEST_HASH_MISMATCH", manifest_sha="0" * 64)
 
-    def test_missing_selected_lane_is_rejected(self) -> None:
+    def test_missing_selected_dimension_is_rejected(self) -> None:
         sidecar = self.load_sidecar("claude")
         sidecar["lane_artifacts"] = [
             item for item in sidecar["lane_artifacts"] if item["lane"] != "risk"
         ]
         self.save_sidecar("claude", sidecar)
-        self.assert_error("MISSING_LANE", families=("claude",), sidecar_families=("claude",))
+        self.assert_error("MISSING_DIMENSION", families=("claude",), sidecar_families=("claude",))
 
     def test_unexpected_risk_placeholder_is_rejected(self) -> None:
         self.manifest["lane_selection"]["risk_selected"] = False
@@ -584,7 +587,7 @@ class ReviewArtifactValidatorTest(unittest.TestCase):
         sidecar = self.load_sidecar("claude")
         sidecar["evidence_manifest_sha256"] = self.manifest_sha
         self.save_sidecar("claude", sidecar)
-        self.assert_error("UNEXPECTED_LANE", families=("claude",), sidecar_families=("claude",))
+        self.assert_error("UNEXPECTED_DIMENSION", families=("claude",), sidecar_families=("claude",))
 
     def test_wrong_reviewer_family_is_rejected(self) -> None:
         sidecar = self.load_sidecar("claude")
@@ -616,11 +619,11 @@ class ReviewArtifactValidatorTest(unittest.TestCase):
         self.save_sidecar("claude", sidecar)
         self.assert_error("REPORT_HASH_MISMATCH", families=("claude",), sidecar_families=("claude",))
 
-    def test_lane_hash_mismatch_is_rejected(self) -> None:
+    def test_dimension_hash_mismatch_is_rejected(self) -> None:
         sidecar = self.load_sidecar("claude")
         sidecar["lane_artifacts"][0]["sha256"] = "0" * 64
         self.save_sidecar("claude", sidecar)
-        self.assert_error("LANE_HASH_MISMATCH", families=("claude",), sidecar_families=("claude",))
+        self.assert_error("DIMENSION_HASH_MISMATCH", families=("claude",), sidecar_families=("claude",))
 
     def test_non_advisory_frontmatter_is_rejected(self) -> None:
         report = self.root / self.load_sidecar("claude")["report_path"]

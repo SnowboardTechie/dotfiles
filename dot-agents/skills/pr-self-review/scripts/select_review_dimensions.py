@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic review-lane selection for `pr-self-review` and its review contract.
+"""Deterministic review-dimension selection for `pr-self-review` and its review contract.
 
 Standards and Spec **always** run. Risk runs when the change plausibly touches
 something that can hurt: authentication, secrets, private data, untrusted
@@ -11,17 +11,17 @@ Two rules make this worth being code rather than a judgment call:
 
 * **Standards and Spec cannot be suppressed.** No input turns them off.
 * **Ambiguity includes Risk, never excludes it.** An unrecognized signal that
-  looks security-adjacent selects the lane. A false Risk lane costs one background
-  agent; a missed one ships the defect.
+  looks security-adjacent selects the dimension. A false Risk dimension costs one
+  background agent; a missed one ships the defect.
 
 CairnOS always selects Risk regardless of what the diff touches: it is Bryan's
 own operating-system work, where a change that looks cosmetic can still alter
 boot, permissions, or update behavior.
 
 Usage:
-    select_review_lanes.py --repo owner/repo --changed-files-from -
-    select_review_lanes.py --repo owner/repo --changed-file src/auth.py [...]
-    select_review_lanes.py --repo owner/repo --changed-files-from - --json
+    select_review_dimensions.py --repo owner/repo --changed-files-from -
+    select_review_dimensions.py --repo owner/repo --changed-file src/auth.py [...]
+    select_review_dimensions.py --repo owner/repo --changed-files-from - --json
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ from dataclasses import dataclass, field
 from pathlib import PurePosixPath
 from typing import Iterable, Sequence
 
-ALWAYS_LANES = ("standards", "spec")
+ALWAYS_DIMENSIONS = ("standards", "spec")
 RISK = "risk"
 
 # Repositories where Risk is unconditional, matched on the repository name so
@@ -62,7 +62,7 @@ _PATH_SIGNALS: tuple[tuple[str, str], ...] = (
     (r"(^|/)(package|pyproject|cargo|go)\.(json|toml|mod)$", "package manifest"),
     (r"(^|/)\.npmrc$|(^|/)\.pypirc$", "package publication configuration"),
     (r"(^|/)(agents?|skills?)/.*\.(md|py|sh)$", "agent permission or unattended behavior"),
-    # Anything under hermes/ is scheduler-adjacent: cron definitions, prompts,
+    # Anything under hermes/ is scheduler-adjacent: scheduled job definitions, prompts,
     # and scripts that run unattended with real credentials and delivery.
     (r"(^|/)hermes/", "unattended scheduler asset"),
     (r"(^|/)(memory|memories|recall|hindsight)[^/]*", "memory retention"),
@@ -95,7 +95,7 @@ AMBIGUOUS_HINTS = re.compile(
 #
 # Chosen to indicate a risk *area* rather than to match all code. Deliberately
 # excluded: bare `open(`, `Path(`, and `await`, which appear in nearly every
-# diff and would make Risk unconditional — an always-on lane carries no signal.
+# diff and would make Risk unconditional — an always-on dimension carries no signal.
 _CONTENT_SIGNALS: tuple[tuple[str, str], ...] = (
     # Stems (leading boundary only) and whole words (both boundaries) are kept
     # apart deliberately: `\bauthenticat\b` can never match "authentication",
@@ -170,24 +170,24 @@ ADDED_LINE = re.compile(r"\A\+(?!\+\+)")
 
 @dataclass
 class Selection:
-    """Which lanes to run, and why each was selected."""
+    """Which dimensions to run, and why each was selected."""
 
-    lanes: list[str] = field(default_factory=list)
+    dimensions: list[str] = field(default_factory=list)
     reasons: dict[str, list[str]] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
 
     @property
     def risk_selected(self) -> bool:
-        return RISK in self.lanes
+        return RISK in self.dimensions
 
     def to_dict(self) -> dict:
-        return {"lanes": self.lanes, "reasons": self.reasons, "notes": self.notes}
+        return {"dimensions": self.dimensions, "reasons": self.reasons, "notes": self.notes}
 
     def render(self) -> str:
-        lines = [f"lanes: {', '.join(self.lanes)}"]
-        for lane in self.lanes:
-            for reason in self.reasons.get(lane, []):
-                lines.append(f"  {lane}: {reason}")
+        lines = [f"dimensions: {', '.join(self.dimensions)}"]
+        for dimension in self.dimensions:
+            for reason in self.reasons.get(dimension, []):
+                lines.append(f"  {dimension}: {reason}")
         for note in self.notes:
             lines.append(f"  note: {note}")
         return "\n".join(lines)
@@ -204,7 +204,7 @@ def risk_reasons(changed_files: Iterable[str]) -> list[str]:
     """Every distinct reason the diff selects Risk, in a stable order.
 
     Deduplicated by reason rather than by file: three auth files are one
-    reason to run the lane, not three.
+    reason to run the dimension, not three.
     """
     found: dict[str, str] = {}
     for raw in changed_files:
@@ -296,7 +296,7 @@ def parse_name_status(data: str) -> list[Change]:
     arrive verbatim and are then refused below.)
 
     Parsing is strict, and deliberately so: this inventory decides whether the
-    Risk lane runs, and a tolerated malformation is a silently narrowed review.
+    Risk dimension runs, and a tolerated malformation is a silently narrowed review.
     Every rejection below is a case where the alternative is a guess —
     a suffixed status, an impossible similarity score, a leading empty field,
     a truncated tail, an empty path, a control character, or bytes that are not
@@ -426,7 +426,7 @@ def content_risk_reasons(diff: Iterable[str]) -> list[str]:
     short explanation rather than a transcript of the diff. A reason found only
     in documentation is marked, because "this diff discusses authentication" and
     "this diff changes authentication" deserve different attention even though
-    both select the lane.
+    both select the dimension.
     """
     found: dict[str, tuple[str, str]] = {}
 
@@ -456,13 +456,13 @@ def content_risk_reasons(diff: Iterable[str]) -> list[str]:
     return reasons
 
 
-def select_lanes(
+def select_dimensions(
     repo: str,
     changed_files: Sequence[str] | None = None,
     diff: Sequence[str] | None = None,
     name_status: Sequence[Change] | None = None,
 ) -> Selection:
-    """Select review lanes. Standards and Spec are never omitted.
+    """Select review dimensions. Standards and Spec are never omitted.
 
     Two inputs with two distinct jobs, and conflating them is what let a
     renamed or binary-deleted risky file slip through:
@@ -477,7 +477,7 @@ def select_lanes(
     Whatever authority was used is recorded in `notes`, because a weaker one
     must not read like a complete sweep.
     """
-    selection = Selection(lanes=list(ALWAYS_LANES))
+    selection = Selection(dimensions=list(ALWAYS_DIMENSIONS))
     selection.reasons["standards"] = ["always runs"]
     selection.reasons["spec"] = ["always runs"]
 
@@ -522,7 +522,7 @@ def select_lanes(
             )
 
     if reasons:
-        selection.lanes.append(RISK)
+        selection.dimensions.append(RISK)
         selection.reasons[RISK] = reasons
     return selection
 
@@ -565,7 +565,7 @@ def read_changed_files(source: str) -> list[str]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Select review lanes for a diff.",
+        description="Select review dimensions for a diff.",
         epilog=(
             "Produce the two inputs with exactly these commands:\n"
             f"  {NAME_STATUS_COMMAND}   > name-status.z\n"
@@ -632,7 +632,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         except (ValueError, OSError) as error:
             parser.error(f"unusable name-status inventory: {error}")
 
-    selection = select_lanes(args.repo, changed, diff, name_status)
+    selection = select_dimensions(args.repo, changed, diff, name_status)
     print(json.dumps(selection.to_dict(), indent=2, sort_keys=True) if args.json else selection.render())
     return 0
 

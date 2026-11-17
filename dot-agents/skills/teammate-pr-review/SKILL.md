@@ -52,10 +52,10 @@ review runs the Ponytail section alone, then drafts as below.
 
 Read
 [`../pr-self-review/references/review-contract.md`](../pr-self-review/references/review-contract.md).
-Run its lane selector (section 2) to decide Risk. When Risk is selected, run the
+Run its dimension selector (section 2) to decide Risk. When Risk is selected, run the
 Risk section against the frozen head. Then run the Ponytail section, always,
 and last, after both of his reports have settled. Use its severity scale for
-every finding, and its finding gate (repeated below) for every finding from all
+every finding, and its finding bar (repeated below) for every finding from all
 four passes.
 
 Do not merge or rerank findings across passes.
@@ -83,7 +83,7 @@ head contains), the head is not what will merge. Propose `COMMENT` that asks
 the question and recommends the order when the evidence points to one. Do not
 approve it, and do not request changes just to hold a question.
 On a re-review where the author settled every earlier ask and no new finding
-passes the gate, propose `APPROVE` with an empty body: the approval closes the
+passes the finding bar, propose `APPROVE` with an empty body: the approval closes the
 loop, and a line that recaps the fixes adds nothing (PR 1299, 2026-10-14).
 Preparing a draft
 and submitting that review are separate actions; preserve the user's submission
@@ -102,7 +102,7 @@ Write the overall review body in Bryan's voice, leading with the judgment.
 Keep routine test counts, execution details, and repeated change or inline-
 comment summaries in the private audit. Include technical detail in the
 publishable body only when it affects the review decision. Planning or tracker
-gaps that do not decide this PR's merge (an unfiled upstream issue, a ticket's
+gaps that do not decide this PR's merge (an unfiled upstream issue, an issue's
 stale assumption) stay in the private audit. Any condition on
 the event belongs in the body, never only in an inline: list the PRs that must
 merge first as linked, numbered items in merge order. Inlines carry the code
@@ -124,7 +124,7 @@ showing it: if the user has to ask to see the drafts, the handoff failed.
 Considered-not-posted items, evidence, and explanations stay in the saved
 draft.
 
-## Finding gate
+## Finding bar
 
 Zero findings is a valid successful review. Report only concrete defects: the
 candidate violates an authority or causes an observable failure or risk, the
@@ -139,7 +139,7 @@ For test-quality comments, a surviving mutation establishes a coverage gap,
 not a current implementation defect. Check legitimate inputs and the stated
 assertion or requirement, then explain the meaningful consequence. Distinguish
 a mis-scoped existing assertion from a request for extra assertions; withdraw
-marginal coverage requests that fail the finding gate. Do not imply that an
+marginal coverage requests that fail the finding bar. Do not imply that an
 artificially broken variant is the current code or that a future regression
 will occur if the suggestion is left unaddressed.
 
@@ -159,7 +159,7 @@ prescriptions before correction.
 - [ ] Standards and Spec came from Matt Pocock's `code-review`
 - [ ] Risk classifier recorded; Risk ran when selected
 - [ ] Ponytail ran last and stayed narrow
-- [ ] Every reported finding passed the finding gate
+- [ ] Every reported finding passed the finding bar
 - [ ] Human-facing draft has clickable PR and exact-head file/line links
 - [ ] Proposed event matches blocker status and review coverage
 - [ ] Suggestions have verified replacements and valid inline ranges

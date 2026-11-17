@@ -48,24 +48,24 @@ fixed `--session-id`) in `$CLAUDE_WORKTREE`. GPT starts in `$GPT_WORKTREE` as a
 background agent of the root's own kind: a Hermes background agent, as that reference's Hermes
 paragraph describes, or a Pi background agent, as its Pi paragraph describes but with
 `--model <GPT route> --thinking high` and no Claude subscription variable. A Pi GPT
-background agent spends the Codex subscription, so the Claude capacity gate does not apply
+background agent spends the Codex subscription, so the Claude capacity limit does not apply
 to it. Each background agent's
 first turn is the review prompt, so write both prompt files and verify both
 worktrees before the first start.
 
-The dedicated `multiagent-pr-lane-reviewer` agent must be available to the
+The dedicated `multiagent-pr-dimension-reviewer` agent must be available to the
 Claude orchestrator. A Hermes GPT background agent must use smart approvals, no `--yolo`,
 the root's active GPT model/provider/base URL, high reasoning, and delegation
 inherited or exactly pinned to that same GPT route. A Pi GPT background agent has no
-built-in background agent of its own, so each lane leaf is its own headless process in its
+built-in background agent of its own, so each dimension leaf is its own headless process in its
 worktree, limited to read-only tools:
 
 ```sh
 pi -p --mode json --no-session --model "$GPT_ROUTE" --thinking high \
-  --tools read,grep,find,ls "@$STATE/<lane>-prompt.md" > "$STATE/<lane>.jsonl"
+  --tools read,grep,find,ls "@$STATE/<dimension>-prompt.md" > "$STATE/<dimension>.jsonl"
 ```
 
-The primary lanes run in parallel as background jobs the background agent waits on, and
+The primary dimensions run in parallel as background processes the background agent waits on, and
 `ponytail` runs after them. The background agent takes each leaf's findings from its last
 `message_end` and records the provider and model those events report; a leaf
 that reports any other route invalidates the report. A Pi background agent has no
@@ -79,7 +79,7 @@ includes:
   tab, kind, and harness session ID;
 - canonical worktree root, absolute Git common directory, and branch;
 - launch model, provider, base URL where applicable, and reasoning/effort;
-- dedicated reviewer state root.
+- dedicated reviewer state directory.
 
 Compare both records to `block inspect`, Git, and the intended worktrees. The
 prompt deliberately requires bundle files. That is a narrow review-bundle
@@ -89,7 +89,7 @@ requirement, not generic transcript recovery.
 
 Arm one bounded completion supervisor per reviewer—two distinct supervisors and
 root-owned process handles. Reviewer-orchestrators can legitimately end a turn
-while their asynchronous lane leaves are still running. Treat a settled turn
+while their asynchronous dimension leaves are still running. Treat a settled turn
 without that family's final `report.sidecar.json` as an intermediate stage:
 reverify the same recorded identity and keep waiting inside the same
 supervisor. Completion requires both the final sidecar and a settled matching
@@ -112,7 +112,7 @@ review. Permit only read-only root investigation while either reviewer runs.
 Never focus either pane automatically.
 
 Keep reviewer outputs isolated: neither reviewer receives the other's state
-root, report, transcript, or eventual root disposition. Do not substitute a
+directory, report, transcript, or eventual root resolution. Do not substitute a
 background agent or another model when one fails. Continue the same recorded
 reviewer for at most one bounded same-model retry.
 

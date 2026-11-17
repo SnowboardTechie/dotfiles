@@ -36,7 +36,7 @@ root adjudication, not a verdict.
 ## Critical
 
 - [<stable-source-id>] `<file:line>` — <failure mode and evidence> — Source:
-  <lane(s)>. Suggested correction: <smallest reasonable correction>.
+  <dimension(s)>. Suggested correction: <smallest reasonable correction>.
 
 ## Major
 
@@ -56,7 +56,7 @@ root adjudication, not a verdict.
 
 ## Coverage and Verification Performed
 
-- <files, seams, commands, and lane coverage actually inspected>
+- <files, seams, commands, and dimension coverage actually inspected>
 
 ## Unverified Limitations
 

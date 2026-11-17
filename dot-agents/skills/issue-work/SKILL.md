@@ -474,7 +474,7 @@ match one exact candidate with ready Ship Readiness.
 
 ### 3. Present outcome without a redundant approval
 
-Report the headline, all Critical/Major findings, Minor/Nit counts, review-lane
+Report the headline, all Critical/Major findings, Minor/Nit counts, review-dimension
 selection, Ponytail status, acceptance result, verification, and artifact paths.
 
 If the session began with an imperative work command and authority has not
