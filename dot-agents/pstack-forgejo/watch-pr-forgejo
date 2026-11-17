@@ -1,22 +1,21 @@
 #!/usr/bin/env bun
 // pstack's pull request watcher, reading Forgejo instead of GitHub.
 // Same options and verdicts as the pstack package's watch-pr; see its --help.
-// PSTACK_WATCH_PR_DIR names the package's watch-pr directory when it is not in
-// the Pi agent directory's git packages.
+// It finds the package's watch-pr directory in this order, first with a cli.ts:
+// $PSTACK_WATCH_PR_DIR (the directory itself), $PI_CODING_AGENT_DIR, ~/.pi/pstack
+// (where reconcile-pi-pstack.sh installs it), ~/.pi/agent.
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { createForgejoReader } from "./forgejo-reader.ts";
+import { findWatchPrDir } from "./watch-pr-dir.ts";
 
-const agentDir = process.env.PI_CODING_AGENT_DIR ?? join(homedir(), ".pi", "agent");
-const watchDir =
-	process.env.PSTACK_WATCH_PR_DIR ??
-	join(agentDir, "git/github.com/michael-denyer/pstack-claude/plugins/pstack/skills/poteto-mode/scripts/watch-pr");
-if (!existsSync(join(watchDir, "cli.ts"))) {
-	console.error(`pstack's watch-pr is not at ${watchDir}; set PSTACK_WATCH_PR_DIR`);
+const found = findWatchPrDir(process.env, homedir());
+if ("tried" in found) {
+	console.error(`pstack's watch-pr was not found. Looked in, in order:\n${found.tried.map((p) => `  ${p}`).join("\n")}\nSet PSTACK_WATCH_PR_DIR to its watch-pr directory.`);
 	process.exit(64);
 }
+const watchDir = found.dir;
 const { ensureDependenciesInstalled } = await import(join(watchDir, "..", "bootstrap.ts"));
 ensureDependenciesInstalled();
 const { main } = await import(join(watchDir, "cli.ts"));

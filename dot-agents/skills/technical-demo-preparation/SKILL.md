@@ -68,7 +68,7 @@ Write one sentence in this form:
 
 > Starting from **input/problem**, the work now **does observable thing**, producing **verified outcome** for **consumer/stakeholder**.
 
-Choose two or three numbers or facts the audience should remember. Do not turn the story into a ticket list.
+Choose two or three numbers or facts the audience should remember. Do not turn the story into an issue list.
 
 Content rules for Bryan's stakeholder demos (team-of-teams, sprint and release walkthroughs). They apply to the talk track, story, and checklist, not only to wording:
 
@@ -87,7 +87,7 @@ Content rules for Bryan's stakeholder demos (team-of-teams, sprint and release w
 
 ### 5. Prove the live path
 
-Run the exact demo command and the relevant correctness gates. Depending on the project, verify:
+Run the exact demo command and the relevant correctness checks. Depending on the project, verify:
 
 - typecheck, tests, build, schema validation, or reference comparison;
 - output counts and failure counts;

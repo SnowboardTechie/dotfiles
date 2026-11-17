@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Tests for scripts/reconcile-pi-packages.sh. Uses a stub `pi` command and
-# temporary HOME directories, removed on exit.
+# throwaway homes, removed on exit.
 
 set -u
 
@@ -60,7 +60,7 @@ packages() { # <home>
 check "web pin parsed from the script" "yes" "$([[ "$WEB" == npm:pi-web-access@[0-9]* ]] && echo yes || echo no)"
 check "hashline pin parsed from the script" "yes" "$([[ "$HASH" == npm:@deathbeam/pi-hashline@[0-9]* ]] && echo yes || echo no)"
 
-# Fresh host with another package already installed.
+# Fresh machine with another package already installed.
 H="$TMP/home-fresh"
 mkdir -p "$H/.pi/agent"
 printf '{"theme": "dark", "packages": ["https://github.com/earendil-works/pi-claude-code"]}\n' >"$H/.pi/agent/settings.json"
@@ -96,7 +96,7 @@ check "apply swaps old versions, keeps similarly named packages" \
 H="$TMP/home-empty"
 mkdir -p "$H"
 out="$(run "$H" "$TMP/bin" --apply)"
-check "empty host gets both pins" "[\"$WEB\", \"$HASH\"]" "$(packages "$H")"
+check "empty machine gets both pins" "[\"$WEB\", \"$HASH\"]" "$(packages "$H")"
 check "missing rg is reported" "yes" "$(grep -q 'WARNING: rg (ripgrep) is not installed' <<<"$out" && echo yes || echo no)"
 
 # Without pi nothing happens.

@@ -2,7 +2,7 @@
 
 Rule of thumb: **date if the note refers to a moment; slug if it refers to a thing.**
 
-## Project vaults (under ~/code/notes/)
+## Workspace vaults (under ~/code/notes/)
 
 | Kind | Folder | Filename | Example |
 |---|---|---|---|

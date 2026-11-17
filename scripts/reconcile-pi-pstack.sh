@@ -7,7 +7,7 @@
 # reconciler never touches ~/.pi/agent. It makes the pstack directory hold:
 #   - settings.json: the pi-claude-code package and the pstack port
 #     (git:github.com/michael-denyer/pstack-claude@<commit>, the commit read
-#     from dot-agents/upstreams/pstack-claude.json; another pin of the port is
+#     from dot-agents/skill-sources/pstack-claude.json; another pin of the port is
 #     removed), defaultProvider claude-code, defaultModel claude-opus-5-5.
 #     Packages go through `pi install`/`pi remove` with PI_CODING_AGENT_DIR set.
 #   - pstack-models.md: a link to dot-agents/pstack-forgejo/pstack-models.md.
@@ -46,7 +46,7 @@ if [[ -z "$MODE" ]]; then
 fi
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-LEDGER="$REPO_ROOT/dot-agents/upstreams/pstack-claude.json"
+LEDGER="$REPO_ROOT/dot-agents/skill-sources/pstack-claude.json"
 SHEET_REL="dot-agents/pstack-forgejo/pstack-models.md"
 INSTRUCTIONS_REL="dot-pi/agent/AGENTS.md"
 DIR="${PI_PSTACK_DIR:-$HOME/.pi/pstack}"
@@ -183,7 +183,7 @@ ensure_link() {
             echo "  WOULD REPOINT $dest from $target"
         fi
     elif [[ -e "$dest" || -L "$dest" ]]; then
-        echo "  WARNING: $dest is not managed by this repository, skipping"
+        echo "  WARNING: $dest is foreign (this repository did not make it), skipping"
     elif [[ "$MODE" == "apply" ]]; then
         mkdir -p "$DIR"
         ln -s "$src" "$dest"

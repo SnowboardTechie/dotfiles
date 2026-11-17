@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Integration tests for scripts/reconcile-shell-additions.sh.
-# All writes are isolated inside temporary HOME directories, removed on exit.
+# All writes are isolated inside throwaway homes, removed on exit.
 
 set -u
 

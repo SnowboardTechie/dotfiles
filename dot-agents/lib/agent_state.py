@@ -51,14 +51,14 @@ def _check_name(label: str, value: str) -> str:
 
 
 def roots(primary: Path, skill: str) -> List[Path]:
-    """The skill's state roots, current first, then legacy. Exist or not."""
+    """The skill's two directories that hold its state directories, current first, then legacy. Exist or not."""
     _check_name("skill", skill)
     base = Path(primary).expanduser().resolve()
     return [base / STATE_DIR / skill, base / LEGACY_STATE_DIR / skill]
 
 
 def resolve(primary: Path, skill: str, key: Optional[str] = None) -> dict:
-    """Pick the state directory for one item (or the skill root without a key)."""
+    """Pick the state directory for one item (or the skill's own directory without a key)."""
     current_root, legacy_root = roots(primary, skill)
     if key is not None:
         _check_name("key", key)
@@ -80,7 +80,7 @@ def resolve(primary: Path, skill: str, key: Optional[str] = None) -> dict:
 
 
 def is_state_path(primary: Path, skill: str, path: Path) -> bool:
-    """True when ``path`` is a per-item child of either of the skill's roots."""
+    """True when ``path`` is a per-item child of either of the skill's directories."""
     target = Path(path).expanduser().resolve()
     for root in roots(primary, skill):
         try:
@@ -100,7 +100,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     one.add_argument("--skill", required=True)
     one.add_argument("--key")
     one.add_argument("--create", action="store_true", help="mkdir -p the chosen path")
-    both = sub.add_parser("roots", help="current and legacy roots for scanning")
+    both = sub.add_parser("roots", help="the skill's current and legacy directories, for scanning")
     both.add_argument("--primary-checkout", type=Path, required=True)
     both.add_argument("--skill", required=True)
     args = parser.parse_args(argv)

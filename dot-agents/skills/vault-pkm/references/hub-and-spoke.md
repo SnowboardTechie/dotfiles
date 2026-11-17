@@ -43,7 +43,7 @@ first; link liberally. An unlinked note is dead weight — Andy Matuschak's
 evergreen notes, Luhmann's zettelkasten, and Tiago Forte's BASB all agree on
 this even where they disagree elsewhere.
 
-For project vaults, an outbound link is not enough: every durable new note also
+For a workspace's vault, an outbound link is not enough: every durable new note also
 needs an inbound route from the relevant MOC or `INDEX.md`. `.agents/` scratch
 and unpromoted `drafts/` are noncanonical and exempt until promoted.
 
@@ -53,7 +53,7 @@ wikilink the new note from its Map of Content. That backlink from INDEX
 satisfies the never-orphan rule AND keeps INDEX current. No special-case math:
 every write is in the graph because INDEX is in the graph.
 
-## Look-first protocol (hard pre-write gate)
+## Look-first protocol (hard pre-write check)
 
 Before writing a new note:
 

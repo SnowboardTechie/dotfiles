@@ -22,7 +22,7 @@ SKILL_POOL = REPO_ROOT / "dot-agents" / "skills"
 SKILL_DIR = SKILL_POOL / "black-box-verification"
 SKILL = SKILL_DIR / "SKILL.md"
 REFERENCES = ("change-impact.md", "project-recipe.md")
-UPSTREAMS = REPO_ROOT / "dot-agents" / "upstreams"
+UPSTREAMS = REPO_ROOT / "dot-agents" / "skill-sources"
 SOURCE_RECORD_PATH = UPSTREAMS / "pstack-claude.json"
 PINNED_COMMIT = "a12b04786023e762f12f5de7bb5fafb8c23f8c36"
 RECONCILER = REPO_ROOT / "scripts" / "reconcile-agent-skills.sh"
@@ -86,11 +86,11 @@ class DiscoveryTest(unittest.TestCase):
         self.assertRegex(body, r"(?i)not required to execute")
         self.assertRegex(body, r"(?i)expectations come from the contract")
 
-    def test_planning_keeps_permitted_isolated_probes(self) -> None:
+    def test_planning_keeps_permitted_isolated_spikes(self) -> None:
         for path in (SKILL, SKILL_DIR / "references" / "change-impact.md"):
             with self.subTest(source=path.name):
                 body = read(path)
-                self.assertRegex(body, r"(?i)scratch or in-memory probes?")
+                self.assertRegex(body, r"(?i)scratch or in-memory spikes?")
                 self.assertRegex(body, r"(?i)implementation authority")
 
     def test_states_honest_result_rules(self) -> None:
@@ -159,7 +159,7 @@ class RoutingTest(unittest.TestCase):
         route = paragraphs_naming(body, "`black-box-verification`")
         self.assertEqual(len(route), 1, "issue-work needs one routing paragraph")
         self.assertRegex(route[0], r"(?i)public-interface")
-        self.assertRegex(route[0], r"(?i)no gate for internal logic, documentation, or trivial")
+        self.assertRegex(route[0], r"(?i)no step for internal logic, documentation, or trivial")
 
 
 class ProvenanceTest(unittest.TestCase):
@@ -177,18 +177,18 @@ class ProvenanceTest(unittest.TestCase):
         self.assertIn("Michael Denyer", license_text)
 
     def test_update_policy_is_reviewed_and_watched(self) -> None:
-        # The pin moves only as a reviewed change; a pi-bots scheduled job reports when upstream has moved on.
+        # The pin moves only as a reviewed change; a pi-bots scheduled job reports when the skill source has moved on.
         policy = self.source_record["updatePolicy"]
         self.assertIs(policy["autoApply"], False)
         self.assertIs(policy["humanApprovedPinAdvance"], True)
         self.assertEqual(policy["monitor"], "pi-bots job adapted-skill-watch")
 
-    def test_adaptation_maps_both_upstream_skills(self) -> None:
+    def test_adaptation_maps_both_source_skills(self) -> None:
         (entry,) = self.source_record["adaptations"]
         self.assertEqual(entry["skill"], "black-box-verification")
-        upstream = " ".join(entry["upstreamPaths"])
-        self.assertIn("skills/blast-radius/", upstream)
-        self.assertIn("skills/create-verification-skill/", upstream)
+        source_paths = " ".join(entry["upstreamPaths"])
+        self.assertIn("skills/blast-radius/", source_paths)
+        self.assertIn("skills/create-verification-skill/", source_paths)
         self.assertTrue(set(entry["watchedFiles"]).issubset(entry["upstreamPaths"]))
         for local in entry["localPaths"]:
             with self.subTest(local=local):
@@ -204,7 +204,7 @@ class ProvenanceTest(unittest.TestCase):
                 self.assertIn(term, rejected)
 
     def test_skill_points_at_the_source_record(self) -> None:
-        self.assertIn("upstreams/pstack-claude.json", read(SKILL))
+        self.assertIn("skill-sources/pstack-claude.json", read(SKILL))
 
 
 class CurationTest(unittest.TestCase):

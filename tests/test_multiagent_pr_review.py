@@ -177,7 +177,7 @@ class MultiagentPrReviewContractTest(unittest.TestCase):
         )
         self.assert_matches(
             self.layout,
-            r"one at a time.*rex_background_agent_slot\.py.*Claude first, then GPT",
+            r"one at a time.*rex_background_agent_pane\.py.*Claude first, then GPT",
             "reviewers are placed one at a time from the live layout",
         )
         self.assert_matches(self.layout, r"surface: rex", "identity records name the Rex surface")

@@ -1,6 +1,6 @@
 # Visual evidence and posting
 
-Loaded from `SKILL.md`'s **Visual evidence gate**. Covers where an image has to live
+Loaded from `SKILL.md`'s **Visual evidence check**. Covers where an image has to live
 before a comment can be posted, and how to prove it actually rendered afterward.
 
 Every claim below was checked against `HHS/simpler-grants-gov` and the GitHub REST API.
@@ -104,7 +104,7 @@ gh api "repos/$REPO/issues/comments/$CID" -H "Accept: application/vnd.github.ful
 ## Running the validator
 
 Resolve `<skill-dir>` to the directory containing `SKILL.md`. `--artifact` is always
-explicit — the two formats are not interchangeable and the gate will not guess.
+explicit — the two formats are not interchangeable and the validator will not guess.
 
 Review bundle (relative image targets, every file packaged beside the Markdown):
 
@@ -120,8 +120,8 @@ Post-ready (every target must be a live HTTPS URL; `--check-urls` fetches each o
   --artifact deliverable-summary --mode post --check-urls comment.md
 ```
 
-Errors block. Warnings are the rule-5 heuristics — a bullet whose only link is a ticket, or
-an Accomplishments section with no links at all — and mean the draft still reads as a ticket
+Errors block. Warnings are the rule-5 heuristics — a bullet whose only link is an issue, or
+an Accomplishments section with no links at all — and mean the draft still reads as an issue
 list. Fix them rather than shipping past them.
 
 `--selftest` runs the checks against built-in good and bad fixtures; use it after editing

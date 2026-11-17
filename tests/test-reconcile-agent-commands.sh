@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Tests for scripts/reconcile-agent-commands.sh and the forgejo-map launcher it
-# links. Every run uses a temporary HOME under one directory, removed on exit.
+# links. Every run uses a throwaway home under one directory, removed on exit.
 # No network: the launcher is only run with --help, or up to the point where it
 # would need --origin.
 

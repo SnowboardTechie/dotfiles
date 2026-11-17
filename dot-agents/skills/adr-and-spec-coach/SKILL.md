@@ -152,7 +152,7 @@ Top of the agenda first. For **each** decision, in its own turn:
    tool. Otherwise ask one focused question in plain prose. Keep discrete options selectable and leave
    an open-ended path when the listed options are incomplete.
 
-   **Visibility gate:** put the decision context, options, trade-offs, and
+   **Visibility rule:** put the decision context, options, trade-offs, and
    recommendation in the normal user-visible answer before opening a form. Do
    not rely on commentary, progress text, tool output, or an earlier turn to make
    the question intelligible. If the harness can separate a form from surrounding
@@ -191,13 +191,13 @@ Before drafting, show a compact decision summary that distinguishes:
 If any load-bearing choice remains open, return to Phase 3. Do not bury it in
 an "open questions" section of a polished plan.
 
-For an ADR that settles several related decisions, or that reviewers will read
+For an ADR that settles several related decisions, or that human reviewers will read
 together, also produce a **decision summary**: each decision in one or two
 lines, grouped by decision point (for an API, things like headers, endpoints,
 and lifecycle), with any open item marked inline where it applies. Keep it to
 one or two rendered pages. Verify the page count by exporting or rendering it,
-not by estimating. This summary is what reviewers align on before the full
-prose. Reviewers should be able to see the whole decision and every open
+not by estimating. This summary is what human reviewers align on before the full
+prose. Human reviewers should be able to see the whole decision and every open
 question without reading the evaluation.
 
 Size check before assembling: compare the draft's word count against the
@@ -224,12 +224,12 @@ why it lost. Name what each section is *for* if the author is learning.
 ### Phase 5 — Route or finalize
 
 - **Implementation plan or fresh-agent handoff** → invoke the installed `plan`
-  skill only after the decision-completeness gate passes. Supply the accepted
+  skill only after the decision-completeness check passes. Supply the accepted
   decisions, rejected alternatives, constraints, and verification/rollback
   requirements as its design authority.
 - **Repo has a conventions index** → invoke `conforming-tech-specs`, handing it
   the draft plus the decision record, so it runs the prior-art / conformance
-  gate. Tell the author you're doing this and why.
+  check. Tell the author you're doing this and why.
 - **No index (greenfield / learning)** → finalize the draft in place and hand
   it to the author for review.
 

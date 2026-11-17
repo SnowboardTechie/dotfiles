@@ -120,16 +120,16 @@ class LeanIssueWorkContractTests(unittest.TestCase):
         skill = SKILL_POOL / "coding-agent-handoff-supervision"
         self.assertEqual(
             sorted(p.name for p in (skill / "scripts").iterdir() if p.suffix in (".py", ".sh")),
-            # rex_subagent_slot.py is a stand-in at the old name, for launchers written before the rename.
-            ["claude-usage.sh", "rex_background_agent_slot.py", "rex_subagent_slot.py", "rex_wait.sh"],
+            # rex_subagent_slot.py is a fake at the old name, for launchers written before the renames.
+            ["claude-usage.sh", "rex_background_agent_pane.py", "rex_subagent_slot.py", "rex_wait.sh"],
         )
         self.assertEqual(
             sorted(p.name for p in (skill / "tests").glob("test_*.py")),
-            ["test_rex_background_agent_slot.py", "test_rex_wait.py"],
+            ["test_rex_background_agent_pane.py", "test_rex_wait.py"],
         )
         self.assertTrue((skill / "scripts" / "rex_wait.sh").stat().st_mode & 0o111)
         self.assertIn("references/rex-claude-handoff.md", self.handoff)
-        for script in ("rex_background_agent_slot.py", "rex_wait.sh"):
+        for script in ("rex_background_agent_pane.py", "rex_wait.sh"):
             with self.subTest(script=script):
                 self.assertIn(script, self.handoff)
                 self.assertIn(script, self.helper_reference)

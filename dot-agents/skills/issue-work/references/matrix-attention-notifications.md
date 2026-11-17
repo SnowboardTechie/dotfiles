@@ -7,21 +7,21 @@ inline checkpoint, blocker report, review summary, or completion report.
 ## Arm once asynchronous work starts
 
 Arm attention notifications immediately before the first Phase 2-or-later
-delegated, background, or visible task or finite watcher is launched, including
+delegated, background, or visible task or finite watch is launched, including
 Phase 2 exploration, visible Rex Claude/Hermes/Pi work, Qwen work, or the fresh review
 background agent. A short-lived Phase 1 intake background agent does not arm them. Keep notifications
 armed through the terminal end of the workflow. Record the armed timestamp and
 resolved target under `## Attention notifications` in `progress.md`.
 
 If the run stops before notifications are armed, use the normal conversation only.
-Do not send routine startup or progress notices.
+Do not send routine startup or progress notifications.
 
 ## Resolve the room conservatively
 
-1. Derive the project identity from the **ticket workspace authority**: its
+1. Derive the project identity from the **issue repository's authority**: its
    canonical project name, active repository instructions, and any explicit
    project-family or Matrix-room alias. In a cross-repository handoff, do not
-   route from the implementation repository alone; the ticket workspace owns the
+   route from the implementation repository alone; the issue repository owns the
    project context.
 2. Run `hermes send --list matrix --json` and inspect the current configured
    targets. Never read Matrix credentials and never infer a room from list order.
@@ -69,15 +69,15 @@ confirmed value is `@bryan:snowboardtechie.com`. Do not use a display name.
 
 Keep the message short and actionable:
 
-- Action needed: `Issue work needs you — {project/ticket}`; then `State: {gate or
+- Action needed: `Issue work needs you — {project/issue}`; then `State: {gate or
   blocker}` and `Need: {one exact answer or action}`.
-- Complete: `Issue work complete — {project/ticket}`; then `Result: {verified
+- Complete: `Issue work complete — {project/issue}`; then `Result: {verified
   terminal outcome}`, `Checks: {concise verified evidence}`, and the PR URL when
   one exists.
 
 Include issue, PR, repository, and local-state identifiers only when they are safe
 for the selected room. Preserve the private cross-repository publication rules;
-a notification is not permission to disclose a private ticket identity.
+a notification is not permission to disclose a private issue's identity.
 
 If the current conversation already originates in the exact resolved Matrix room,
 make the normal action-needed/completion response itself the alert by beginning it
@@ -96,7 +96,7 @@ second send confirmation.
 
 ## Deduplicate and verify
 
-Before sending, compute a stable event key from the canonical ticket, alert class,
+Before sending, compute a stable event key from the canonical issue, alert class,
 and exact gate/blocker or terminal-result identity. Check `progress.md`; do not
 repeat a key already recorded as delivered. A changed blocker or a materially new
 question gets a new key.
@@ -113,7 +113,7 @@ sender must not create a duplicate.
 Append the timestamp, event key, alert class, target room ID/name, adapter event
 ID or current-session marker, and outcome to `progress.md`. On a definite
 project-room send failure, make one fallback attempt to the resolved Hermes room,
-marking the message and ledger as fallback delivery. On timeout or uncertain
+marking the message and the `progress.md` record as fallback delivery. On timeout or uncertain
 delivery, inspect available history/log evidence before retrying so the safeguard
 does not create a duplicate.
 If delivery still fails, record the failure and surface it in the current

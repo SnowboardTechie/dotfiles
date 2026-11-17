@@ -7,7 +7,7 @@ description: Triage open dependency PRs in the SGG / CommonGrants monorepo by bl
 
 Review open dependency pull requests, sort them into the right review order, dispatch a parallel read-only review of every PR worth reviewing, and recommend which to merge, review manually, hold, or close.
 
-This skill is intentionally specific to low-overhead weekly dependency maintenance in the SGG / CommonGrants monorepo, with its Dependabot groups, catalog lane, published packages, and CI layout. Do not generalize its package or release-attribution rules to unrelated repositories.
+This skill is intentionally specific to low-overhead weekly dependency maintenance in the SGG / CommonGrants monorepo, with its Dependabot groups, catalog workflow, published packages, and CI layout. Do not generalize its package or release-attribution rules to unrelated repositories.
 
 ---
 
@@ -33,7 +33,7 @@ Do not use this skill to deeply debug one PR. Use `dependency-review` for that.
 
 From the `~/code/sgg/` workspace repository, triage every repository listed in the workspace manifest `~/code/sgg/repos.tsv` (GitHub `owner/repo` is its origin path), except `HHS/simpler-grants-gov`. Bryan doesn't manage that repo's dependencies, so skip its Renovate queue. Do not ask which repository is in scope; narrow only when the invocation names one.
 
-The catalog lane and release-please attribution rules below apply only to repositories that have them.
+The catalog workflow and release-please attribution rules below apply only to repositories that have them.
 
 ---
 
@@ -73,7 +73,7 @@ If the repo uses Dependabot labels beyond `dependencies` (for example `python`),
 
 ## Step 2: Classify Each PR
 
-Put every PR into one of these lanes:
+Put every PR into one of these triage categories:
 
 ### A. Green and isolated
 
@@ -105,7 +105,7 @@ Examples:
 
 These should usually be held, narrowed, or superseded instead of debugged immediately.
 
-### D. Special-handling lanes
+### D. Special handling
 
 Always call out separately:
 
@@ -114,7 +114,7 @@ Always call out separately:
 - major version bumps
 - PRs that move a **consumer-facing** dependency in a published package (`dependencies` / `peerDependencies` / `[project] dependencies`), because the release will or will not happen for reasons the CI badge does not show
 
-On that last one: releases come from release-please, not Changesets — `.changeset/` was removed in ADR-0027 (2026-08-14). A dependency change ships a version bump only if the PR touches a released package path **and** carries a releasing commit type. Both bots default to `chore(...)`, which releases nothing. `dependency-review` Step 4 owns the full two-gate check; at triage you only need to know that a green consumer-facing dep PR is exactly where a silent no-release hides, so it still gets routed for review.
+On that last one: releases come from release-please, not Changesets — `.changeset/` was removed in ADR-0027 (2026-08-14). A dependency change ships a version bump only if the PR touches a released package path **and** carries a releasing commit type. Both bots default to `chore(...)`, which releases nothing. `dependency-review` Step 4 owns the full two-rule check; at triage you only need to know that a green consumer-facing dep PR is exactly where a silent no-release hides, so it still gets routed for review.
 
 ---
 
@@ -123,7 +123,7 @@ On that last one: releases come from release-please, not Changesets — `.change
 Before ordering the queue, check whether any PR's changes are a subset of another's.
 
 ```bash
-# Compare changed files between two PRs in the same lane
+# Compare changed files between two PRs in the same triage category
 gh pr view {A} --json files --jq '[.files[].path] | sort'
 gh pr view {B} --json files --jq '[.files[].path] | sort'
 ```
@@ -161,11 +161,11 @@ Recommend merge/review order using this default priority:
 4. **GitHub Actions PRs**
 5. **Broad red workspace PRs**
 
-If two PRs overlap the same dependency lane, prefer the newer PR and note when the older one should be closed or ignored.
+If two PRs update the same dependencies, prefer the newer PR and note when the older one should be closed or ignored.
 
 ---
 
-## Step 3b: Fan out parallel review (all reviewable lanes)
+## Step 3b: Fan out parallel review (every reviewable PR)
 
 Once the queue is classified (Step 2) and ordered (Step 3), review **every PR worth reviewing in parallel** rather than serially. Dispatch one read-only review task per PR through the harness's native delegation mechanism, routed to the right reviewer skill. In Hermes, use `delegate_task` in foreground batches of **at most three concurrent tasks**. Wait for all three before dispatching the next batch; never use background tasks that emit per-review commentary. Pi has no background agent: run each review as a headless `pi -p --no-session` process that loads the reviewer skill, in the same batches of three, and wait for the batch before the next. It needs `bash` for `gh`, so it runs under the read-only-command exception in `coding-agent-handoff-supervision` (pitfall 12): its prompt limits it to read-only `gh` calls, and any comment, approval, push or merge makes that review invalid. The fan-out parallelizes the slow, context-heavy *investigation* (reading CI logs, diffs, changelogs); it never runs builds.
 
@@ -183,11 +183,11 @@ Cap **concurrency, not coverage**. Delegation is capped at three concurrent task
 | PR | Reviewer skill | What the background agent runs | Serial follow-up by the main agent |
 |----|----------------|------------------------|-------------------------------------|
 | Catalog workflow PR | `catalog-review` | the whole skill — it has no local-build step (it judges the CI validation path) | none; the verdict is complete |
-| Every other lane (green isolated, website-framework, tooling, runtime, GitHub Actions, major bump, broad grouped) | `dependency-review` | **read-only analysis only — its Steps 0–4** (metadata, lane, fix-status, CI-log diagnosis, release attribution) | local verification, if and only if the verdict warrants it (below) |
+| Every other PR (green isolated, website-framework, tooling, runtime, GitHub Actions, major bump, broad grouped) | `dependency-review` | **read-only analysis only — its Steps 0–4** (metadata, dependency update type, fix-status, CI-log diagnosis, release attribution) | local verification, if and only if the verdict warrants it (below) |
 
-The only routing decision you make here is *catalog vs. not* (a catalog PR changes `pnpm-workspace.yaml` / catalog-managed versions). Each background agent self-classifies its finer lane, so triage and the reviewer never diverge.
+The only routing decision you make here is *catalog vs. not* (a catalog PR changes `pnpm-workspace.yaml` / catalog-managed versions). Each background agent self-classifies the PR's dependency update type, so triage and the reviewer never diverge.
 
-Each background agent returns: its decision (Safe to merge / Fix in this PR / Hold / Close), the lane it classified, and a one-line reason.
+Each background agent returns: its decision (Safe to merge / Fix in this PR / Hold / Close), the dependency update type it classified, and a one-line reason.
 
 ### Do NOT fan out local verification
 
@@ -200,7 +200,7 @@ Broadening the *review* fan-out does **not** broaden the *build* fan-out. No mat
 This step sends the user **exactly two messages, in order:**
 
 1. **At dispatch** — one line naming the PRs being reviewed in parallel (e.g. "Reviewing 6 PRs in parallel; I'll report once all are in").
-2. **After every review has returned** — the single consolidated report (Step 4 / Step 5), with all verdicts folded into their buckets.
+2. **After every review has returned** — the single consolidated report (Step 4 / Step 5), with all verdicts folded into their triage categories.
 
 Nothing goes to the user between those two messages. Do **not** post an update as each individual review finishes — wait for the whole batch, then report once.
 
@@ -212,7 +212,7 @@ Using the review verdicts from Step 3b (not the heuristic classification alone),
 
 - **Merge now** — green, low blast radius, review found no outstanding release-attribution issue
 - **Review manually** — worth a focused fix or serial local-verification pass
-- **Hold** — do not spend time yet; wait for another cycle or lane cleanup
+- **Hold** — do not spend time yet; wait for another cycle or for overlapping PRs to clear
 - **Close / supersede** — broad grouped PR is not worth debugging in current form
 
 Use these rules:
@@ -220,7 +220,7 @@ Use these rules:
 - Prefer fixing PRs that fail in one obvious surface area
 - Avoid spending time on grouped PRs that light up half the repo
 - Keep GitHub Actions manual unless the repo has proven they are consistently safe
-- Treat catalog PRs as their own lane; do not lump them with ordinary Dependabot PRs
+- Treat catalog PRs as their own triage category; do not lump them with ordinary Dependabot PRs
 
 ---
 
@@ -232,7 +232,7 @@ Return a concise triage report in this format:
 ## Dependency Triage
 
 ### Merge now
-- [#123](https://github.com/{owner}/{repo}/pull/123) `chore(deps): ...` — green, isolated Python lane; review confirms devDependency-only, correctly no release
+- [#123](https://github.com/{owner}/{repo}/pull/123) `chore(deps): ...` — green, isolated Python update; review confirms devDependency-only, correctly no release
 
 ### Review manually
 - [#124](https://github.com/{owner}/{repo}/pull/124) `chore(deps): ...` — website-only failures, attributable (per review)
@@ -252,7 +252,7 @@ Return a concise triage report in this format:
 
 **Always render every PR reference as a markdown link to its PR URL — `[#NNN](url)`, never a bare `#NNN`** — so the reader can click straight through. Use the `url` field gathered in Step 1 (or `https://github.com/{owner}/{repo}/pull/NNN` for GitHub, the equivalent for Forgejo). This applies everywhere a PR is named, including the Notes section.
 
-Be specific about *why* each PR landed in that bucket, and ground the reason in its Step 3b review verdict.
+Be specific about *why* each PR landed in that triage category, and ground the reason in its Step 3b review verdict.
 
 ---
 

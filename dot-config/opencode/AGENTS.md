@@ -19,7 +19,7 @@
 `~/notes/**` is an archived legacy path pattern, not an active vault or write
 destination. Active personal knowledge lives in `~/second-brain/`; project
 knowledge follows each repository's top-level `vault/` conventions. Follow the
-`vault-pkm` routing rules under **Project vaults & personal vaults** below rather
+`vault-pkm` routing rules under **Workspace vaults & the personal vault** below rather
 than maintaining a duplicate vault inventory here.
 
 ---
@@ -50,7 +50,7 @@ default isolation mechanism.
 1. **Before any code changes**, check the current branch with `git branch --show-current` and determine whether the repository root is the primary checkout or a linked worktree.
 2. If the task will edit tracked project files or create commits, create or select a feature worktree with `wt switch --create <branch>` or `wt switch <branch>`.
 3. Safe repository maintenance may run in the primary checkout when the user explicitly requests it or it is required to finish an approved workflow. This includes `git status`, `git fetch`, `git pull --ff-only`, `git stash`, `git stash pop`, and Worktrunk worktree management. Inspect the worktree first and preserve unrelated changes.
-4. Branch naming: always prefix with the related issue/ticket number, e.g. `612-ci-workspace-scripts`, `642-upgrade-deps`. The ticket number comes first.
+4. Branch naming: always prefix with the related issue number, e.g. `612-ci-workspace-scripts`, `642-upgrade-deps`. The issue number comes first.
 5. If the user doesn't specify a branch name, propose one based on the task and confirm before creating.
 6. **Commit often** — make small, atomic commits as you complete each logical unit of work.
 7. **Only commit verified work** — confirm changes work as expected (builds pass, tests pass, no regressions) before committing. Never commit just to save progress or "checkpoint".
@@ -165,15 +165,15 @@ When I encounter a missing or unavailable LSP:
 4. **Upon confirmation**, add the appropriate language server package to the flake's `buildInputs`
 5. **Suggest** running `direnv reload` to activate the changes
 
-## Project vaults & personal vaults
+## Workspace vaults & the personal vault
 
 Several repos under `~/code/` have a top-level `vault/` directory, either as a
-tracked project-owned vault or a legacy symlink. `~/code/notes/` contains
+workspace's tracked vault or a legacy symlink. `~/code/notes/` contains
 retained dormant or historical project snapshots; inspect each vault's
 `INDEX.md` disposition before treating it as current. `~/notes/**` is an
 archived legacy path pattern and must not be treated as an active source or
 write destination unless Bryan explicitly directs otherwise. `~/second-brain/`
-is Bryan's active personal-knowledge vault.
+is Bryan's active personal vault.
 
 When working in any of these — or when capturing decisions, taking notes,
 investigating debugs, recording learnings, or making sense of project context
@@ -181,8 +181,8 @@ that doesn't live in code — read
 `~/code/dotfiles/dot-agents/skills/vault-pkm/SKILL.md` (and its `references/`)
 before writing anything to a vault.
 
-If a vault has its own `AGENTS.md` at its root (`vault/AGENTS.md` for project
-vaults; `~/second-brain/AGENTS.md` for the personal vault), read it after the
+If a vault has its own `AGENTS.md` at its root (`vault/AGENTS.md` for a
+workspace's vault; `~/second-brain/AGENTS.md` for the personal vault), read it after the
 skill — it overrides skill defaults for that specific vault.
 
 `knowledge-capture` routes resting-point captures: personal → `~/second-brain`,

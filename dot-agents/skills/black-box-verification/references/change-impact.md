@@ -40,7 +40,7 @@ calls exactly the function in question.
 ## Planning versus implementation
 
 During `issue-plan`, levels 1–3 come from read-only inspection, and level 4 may
-too when an isolated scratch or in-memory probe proves the fact — planning
+too when an isolated scratch or in-memory spike proves the fact — planning
 already permits those. A check that writes real state, launches the
 application, or calls a live service (including any level 5 reproduction) goes
 into the plan as a named verification step for implementation authority. It is

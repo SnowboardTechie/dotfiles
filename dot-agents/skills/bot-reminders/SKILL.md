@@ -96,9 +96,9 @@ When the routine arrives, send one short message:
 
 Don't change anything until he answers. Then apply section 3.
 
-## When a failure notice arrives
+## When a failure notification arrives
 
-A failed run or a missing-interpreter error is reported to Bryan in one line with what it means, and nothing else for now. Do not re-point, repair or recreate the job's interpreter, and do not recreate a reminder he has deleted: a failing scheduled run is usually an install or a manual-run problem, not permission to change configuration.
+A failed run or a missing-interpreter error is reported to Bryan in one line with what it means, and nothing else for now. Do not re-point, repair or recreate the scheduled job's interpreter, and do not recreate a reminder he has deleted: a failing scheduled run is usually an install or a manual-run problem, not permission to change configuration.
 
 ## Never
 
@@ -107,5 +107,5 @@ A failed run or a missing-interpreter error is reported to Bryan in one line wit
 - Touch reminders without your mark during follow-up, unless he points at one.
 - Create or rename lists without his approval.
 - Recreate a reminder that has disappeared. He deleted it or finished it.
-- Edit your own routines because a failure notice arrived. Report the failure in one line and leave the fix to main Hermes or Bryan.
+- Edit your own routines because a failure notification arrived. Report the failure in one line and leave the fix to main Hermes or Bryan.
 - Use Calendar. Calendar tooling isn't reviewed yet; it is a separate decision.

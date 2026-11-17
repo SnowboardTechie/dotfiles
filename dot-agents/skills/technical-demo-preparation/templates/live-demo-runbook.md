@@ -110,7 +110,7 @@ If the live path fails, show this section and use the same narration.
 
 - [ ] Exact source candidate reverified
 - [ ] Dependencies ready
-- [ ] Correctness gates pass
+- [ ] Correctness checks pass
 - [ ] Exact live sequence rerun
 - [ ] Canned output still matches
 - [ ] Talk track remains under target

@@ -23,7 +23,7 @@ The template's script provides tab switching (← →, 1–9), and an elapsed-ti
 - **Every link opens in a new tab** (`target="_blank"`), so the companion stays put.
 - **Check every link.** Load the page in a headless browser, collect every `a[href^=http]`, and request each one. Each must return 200, apart from deliberate exceptions such as private repos. Also screenshot the Prep slide and one item slide, and look at them.
 - **Keep it presenter-only.** Say so on the Prep slide ("Share only the browser window, not this one").
-- **Keep it out of public repos.** Save it beside the runbook in the project vault, under `vault/assets/<meeting>-<YYYY-MM-DD>/index.html`, and commit it with the runbook.
+- **Keep it out of public repos.** Save it beside the runbook in the workspace's vault, under `vault/assets/<meeting>-<YYYY-MM-DD>/index.html`, and commit it with the runbook.
 
 ## Publishing
 
@@ -42,7 +42,7 @@ Bryan views it from other devices, so give him a tailnet URL. A `file://` or loc
 3. Put the shelf URL at the top of the runbook's screen plan.
 4. After the meeting, once Bryan says it's done, run `artifact-shelf retire <slug>`. The vault copy stays.
 
-If `artifact-shelf` isn't installed on the host, serve the folder on a tailnet-only `tailscale serve` HTTPS URL on the host's ts.net name instead.
+If `artifact-shelf` isn't installed on this machine, serve the folder on a tailnet-only `tailscale serve` HTTPS URL on its ts.net name instead.
 
 ## Handoff links
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fixture tests for scripts/retire-agent-memory.py (isolated temp homes only)."""
+"""Fixture tests for scripts/retire-agent-memory.py (isolated throwaway homes only)."""
 
 from __future__ import annotations
 

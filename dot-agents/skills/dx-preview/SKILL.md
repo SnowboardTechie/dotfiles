@@ -7,7 +7,7 @@ description: Use when reviewing the developer experience of a branch or PR befor
 
 ## Overview
 
-Read-only DX review of a branch or PR. Given a ref, show what a **plugin author** and a **consumer** would write and see against the changed surface — requests, response payloads, and authoring code — so the reviewer can judge whether the end result feels right *before* committing to it. "Read-only" means **no writes to the reviewed repository, branch, worktree, or forge**; the approved vault preview artifact in step 5 may be created or updated.
+Read-only DX review of a branch or PR. Given a ref, show what a **plugin author** and a **consumer** would write and see against the changed surface — requests, response payloads, and authoring code — so the human reviewer can judge whether the end result feels right *before* committing to it. "Read-only" means **no writes to the reviewed repository, branch, worktree, or forge**; the approved vault preview artifact in step 5 may be created or updated.
 
 **Core principle:** illustrate only what you've read. This is a preview, not a proof — it never has to build, install, or run anything to succeed.
 
@@ -44,14 +44,14 @@ State what the preview IS — these parts, in this order:
   - *Consumer* — a basic request + its response payload; a feature-exercising request (the new filter/field/endpoint) + its payload; one error/empty/rejected case + its payload.
   - *Plugin author* — the minimal registration/extension; one realistic non-trivial one.
 - **Payloads are shown, not just described** — the request body a consumer sends and the response shape they get back, in fenced blocks.
-- **Grounding tag** — for each persona block, name the source file(s) it was drawn from, so the reviewer can trust or spot-check it.
+- **Grounding tag** — for each persona block, name the source file(s) it was drawn from, so the human reviewer can trust or spot-check it.
 - **DX notes** (see shape below) — only where a genuine wrinkle surfaced.
 
 ## DX notes: the shape
 
 State each wrinkle you actually hit as a **fact**, grounded in a file: *"`define_plugin`'s first positional arg is required; `Config` raises without `api_key`."* *"Range filters have no alias, unlike scalar filters (`filters/opportunity.py`)."*
 
-Do **not** convert wrinkles into decisions for the reviewer: no "worth deciding whether that's acceptable", no "you should consider", no invented open questions. Report what is; the reviewer decides what to do. If nothing notable surfaced, write nothing — an empty DX-notes section beats filler.
+Do **not** convert wrinkles into decisions for the human reviewer: no "worth deciding whether that's acceptable", no "you should consider", no invented open questions. Report what is; the human reviewer decides what to do. If nothing notable surfaced, write nothing — an empty DX-notes section beats filler.
 
 ## Grounding (prime directive)
 
@@ -63,6 +63,6 @@ Every field name, type, and signature in an example must trace to something read
 |---------|-----|
 | Previewing the local checkout's current branch | Resolve the handed ref; the head is often in a worktree while main sits on the base |
 | Skipping the vault save | Always save + link; update the same note on follow-ups |
-| "Worth deciding whether…" DX notes | State the wrinkle as a fact; the reviewer decides |
+| "Worth deciding whether…" DX notes | State the wrinkle as a fact; the human reviewer decides |
 | Running the SDK live / monkeypatching to get a payload | Derive it from the classifier/schema source; run only if cheap and unavoidable |
 | Filling both persona slots when the change touches one | Say which persona isn't touched and why, in one line |

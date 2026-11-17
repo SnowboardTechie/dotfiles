@@ -31,12 +31,12 @@ design in their head after this section.
 The other designs you weighed and why they lost. **This is the spec's
 equivalent of an ADR's Options Considered** — the record that the chosen
 design beat real competition, not strawmen. Each alternative gets the driver
-that knocked it out. Skip this and reviewers will re-propose the alternatives
+that knocked it out. Skip this and human reviewers will re-propose the alternatives
 you already rejected.
 
 ### Risks / Open Questions
 What could go wrong, what you're unsure about, what you're explicitly
-deferring. Naming a risk is not weakness — it's how reviewers know where to
+deferring. Naming a risk is not weakness — it's how human reviewers know where to
 focus, and how future-you knows what to watch.
 
 ### Rollout / Migration
@@ -57,7 +57,7 @@ Operations. For each, the spec either addresses it inline or records
 
 ## Smell tests
 
-- No Non-Goals → scope is unbounded; reviewers will expand it for you.
+- No Non-Goals → scope is unbounded; human reviewers will expand it for you.
 - No Alternatives Considered → the design reads as the only option, which it
   never is.
 - Rollout missing on a change to a live system → the riskiest part is undocumented.

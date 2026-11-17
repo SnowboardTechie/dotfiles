@@ -113,7 +113,7 @@ stow --ignore='dot-gnupg$' --ignore='dot-claude$' --ignore='opencode$' . --dotfi
 ./setup-platform-configs.sh
 ```
 
-The setup script still links curated Claude/Hermes/Pi skills and retires
+`setup-platform-configs.sh` still links curated Claude/Hermes/Pi skills and retires
 OpenCode links into the skill pool on Gnarbox; it does not deploy
 Studio's Mac-only Claude settings, start a second Hermes gateway, or copy
 credentials. `update-system` and `upgrade-system` detect `gnarbox` and use
@@ -133,7 +133,7 @@ machine-local `pinentry-gnome3` configuration if GPG signing is enabled there.
 ### Omarchy Installation (Additive Only)
 
 Omarchy ships its own coherent Bash, Foot, Neovim, Git, and GPG configuration.
-Do **not** run `stow .` or `stow --adopt` on an Omarchy host:
+Do **not** run `stow .` or `stow --adopt` on an Omarchy machine:
 
 - `stow .` conflicts with files Omarchy already owns and, where it would
   succeed, shadows Omarchy's XDG configs (e.g. `~/.gitconfig` over
@@ -141,7 +141,7 @@ Do **not** run `stow .` or `stow --adopt` on an Omarchy host:
 - `stow --adopt` is worse: it **moves** Omarchy's live configuration files into
   this repository, corrupting both.
 
-Use the dedicated additive entry point instead:
+Use the dedicated additive setup entry point instead:
 
 ```bash
 ./scripts/setup-omarchy.sh --check   # report what would change; mutates nothing
@@ -178,7 +178,7 @@ stow . --adopt --dotfiles --target $HOME
 
 The `--adopt` flag will move any existing files in your home directory into the dotfiles repo. After adoption, review the changes and commit only the files you want to manage.
 
-**Warning**: Be careful with `--adopt` as it will move existing files into the repo. Review changes before committing. Never use `--adopt` on an Omarchy host — it moves Omarchy-owned configuration into the repository.
+**Warning**: Be careful with `--adopt` as it will move existing files into the repo. Review changes before committing. Never use `--adopt` on an Omarchy machine — it moves Omarchy-owned configuration into the repository.
 
 ## Structure
 
@@ -198,11 +198,11 @@ dotfiles/
 │       └── plugins.zsh      # Cross-platform plugin loading
 ├── dot-gnupg/           # GPG configuration (~/.gnupg/)
 │   └── gpg-agent.conf   # GPG agent settings
-├── hermes/              # Curated Hermes skills, scripts, and cron definitions
+├── hermes/              # Curated Hermes skills, scripts, and scheduled job definitions
 ├── omarchy/              # Additive personal Omarchy shell plugins (never stowed)
 ├── scripts/              # Repo-internal deployment scripts (never stowed)
-│   ├── reconcile-agent-skills.sh  # Canonical skill curation + per-tool linking
-│   └── setup-omarchy.sh           # Additive Omarchy entry point
+│   ├── reconcile-agent-skills.sh  # Skill curation + per-harness linking
+│   └── setup-omarchy.sh           # Additive Omarchy setup entry point
 ├── tests/               # Integration tests for the deployment scripts
 ├── dot-gitconfig        # Git configuration (~/.gitconfig)
 ├── dot-gitconfig.local  # Git signing key (~/.gitconfig.local, not tracked)
@@ -226,7 +226,7 @@ dotfiles/
   - `plugins.zsh` - Cross-platform plugin loading, direnv
 - `update-<host>` and `upgrade-<host>` identify the current machine, refuse a
   mismatched target, and require confirmation before rebuilding. On a matching
-  host, Enter accepts the default; `n` cancels. Upgrade commands update
+  machine, Enter accepts the default; `n` cancels. Upgrade commands update
   `flake.lock` only after the host check and confirmation.
 
 ### Editor (Neovim)
@@ -242,7 +242,7 @@ dotfiles/
 - Signing key stored in `~/.gitconfig.local` (not tracked in git)
 - On a fresh machine without the existing GPG signing key, put the personal
   email and `commit.gpgsign = false` in `~/.gitconfig.local` until the key is
-  restored. The host-local include comes last so it overrides the default;
+  restored. The machine-local include comes last so it overrides the default;
   do not copy private keys through Git or commit this file.
 
 ### GPG
@@ -257,7 +257,7 @@ dotfiles/
 
 ### AI / OpenCode
 
-- OpenCode remains configured on hosts that install it; Gnarbox uses Pi instead.
+- OpenCode remains configured on machines that install it; Gnarbox uses Pi instead.
 - Config lives in `dot-config/opencode/opencode.json` (tracked, stowed to `~/.config/opencode/`)
 - The default local model provider connects directly to Studio Ollama over Tailscale at `http://100.121.238.48:11434/v1`
 - The Ollama endpoint is available only inside the tailnet and does not require an API key
@@ -267,14 +267,14 @@ dotfiles/
 ### AI / Pi on Gnarbox
 
 - The NixOS CLI feature installs `pi-coding-agent` from the pinned Nixpkgs source build rather than OpenCode. Shared Pi model definitions in `dot-pi/agent/models.json` expose Studio Ollama's current models over the tailnet. The `apiKey` value is a dummy because Ollama ignores authentication; no credential is committed.
-- Gnarbox's app-owned `~/.pi/agent/settings.json` selects its startup model. It is not stowed, so this shared model catalog does not change Pi defaults on other hosts; use Pi's `/model` to change the selection.
+- Gnarbox's app-owned `~/.pi/agent/settings.json` selects its startup model. It is not stowed, so this shared model catalog does not change Pi defaults on other machines; use Pi's `/model` to change the selection.
 - Pi also supports the ChatGPT Codex subscription directly: run `/login` and choose ChatGPT Plus/Pro (Codex), then select an `openai-codex` model with `/model`. The OAuth credential is machine-local in `~/.pi/agent/auth.json` (mode 0600), not tracked or shared with Hermes; no standalone Codex CLI is required. Verify with `pi auth check --provider openai-codex --json` and one small real request through that provider.
 
 ### AI / Hermes
 
-- `hermes/` preserves authored local skills, automation scripts, and declarative cron definitions.
+- `hermes/` preserves authored local skills, automation scripts, and declarative scheduled job definitions.
 - `~/.hermes` remains a real local runtime directory; it is intentionally not stowed because it contains credentials, databases, sessions, logs, caches, and Matrix encryption state.
-- `setup-platform-configs.sh` installs only manifest-listed assets on Studio, compiles native helpers locally, and reconciles named cron jobs through Hermes's API.
+- `setup-platform-configs.sh` installs only manifest-listed assets on Studio, compiles native helpers locally, and reconciles named scheduled jobs through Hermes's cron API.
 - Built-in Hermes skills come from the Hermes installation rather than being copied into dotfiles.
 - See [`hermes/README.md`](hermes/README.md) for the managed boundary and restore process.
 

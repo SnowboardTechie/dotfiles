@@ -110,14 +110,15 @@ watch-pr-forgejo --pr <n>                          # poll until READY or BLOCKER
 reported `WAITING` with the pending check, then `READY` when the check passed.
 `--status-only` exits 0 with a table (CI, review, merge); exit 0 means it was
 read, not that the PR is ready. Without
-`--allow-draft` a draft is a merge gate. Set `PSTACK_WATCH_PR_DIR` when pstack
-is not installed under the Pi agent directory.
+`--allow-draft` a draft blocks the merge. It looks in `$PI_CODING_AGENT_DIR`,
+`~/.pi/pstack` and `~/.pi/agent`; set `PSTACK_WATCH_PR_DIR` when pstack is
+elsewhere.
 
 Where a repository's CI reports commit statuses, the watcher reads them as its
 checks, and `READY` is reachable. Most of Bryan's repositories report none: CI
 then reads "no checks reported yet" and polling ends in `TIMEOUT`, never
 `READY`. In a repository that reports none, the required check is the
-repository's full local gate on the exact head, as `manual-merge` says. Check
+repository's full local test run on the exact head, as `manual-merge` says. Check
 with `tea api --login "$LOGIN" /repos/$REPO/commits/<sha>/status`:
 `total_count: 0` means none.
 
@@ -176,7 +177,7 @@ signatures.
 The merge is the `manual-merge` skill: a signed local squash onto the default
 branch, a push, then recording the PR as manually merged. Run it only under a
 recorded standing merge authority (an approved plan that grants "merge once
-cleared" and names the gates that stand in for Bryan's review), or with Bryan's
+cleared" and names the checks that replace Bryan's review), or with Bryan's
 explicit approval of that merge. Without one, stop at merge-ready and report.
 Forgejo has no server-side head condition like `--match-head-commit`;
 `manual-merge` compares the PR's `head.sha` with the branch it squashes, right

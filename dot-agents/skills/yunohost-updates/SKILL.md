@@ -70,7 +70,7 @@ Bryan's approval, and monitoring the upgrade he runs.
 
 ## Nightly report and Matrix approvals
 
-The Hermes cron job "YunoHost update report" (tracked in dotfiles
+The Hermes scheduled job "YunoHost update report" (tracked in dotfiles
 `hermes/manifest.json`, prompt at
 `hermes/automations/yunohost-update-report/prompt.md`) runs at 20:00 Pacific.
 Its monitor `check-yunohost-updates.py` prints a stable pending snapshot, and
@@ -78,7 +78,7 @@ the agent only runs when that snapshot changes, so a held item is reported once,
 not nightly. A changed snapshot runs `collect-yunohost-updates.py`, which adds
 bounded upstream release-note excerpts and recent issue titles, and a
 **zero-tool** assessor posts a threaded report to the private
-"Server Updates" Matrix room. The cron run cannot upgrade anything: it has no
+"Server Updates" Matrix room. The scheduled run cannot upgrade anything: it has no
 tools.
 
 When Bryan replies in that thread asking for upgrades, his reply is the

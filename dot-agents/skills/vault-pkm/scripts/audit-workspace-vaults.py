@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only structural audit for Bryan's project vaults.
+"""Read-only structural audit for Bryan's workspace vaults.
 
 Reports missing entry points, stale verification dates, unresolved internal
 wikilinks, zero-inbound canonical notes, and canonical files newer than the
@@ -153,7 +153,7 @@ def audit_vault(repo: Path, vault: Path, stale_days: int) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("root", type=Path, help="project-vault repository root")
+    parser.add_argument("root", type=Path, help="vault repository root")
     parser.add_argument("vaults", nargs="*", help="vault directory names (default: all)")
     parser.add_argument("--stale-days", type=int, default=30)
     args = parser.parse_args()

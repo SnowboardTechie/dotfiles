@@ -1,7 +1,7 @@
 ---
 name: conforming-tech-specs
 description: >
-  Conformance-gated pass for protocol-shape tech specs, ADRs, or new-endpoint
+  Conformance-checked pass for protocol-shape tech specs, ADRs, or new-endpoint
   design docs in repos with an established ADR / conventions index. Surfaces
   prior-art shapes before drafting, drafts conforming shapes verbatim, and
   requires every divergence to be justified in a final Conforms-to /
@@ -52,7 +52,7 @@ Do not synthesize one inline.
 
 Before invoking the conformance discipline, check that a full spec is what
 the request actually needs. The skill's overhead (prior-art table,
-divergence justifications, conforms/diverges gate) is wasted on changes
+divergence justifications, conforms/diverges check) is wasted on changes
 that have no protocol-shape decisions to make.
 
 **Skip the skill and recommend a regular implementation issue when:**
@@ -261,7 +261,7 @@ of the drafting context. For a small draft, inline greps are fine.
 
 **Citation check:** for every ADR or convention the draft cites, verify
 the draft's shape actually matches what the ADR says. Citing ADR-0011 and
-then specifying cursor pagination is the exact failure mode this gate
+then specifying cursor pagination is the exact failure mode this check
 catches. Flag any cited-but-not-satisfied ADR as a divergence.
 
 **Epistemic claim audit.** Before producing the annotated draft, classify every
@@ -337,7 +337,7 @@ behavior scoped behind a capability bit) can stay a scoped exception. If
 unsure, default to superseding — the protocol is easier to evolve via one
 clean reversal than via accumulated scope-exception rooms.
 
-**Hard gate:** if a `Diverges` row has no justification, the spec is **not
+**Hard stop:** if a `Diverges` row has no justification, the spec is **not
 ready**. Return to Phase 2 and rewrite that piece to conform, or fill in
 the exception with a real proposal. A missing justification is not
 acceptable handoff state.
@@ -388,7 +388,7 @@ the spec content and stops.
 - After Phase 0 selects this workflow, skip no phase. The prior-art table is
   the input to drafting, not an afterthought. A Phase 0 skip is itself a
   completed outcome and must not create a Diverges table. When applicable, the
-  Diverges table is a gate, not decoration.
+  Diverges table is a check, not decoration.
 - "Cited an ADR" does not equal "satisfied an ADR." Phase 3 verifies the
   draft's shape against every ADR it cites.
 - Adding a new experimental pattern alongside the existing one is a smell,

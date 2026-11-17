@@ -1,11 +1,11 @@
 ---
 name: verify
-description: Drive the dotfiles repository's setup scripts and reconcilers (setup-platform-configs.sh, scripts/setup-omarchy.sh, scripts/reconcile-*.sh, retire-agent-memory.py) the way a host runs them, --check then --apply then again, in a disposable HOME inside a macOS sandbox that can write nowhere else and reach no network, and keep evidence of every run. Use to prove a change to what setup links, appends, enables or keeps, or to see what a script would do to a home. Never touches the real HOME.
+description: Drive the dotfiles repository's setup entry points and reconcilers (setup-platform-configs.sh, scripts/setup-omarchy.sh, scripts/reconcile-*.sh, retire-agent-memory.py) the way a machine runs them, --check then --apply then again, in a throwaway home inside a macOS sandbox that can write nowhere else and reach no network, and keep evidence of every run. Use to prove a change to what setup links, appends, enables or keeps, or to see what a script would do to a home. Never touches the real HOME.
 ---
 
 # Verify the dotfiles setup entry points and reconcilers
 
-What a user of this repository touches is its setup: `setup-platform-configs.sh` on a macOS or NixOS host after Stow,
+What a user of this repository touches is its setup: `setup-platform-configs.sh` on a macOS or NixOS machine after Stow,
 `scripts/setup-omarchy.sh --check|--apply` on Omarchy, and the `scripts/reconcile-*.sh` reconcilers both of them run.
 Each writes links, lines and settings into `$HOME`. This skill runs them against throwaway homes and reads back what
 they did.
@@ -78,13 +78,13 @@ on the closest of the five in `journeys/`. What it gets:
 | `has <text> <string>`, `lacks`, `same_file a b`, `links_to <link> <target>` | Predicates for `expect` |
 | `stub <name> '<body>'` | A command in front of the real tools; `__CALLS__` in the body is its call log, kept outside the home |
 | `calls <home> <name>` | That stub's log for that home |
-| `stub_pi` | A `pi` that edits `packages` in `~/.pi/agent/settings.json` as `pi install`/`remove` do, and a no-op `claude` |
-| `mattpocock_upstream` | A local bare copy of Matt Pocock's skills repository at its source record's pin (copied read-only from the real reconciler's checkout, `~/.local/share/mattpocock-skills` or the older `~/.pi/agent/upstreams/mattpocock-skills`, or `DOTFILES_VERIFY_MATTPOCOCK_SOURCE`; never fetched), and `GIT_UPSTREAM_ENV` to pass to `drive` so git's `insteadOf` uses it |
+| `stub_pi` | A `pi` that edits `packages` in the `settings.json` of `$PI_CODING_AGENT_DIR` (else `~/.pi/agent`) as `pi install`/`remove` do, logging each call led by that directory, and a no-op `claude` |
+| `mattpocock_skill_source` | A local bare copy of Matt Pocock's skills repository at its source record's pin (copied read-only from the real reconciler's checkout, `~/.local/share/mattpocock-skills` or the older `~/.pi/agent/upstreams/mattpocock-skills`, or `DOTFILES_VERIFY_MATTPOCOCK_SOURCE`; never fetched), and `GIT_SKILL_SOURCE_ENV` to pass to `drive` so git's `insteadOf` uses it |
 | `step <name>` | A heading in the log |
 
-The commands under test are the repository's own entry points with their own flags: `--check` and `--apply` for the
-reconcilers and `setup-omarchy.sh` (never with `--force`: an `omarchy` stub makes the home's host identify as Omarchy),
-none for `setup-platform-configs.sh`. Seed a home the way a host leaves it (a stock Omarchy `.bashrc` and `shell.json`,
+The commands under test are the repository's own setup entry points and reconcilers with their own flags: `--check` and `--apply` for the
+reconcilers and `setup-omarchy.sh` (never with `--force`: an `omarchy` stub makes the home's machine identify as Omarchy),
+none for `setup-platform-configs.sh`. Seed a home the way a machine leaves it (a stock Omarchy `.bashrc` and `shell.json`,
 a retired link, someone else's file) with plain shell before driving.
 
 ## Evidence
@@ -100,15 +100,15 @@ Each run writes `$DOTFILES_VERIFY_EVIDENCE/<UTC time>-<journey>/`:
 
 Proof standards:
 
-- Drive the script a host runs, with the flags it is run with. Never call a function inside one, and never stand in
-  for the action being proved.
+- Drive the script a machine runs, with the flags it is run with. Never call a function inside one, and never fake
+  the action being proved.
 - Read the side effect back from the home: a link's target, a line counted in `.bashrc`, a key read with `jq`, a
   stub's call log. A script's own `Linked` or `ok` line is not the proof.
 - For `--check`, compare `.tree` files before and after: the claim is that nothing changed.
 - For "repeat runs change nothing", compare the trees after the first and second `--apply`.
-- The stubs stand in for `pi`, `claude`, `omarchy`, `launchctl` and the network. A journey proves what the scripts
+- The stubs are fakes of `pi`, `claude`, `omarchy`, `launchctl` and the network. A journey proves what the scripts
   write and which commands they ask for; it proves nothing about `pi install` really installing, launchd really loading
-  the watcher, Omarchy's shell loading the plugin, or a real NixOS or Omarchy host. Say so when you report.
+  the watcher, Omarchy's shell loading the plugin, or a real NixOS or Omarchy machine. Say so when you report.
 
 ## Prove a journey can fail
 
@@ -191,10 +191,10 @@ their evidence kept.
   Nothing in this skill reaches the network.
 - `bash -i` in the sandbox prints "cannot set terminal process group" and "no job control"; expected.
 - These journeys complement the repository's tests (`tests/test-reconcile-*.sh` and others), which drive each script
-  alone with more edge cases. This skill drives the entry points a host runs end to end. It replaces none of them.
+  alone with more edge cases. This skill drives the setup entry points a machine runs end to end. It replaces none of them.
 
 ## Keeping it current
 
-The feature map in `features/` is the maintained list of what to verify. When an entry point or a reconciler changes, update the
+The feature map in `features/` is the maintained list of what to verify. When a setup entry point or a reconciler changes, update the
 matching feature file, journey and break in the same change. `/maintain-verification-skill` audits the map against
 the scripts.

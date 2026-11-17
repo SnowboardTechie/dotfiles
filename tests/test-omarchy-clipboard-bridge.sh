@@ -129,7 +129,7 @@ printf '[Service]\nExecStart=/bin/true\n' > "$H3/$UNIT_REL"
 before="$(cat "$H3/$UNIT_REL")"
 out="$(reconcile "$H3" --apply)"; rc=$?
 check "foreign unit: apply exits 0"            test "$rc" -eq 0
-check "foreign unit: warned"                   bash -c 'grep -q "not managed by this script" <<<"$1"' _ "$out"
+check "foreign unit: warned"                   bash -c 'grep -q "is foreign (this script did not write it)" <<<"$1"' _ "$out"
 check "foreign unit: left untouched"           test "$before" = "$(cat "$H3/$UNIT_REL")"
 
 out="$(reconcile "$H2" --bogus)"; rc=$?

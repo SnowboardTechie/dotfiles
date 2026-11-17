@@ -22,7 +22,7 @@ gh pr list -R HHS/simpler-grants-protocol \
 
 If zero PRs: respond with exactly "No dependency PRs open." and stop.
 
-## Step 2: Classify each into one lane
+## Step 2: Classify each into one triage category
 
 - A. Green and isolated
 - B. Red but attributable (one obvious failing surface)
@@ -31,13 +31,13 @@ If zero PRs: respond with exactly "No dependency PRs open." and stop.
   or consumer-facing dep moves in published packages
 
 Special handling is still a manual review by you — it's the "review manually
-with this elevated-risk reason flagged upfront" bucket. Items routed here go
+with this elevated-risk reason flagged upfront" triage category. Items routed here go
 through your eyes, but the report tags *why* (major bump / GitHub Actions /
 catalog / consumer-facing dep) so you weigh the right thing on intake.
 
 ## Step 2b: Supersedes
 
-For PRs in overlapping lanes, compare file sets:
+For PRs that update the same dependencies, compare file sets:
 
 ```bash
 gh pr view <N> --json files --jq '[.files[].path] | sort'
@@ -118,7 +118,7 @@ gh release list -R <owner>/<repo> --limit 20 \
 gh release view <tagName> -R <owner>/<repo> --json body --jq '.body'
 ```
 
-For Python deps (pip lane), check the project's GitHub releases or
+For Python deps (pip updates), check the project's GitHub releases or
 `CHANGELOG.md` the same way; PyPI does not host release notes consistently.
 
 If you still cannot find changelog content for a package, mark its
@@ -168,7 +168,7 @@ gh api repos/HHS/simpler-grants-protocol/dependabot/alerts \
 
 Surface the severity in the report flag line, e.g.
 `security: CRITICAL (GHSA-xxxx-xxxx-xxxx)`. Critical and high jump to the
-top of the order regardless of lane.
+top of the order regardless of triage category.
 
 ## Step 5: Release attribution
 
@@ -177,20 +177,20 @@ gone — ADR-0027 replaced it with release-please on 2026-08-14, and there is no
 `.changeset/` directory. Never flag `no changeset` and never tell the reader to
 add one or run `pnpm changeset`; the tool does not exist.
 
-release-please cuts a release only when the PR clears **both** gates:
+release-please cuts a release only when the PR passes **both** rules:
 
-- **Path gate.** Commits are attributed to packages purely by touched file
+- **Path rule.** Commits are attributed to packages purely by touched file
   path (`commit-split.ts`: "Commits that only touch files under paths not
   specified here are ignored"). Released paths: `lib/core/`, `lib/cli/`,
   `lib/ts-sdk/`, `lib/python-sdk/`. `pnpm-workspace.yaml`, `pnpm-lock.yaml`,
   `website/`, and `lib/changelog-emitter/` are **not** released paths. The
   conventional-commit scope in the title is irrelevant to attribution.
-- **Type gate.** The title's type must render a changelog entry: `feat` →
+- **Type rule.** The title's type must render a changelog entry: `feat` →
   minor; `fix`/`perf`/`revert`/`docs`/`refactor`/`build` → patch; any `!` →
   breaking (minor while pre-1.0). `chore`, `ci`, `test` are hidden and cut no
   release. Dependabot is configured `prefix: "chore"` and the catalog
   workflow titles its PR `chore(deps): ...`, so **the default title on every
-  bot PR fails this gate.**
+  bot PR fails this rule.**
 
 First determine whether the moved dependency is consumer-facing. Read the
 diff, do not infer from the title:
@@ -215,8 +215,8 @@ Then assign exactly one flag:
   Surface it in the "Retitle needed" Notes line.
 - **`unreleasable by path`** — consumer-facing move that touches **only**
   non-released paths (`pnpm-workspace.yaml` / `pnpm-lock.yaml` — the catalog
-  and pnpm-`overrides` lanes). No title fixes this: a retitle clears the type
-  gate while the path gate still blocks. Surface it in the "Unreleasable by
+  and pnpm-`overrides` updates). No title fixes this: a retitle satisfies the
+  type rule while the path rule still blocks. Surface it in the "Unreleasable by
   path" Notes line, say the change reaches consumers with no version bump
   behind it, and stop there. Do not propose a remedy — how the repo should
   declare these ranges is an open question for the team, not for this report.
@@ -239,7 +239,7 @@ Merge now / Review manually / Special handling / Hold / Close-supersede.
 
 Routing rules:
 
-- **Merge now**: green CI, isolated lane, no breaking changes flagged in
+- **Merge now**: green CI, isolated update, no breaking changes flagged in
   Step 3, not stale, no `conflict` flag, no Step 5 flag. Auto-merge
   PRs do NOT go here — they land via GitHub once green and only need a Notes
   mention.
@@ -260,7 +260,7 @@ empty (even if Hold has entries), respond with exactly:
 
   "No dependency PRs need attention this cycle."
 
-Otherwise emit the report. Only include buckets that have PRs. Preserve PR
+Otherwise emit the report. Only include triage categories that have PRs. Preserve PR
 links. Every PR line must include a `Versions:` and a `Changelog:` sub-line
 — say `none flagged` when the changelog is clean, never omit the field.
 Add a `Flags:` sub-line only when there is something to flag (auto-merge,
@@ -271,7 +271,7 @@ skip it otherwise.
 ## Dependency Triage (YYYY-MM-DD)
 
 ### Merge now
-- #N [title](url) — green, isolated lane X
+- #N [title](url) — green, isolated update of type X
   - Versions: `pkg 1.2.3 → 1.2.4` (patch)
   - Changelog: none flagged
 

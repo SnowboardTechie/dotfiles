@@ -20,7 +20,7 @@ Bryan's bots are Hermes profiles. Each is one continuous thread ("Bot Chat") for
 |---|---|
 | An area he regularly attends to and checks back on | Its own bot (or a new routine on the bot that already owns that area) |
 | A recurring brief or work update (morning brief, recap, triage) | The bot for that area, delivered into its Bot Chat |
-| An alert or routine system announcement (a service down, an update starting or finished, a release landed, an approval) | Matrix. Matrix carries alerts and routine announcements, success notices included; don't propose muting them or moving them to a bot. He replies in the thread when he wants to talk about it |
+| An alert or routine system announcement (a service down, an update starting or finished, a release landed, an approval) | Matrix. Matrix carries alerts and routine announcements, success notifications included; don't propose muting them or moving them to a bot. He replies in the thread when he wants to talk about it |
 | A one-off question or deep work | Main Hermes (terminal, Rex). Not a bot |
 | Shared with Traci (Gratifood) | Wherever she can see it (the shared Matrix room) |
 
@@ -38,7 +38,7 @@ Present the placement and its reason; let him decide. When he asks for ideas, re
 - **Job:** one sentence. What area, and what "where things stand" looks like in its latest message.
 - **Split:** if one area has different sources or rhythms (house vs vehicles), make two bots; if they share both, keep one.
 - **Sources:** which vault notes, Reminders lists, files or APIs it reads; which it may write (and whether it commits and pushes the vault).
-- **Routines:** schedule, what each one says, and when it stays silent. Prefer one script-gated daily or monthly check that speaks only when something is due over many fixed-date jobs.
+- **Routines:** schedule, what each one says, and when it stays silent. Prefer one daily or monthly scheduled job whose script speaks only when something is due over many fixed-date scheduled jobs.
 - **Never list:** side effects it never takes (buy, post, send, contact, file, pay, complete reminders unless asked).
 - **Voice:** from the persona rubric (`agent-persona-design`): calm and dated for reminders, warm and conversational for coaching.
 
@@ -46,7 +46,7 @@ Present the placement and its reason; let him decide. When he asks for ideas, re
 
 1. Build the profile, persona, memory and skills per `hermes-agent` → `references/bot-profiles.md`.
 1a. Give it reminders, like every bot: symlink `personal/bot-reminders` into its skills, add the SOUL "## Reminders" block, seed `workspace/reminder-lists.json` (`{"lists": []}` unless Bryan approves lists), copy a `scripts/reminders_evening.py` wrapper from an existing bot, and create its `[bot:<name>] Evening reminder check` (19:15, script-only, `--deliver bot-chat`) with `~/.local/bin/hermes`.
-2. Prove one routine end to end: a one-shot test that lands in the Bot Chat and reaches his **locked** phone. Remove the test job and script afterwards.
+2. Prove one routine end to end: a one-shot test that lands in the Bot Chat and reaches his **locked** phone. Remove the test scheduled job and script afterwards.
 3. When it replaces an older routine (Grok Bot, a Matrix brief), the new routine still goes live as part of the build. Tell Bryan exactly which old routine to switch off so nothing runs twice. Don't quietly leave the new one paused until "cutover": he expects a migrated bot's check-ins and recaps to be running, and finding them paused reads as unfinished work.
 4. Record the bot in the decision note `~/second-brain/Decisions/2026-11-02-decision-move-personal-agents-from-grok-bot-to-hermes.md` (roster and routines), committed and pushed.
 
