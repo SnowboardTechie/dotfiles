@@ -2,7 +2,7 @@
 #
 # Contract: bash- and zsh-compatible only (plain aliases, [[ ]], simple
 # functions). No prompt, completion, or platform-owned behavior. Anything
-# tool-dependent is guarded with `command -v` so sourcing is safe on hosts
+# tool-dependent is guarded with `command -v` so sourcing is safe on machines
 # where the tool is absent.
 #
 # Loaded by:
@@ -11,7 +11,7 @@
 #     scripts/reconcile-shell-additions.sh
 #
 # The eza ls-family (ls/ll/la/lt...) is intentionally NOT here: Omarchy ships
-# its own eza aliases, and those win on Omarchy hosts. The zsh config defines
+# its own eza aliases, and those win on Omarchy machines. The zsh config defines
 # the personal flavors for machines this repo fully owns.
 
 # Modern tool replacements
@@ -174,7 +174,7 @@ grb() {
   fi
 }
 
-# Navigation aliases (guarded: only for directories present on this host)
+# Navigation aliases (guarded: only for directories present on this machine)
 if [[ -d "$HOME/code/dotfiles" ]]; then
   alias dotfiles="cd ~/code/dotfiles"
 fi

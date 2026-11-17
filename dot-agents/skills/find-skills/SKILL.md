@@ -39,7 +39,7 @@ So an adoption lands in three places, all of them in the repository:
 | What | Where |
 |---|---|
 | The adapted skill | `dot-agents/skills/{name}/SKILL.md` |
-| Its upstream provenance | `dot-agents/upstreams/{source}.json` |
+| Its upstream provenance | `dot-agents/skill-sources/{source}.json` |
 | Which harnesses get it | the `*_SKILLS` arrays in `scripts/reconcile-agent-skills.sh` |
 
 ---
@@ -173,12 +173,12 @@ mkdir -p dot-agents/skills/{skill-name}
 ### Record its provenance
 
 An adapted copy without a pin is a silent fork. Add an entry to
-`dot-agents/upstreams/{source}.json` — or create that source record if the source is
+`dot-agents/skill-sources/{source}.json` — or create that source record if the source is
 new — carrying the upstream repository and **exact commit**, the license and
 where it is retained, the upstream paths this adaptation came from, the local
 paths, what was changed locally and why, which upstream rules were accepted or
 rejected, and the upstream files worth watching. See
-[`dot-agents/README.md`](../../README.md) → *Upstream adaptations*.
+[`dot-agents/README.md`](../../README.md) → *Adaptations from skill sources*.
 
 ### Curate the harnesses
 
@@ -260,5 +260,5 @@ If the search returns no results:
 3. Fetch: `curl -s "https://raw.githubusercontent.com/someorg/some-pack/main/skills/a11y-review/SKILL.md"`
 4. Present content to user
 5. If user wants it: adapt it into `dot-agents/skills/a11y-review/`, record its upstream
-   provenance under `dot-agents/upstreams/`, and curate it in the reconciler arrays —
+   provenance under `dot-agents/skill-sources/`, and curate it in the reconciler arrays —
    never write an unmanaged copy straight into `~/.claude/skills/`

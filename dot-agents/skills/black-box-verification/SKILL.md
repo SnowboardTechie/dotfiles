@@ -27,7 +27,7 @@ that the code agrees with itself.
 Provenance: concepts adapted from pstack's `blast-radius` and
 `create-verification-skill`. The skill source's pin, license, and its accepted and
 rejected rules live in the source record
-[`dot-agents/upstreams/pstack-claude.json`](../../upstreams/pstack-claude.json).
+[`dot-agents/skill-sources/pstack-claude.json`](../../skill-sources/pstack-claude.json).
 
 ## When this is the wrong tool
 

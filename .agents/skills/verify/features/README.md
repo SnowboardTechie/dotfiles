@@ -8,13 +8,13 @@ use the matching feature file as the recipe. The harness is `dotfiles-verify`, t
 
 - `$V doctor` prints no `FAIL`.
 - `DOTFILES_VERIFY_EVIDENCE`, if set, is outside the repository.
-- Every journey starts from empty homes it makes itself, seeded in the journey with what a host would already hold.
+- Every journey starts from empty homes it makes itself, seeded in the journey with what a machine would already hold.
 - Never point a journey at a real home. There is no shared instance to drive.
 
 ## Driving conventions
 
 - One journey per run; each starts from empty homes.
-- Drive the entry point a host runs (`setup-platform-configs.sh`, `scripts/setup-omarchy.sh`, a reconciler) with its
+- Drive the setup entry point or reconciler a machine runs (`setup-platform-configs.sh`, `scripts/setup-omarchy.sh`, a reconciler) with its
   real flags. Seed state with plain shell; never call into a script's functions.
 - Every `--check` claim compares home trees before and after. Every idempotence claim compares trees after two
   applies.
@@ -29,7 +29,7 @@ use the matching feature file as the recipe. The harness is `dotfiles-verify`, t
 
 ## Feature entry contract
 
-Each feature file starts with an H1 title and one paragraph on what the host sees. Four H2 sections follow, in this
+Each feature file starts with an H1 title and one paragraph on what the machine sees. Four H2 sections follow, in this
 order: `Sub-features`, `How to get to it (user POV)`, `Driving it with dotfiles-verify` (starting with
 `Preconditions:`) and `Gotchas`.
 
@@ -63,7 +63,7 @@ restored. Rerun them all with `../scripts/prove-breaks`. Add a row and an entry 
 | a regular file on a curated name is deleted and replaced by the skill pool link | `scripts/reconcile-agent-skills.sh` | `agent-skills` | a regular file on a curated name is kept with its content |
 | draw-it also curated for Hermes | `scripts/reconcile-agent-skills.sh` | `agent-skills` | .hermes/skills/personal does not get draw-it |
 | links into Matt Pocock's checkout listed as foreign instead of counted | `scripts/reconcile-agent-skills.sh` | `agent-skills` | his link is counted, not listed as foreign |
-| every host counts as Omarchy | `scripts/setup-omarchy.sh` | `omarchy-setup` | exits 1 |
+| every machine counts as Omarchy | `scripts/setup-omarchy.sh` | `omarchy-setup` | exits 1 |
 | `--check` runs every reconciler with `--apply` | `scripts/setup-omarchy.sh` | `omarchy-setup` | check left the home unchanged |
 | the Pi extensions reconciler dropped from the list | `scripts/setup-omarchy.sh` | `omarchy-setup` | check runs Pi extensions (check) |
 | Pi extensions apply links nothing | `scripts/reconcile-pi-extensions.sh` | `omarchy-setup` | Pi extensions linked |

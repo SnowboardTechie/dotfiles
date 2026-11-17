@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Integration tests for scripts/reconcile-agent-skills.sh.
 #
-# Runs the reconciler against temporary HOME directories; the real checked-out
+# Runs the reconciler against throwaway homes; the real checked-out
 # skill pool is used read-only as the source. All writes are isolated inside
-# the temporary homes, which are removed on exit.
+# the throwaway homes, which are removed on exit.
 
 set -u
 
@@ -280,7 +280,7 @@ out="$(HOME="$H4" "$RECONCILER" --check --apply 2>&1)"; rc=$?
 check "t10: conflicting modes fail"              test "$rc" -ne 0
 check "t10: failed invocations did not mutate"   test -z "$(find "$H4" -mindepth 1)"
 
-# --- Test 12: a host retiring OpenCode prunes only its skill pool links ------
+# --- Test 12: a machine retiring OpenCode prunes only its skill pool links ---
 H12="$(new_home)"
 TMP_HOMES+=("$H12")
 HOME="$H12" "$RECONCILER" --apply >/dev/null 2>&1

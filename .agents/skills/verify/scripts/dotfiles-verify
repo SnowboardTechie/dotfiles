@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# dotfiles-verify: drive this repository's reconcilers and setup scripts the
-# way a host runs them, in a disposable HOME inside a macOS sandbox that can
+# dotfiles-verify: drive this repository's reconcilers and setup entry points
+# the way a machine runs them, in a throwaway home inside a macOS sandbox that can
 # write nowhere else and reach no network. See ../SKILL.md.
 #
 #   dotfiles-verify doctor
@@ -211,13 +211,13 @@ PY'
     stub claude 'exit 0'
 }
 
-# mattpocock_upstream: the sandbox has no network, so give git a local
-# stand-in for Matt Pocock's skills repository holding the pinned commit.
+# mattpocock_skill_source: the sandbox has no network, so give git a local
+# fake of Matt Pocock's skills repository, the skill source, holding the pinned commit.
 # Copies it from the checkout the real reconciler keeps (read only). Never
 # reaches the network: without the pin there, the journey fails and says why.
-# Sets GIT_UPSTREAM_ENV to pass to `drive`.
-mattpocock_upstream() {
-    local source_record="$REPO/dot-agents/upstreams/mattpocock-skills.json" url pin src
+# Sets GIT_SKILL_SOURCE_ENV to pass to `drive`.
+mattpocock_skill_source() {
+    local source_record="$REPO/dot-agents/skill-sources/mattpocock-skills.json" url pin src
     url="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["upstream"])' "$source_record")"
     pin="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["commit"])' "$source_record")"
     # Where the real reconciler keeps its checkout: ~/.local/share on current
@@ -231,10 +231,10 @@ mattpocock_upstream() {
     [[ -n "$src" ]] \
         || fail "setup: the pinned commit $pin of $url is in none of: ${candidates[*]}. Run the real scripts/reconcile-mattpocock-skills.sh --apply, or set DOTFILES_VERIFY_MATTPOCOCK_SOURCE to a local clone that has it. This command never fetches it."
     git clone --quiet --bare --no-local "$src" "$SCRATCH/mattpocock-skills.git" || fail "setup: cannot copy $src"
-    git -C "$SCRATCH/mattpocock-skills.git" cat-file -e "$pin^{commit}" || fail "stand-in upstream lacks the pin $pin"
+    git -C "$SCRATCH/mattpocock-skills.git" cat-file -e "$pin^{commit}" || fail "the fake skill source lacks the pin $pin"
     MATTPOCOCK_PIN="$pin"
-    GIT_UPSTREAM_ENV=(GIT_CONFIG_COUNT=1 "GIT_CONFIG_KEY_0=url.$SCRATCH/mattpocock-skills.git.insteadOf" "GIT_CONFIG_VALUE_0=$url")
-    log "  stand-in upstream for $url at $SCRATCH/mattpocock-skills.git"
+    GIT_SKILL_SOURCE_ENV=(GIT_CONFIG_COUNT=1 "GIT_CONFIG_KEY_0=url.$SCRATCH/mattpocock-skills.git.insteadOf" "GIT_CONFIG_VALUE_0=$url")
+    log "  fake skill source for $url at $SCRATCH/mattpocock-skills.git"
 }
 
 # drive <label> <home> [VAR=value ...] -- <command> [args...]
@@ -313,7 +313,7 @@ run_journey() {
     local t
     for t in "${TOOLS[@]}"; do ln -s "$(command -v "$t")" "$SCRATCH/tools/$t"; done
     # The sandbox stops file writes and network, not IPC: launchctl would still
-    # reach the real launchd. These stand in for every host-level command a
+    # reach the real launchd. These are fakes of every machine-level command a
     # script here may call, log the call, and succeed. A journey can replace one.
     for t in launchctl systemctl stow sudo brew defaults; do stub "$t" 'echo "$*" >>"__CALLS__"'; done
     # A neutral host name, so no Studio-only or Gnarbox-only branch runs by accident.

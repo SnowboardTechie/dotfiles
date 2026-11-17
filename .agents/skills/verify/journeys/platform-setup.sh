@@ -2,7 +2,7 @@
 # setup-platform-configs.sh on a macOS home after Stow: repo-owned links only, foreign files kept, launchd watcher installed through launchctl, pstack's own Pi directory built apart from the main one, a rerun changes nothing.
 S="$REPO/setup-platform-configs.sh"
 stub_pi
-mattpocock_upstream
+mattpocock_skill_source
 # launchctl: `print` says "not loaded" until a bootstrap, as the real one does.
 stub launchctl 'echo "$*" >>"__CALLS__"
 state="$(dirname "__CALLS__")/$(basename "$HOME")-launchd-loaded"
@@ -33,7 +33,7 @@ cp "$REPO/dot-config/opencode/AGENTS.md" "$H/.config/opencode/AGENTS.md"   # an 
 capture "$H" before
 
 step "first run"
-drive setup "$H" "${GIT_UPSTREAM_ENV[@]}" -- "$S"
+drive setup "$H" "${GIT_SKILL_SOURCE_ENV[@]}" -- "$S"
 expect "exits 0" test "$RC" -eq 0
 expect "runs to the end" has "$OUT" "Platform-specific configuration complete!"
 expect "the retired repo-owned tmux link is removed" test ! -L "$H/.tmux.conf"
@@ -59,7 +59,7 @@ expect "the old pi-web-access pin is replaced by the pinned one" \
 expect "another package whose name starts with a pinned one is kept" has "$(jq -r '.packages[]' "$H/.pi/agent/settings.json")" "npm:pi-web-access-extras"
 expect "the retired Hindsight hook and context-mode plugin are removed, Bryan's hook, plugin and model kept" \
     test "$(jq -c '[.model, [.hooks.Stop[].hooks[].command], (.enabledPlugins | keys)]' "$H/.claude/settings.json")" = '["opus",["afplay done.aiff"],["context7@claude-plugins-official"]]'
-expect "Hermes's Studio-only assets are skipped on another host" has "$OUT" "Skipped (Studio-only assets)"
+expect "Hermes's Studio-only assets are skipped on another machine" has "$OUT" "Skipped (Studio-only assets)"
 expect "nothing ran stow, sudo or brew" test -z "$(calls "$H" stow)$(calls "$H" sudo)$(calls "$H" brew)"
 D="$H/.pi/pstack"
 PSTACK_PIN="$(jq -r .commit "$REPO/dot-agents/upstreams/pstack-claude.json")"
@@ -78,7 +78,7 @@ capture "$H" after-first; FIRST="$TREE"
 LOADS="$(calls "$H" launchctl | grep -c '^bootstrap')"
 
 step "second run"
-drive setup-again "$H" "${GIT_UPSTREAM_ENV[@]}" -- "$S"
+drive setup-again "$H" "${GIT_SKILL_SOURCE_ENV[@]}" -- "$S"
 expect "exits 0" test "$RC" -eq 0
 capture "$H" after-second
 expect "every path and file is unchanged" same_file "$FIRST" "$TREE"
@@ -92,7 +92,7 @@ echo "my own rules" >"$H/.config/opencode/AGENTS.md"
 printf '{"other": {"type": "api_key", "key": "mine"}}\n' >"$H/.pi/pstack/auth.json"
 chmod 600 "$H/.pi/pstack/auth.json"
 cp -p "$H/.pi/pstack/auth.json" "$H/.auth-before"
-drive setup-own "$H" "${GIT_UPSTREAM_ENV[@]}" -- "$S"
+drive setup-own "$H" "${GIT_SKILL_SOURCE_ENV[@]}" -- "$S"
 expect "exits 0" test "$RC" -eq 0
 expect "the file is untouched" test "$(cat "$H/.config/opencode/AGENTS.md")" = "my own rules"
 expect "Bryan's own pstack auth.json is not rewritten" same_file "$H/.auth-before" "$H/.pi/pstack/auth.json"

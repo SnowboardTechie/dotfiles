@@ -2,7 +2,7 @@
 
 `scripts/reconcile-agent-skills.sh` links the curated skills in `dot-agents/skills/` into each harness's skills directory:
 `~/.claude/skills`, `~/.config/opencode/skills`, `~/.agents/skills` (Codex, also read by Pi), `~/.pi/agent/skills` and
-`~/.hermes/skills/personal`. The `*_SKILLS` arrays in the script decide which tool gets which skill. Both setup scripts
+`~/.hermes/skills/personal`. The `*_SKILLS` arrays in the script decide which tool gets which skill. Both setup entry points
 run it.
 
 ## Sub-features

@@ -1,9 +1,9 @@
 # omarchy-setup.sh
-# setup-omarchy.sh end to end: refuses a non-Omarchy host, check writes nothing, apply is additive and repeatable, Omarchy's own files survive.
+# setup-omarchy.sh end to end: refuses a non-Omarchy machine, check writes nothing, apply is additive and repeatable, Omarchy's own files survive.
 S="$REPO/scripts/setup-omarchy.sh"
 stub_pi
-stub omarchy 'echo "omarchy $*" >>"__CALLS__"'   # makes the host identify as Omarchy
-mattpocock_upstream
+stub omarchy 'echo "omarchy $*" >>"__CALLS__"'   # makes the machine identify as Omarchy
+mattpocock_skill_source
 
 omarchy_home() { # <name>: a home as a stock Omarchy install leaves it
     local h; h="$(new_home "$1")"
@@ -16,7 +16,7 @@ omarchy_home() { # <name>: a home as a stock Omarchy install leaves it
     echo "$h"
 }
 
-step "a host that is not Omarchy is refused"
+step "a machine that is not Omarchy is refused"
 H="$(omarchy_home not-omarchy)"
 capture "$H" refused-before; BEFORE="$TREE"
 drive refused "$H" PATH="$SCRATCH/tools:/usr/bin:/bin" -- "$S" --apply
@@ -28,7 +28,7 @@ expect "nothing was written" same_file "$BEFORE" "$TREE"
 step "check on a stock Omarchy home writes nothing"
 H="$(omarchy_home omarchy)"
 capture "$H" before; BEFORE="$TREE"
-drive check "$H" "${GIT_UPSTREAM_ENV[@]}" -- "$S" --check
+drive check "$H" "${GIT_SKILL_SOURCE_ENV[@]}" -- "$S" --check
 capture "$H" after-check
 expect "check left the home unchanged" same_file "$BEFORE" "$TREE"
 expect "check exits 0" test "$RC" -eq 0
@@ -56,7 +56,7 @@ expect "check restarted nothing" test -z "$(calls "$H" omarchy)"
 step "apply"
 mkdir -p "$H/.pi/agent"
 echo "Bryan's own Pi rules" >"$H/.pi/agent/AGENTS.md"     # a foreign file where a repo link would go
-drive apply "$H" "${GIT_UPSTREAM_ENV[@]}" -- "$S" --apply
+drive apply "$H" "${GIT_SKILL_SOURCE_ENV[@]}" -- "$S" --apply
 expect "apply exits 0" test "$RC" -eq 0
 expect "Pi skills linked" links_to "$H/.pi/agent/skills/ship" "$REPO/dot-agents/skills/ship"
 expect "Hermes skipped on Omarchy" test ! -e "$H/.hermes"
@@ -88,11 +88,11 @@ expect "nothing ran stow, sudo or systemctl" test -z "$(calls "$H" stow)$(calls 
 capture "$H" after-apply; APPLIED="$TREE"
 
 step "repeat: apply and check again"
-drive apply-again "$H" "${GIT_UPSTREAM_ENV[@]}" -- "$S" --apply
+drive apply-again "$H" "${GIT_SKILL_SOURCE_ENV[@]}" -- "$S" --apply
 expect "second apply exits 0" test "$RC" -eq 0
 capture "$H" after-second-apply
 expect "second apply left every path and file identical" same_file "$APPLIED" "$TREE"
-drive check-again "$H" "${GIT_UPSTREAM_ENV[@]}" -- "$S" --check
+drive check-again "$H" "${GIT_SKILL_SOURCE_ENV[@]}" -- "$S" --check
 expect "check after apply exits 0" test "$RC" -eq 0
 for word in "would " MISSING WOULD "Installed" "appended" "linked:" "Linked"; do
     expect "check after apply proposes nothing ($word)" lacks "$OUT" "$word"

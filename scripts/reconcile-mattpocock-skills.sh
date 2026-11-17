@@ -3,7 +3,7 @@
 # Claude Code and OpenCode from one checkout.
 #
 # Keeps a plain git checkout of https://github.com/mattpocock/skills at the
-# commit pinned in dot-agents/upstreams/mattpocock-skills.json (the only place
+# commit pinned in dot-agents/skill-sources/mattpocock-skills.json (the only place
 # the pin lives) in ~/.local/share/mattpocock-skills, shared by every harness.
 # His promoted skills are the directories with a SKILL.md directly under the
 # checkout's skills/engineering and skills/productivity.
@@ -14,15 +14,15 @@
 #     one symlink per promoted skill, named for the skill, pointing at its
 #     directory in the checkout. This script owns only links whose target lies
 #     in the checkout: it creates missing ones, repoints its own stale ones and
-#     removes its own links for skills upstream no longer promotes. A real
+#     removes its own links for skills he no longer promotes. A real
 #     directory, a file or a link pointing anywhere else is reported and kept.
 #     RECONCILE_OPENCODE_SKILLS=0 creates no OpenCode links and removes this
 #     script's existing ones, as scripts/reconcile-agent-skills.sh does.
 #
-# Why not `pi install git:...` or upstream's Claude Code plugin: a Pi package
+# Why not `pi install git:...` or his Claude Code plugin: a Pi package
 # also loads his unpromoted skills (in-progress/, misc/), and the plugin
 # namespaces every skill and moves its own pin. Here the source record holds the one
-# pin, which the pi-bots job mattpocock-skill-watch advances.
+# pin, which the pi-bots scheduled job mattpocock-skill-watch advances.
 #
 # In Pi his copy of a name wins once no copy of that name is in
 # ~/.agents/skills or ~/.pi/agent/skills: started from `~` (or a non-Git
@@ -31,7 +31,7 @@
 #
 # Earlier versions kept the checkout in ~/.pi/agent/upstreams/mattpocock-skills.
 # --apply moves a clean one from there, or removes it when a checkout already
-# exists at the new place and every commit of the old one is on upstream, and
+# exists at the new place and every commit of the old one is on its origin, and
 # replaces its two Pi settings entries with the new ones.
 #
 # The checkout is never discarded or reset: local modifications, or a checkout
@@ -68,7 +68,7 @@ if [[ -z "$MODE" ]]; then
 fi
 
 SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
-SOURCE_RECORD="$SCRIPT_DIR/../dot-agents/upstreams/mattpocock-skills.json"
+SOURCE_RECORD="$SCRIPT_DIR/../dot-agents/skill-sources/mattpocock-skills.json"
 SETTINGS="$HOME/.pi/agent/settings.json"
 CHECKOUT="$HOME/.local/share/mattpocock-skills"
 OLD_CHECKOUT="$HOME/.pi/agent/upstreams/mattpocock-skills"
@@ -91,7 +91,7 @@ command -v pi >/dev/null 2>&1 || HAVE_PI=0
 read_source_record() { # <key>
     python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])' "$SOURCE_RECORD" "$1"
 }
-UPSTREAM="$(read_source_record upstream)"
+SKILL_SOURCE_URL="$(read_source_record upstream)"
 PIN="$(read_source_record commit)"
 if [[ ! "$PIN" =~ ^[0-9a-f]{40}$ ]]; then
     echo "  ERROR: pinned commit in $SOURCE_RECORD is not a full SHA: $PIN" >&2
@@ -116,7 +116,7 @@ inspect() { # <dir>
         echo "foreign"; return
     fi
     origin="$(git -C "$dir" config --get remote.origin.url 2>/dev/null || true)"
-    if ! same_repo "$origin" "$UPSTREAM"; then
+    if ! same_repo "$origin" "$SKILL_SOURCE_URL"; then
         echo "foreign"; return
     fi
     head="$(git -C "$dir" rev-parse --verify --quiet HEAD 2>/dev/null || true)"
@@ -127,8 +127,8 @@ inspect() { # <dir>
 }
 
 # 0 when every commit reachable from the checkout's HEAD is on a fetched
-# upstream ref, so removing the checkout loses nothing upstream lacks.
-head_is_on_upstream() { # <dir>
+# ref of origin (his repository), so removing the checkout loses nothing origin lacks.
+head_is_on_origin() { # <dir>
     [[ -n "$(git -C "$1" for-each-ref --contains HEAD refs/remotes/origin 2>/dev/null)" ]]
 }
 
@@ -136,7 +136,7 @@ describe() { # <label> <dir> <state>
     local label="$1" dir="$2" state="$3"
     case "$state" in
         absent) echo "  $label: missing ($dir)" ;;
-        foreign) echo "  $label: $dir is not a checkout of $UPSTREAM" ;;
+        foreign) echo "  $label: $dir is not a checkout of $SKILL_SOURCE_URL" ;;
         dirty*) echo "  $label: ${state#dirty }, with local modifications ($dir)" ;;
         clean*)
             if [[ "${state#clean }" == "$PIN" ]]; then
@@ -343,10 +343,10 @@ if [[ "$MODE" == "check" ]]; then
     case "$NEW_STATE:$OLD_STATE" in
         absent:clean*) echo "  would move $OLD_CHECKOUT to $CHECKOUT" ;;
         clean*:clean*)
-            if head_is_on_upstream "$OLD_CHECKOUT"; then
-                echo "  would remove $OLD_CHECKOUT (every commit of it is on upstream)"
+            if head_is_on_origin "$OLD_CHECKOUT"; then
+                echo "  would remove $OLD_CHECKOUT (every commit of it is on its origin)"
             else
-                echo "  would stop: $OLD_CHECKOUT has commits upstream lacks"
+                echo "  would stop: $OLD_CHECKOUT has commits its origin lacks"
             fi
             ;;
         *:dirty*|*:foreign) echo "  would stop: $OLD_CHECKOUT needs attention first" ;;
@@ -375,11 +375,11 @@ stop() {
 }
 
 case "$OLD_STATE" in
-    foreign) stop "move $OLD_CHECKOUT aside; it is not a checkout of $UPSTREAM" ;;
+    foreign) stop "move $OLD_CHECKOUT aside; it is not a checkout of $SKILL_SOURCE_URL" ;;
     dirty*) stop "$OLD_CHECKOUT has local modifications; nothing was moved or discarded. Inspect them with: git -C '$OLD_CHECKOUT' status" ;;
 esac
 case "$NEW_STATE" in
-    foreign) stop "move $CHECKOUT aside; it is not a checkout of $UPSTREAM" ;;
+    foreign) stop "move $CHECKOUT aside; it is not a checkout of $SKILL_SOURCE_URL" ;;
     dirty*) stop "$CHECKOUT has local modifications; nothing was discarded. Inspect them with: git -C '$CHECKOUT' status" ;;
 esac
 
@@ -389,11 +389,11 @@ if [[ "$OLD_STATE" == clean* ]]; then
         mv "$OLD_CHECKOUT" "$CHECKOUT"
         echo "  Moved $OLD_CHECKOUT to $CHECKOUT"
         NEW_STATE="$OLD_STATE"
-    elif head_is_on_upstream "$OLD_CHECKOUT"; then
+    elif head_is_on_origin "$OLD_CHECKOUT"; then
         rm -rf "$OLD_CHECKOUT"
-        echo "  Removed $OLD_CHECKOUT (a clean copy; every commit of it is on upstream)"
+        echo "  Removed $OLD_CHECKOUT (a clean copy; every commit of it is on its origin)"
     else
-        stop "$OLD_CHECKOUT has commits upstream lacks, and $CHECKOUT exists too; nothing was removed"
+        stop "$OLD_CHECKOUT has commits its origin lacks, and $CHECKOUT exists too; nothing was removed"
     fi
     rmdir "${OLD_CHECKOUT%/*}" 2>/dev/null || true
 fi
@@ -403,11 +403,11 @@ case "$NEW_STATE" in
         mkdir -p "${CHECKOUT%/*}"
         tmp="$CHECKOUT.partial.$$"
         trap 'rm -rf "$tmp"' EXIT
-        git clone --quiet --no-checkout "$UPSTREAM" "$tmp"
+        git clone --quiet --no-checkout "$SKILL_SOURCE_URL" "$tmp"
         git -C "$tmp" -c advice.detachedHead=false checkout --quiet --detach "$PIN"
         mv "$tmp" "$CHECKOUT"
         trap - EXIT
-        echo "  Cloned $UPSTREAM at $PIN"
+        echo "  Cloned $SKILL_SOURCE_URL at $PIN"
         ;;
     clean*)
         head="${NEW_STATE#clean }"

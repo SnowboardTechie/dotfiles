@@ -26,9 +26,9 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILL_POOL = REPO_ROOT / "dot-agents" / "skills"
-UPSTREAMS = REPO_ROOT / "dot-agents" / "upstreams"
-SOURCE_RECORD_PATH = UPSTREAMS / "mattpocock-skills.json"
-LICENSE_PATH = UPSTREAMS / "mattpocock-skills-LICENSE"
+SKILL_SOURCES = REPO_ROOT / "dot-agents" / "skill-sources"
+SOURCE_RECORD_PATH = SKILL_SOURCES / "mattpocock-skills.json"
+LICENSE_PATH = SKILL_SOURCES / "mattpocock-skills-LICENSE"
 RECONCILER = REPO_ROOT / "scripts" / "reconcile-agent-skills.sh"
 REVIEW_CONTRACT = SKILL_POOL / "pr-self-review" / "references" / "review-contract.md"
 
@@ -330,7 +330,7 @@ class SourceRecordTest(unittest.TestCase):
         cls.source_record = json.loads(read(SOURCE_RECORD_PATH)) if SOURCE_RECORD_PATH.is_file() else {}
 
     def test_license_is_retained_beside_the_source_record(self) -> None:
-        self.assertTrue(LICENSE_PATH.is_file(), "upstream MIT license must be stored beside the source record")
+        self.assertTrue(LICENSE_PATH.is_file(), "the skill source's MIT license must be stored beside the source record")
         self.assertIn("MIT License", read(LICENSE_PATH))
         self.assertIn("Matt Pocock", read(LICENSE_PATH))
 
@@ -340,7 +340,7 @@ class SourceRecordTest(unittest.TestCase):
                 self.assertIn(key, self.source_record)
         self.assertRegex(self.source_record.get("commit", ""), r"\A[0-9a-f]{40}\Z")
         self.assertEqual(self.source_record.get("license"), "MIT")
-        self.assertTrue((UPSTREAMS / self.source_record["licenseFile"]).is_file())
+        self.assertTrue((SKILL_SOURCES / self.source_record["licenseFile"]).is_file())
 
     def test_update_policy_is_automatic_pin_advance(self) -> None:
         # Bryan chose automatic advance on 2026-11-16: the pi-bots job moves the
@@ -353,7 +353,7 @@ class SourceRecordTest(unittest.TestCase):
 
     def test_the_pin_fields_are_one_per_line_for_the_job_that_rewrites_them(self) -> None:
         # The job rewrites exactly these three lines and refuses any other shape.
-        text = (UPSTREAMS / "mattpocock-skills.json").read_text(encoding="utf-8")
+        text = (SKILL_SOURCES / "mattpocock-skills.json").read_text(encoding="utf-8")
         for key in ("commit", "version", "verifiedOn"):
             self.assertRegex(text, rf'(?m)^  "{key}": "[^"]*",?$')
 
@@ -390,7 +390,7 @@ class AdaptedSourceRecordTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.records = {
             path.stem: json.loads(read(path))
-            for path in sorted(UPSTREAMS.glob("*.json"))
+            for path in sorted(SKILL_SOURCES.glob("*.json"))
             if path.name != SOURCE_RECORD_PATH.name
         }
 
@@ -404,7 +404,7 @@ class AdaptedSourceRecordTest(unittest.TestCase):
                 self.assertRegex(record.get("commit", ""), r"\A[0-9a-f]{40}\Z")
                 self.assertRegex(record.get("verifiedOn", ""), r"\A\d{4}-\d{2}-\d{2}\Z")
                 self.assertEqual(record.get("license"), "MIT")
-                self.assertIn("MIT License", read(UPSTREAMS / record["licenseFile"]))
+                self.assertIn("MIT License", read(SKILL_SOURCES / record["licenseFile"]))
 
     def test_each_reviewed_pin_is_watched_by_the_adapted_skill_watch(self) -> None:
         # The pi-bots scheduled job reads every record whose pin is a reviewed
@@ -456,8 +456,8 @@ class AdaptedSourceRecordTest(unittest.TestCase):
                 self.assertRegex(body, r"(?m)^##+ .*Ponytail, the simplicity review")
                 self.assertIn("Ponytail checks the", body)
                 self.assertIn("named after the Ponytail plugin", " ".join(body.split()))
-                self.assertIn("upstreams/ponytail.json", body)
-                self.assertTrue((path.parent / "../../upstreams/ponytail.json").resolve().is_file())
+                self.assertIn("skill-sources/ponytail.json", body)
+                self.assertTrue((path.parent / "../../skill-sources/ponytail.json").resolve().is_file())
 
 
 class CurationTest(unittest.TestCase):

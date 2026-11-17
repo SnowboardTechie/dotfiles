@@ -82,7 +82,7 @@
  {
   "journey": "omarchy-setup",
   "file": "scripts/setup-omarchy.sh",
-  "break": "every host counts as Omarchy",
+  "break": "every machine counts as Omarchy",
   "old": "is_omarchy() {\n",
   "new": "is_omarchy() {\n    return 0\n",
   "fails_at": "exits 1"
@@ -131,7 +131,7 @@
   "journey": "omarchy-setup",
   "file": "scripts/reconcile-pi-extensions.sh",
   "break": "a foreign file in ~/.pi/agent is replaced by the repo link",
-  "old": "        echo \"  OK   $dest\"\n    elif [[ -e \"$dest\" || -L \"$dest\" ]]; then\n        echo \"  WARNING: $dest is not managed by this repository, skipping\"",
+  "old": "        echo \"  OK   $dest\"\n    elif [[ -e \"$dest\" || -L \"$dest\" ]]; then\n        echo \"  WARNING: $dest is foreign (this repository did not make it), skipping\"",
   "new": "        echo \"  OK   $dest\"\n    elif [[ \"$MODE\" == \"--apply\" && ( -e \"$dest\" || -L \"$dest\" ) ]]; then\n        ln -sfn \"$src\" \"$dest\"",
   "fails_at": "Bryan's own Pi AGENTS.md is kept"
  },

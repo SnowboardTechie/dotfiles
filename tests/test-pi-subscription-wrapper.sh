@@ -88,7 +88,7 @@ mkdir -p "$FH/.pi/agent/extensions"
 echo mine >"$FH/.pi/agent/extensions/pi-subscription.ts"
 out="$(PI_EXTENSIONS_HOME="$FH" "$RECON" --apply)"
 check "reconcile: foreign file is kept" "mine" "$(cat "$FH/.pi/agent/extensions/pi-subscription.ts")"
-check "reconcile: foreign file is reported" "yes" "$(grep -q 'not managed' <<<"$out" && echo yes || echo no)"
+check "reconcile: foreign file is reported" "yes" "$(grep -q 'is foreign' <<<"$out" && echo yes || echo no)"
 
 # Renamed extensions: a link under the old name into this repository goes; anything else of that name stays.
 SH="$TMP/stale-home"
@@ -115,7 +115,7 @@ ln -s "$TMP/elsewhere/worker-watch.ts" "$OH/.pi/agent/extensions/worker-watch.ts
 out="$(PI_EXTENSIONS_HOME="$OH" "$RECON" --apply)"
 check "reconcile: a foreign file of the old name is kept" "mine" "$(cat "$OH/.pi/agent/extensions/pi-seat.ts")"
 check "reconcile: a foreign link of the old name is kept" "$TMP/elsewhere/worker-watch.ts" "$(readlink "$OH/.pi/agent/extensions/worker-watch.ts")"
-check "reconcile: a foreign file of the old name is reported" "yes" "$(grep -q 'pi-seat.ts is not managed' <<<"$out" && echo yes || echo no)"
+check "reconcile: a foreign file of the old name is reported" "yes" "$(grep -q 'pi-seat.ts is foreign' <<<"$out" && echo yes || echo no)"
 
 echo "$TESTS tests, $FAILURES failures"
 [[ $FAILURES -eq 0 ]]
