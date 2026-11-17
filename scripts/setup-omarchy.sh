@@ -108,8 +108,9 @@ Ownership summary:
   pi-claude-code Pi package and makes claude-code Pi's default provider when
   it was unset or anthropic (so Claude turns count against the plan, not
   extra usage), keeps a checkout of Matt Pocock's skills at the pinned
-  commit under ~/.pi/agent/upstreams and lists its promoted skill
-  directories in Pi's settings, links the repository's agent commands
+  commit under ~/.local/share/mattpocock-skills, lists its promoted skill
+  directories in Pi's settings and links each promoted skill into
+  ~/.claude/skills and ~/.config/opencode/skills, links the repository's agent commands
   (forgejo-map) into ~/.local/bin, and removes only the
   retired Hindsight / context-mode / claude-mem entries from Claude, Pi, and
   OpenCode JSON settings (native memory and data untouched) — nothing else.

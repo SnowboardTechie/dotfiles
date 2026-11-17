@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [issues, planning, vaults, implementation]
-    related_skills: [issue-work, plan, vault-pkm, grilling, wayfinder, adr-and-spec-coach, dx-target, conforming-tech-specs, black-box-verification]
+    related_skills: [issue-work, plan, vault-pkm, adr-and-spec-coach, dx-target, conforming-tech-specs, black-box-verification]
 ---
 
 # Issue Plan
@@ -136,7 +136,7 @@ are composable, not mutually exclusive:
 |---|---|
 | Vault discovery, note shape, links, synchronization | `vault-pkm` throughout |
 | Consumer/plugin-author-facing SGG or CommonGrants surface | `dx-target` before task planning; its chosen target is an acceptance oracle |
-| A load-bearing architectural choice is still open | `grilling` **or** `adr-and-spec-coach` — ask which; both are live during the pilot (below) |
+| A load-bearing architectural choice is still open | `grilling` (below); `adr-and-spec-coach` only when Bryan asks for it |
 | The effort plainly exceeds one planning session | Stop and offer `wayfinder`; a map is a separate effort, not a phase of this one |
 | A formal ADR/spec must conform to an established conventions index | `conforming-tech-specs` after decisions are settled |
 | Pure decision logic whose rules must never break (lifecycles, approvals, ledgers, deduplication, retry ceilings) | `proven-cores`: weigh a Bend proven core as one option, never a default |
@@ -149,21 +149,15 @@ Runtime mapping is explicit:
 |---|---|---|---|
 | Generic task-plan authoring | none — draft directly to the Phase 3 contract | installed `plan` | none — draft directly to the Phase 3 contract |
 | DX target exploration | installed `dx-target` | installed `dx-target` | use `dx-target` only when installed; otherwise stop and hand the session to Pi or Claude Code, which have it |
-| Decision coaching | pooled `grilling` or `adr-and-spec-coach` | pooled `grilling` or `adr-and-spec-coach` | pooled `grilling` or `adr-and-spec-coach` |
+| Decision coaching | Matt Pocock's `grilling` | none since the local `grilling` retired: hand the session to Pi, or use pooled `adr-and-spec-coach` if Bryan asks | Matt Pocock's `grilling` |
 | Spec conformance | pooled `conforming-tech-specs` through `~/.agents/skills` | installed `conforming-tech-specs` | installed pooled `conforming-tech-specs` |
 
 Do not silently replace a missing specialized workflow with generic drafting.
 
-**Decision-coaching pilot.** `grilling` and `adr-and-spec-coach` are two methods
-for the same job and are deliberately both available. Ask Bryan which one to
-use, once, at the point the first load-bearing decision surfaces — the pilot
-produces evidence only if the choice is deliberate rather than habitual. Neither
-is the default, and do not run both on one effort.
-
-`grilling` works a decision tree frontier-first and researches facts itself;
-`adr-and-spec-coach` is the established route and remains the comparison
-control. Record which one was used in the plan's frontmatter so the comparison
-is reconstructable later.
+**Decision coaching.** Use Matt Pocock's `grilling`: it works a decision tree
+frontier-first and researches facts itself. `adr-and-spec-coach` stays installed;
+use it instead only when Bryan asks for it, and do not run both on one effort.
+Record which method was used in the plan's frontmatter.
 
 A skill's narrower applicability still governs. Do not force `dx-target` onto an
 internal bug fix or `conforming-tech-specs` onto a trivial change.

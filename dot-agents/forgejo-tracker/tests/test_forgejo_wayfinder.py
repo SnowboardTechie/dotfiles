@@ -9,7 +9,7 @@ earlier versions wrong: `CreateIssueOption.labels` takes numeric ids, and a
 Nothing here touches the network, and no test can be made to pass by reaching
 a real tracker.
 
-Run: python3 -m unittest dot-agents/skills/wayfinder/tests/test_forgejo_wayfinder.py
+Run: python3 -m unittest dot-agents/forgejo-tracker/tests/test_forgejo_wayfinder.py
 """
 
 from __future__ import annotations
@@ -4670,6 +4670,22 @@ class FormerPublicExceptionTest(unittest.TestCase):
         public = FakeForgejo(private=False, repo=SGG_REPO)
         with self.assertRaisesRegex(WF.WayfinderError, "public"):
             WF.WayfinderTracker(public, SGG_REPO).require_private()
+
+
+class EmitTest(unittest.TestCase):
+    """Every result is printed as JSON, whatever sequence type it is."""
+
+    def test_a_tuple_of_blockers_is_printed_as_a_json_array(self) -> None:
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            WF._emit((3, 4))
+        self.assertEqual(json.loads(out.getvalue()), [3, 4])
+
+    def test_an_empty_tuple_is_printed_as_an_empty_json_array(self) -> None:
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            WF._emit(())
+        self.assertEqual(json.loads(out.getvalue()), [])
 
 
 if __name__ == "__main__":

@@ -9,39 +9,75 @@ does (see **Wayfinding operations**).
 Pass the repository and login on every `tea` call, so the target never depends on the directory you run it from:
 `--repo <owner>/<repo> --login <host>`. Written below as `$R`.
 
-- **Create an issue**: `tea issues create $R --title "..." --description-file body.md`. Labels go on with
-  `--labels "a,b"`. Write the body to a file for anything longer than a line.
+- **Create an issue**: `tea issues create $R --title "..." --description-file body.md --output json`. Labels go on
+  with `--labels "a,b"`, and only labels that already exist (see **Create a label**). Write the body to a file for
+  anything longer than a line. The JSON result gives the number as `.index` and the link as `.url`; its
+  `html_url` and `labels` are `null` even when the labels landed, so read the issue back to check them.
 - **Read an issue**: `tea issues <number> $R --comments --output json` (the body and every comment, in full, as
-  `.body` and `.comments[].body`). For
-  the comments alone use `tea api --login <host> '/repos/<owner>/<repo>/issues/<number>/comments'`; not
-  `tea comments list`, which cuts each body short.
-- **List issues**: `tea issues list $R --state open --fields index,title,labels,body --output json`, with
-  `--labels "..."` and `--state open|closed|all` as needed. A `--labels` filter naming a label the repository
-  doesn't have can match every issue rather than none, so check the name with `tea labels list $R` first.
+  `.body` and `.comments[].body`; the issue's author is `.user`, each comment's `.author` and `.created`). For the comments alone use
+  `tea api --login <host> '/repos/<owner>/<repo>/issues/<number>/comments'` (`.user.login`, `.created_at`,
+  `.html_url`); not `tea comments list`, which cuts each body short.
+- **List issues**: `tea issues list $R --state open --fields index,title,labels,body,created,updated --output json`,
+  with `--labels "..."` and `--state open|closed|all` as needed. A `--labels` filter naming a label the repository
+  doesn't have matches every issue rather than none, so check the name with `tea labels list $R` first.
+- **Create a label**: list first with `tea labels list $R --output json`, then, only if the name is missing,
+  `tea labels create $R --name "<label>" --color <rrggbb> --description "..."`. Creating a name that already
+  exists makes a second label of the same name and still exits 0, and `--add-labels` with a name the repository
+  doesn't have adds nothing and also exits 0. So create each label a skill needs before applying it, and read
+  the issue's labels back after.
 - **Parent and child issues**: Forgejo has **no sub-issues** (`/issues/<n>/sub_issues` returns 404). Wayfinder
   tickets belong to their map through a metadata block in the ticket body that only `forgejo-map` reads. For
-  other issues, put `Part of #<parent>` at the top of the child body.
-- **Blocking**: Forgejo's **native issue dependencies**, shown in the tracker's own UI. Read the blockers with
-  `tea api --login <host> '/repos/<owner>/<repo>/issues/<n>/dependencies'`. Count the open ones with
-  `... | jq '[.[] | select(.state == "open")] | length'` (0 means startable). Add an edge between Wayfinder tickets
-  with `forgejo-map ... wire-blocking` (below). For other issues, add it in the Forgejo UI or ask Bryan; no
-  command for it has been tried here yet.
-- **Comment on an issue**: `tea comment $R <number> "..."`, or `--description "..."` for a longer body.
-- **Apply / remove labels**: `tea issues edit $R --add-labels "..." <number>` / `--remove-labels "..."`.
-- **Close**: post the explanation first with `tea comment $R <number> "..."`, then `tea issues close $R <number>`.
+  other issues, put `Part of #<parent>` at the top of the child body (this is the **Parent** section of
+  `/to-tickets`' issue template).
+- **Blocking**: Forgejo's **native issue dependencies**, shown in the tracker's own UI. A ticket is unblocked when
+  every blocker is closed.
+  - Read an issue's blockers with `tea api --login <host> '/repos/<owner>/<repo>/issues/<n>/dependencies'`, and
+    what it blocks with `.../issues/<n>/blocks`. Count the open blockers with
+    `... | jq '[.[] | select(.state == "open")] | length'` (0 means startable).
+  - Add an edge between ordinary issues (`/to-tickets`) after both exist:
+    `tea api --login <host> -X POST '/repos/<owner>/<repo>/issues/<blocked>/dependencies' -d '{"owner":"<owner>","repo":"<repo>","index":<blocker>}'`.
+    Read `/dependencies` first: adding an edge that already exists fails with HTTP 500. Remove one with the same
+    call and `-X DELETE`. Create the tickets blockers first, then wire every edge in a second pass, then read
+    each ticket's `/dependencies` back. With native edges set, leave out the ticket body's **Blocked by** section.
+  - Between Wayfinder tickets, use `forgejo-map ... wire-blocking` (below) instead.
+- **Comment on an issue**: write the body to `comment.md` first, in an earlier command, then
+  `tea comment $R <number> --description "$(cat comment.md)"` (one-line comments can go as a quoted positional
+  argument instead). An empty body fails with `no comment content provided`, which is what a missing or
+  not-yet-written file gives. It prints the whole thread rather than the new comment; take the
+  comment's link from the last entry of the **Read an issue** API call.
+- **Apply / remove labels**: `tea issues edit $R --add-labels "..." <number>` / `--remove-labels "..."`; both
+  can go in one call. See **Create a label** first.
+- **Close**: post the explanation first as a comment, then `tea issues close $R <number>`. Closing an issue that
+  is already closed also exits 0, so read `.state` back if it matters.
 - **Never edit an issue body after creation.** Forgejo has no compare-and-swap on an issue update, so an edit can
   silently overwrite one Bryan made. Anything new goes in a comment.
 
 File issues only into `<owner>/<repo>`. Never file into `mattpocock/skills`, and never into a public repository.
+
+**No AI disclaimer.** On this tracker, `/triage` leaves off its "This was generated by AI during triage." line:
+it goes on no comment or issue. That is Bryan's rule and it overrides the skill. Check the comment file for the
+line before posting (`grep -i 'generated by AI' comment.md` finds nothing). If one went out with it, edit that
+comment, and only a comment this session posted:
+`jq -n --rawfile b comment.md '{body:$b}' | tea api --login <host> -X PATCH '/repos/<owner>/<repo>/issues/comments/<comment id>' -d @-`.
 
 ## Pull requests as a triage surface
 
 **PRs as a request surface: no.** _(Set to `yes` if this workspace treats external PRs as feature requests;
 `/triage` reads this flag.)_
 
-When set to `yes`: read with `tea pulls <number> $R --comments`; list with
-`tea pulls list $R --state open --fields index,title,author,labels --output json`; label with
-`tea pulls edit $R --add-labels "..." <number>`; close with `tea pulls close $R <number>`.
+When set to `yes`, PRs run through the same labels and states as issues:
+
+- **Read a PR**: `tea pulls <number> $R --comments` (`--output json` for fields), and the diff with
+  `tea api --login <host> '/repos/<owner>/<repo>/pulls/<number>.diff'`.
+- **List PRs for triage**: `tea api --login <host> '/repos/<owner>/<repo>/pulls?state=open' | jq '[.[] | {number, title, author: .user.login, labels: [.labels[].name]}]'`
+  (`tea pulls list` gives the author's display name, not the login). Forgejo gives no author association, so a
+  PR is external when its author's permission is neither `owner`, `admin` nor `write`:
+  `tea api --login <host> '/repos/<owner>/<repo>/collaborators/<login>/permission'` (`.permission`).
+- **Comment / label / close**: `tea comment $R <number> ...` (as for issues), `tea pulls edit $R --add-labels "..." <number>`
+  / `--remove-labels "..."`, `tea pulls close $R <number>`.
+
+Forgejo shares one number space across issues and PRs. Resolve a bare `#42` with
+`tea api --login <host> '/repos/<owner>/<repo>/issues/42'`: `.pull_request` is non-null for a PR.
 
 ## When a skill says "publish to the issue tracker"
 
@@ -67,7 +103,10 @@ forgejo-map --tracker <owner>/<repo> <command> [arguments]
 ```
 
 `forgejo-map <command> --help` lists each command's arguments. Its usage line names the script behind the command,
-`forgejo_wayfinder.py`, and shows `--origin` as required; `forgejo-map` supplies that. Output is JSON.
+`forgejo_wayfinder.py`, and shows `--origin` as required; `forgejo-map` supplies that. Output is JSON, except that
+`wire-blocking --apply` prints the ticket's blockers after the write as a JSON array of issue numbers, such as
+`[3, 4]`. The array holds every blocker the ticket now has, not only the one just added. Every write that labels an
+issue creates any missing `wayfinder:` label first.
 
 **Writes preview first.** Without `--apply`, a write prints `DRY RUN` with the exact steps and changes nothing.
 To perform it, run the same command again with `--apply` placed **before the command name**
@@ -80,7 +119,10 @@ every other argument unchanged too, `--at` included, so what is written is what 
 
 **Issue bodies are never edited after creation**, not the map's and not a ticket's. Where `/wayfinder` says to
 change the map body (graduate fog out of **Not yet specified**, add a line to **Out of scope**, update a ticket),
-post that as a comment on the map or the ticket instead, and leave the body for Bryan.
+post that as a comment on the map or the ticket instead, and leave the body for Bryan. Start the comment with the
+section it changes in bold (for example `**Not yet specified**: graduated ...`), link each ticket by its name,
+and give the body wording Bryan can paste in. Get the map right before `create-map --apply`: until then the preview
+can be rerun as often as needed, and only the applied preview's `--creation` id counts.
 
 - **Map**: `forgejo-map --tracker <owner>/<repo> create-map --title "<name>" --managed-file map.md`, then the same
   with `--creation <id from the preview>` and `--apply`. `map.md` holds the **Destination**, **Notes**, **Not yet
@@ -131,14 +173,26 @@ post that as a comment on the map or the ticket instead, and leave the body for 
   edit), and closes the ticket. Only the session and operation holding the claim can resolve. Check
   `resolved: true` in the result; otherwise run the printed `recovery` command, which repeats only what didn't
   land. The gist is one plain line: no heading, bullet, line break or HTML comment.
-- **Ruling a ticket out of scope**: comment why with `tea comment $R <ticket> "..."`, close it with
+- **Ruling a ticket out of scope**: comment why with `tea comment $R <ticket> --description "..."`, close it with
   `tea issues close $R <ticket>`, and post the **Out of scope** line as a comment on the map.
+- **Research pointer**: a research ticket's findings go on a `research/<name>` branch of this repository, pushed
+  with `git push origin research/<name>` and never opened as a PR. The context pointer is a comment on the ticket
+  linking the file, `https://<host>/<owner>/<repo>/src/branch/research/<name>/<path>`, posted before `resolve`;
+  the resolution answer links it again. A session with no subagent and no network can't do this: it says so in
+  the answer and the gist, and leaves the pointer out.
 
 The map and ticket body shapes, the claim and index records, and how claims are decided between racing sessions
-are described in `dot-agents/skills/wayfinder/references/forgejo-tracker.md` in the `bryan/dotfiles` repository.
+are described in `dot-agents/forgejo-tracker/references/forgejo-tracker.md` in the `bryan/dotfiles` repository.
 
 ## Labels
 
 The triage label this workspace maps `ready-for-agent` to (in `docs/agents/triage-labels.md`) is this workspace's
 choice. Bryan's `loop-issue` builds, unattended, any issue carrying the literal label `ready-for-agent`; map the
-role to that label only if that is wanted here. `wayfinder:` labels are the only labels a map or ticket carries.
+role to that label only if that is wanted here. `/to-spec` and `/to-tickets` put that label on what they publish,
+so on a workspace that maps it to `ready-for-agent`, publishing is approval to build. `wayfinder:` labels are the
+only labels a map or ticket carries.
+
+`/triage` also uses two category labels, `bug` and `enhancement`, which `docs/agents/triage-labels.md` doesn't map.
+None of the triage or category labels exists on a new Forgejo repository. Before the first `/to-spec`, `/to-tickets`
+or `/triage` in a workspace, create the five state labels (as `docs/agents/triage-labels.md` names them) and the
+two category labels, as in **Create a label**.

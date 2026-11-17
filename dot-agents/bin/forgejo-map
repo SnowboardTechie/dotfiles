@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # forgejo-map: run the Forgejo Wayfinder adapter
-# (dot-agents/skills/wayfinder/scripts/forgejo_wayfinder.py) as a command.
+# (dot-agents/forgejo-tracker/scripts/forgejo_wayfinder.py) as a command.
 #
 # Every argument passes through unchanged. When --origin is not given, the
 # origin remote of the Git repository containing the current directory is put
@@ -21,7 +21,7 @@ while [[ -L "$self" ]]; do
     fi
 done
 bin_dir="$(cd "$(dirname "$self")" && pwd -P)"
-adapter="$(cd "$bin_dir/../skills/wayfinder/scripts" 2>/dev/null && pwd -P)/forgejo_wayfinder.py"
+adapter="$(cd "$bin_dir/../forgejo-tracker/scripts" 2>/dev/null && pwd -P)/forgejo_wayfinder.py"
 
 if [[ ! -f "$adapter" ]]; then
     echo "forgejo-map: adapter not found beside $bin_dir" >&2

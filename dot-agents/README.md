@@ -44,7 +44,8 @@ intentionally excluded from its pool links. Personal knowledge lives in the
 any other vault, with `knowledge-capture` routing resting-point captures between
 it and project vaults. `apple-notes-pkm` (2026-10-31) and `vault-capture` are
 retired and removed; the reconciler prunes their stale links, as it does for the
-local `code-review` (2026-11-16).
+local `code-review` and the six skills adapted from Matt Pocock's (2026-11-16,
+see below). No pool skill takes a name one of his promoted skills holds.
 
 The **single authoritative curation source** is the set of `*_SKILLS` Bash arrays
 in [`../scripts/reconcile-agent-skills.sh`](../scripts/reconcile-agent-skills.sh):
@@ -62,7 +63,7 @@ native/cloud catalogs or prove that a running desktop task has refreshed them.
 
 The Rex-supervised `coding-agent-handoff-supervision` and `multiagent-pr-review`
 run from a Pi or Hermes root and are excluded from Codex. Specialist `dx-target`, `dx-preview`, `gamedev`,
-`guided-learning`, `weekly-planning`, `sprint-deliverable-update`,
+`weekly-planning`, `sprint-deliverable-update`,
 `sync-hold-branch`, and `find-skills` remain outside its initial curation.
 Capability-dependent operations still require the tools and authorization
 specified by each skill; installing a skill does not grant those capabilities.
@@ -105,21 +106,26 @@ upstream files worth watching. Each adapted `SKILL.md` carries a one-line
 pointer to the ledger rather than repeating its own adaptation history.
 
 Matt Pocock's skills ([`upstreams/mattpocock-skills.json`](upstreams/mattpocock-skills.json))
-are now loaded as written rather than adapted, Pi first. In Pi,
+are not adapted: every harness loads them as written from one checkout.
 [`../scripts/reconcile-mattpocock-skills.sh`](../scripts/reconcile-mattpocock-skills.sh)
-keeps a plain checkout of upstream at the ledger's `commit` and lists its
-promoted `skills/engineering` and `skills/productivity` directories in Pi's
-settings. His copy of a name he shares with a pool skill wins once no copy of
-that name is in `~/.agents/skills` or `~/.pi/agent/skills`; started from `~` (or
-a non-Git directory under it), Pi reads `~/.agents/skills` as project skills and
-a copy there wins. So the Codex target `~/.agents/skills` no longer receives
-`grilling`, `tdd`, `wayfinder` or `diagnosing-bugs`, and the reconciler warns
-about any local copy of one of his names in either directory. The adapted
-copies the ledger still lists under `adaptations` are what Claude Code, OpenCode
-and Codex load; they are frozen until those harnesses switch, then retire. The
-local `code-review` already retired: its review contract lives in
-`pr-self-review/references/review-contract.md`, and `teammate-pr-review` runs it
-on top of his `code-review` for other people's PRs.
+keeps it at the ledger's `commit` in `~/.local/share/mattpocock-skills`, lists
+its promoted `skills/engineering` and `skills/productivity` directories in Pi's
+settings, and links each promoted skill into `~/.claude/skills` and
+`~/.config/opencode/skills` under its own name. Those links are not pool links:
+this pool's reconciler never touches them, and his script owns only links into
+the checkout. In Pi his copy of a name wins once no copy of that name is in
+`~/.agents/skills` or `~/.pi/agent/skills` (started from `~`, a copy there
+wins), so the reconciler warns about one.
+
+On 2026-11-16 the pool's adapted copies retired in favour of his: `grilling`,
+`wayfinder`, `tdd`, `diagnosing-bugs`, `codebase-architecture` (his
+`codebase-design` and `improve-codebase-architecture`) and `guided-learning`
+(his `teach`), after the local `code-review`. What stays local sits on top of
+or under his skills: `pr-self-review`'s review contract
+(`pr-self-review/references/review-contract.md`), `teammate-pr-review` (his
+`code-review` plus Risk, Ponytail and Bryan's drafting rules), and the Forgejo
+adapter under [`forgejo-tracker/`](forgejo-tracker/), which his `wayfinder`
+reaches through a workspace's tracker doc and the `forgejo-map` command.
 
 The pi-bots job `mattpocock-skill-watch` advances Matt Pocock's pin by itself
 (Bryan, 2026-11-16). Each week, when upstream is ahead, it moves `commit`,

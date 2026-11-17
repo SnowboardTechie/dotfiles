@@ -78,20 +78,17 @@ H="$(new_home)"
 TMP_HOMES+=("$H")
 out="$(HOME="$H" "$RECONCILER" --apply 2>&1)"; rc=$?
 check "t1: apply exits 0 on a fresh home" test "$rc" -eq 0
-check "t1: Codex receives 24 pool links" test "$(links_into_pool "$H/.agents/skills")" -eq 24
-check "t1: Codex gets codebase-architecture" link_resolves_to "$H/.agents/skills/codebase-architecture" "$POOL/codebase-architecture"
-check "t1: Codex excludes the four cores Matt Pocock's skills share names with" bash -c 'for n in grilling tdd wayfinder diagnosing-bugs; do [[ ! -e "$1/.agents/skills/$n" && ! -L "$1/.agents/skills/$n" ]] || exit 1; done' _ "$H"
-check "t1: Claude keeps the four shared-name cores" bash -c 'for n in grilling tdd wayfinder diagnosing-bugs; do [[ -L "$1/.claude/skills/$n" ]] || exit 1; done' _ "$H"
-check "t1: OpenCode keeps the four shared-name cores" bash -c 'for n in grilling tdd wayfinder diagnosing-bugs; do [[ -L "$1/.config/opencode/skills/$n" ]] || exit 1; done' _ "$H"
+check "t1: Codex receives 23 pool links" test "$(links_into_pool "$H/.agents/skills")" -eq 23
+check "t1: no tool gets a retired adapted skill" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do for n in grilling wayfinder tdd diagnosing-bugs codebase-architecture guided-learning; do [[ ! -e "$d/$n" && ! -L "$d/$n" ]] || exit 1; done; done' _ "$H"
 check "t1: Codex gets ADR coaching" link_resolves_to "$H/.agents/skills/adr-and-spec-coach" "$POOL/adr-and-spec-coach"
 check "t1: Codex gets conforming specs" link_resolves_to "$H/.agents/skills/conforming-tech-specs" "$POOL/conforming-tech-specs"
 check "t1: Codex gets shared handoff" link_resolves_to "$H/.agents/skills/session-handoff" "$POOL/session-handoff"
 check "t1: Codex gets teammate PR review" link_resolves_to "$H/.agents/skills/teammate-pr-review" "$POOL/teammate-pr-review"
 check "t1: Codex excludes Hermes orchestration" test ! -e "$H/.agents/skills/coding-agent-handoff-supervision"
-check "t1: Claude receives 27 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 27
-check "t1: OpenCode receives 25 pool links" test "$(links_into_pool "$H/.config/opencode/skills")" -eq 25
-check "t1: Pi receives 26 pool links"       test "$(links_into_pool "$H/.pi/agent/skills")" -eq 26
-check "t1: Hermes receives 39 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 39
+check "t1: Claude receives 22 pool links"   test "$(links_into_pool "$H/.claude/skills")" -eq 22
+check "t1: OpenCode receives 20 pool links" test "$(links_into_pool "$H/.config/opencode/skills")" -eq 20
+check "t1: Pi receives 25 pool links"       test "$(links_into_pool "$H/.pi/agent/skills")" -eq 25
+check "t1: Hermes receives 33 pool links"   test "$(links_into_pool "$H/.hermes/skills/personal")" -eq 33
 check "t1: Claude-only skill is linked"     link_resolves_to "$H/.claude/skills/dx-target" "$POOL/dx-target"
 check "t1: Claude excludes non-Claude common" test ! -e "$H/.claude/skills/obsidian"
 check "t1: Pi keeps non-Claude common"      link_resolves_to "$H/.pi/agent/skills/obsidian" "$POOL/obsidian"
@@ -171,15 +168,30 @@ check "Codex: conflict warning emitted" bash -c 'grep -q "Codex/conforming-tech-
 check "Codex: stale pool link pruned" test ! -L "$H2/.agents/skills/gamedev"
 check "Codex: bundled skills untouched" test -f "$H2/.codex/skills/.system/marker"
 
-# Links an older curation left in ~/.agents/skills for the four cores that share
-# a name with Matt Pocock's skills: reported under check, pruned under apply.
-for n in grilling tdd wayfinder diagnosing-bugs; do ln -s "$POOL/$n" "$H2/.agents/skills/$n"; done
+# Links an older curation left for the six skills adapted from Matt Pocock's,
+# now retired and gone from the pool: reported under check, pruned under apply,
+# in every tool. A same-named link to his checkout is not the pool's and stays.
+RETIRED_ADAPTED="grilling wayfinder tdd diagnosing-bugs codebase-architecture guided-learning"
+mkdir -p "$H2/his/tdd" "$H2/.config/opencode/skills" "$H2/.hermes/skills/personal"
+for d in "$H2/.agents/skills" "$H2/.claude/skills" "$H2/.config/opencode/skills" "$H2/.pi/agent/skills" "$H2/.hermes/skills/personal"; do
+    for n in $RETIRED_ADAPTED; do [[ -e "$d/$n" || -L "$d/$n" ]] || ln -s "$POOL/$n" "$d/$n"; done
+done
+rm "$H2/.claude/skills/tdd"; ln -s "$H2/his/tdd" "$H2/.claude/skills/tdd"
+before_retired="$(snapshot "$H2")"
 out="$(HOME="$H2" "$RECONCILER" --check 2>&1)"
-check "Codex: check reports the shared-name core links" bash -c 'for n in grilling tdd wayfinder diagnosing-bugs; do grep -q "would prune stale pool link: $n$" <<<"$1" || exit 1; done' _ "$out"
-check "Codex: check keeps the shared-name core links" bash -c 'for n in grilling tdd wayfinder diagnosing-bugs; do [[ -L "$1/.agents/skills/$n" ]] || exit 1; done' _ "$H2"
+check "retired adapted: check reports every stale link" test "$(grep -cE "would prune (stale|retired) pool link: (${RETIRED_ADAPTED// /|})$" <<<"$out")" -eq 29
+check "retired adapted: check changes nothing" test "$before_retired" = "$(snapshot "$H2")"
 out="$(HOME="$H2" "$RECONCILER" --apply 2>&1)"
-check "Codex: apply prunes the shared-name core links" bash -c 'for n in grilling tdd wayfinder diagnosing-bugs; do [[ ! -L "$1/.agents/skills/$n" ]] || exit 1; done' _ "$H2"
-check "Codex: apply keeps codebase-architecture" test -L "$H2/.agents/skills/codebase-architecture"
+check "retired adapted: apply prunes them in every tool" bash -c 'for d in "$1/.agents/skills" "$1/.claude/skills" "$1/.config/opencode/skills" "$1/.pi/agent/skills" "$1/.hermes/skills/personal"; do for n in $2; do [[ "$d/$n" == "$1/.claude/skills/tdd" ]] && continue; [[ ! -L "$d/$n" ]] || exit 1; done; done' _ "$H2" "$RETIRED_ADAPTED"
+check "retired adapted: a same-named link elsewhere survives" link_resolves_to "$H2/.claude/skills/tdd" "$H2/his/tdd"
+
+# Links into Matt Pocock's checkout belong to scripts/reconcile-mattpocock-skills.sh:
+# kept, and counted in one line rather than listed as foreign.
+mkdir -p "$H2/.local/share/mattpocock-skills/skills/engineering/zoom-out"
+ln -s "$H2/.local/share/mattpocock-skills/skills/engineering/zoom-out" "$H2/.claude/skills/zoom-out"
+out="$(HOME="$H2" "$RECONCILER" --apply 2>&1)"
+check "his links: kept" test -L "$H2/.claude/skills/zoom-out"
+check "his links: counted, not listed as foreign" bash -c 'grep -q "1 links to Matt Pocock'"'"'s skills left to scripts/reconcile-mattpocock-skills.sh" <<<"$1" && ! grep -q "preserved (foreign symlink): zoom-out" <<<"$1"' _ "$out"
 
 # --- Tests 5/6/7: stale pool links prune under apply, not check ---------------
 # gamedev is in the pool but not curated for Pi, so a Pi link to it is stale.
@@ -282,7 +294,7 @@ out="$(HOME="$H12" RECONCILE_OPENCODE_SKILLS=0 "$RECONCILER" --apply 2>&1)"; rc=
 check "t12: disabled OpenCode apply exits 0" test "$rc" -eq 0
 check "t12: OpenCode pool links are removed" test "$(links_into_pool "$H12/.config/opencode/skills")" -eq 0
 check "t12: foreign OpenCode link survives" test -L "$H12/.config/opencode/skills/foreign"
-check "t12: Pi links are retained" test "$(links_into_pool "$H12/.pi/agent/skills")" -eq 26
+check "t12: Pi links are retained" test "$(links_into_pool "$H12/.pi/agent/skills")" -eq 25
 
 # --- Test 13: RECONCILE_HERMES_SKILLS=0 leaves Hermes untouched ----------------
 H13="$(new_home)"
@@ -291,7 +303,7 @@ out="$(HOME="$H13" RECONCILE_HERMES_SKILLS=0 "$RECONCILER" --apply 2>&1)"; rc=$?
 check "t13: Hermes-skipped apply exits 0" test "$rc" -eq 0
 check "t13: Hermes skip is reported" bash -c 'grep -q "Hermes: skipped" <<<"$1"' _ "$out"
 check "t13: no Hermes links are created" test ! -e "$H13/.hermes/skills/personal"
-check "t13: Pi links are still created" test "$(links_into_pool "$H13/.pi/agent/skills")" -eq 26
+check "t13: Pi links are still created" test "$(links_into_pool "$H13/.pi/agent/skills")" -eq 25
 HOME="$H13" "$RECONCILER" --apply >/dev/null 2>&1
 n13="$(links_into_pool "$H13/.hermes/skills/personal")"
 HOME="$H13" RECONCILE_HERMES_SKILLS=0 "$RECONCILER" --apply >/dev/null 2>&1
