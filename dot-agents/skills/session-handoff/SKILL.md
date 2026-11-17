@@ -7,7 +7,7 @@ description: >
   "write the prompt for the next session", "can this be split across agents",
   "spin up a fresh context for this". Reconciles the vault record, decides
   whether the frontier is one separable slice or several, and emits a handoff
-  prompt per slice. Needs no ticket. Decides slicing and agent topology.
+  prompt per slice. Needs no issue. Decides slicing and agent topology.
   Ordinary implementation handoffs retain supervised delivery; status-only or
   separate acceptance requires Bryan's explicit choice and a durable completion report.
 ---
@@ -22,9 +22,9 @@ below only when Bryan explicitly chooses separate acceptance, status-only
 notification, or fire-and-forget. Do not infer that stopping boundary from
 "hand it off".
 
-The governing authority may be a ticket or a decision-complete approved plan.
+The governing authority may be an issue or a decision-complete approved plan.
 This handoff-only route starts from a durable record and a judgment about where
-the frontier actually is; do not create a ticket solely for transport.
+the frontier actually is; do not create an issue solely for transport.
 
 ## When to use
 
@@ -41,7 +41,7 @@ it off produces a confident wrong implementation. Say so and stop — route to
 `grilling` or brainstorming if this harness carries one.
 
 Do not use it to plan decisions (`wayfinder`), and do not use it for work that
-already has a ticket (`issue-work`, `loop-issue`). Each of those routing targets
+already has an issue (`issue-work`, `loop-issue`). Each of those routing targets
 is curated per harness; when one is not installed here, still stop and name the
 problem rather than handing off anyway.
 
@@ -58,7 +58,7 @@ Three engagement modes exist, and they never mix:
   notify Bryan once when the turn settles, ends without a completion report (possibly
   blocked), or times out. No review or acceptance duty.
 - **fire-and-forget** (explicit only — Bryan says "fire and forget", "do not
-  monitor", or equivalent): hand off and retain no watcher at all.
+  monitor", or equivalent): hand off and retain no watch at all.
 - **supervised** (ordinary implementation default): `coding-agent-handoff-supervision`, with its
   inspection, review, correction, acceptance, and cleanup responsibilities.
 
@@ -172,7 +172,7 @@ lacks them). Without them there is no launch route — emit the prompt as above,
 say why, and stop. That is a normal outcome, not a failure: the prompt is the
 deliverable and the launch is only convenience.
 
-Write the prompt to **session scratch beside the identity file** — not the vault,
+Write the prompt to **session scratch beside the identity record** — not the vault,
 not `.agent-work/` (or legacy `.hermes/`). It is a disposable pointer with no
 independent content, so a vault copy would be exactly the second copy the
 pointer contract forbids.
@@ -181,7 +181,7 @@ The procedure lives in the dotfiles repo and is reached by its skill pool path,
 because `coding-agent-handoff-supervision` is not curated into every harness's
 skills directory. Start the background agent exactly as the "Start" section of
 `dot-agents/skills/coding-agent-handoff-supervision/references/rex-claude-handoff.md`
-describes: the capacity gate, a slot in this session's "Background Agents" tab, the
+describes: the capacity limit, a pane in this session's "Background Agents" tab, the
 prompt file as the Pi background agent's first turn (so it is submitted exactly once), and the
 identity record. Add `engagement_mode: status-only` to that record.
 

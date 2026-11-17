@@ -162,7 +162,7 @@ class SelectIssueAgentTests(unittest.TestCase):
             "coding-agent-handoff-supervision",
         )
 
-    def test_ticket_and_remote_must_match_without_explicit_implementation_repo(self) -> None:
+    def test_issue_repo_and_remote_must_match_without_explicit_implementation_repo(self) -> None:
         with self.assertRaisesRegex(
             select_issue_agent.RoutingError,
             "does not match",
@@ -173,7 +173,7 @@ class SelectIssueAgentTests(unittest.TestCase):
                 override="auto",
             )
 
-    def test_explicit_implementation_repo_allows_cross_repo_ticket(self) -> None:
+    def test_explicit_implementation_repo_allows_cross_repo_issue(self) -> None:
         result = select_issue_agent.select_agent(
             ticket_repo="example/private-workspace",
             implementation_repo="example/public-project",

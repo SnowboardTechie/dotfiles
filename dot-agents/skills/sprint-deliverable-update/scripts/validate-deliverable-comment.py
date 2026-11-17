@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gate a sprint-update or deliverable-summary artifact before review or posting.
+"""Check a sprint-update or deliverable-summary artifact before review or posting.
 
 Enforces the Key Rules in ../SKILL.md mechanically. Errors block (exit 1);
 warnings are heuristics that print but do not block.
@@ -71,7 +71,7 @@ SHAPES = {
     },
     "deliverable-summary": {
         "required": [
-            # SKILL.md defaults to H1, but posted precedent uses H2; either satisfies the gate.
+            # SKILL.md defaults to H1, but posted precedent uses H2; either satisfies the check.
             (re.compile(r"(?m)^#{1,2}\s+Deliverable summary\b"), "`# Deliverable summary` heading"),
             (re.compile(r"(?im)^##\s*Acceptance criteria\b"), "Acceptance criteria section"),
             (re.compile(r"(?im)^##\s*Metrics\b"), "Metrics section"),
@@ -201,7 +201,7 @@ def fetch_status(url, timeout=15):
 
 
 def check_narrative(text, artifact, report):
-    """Heuristics for rule 5: accomplishments are outcomes, not a ticket list."""
+    """Heuristics for rule 5: accomplishments are outcomes, not an issue list."""
     body, first_line = section(text, "Accomplishments" if artifact == "sprint-update" else "Acceptance criteria")
     if not body.strip():
         return
@@ -214,7 +214,7 @@ def check_narrative(text, artifact, report):
             linked += 1
         if ISSUE_LINK.search(bullet) and not [u for u in links if "/issues/" not in u]:
             report.warn(first_line + offset,
-                        "bullet links only to a ticket — link the feature, spec, docs, or release (rule 5)")
+                        "bullet links only to an issue — link the feature, spec, docs, or release (rule 5)")
 
     if len(bullets) >= 3 and linked == 0:
         report.warn(first_line, f"{len(bullets)} bullets, no links — a reader cannot see what changed (rule 5)")
@@ -360,7 +360,7 @@ def selftest():
         check("literal Sprint X.Y caught", "Sprint X.Y" in blob)
         check("local /tmp target caught", "/tmp/shot.png" in blob)
         check("empty alt caught", "empty alt text" in blob)
-        check("ticket-only bullets warned", sum("only to a ticket" in w for w in report.warnings) == 4)
+        check("issue-only bullets warned", sum("only to an issue" in w for w in report.warnings) == 4)
         check("bare #355 caught", "'#355'" in blob)
         check("linked refs not flagged as bare", "'#8802'" not in blob and "'#8803'" not in blob)
 

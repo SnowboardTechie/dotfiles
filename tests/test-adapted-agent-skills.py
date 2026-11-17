@@ -582,15 +582,15 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
             with self.subTest(field=field):
                 self.assertIn(field, self.handoff)
         for token in (
-            "issue-xrepo-{ticket_digest}",
+            "issue-xrepo-{issue_digest}",
             "publication-summary.md",
-            "each distinct ticket and",
+            "each distinct issue and",
             "source_issue_mode: github_shorthand",
             "wrong forge",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, self.body)
-        self.assertIn("{TICKET_PRIMARY_CHECKOUT}/repos/{repo}", self.repo_resolution)
+        self.assertIn("{ISSUE_PRIMARY_CHECKOUT}/repos/{repo}", self.repo_resolution)
         self.assertIn("Do not rescue an identity mismatch", self.repo_resolution)
 
     def test_imperative_work_authorizes_reviewable_pr_not_merge(self) -> None:
@@ -712,11 +712,11 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
             SKILL_POOL
             / "coding-agent-handoff-supervision"
             / "tests"
-            / "test_rex_background_agent_slot.py"
+            / "test_rex_background_agent_pane.py"
         )
 
     def test_preparation_reuses_or_creates_one_ticket(self) -> None:
-        for token in ("Reuse the ticket", "issue-create", "duplicate", "read it back"):
+        for token in ("Reuse the issue", "issue-create", "duplicate", "read it back"):
             with self.subTest(token=token):
                 self.assertIn(token, self.body)
 
@@ -724,7 +724,7 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
         self.assertIn("artifact, not the prompt", self.body)
         self.assert_matches(
             self.body,
-            r"(?is)ticket or plan URL/path.*implementation repository.*worktree.*authority boundaries.*permissions",
+            r"(?is)issue or plan URL/path.*implementation repository.*worktree.*authority boundaries.*permissions",
             "the prompt must contain locators and authority only",
         )
         self.assert_matches(
@@ -753,10 +753,10 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
         )
 
     def test_rex_scripts_and_tests_exist(self) -> None:
-        self.assertTrue((self.scripts / "rex_background_agent_slot.py").is_file())
+        self.assertTrue((self.scripts / "rex_background_agent_pane.py").is_file())
         self.assertTrue((self.scripts / "rex_wait.sh").stat().st_mode & 0o111)
         self.assertTrue(self.tests.is_file())
-        for script in ("rex_background_agent_slot.py", "rex_wait.sh"):
+        for script in ("rex_background_agent_pane.py", "rex_wait.sh"):
             with self.subTest(script=script):
                 self.assertIn(script, self.body)
                 self.assertIn(script, self.rex)
@@ -773,8 +773,8 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
         ):
             with self.subTest(token=token):
                 self.assertIn(token.lower(), (self.body + self.rex).lower())
-        self.assertIn("*weekly*) ceiling=90 ;; *) ceiling=75 ;;", self.rex)
-        self.assertIn('[ -n "$cap" ] && [ "$cap" -lt "$ceiling" ]', self.rex)
+        self.assertIn("*weekly*) threshold=90 ;; *) threshold=75 ;;", self.rex)
+        self.assertIn('[ -n "$cap" ] && [ "$cap" -lt "$threshold" ]', self.rex)
 
     def test_visible_authority_and_identity_remain_fail_closed(self) -> None:
         for token in (

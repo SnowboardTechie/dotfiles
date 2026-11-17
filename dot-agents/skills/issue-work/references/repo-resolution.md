@@ -1,20 +1,20 @@
 # Resolving a Local Clone for `owner/repo`
 
-Loaded on demand from SKILL.md. Used by the orchestrator (not by `ticket-intake` — the analyst only fetches ticket data via API).
+Loaded on demand from SKILL.md. Used by the orchestrator (not by `issue-intake` — the analyst only fetches issue data via API).
 
 ---
 
 ## Why this exists
 
-When the user shares a ticket, resolve its ticket-workspace clone first. An
+When the user shares an issue, resolve its issue repository's clone first. An
 approved handoff may then name a different implementation repository whose clone
 owns the worktree. A remote URL is not enough for either role: state, vault
 discovery, fetches, and worktrees are local operations.
 
 For ordinary issues the two roles are the same clone. For cross-repository work,
 run this resolution independently for each expected forge host and
-owner/repository. Never accept a clone merely because it sits under the ticket
-workspace, has a similar name, or contains equal files.
+owner/repository. Never accept a clone merely because it sits under the issue
+repository's workspace, has a similar name, or contains equal files.
 
 ---
 
@@ -24,14 +24,14 @@ Run in order, short-circuit on first match.
 
 ### 1. Explicit project path
 
-First honor a concrete clone path named by user input, ticket-workspace
+First honor a concrete clone path named by user input, the issue repository's
 instructions, or a workspace repository manifest such as `repos.tsv`. Verify the
 candidate's origin; the declaration is discovery evidence, not identity proof.
 
-### 2. Ticket-workspace checkout
+### 2. Issue repository's checkout
 
 For an implementation repository bound by a private workspace, check
-`{TICKET_PRIMARY_CHECKOUT}/repos/{repo}`. This is the intended
+`{ISSUE_PRIMARY_CHECKOUT}/repos/{repo}`. This is the intended
 `private-workspace/repos/public-project`-style topology. Verify both forge hostname and
 owner/repository before accepting it.
 
@@ -89,7 +89,7 @@ Prompt:
 ```
 I don't see {owner}/{repo} cloned locally under:
   - the explicit workspace path or manifest
-  - {TICKET_PRIMARY_CHECKOUT}/repos/{repo}
+  - {ISSUE_PRIMARY_CHECKOUT}/repos/{repo}
   - ~/code/
   - ~/code/*/
   - ~/projects/ / ~/src/
@@ -113,8 +113,8 @@ On no, stop and report: "Cannot proceed without a local clone."
 
 The explicit approved handoff supplies the implementation forge and
 owner/repository. Verify both against the candidate clone's `origin` before
-binding `{IMPLEMENTATION_PRIMARY_CHECKOUT}`. The ticket clone remains
-`{TICKET_PRIMARY_CHECKOUT}` and owns `.agent-work/issue-work/` (and any legacy
+binding `{IMPLEMENTATION_PRIMARY_CHECKOUT}`. The issue repository's clone remains
+`{ISSUE_PRIMARY_CHECKOUT}` and owns `.agent-work/issue-work/` (and any legacy
 `.hermes/issue-work/` state); the implementation clone
 owns the feature worktree. A missing implementation clone follows the same
 clone-if-missing approval rule. Legacy `Repository` handoffs may resolve only a
@@ -122,7 +122,7 @@ same-repository target.
 
 ## Primary checkout vs worktree
 
-The resolution above gives you the **primary checkout** (the copy that is not a linked worktree). The `issue-work` skill will then create a **worktree** for the ticket.
+The resolution above gives you the **primary checkout** (the copy that is not a linked worktree). The `issue-work` skill will then create a **worktree** for the issue.
 
 Rules:
 - Do not create a worktree on top of a worktree. If the resolved path is already a worktree (`.git` is a file, not a dir), find its primary checkout first:
@@ -132,7 +132,7 @@ Rules:
   # The git-common-dir is {primary checkout}/.git — strip /.git for the primary checkout path
   ```
 
-- Ticket state and vault discovery use `{TICKET_PRIMARY_CHECKOUT}`.
+- The state directory and vault discovery use `{ISSUE_PRIMARY_CHECKOUT}`.
 - Git fetch, dirty-tree checks, default-branch lookup, and worktree creation use
   `{IMPLEMENTATION_PRIMARY_CHECKOUT}`.
 - Prefer `wt` for creation/switching. The controlled fallback is `git -C
@@ -144,7 +144,7 @@ Rules:
 ## Multi-remote repos
 
 Do not rescue an identity mismatch by switching from `origin` to another remote.
-The ticket clone's `origin` must match the ticket repository, and the
+The issue repository's clone's `origin` must match the issue repository, and the
 implementation clone's `origin` must match the approved implementation forge and
 repository because worktree routing and `/ship` publish through that identity. A
 fork/upstream workflow requires an explicit future contract for separate source,
@@ -155,7 +155,7 @@ base, and publication remotes; until then, stop rather than guessing.
 ## Cache (optional future work)
 
 If resolution becomes slow, consider a cache at
-`{TICKET_PRIMARY_CHECKOUT}/.agent-work/issue-work/.repo-cache.json` keyed by forge host and
+`{ISSUE_PRIMARY_CHECKOUT}/.agent-work/issue-work/.repo-cache.json` keyed by forge host and
 owner/repository:
 
 ```json
