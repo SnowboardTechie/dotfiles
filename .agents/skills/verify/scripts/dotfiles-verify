@@ -1,0 +1,286 @@
+#!/usr/bin/env bash
+# dotfiles-verify: drive this repository's reconcilers and setup scripts the
+# way a host runs them, in a disposable HOME inside a macOS sandbox that can
+# write nowhere else and reach no network. See ../SKILL.md.
+#
+#   dotfiles-verify doctor
+#   dotfiles-verify journeys
+#   dotfiles-verify run <journey | path/to/journey.sh>
+#   dotfiles-verify cleanup [run directory]
+set -uo pipefail
+
+SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+REPO_ROOT="$(cd "$SKILL_DIR/../../.." && pwd -P)"
+JOURNEY_DIR="$SKILL_DIR/journeys"
+EVIDENCE_ROOT="${DOTFILES_VERIFY_EVIDENCE:-${TMPDIR:-/tmp}/dotfiles-verify}"
+# Tools a reconciler may need, linked by name into each run's tool directory.
+# pi, claude, omarchy, systemctl, wl-paste and launchctl are deliberately not
+# here: a journey that wants one writes a stub with `stub`.
+TOOLS=(bash python3 jq perl git node realpath)
+
+usage() {
+    sed -n '2,9p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+}
+
+die() { echo "dotfiles-verify: $*" >&2; exit 2; }
+
+evidence_root() {
+    mkdir -p "$EVIDENCE_ROOT" || die "cannot create evidence root $EVIDENCE_ROOT"
+    local root
+    root="$(cd "$EVIDENCE_ROOT" && pwd -P)"
+    case "$root/" in
+        "$REPO_ROOT"/*) die "evidence root $root is inside the repository; set DOTFILES_VERIFY_EVIDENCE elsewhere" ;;
+    esac
+    echo "$root"
+}
+
+# A sandbox profile that allows writes only under the given directories.
+profile() {
+    local p='(version 1)(allow default)(deny network*)(deny file-write*)(allow file-write* (literal "/dev/null") (literal "/dev/tty") (regex #"^/dev/fd/")'
+    local d
+    for d in "$@"; do p+=" (subpath \"$d\")"; done
+    echo "$p)"
+}
+
+# ---- doctor -----------------------------------------------------------------
+
+doctor() {
+    local fails=0 t root probe
+    ok()   { echo "ok    $1"; }
+    bad()  { echo "FAIL  $1"; fails=$((fails + 1)); }
+    [[ "$(uname -s)" == Darwin ]] && ok "platform: macOS" || bad "platform: $(uname -s); the sandbox needs macOS sandbox-exec"
+    command -v sandbox-exec >/dev/null && ok "sandbox-exec: $(command -v sandbox-exec)" || bad "sandbox-exec missing"
+    for t in "${TOOLS[@]}"; do
+        command -v "$t" >/dev/null && ok "tool $t: $(command -v "$t")" || bad "tool $t missing"
+    done
+    if [[ "$(bash -c 'echo ${BASH_VERSINFO[0]}')" -ge 4 ]]; then ok "bash on PATH is version 4 or later"; else bad "bash on PATH is older than 4"; fi
+    root="$(evidence_root)" && ok "evidence: $root" || bad "evidence root"
+    # The sandbox must refuse a write outside the run's directories.
+    probe="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-verify-probe.XXXXXX")"
+    probe="$(cd "$probe" && pwd -P)"
+    mkdir "$probe/allowed"
+    if sandbox-exec -p "$(profile "$probe/allowed")" bash -c "echo x > '$probe/allowed/f' && ! { echo x > '$probe/denied'; } 2>/dev/null" \
+        && [[ -f "$probe/allowed/f" && ! -e "$probe/denied" ]]; then
+        ok "sandbox: writes inside the run allowed, outside refused"
+    else
+        bad "sandbox did not confine writes"
+    fi
+    rm -rf "$probe"
+    local stale=0 r
+    for r in "$root"/*/run.json; do
+        [[ -f "$r" ]] || continue
+        grep -q '"state": "cleaned"' "$r" || { echo "note  not cleaned: $(dirname "$r")"; stale=$((stale + 1)); }
+    done
+    [[ $stale -eq 0 ]] && ok "runs: all cleaned" || bad "runs: $stale not cleaned; run: dotfiles-verify cleanup"
+    [[ $fails -eq 0 ]]
+}
+
+# kill_tree <pid>: SIGTERM every descendant of pid (not pid itself), deepest first.
+kill_tree() {
+    local child
+    for child in $(pgrep -P "$1"); do kill_tree "$child"; kill -TERM "$child" 2>/dev/null; done
+}
+
+# ---- run --------------------------------------------------------------------
+
+write_run_json() { # <state>
+    printf '{\n  "journey": "%s",\n  "repo": "%s",\n  "head": "%s",\n  "scratch": "%s",\n  "pid": %s,\n  "state": "%s"\n}\n' \
+        "$JOURNEY" "$REPO_ROOT" "$(git -C "$REPO_ROOT" rev-parse HEAD)" "$SCRATCH" "$$" "$1" >"$RUN_DIR/run.json"
+}
+
+log() { echo "$*" | tee -a "$RUN_DIR/log.txt"; }
+
+# Helpers a journey uses. Each journey is a bash file sourced in a subshell.
+SEQ=0
+next() { SEQ=$((SEQ + 1)); printf '%02d' "$SEQ"; }
+
+step() { log "step $*"; }
+
+new_home() { # <name>  -> prints a fresh empty HOME path
+    local h="$SCRATCH/homes/$1"
+    mkdir -p "$h"
+    echo "$h"
+}
+
+# stub <name> <body>: a command on PATH in front of the real tools. In the
+# body, __CALLS__ is the call log for the current HOME, outside it, so a
+# stub's log never shows up in a home's tree: calls <home> <name> reads it.
+stub() {
+    printf '#!/usr/bin/env bash\n%s\n' "${2//__CALLS__/$SCRATCH/calls/\$(basename \"\$HOME\")-$1}" >"$SCRATCH/stubs/$1"
+    chmod +x "$SCRATCH/stubs/$1"
+}
+
+calls() { cat "$SCRATCH/calls/$(basename "$1")-$2" 2>/dev/null; }
+
+# stub_pi: a `pi` that records each call (calls <home> pi) and edits
+# packages in $HOME/.pi/agent/settings.json the way `pi install`/`pi remove` do.
+# Plus a `claude` that does nothing, so the Claude Code reconciler runs.
+stub_pi() {
+    stub pi 'echo "$*" >>"__CALLS__"
+python3 - "$HOME/.pi/agent/settings.json" "$1" "$2" <<"PY"
+import json, os, sys
+p, op, src = sys.argv[1:]
+os.makedirs(os.path.dirname(p), exist_ok=True)
+d = json.load(open(p)) if os.path.exists(p) else {}
+pk = d.setdefault("packages", [])
+if op == "install" and src not in pk:
+    pk.append(src)
+elif op == "remove":
+    d["packages"] = [x for x in pk if x != src]
+json.dump(d, open(p, "w"), indent=2)
+PY'
+    stub claude 'exit 0'
+}
+
+# mattpocock_upstream: the sandbox has no network, so give git a local
+# stand-in for Matt Pocock's skills repository holding the pinned commit.
+# Copies it from the checkout the real reconciler keeps, else clones it once
+# (outside the sandbox). Sets GIT_UPSTREAM_ENV to pass to `drive`.
+mattpocock_upstream() {
+    local ledger="$REPO/dot-agents/upstreams/mattpocock-skills.json" url pin src
+    url="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["upstream"])' "$ledger")"
+    pin="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["commit"])' "$ledger")"
+    src="$HOME/.pi/agent/upstreams/mattpocock-skills"
+    if git -C "$src" cat-file -e "$pin^{commit}" 2>/dev/null; then
+        git clone --quiet --bare "$src" "$SCRATCH/mattpocock-skills.git"
+    else
+        git clone --quiet --bare "$url" "$SCRATCH/mattpocock-skills.git" || fail "cannot fetch a stand-in for $url"
+    fi
+    git -C "$SCRATCH/mattpocock-skills.git" cat-file -e "$pin^{commit}" || fail "stand-in upstream lacks the pin $pin"
+    MATTPOCOCK_PIN="$pin"
+    GIT_UPSTREAM_ENV=(GIT_CONFIG_COUNT=1 "GIT_CONFIG_KEY_0=url.$SCRATCH/mattpocock-skills.git.insteadOf" "GIT_CONFIG_VALUE_0=$url")
+    log "  stand-in upstream for $url at $SCRATCH/mattpocock-skills.git"
+}
+
+# drive <label> <home> [VAR=value ...] -- <command> [args...]
+# Runs the command with HOME=<home>, a clean environment and the run's PATH,
+# inside the sandbox. Sets RC and OUT; writes NN-<label>.txt.
+drive() {
+    local label="$1" home="$2"; shift 2
+    local envs=()
+    while [[ $# -gt 0 && "$1" != "--" ]]; do envs+=("$1"); shift; done
+    [[ "${1:-}" == "--" ]] && shift
+    next >/dev/null
+    local file="$RUN_DIR/$(printf '%02d' "$SEQ")-$label.txt"
+    OUT="$(cd "$home" && sandbox-exec -p "$(profile "$SCRATCH")" \
+        env -i HOME="$home" PATH="$SCRATCH/stubs:$SCRATCH/tools:/usr/bin:/bin:/usr/sbin:/sbin" \
+        TMPDIR="$SCRATCH/tmp" LANG=en_US.UTF-8 PYTHONDONTWRITEBYTECODE=1 ${envs[@]+"${envs[@]}"} "$@" 2>&1)"
+    RC=$?
+    {
+        printf 'command: %s\n' "$*"
+        printf 'home: %s\n' "$home"
+        [[ ${#envs[@]} -gt 0 ]] && printf 'env: %s\n' "${envs[*]}"
+        printf 'exit: %s\n\n%s\n' "$RC" "$OUT"
+    } >"$file"
+    log "  drive $label: exit $RC ($(basename "$file"))"
+}
+
+# tree <home>: every path under it, links with their targets, files with a hash.
+tree() {
+    local entry
+    find "$1" -mindepth 1 | LC_ALL=C sort | while IFS= read -r entry; do
+        if [[ -L "$entry" ]]; then
+            echo "${entry#"$1"/} -> $(readlink "$entry")"
+        elif [[ -f "$entry" ]]; then
+            echo "${entry#"$1"/} $(shasum -a 256 "$entry" | cut -c1-16)"
+        else
+            echo "${entry#"$1"/}/"
+        fi
+    done
+}
+
+# capture <home> <label>: writes NN-<label>.tree and sets TREE to its path.
+capture() {
+    next >/dev/null
+    TREE="$RUN_DIR/$(printf '%02d' "$SEQ")-$2.tree"
+    tree "$1" >"$TREE"
+}
+
+fail() { log "FAIL: $*"; exit 1; }
+
+# expect <claim> <command...>: the claim must hold, or the journey fails here.
+expect() {
+    local claim="$1"; shift
+    if "$@"; then log "  ok   $claim"; else fail "$claim"; fi
+}
+
+has() { grep -qF -- "$2" <<<"$1"; }          # has <text> <fixed string>
+lacks() { ! grep -qF -- "$2" <<<"$1"; }
+same_file() { cmp -s "$1" "$2"; }
+links_to() { [[ -L "$1" && "$(readlink -f "$1")" == "$(readlink -f "$2")" ]]; }
+
+run_journey() {
+    local arg="$1" file
+    if [[ -f "$arg" ]]; then file="$(cd "$(dirname "$arg")" && pwd -P)/$(basename "$arg")"
+    elif [[ -f "$JOURNEY_DIR/$arg.sh" ]]; then file="$JOURNEY_DIR/$arg.sh"
+    else die "no journey '$arg'; see: dotfiles-verify journeys"; fi
+    JOURNEY="$(basename "$file" .sh)"
+    command -v sandbox-exec >/dev/null || die "sandbox-exec missing; this harness runs only on macOS (see doctor)"
+    local root; root="$(evidence_root)" || exit 2
+    RUN_DIR="$root/$(date -u +%Y%m%dT%H%M%SZ)-$JOURNEY"
+    while [[ -e "$RUN_DIR" ]]; do RUN_DIR="$RUN_DIR-x"; done
+    mkdir -p "$RUN_DIR"
+    SCRATCH="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-verify-scratch.XXXXXX")"
+    SCRATCH="$(cd "$SCRATCH" && pwd -P)"
+    mkdir -p "$SCRATCH/homes" "$SCRATCH/calls" "$SCRATCH/stubs" "$SCRATCH/tools" "$SCRATCH/tmp"
+    local t
+    for t in "${TOOLS[@]}"; do ln -s "$(command -v "$t")" "$SCRATCH/tools/$t"; done
+    # The sandbox stops file writes and network, not IPC: launchctl would still
+    # reach the real launchd. These stand in for every host-level command a
+    # script here may call, log the call, and succeed. A journey can replace one.
+    for t in launchctl systemctl stow sudo brew defaults; do stub "$t" 'echo "$*" >>"__CALLS__"'; done
+    # A neutral host name, so no Studio-only or Gnarbox-only branch runs by accident.
+    for t in scutil hostname; do stub "$t" 'echo verify-host'; done
+    write_run_json running
+    # On a signal, stop the journey (this run's own children, by parent pid) and
+    # remove the scratch; cleanup may already have marked the run cleaned.
+    trap 'kill_tree $$; grep -q "\"state\": \"cleaned\"" "$RUN_DIR/run.json" || write_run_json interrupted; rm -rf "$SCRATCH"; exit 130' INT TERM
+    log "run $RUN_DIR"
+    log "journey $file"
+    log "repo $REPO_ROOT at $(git -C "$REPO_ROOT" rev-parse --short HEAD)$( [[ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]] && echo ' (with local changes)')"
+    log "scratch $SCRATCH"
+    ( set +e; REPO="$REPO_ROOT"; source "$file" )
+    local rc=$?
+    if [[ $rc -eq 0 ]]; then log "PASSED"; else log "FAILED"; fi
+    write_run_json finished
+    cleanup_run "$RUN_DIR" >/dev/null
+    return $(( rc == 0 ? 0 : 1 ))
+}
+
+# ---- cleanup ----------------------------------------------------------------
+
+cleanup_run() { # <run dir>
+    local dir="$1" scratch pid
+    [[ -f "$dir/run.json" ]] || { echo "skip  $dir (no run.json)"; return; }
+    grep -q '"state": "cleaned"' "$dir/run.json" && { echo "ok    $dir (already cleaned)"; return; }
+    scratch="$(sed -n 's/.*"scratch": "\(.*\)".*/\1/p' "$dir/run.json")"
+    pid="$(sed -n 's/.*"pid": \([0-9]*\).*/\1/p' "$dir/run.json")"
+    if [[ "$pid" != "$$" ]] && kill -0 "$pid" 2>/dev/null \
+        && ps -o command= -p "$pid" | grep -q dotfiles-verify; then
+        kill_tree "$pid"   # the journey's commands first: bash runs a trap only once they end
+        kill -TERM "$pid" 2>/dev/null || true
+        sleep 1
+    fi
+    case "$scratch" in
+        */dotfiles-verify-scratch.*) rm -rf "$scratch" ;;
+        *) echo "skip  $dir (scratch path '$scratch' is not one of ours)"; return ;;
+    esac
+    sed -i '' 's/"state": "[a-z]*"/"state": "cleaned"/' "$dir/run.json"
+    echo "ok    $dir cleaned; evidence kept"
+}
+
+cleanup() {
+    if [[ $# -gt 0 ]]; then cleanup_run "$1"; return; fi
+    local root r; root="$(evidence_root)" || exit 2
+    for r in "$root"/*/run.json; do [[ -f "$r" ]] && cleanup_run "$(dirname "$r")"; done
+    return 0
+}
+
+case "${1:-}" in
+    doctor) doctor ;;
+    journeys) for f in "$JOURNEY_DIR"/*.sh; do printf '%-18s %s\n' "$(basename "$f" .sh)" "$(sed -n '2s/^# //p' "$f")"; done ;;
+    run) [[ $# -eq 2 ]] || die "usage: dotfiles-verify run <journey>"; run_journey "$2" ;;
+    cleanup) shift; cleanup "$@" ;;
+    -h|--help|"") usage; [[ -n "${1:-}" ]] ;;
+    *) usage >&2; exit 2 ;;
+esac

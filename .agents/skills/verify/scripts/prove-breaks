@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""Prove each journey can fail: apply every break in breaks.json to the
+checkout, run its journey, record where the journey failed, and put the file
+back byte for byte. A break counts as caught only when the journey fails at
+the claim the break names (`fails_at`); failing somewhere else is reported as
+a wrong-reason failure.
+
+  prove-breaks [--journey NAME] [--break SUBSTRING]
+
+Exit 0 when every selected break is caught, 1 otherwise, 2 on a setup error.
+Refuses to start when a file it would break has uncommitted changes.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+SCRIPTS = Path(__file__).resolve().parent
+REPO = SCRIPTS.parents[3]
+VERIFY = SCRIPTS / "dotfiles-verify"
+
+
+def dirty(rel: str) -> bool:
+    return subprocess.run(["git", "-C", str(REPO), "diff", "--quiet", "HEAD", "--", rel]).returncode != 0
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--journey")
+    ap.add_argument("--break", dest="brk")
+    args = ap.parse_args()
+
+    breaks = json.loads((SCRIPTS / "breaks.json").read_text())
+    breaks = [b for b in breaks if (not args.journey or b["journey"] == args.journey)
+              and (not args.brk or args.brk in b["break"])]
+    if not breaks:
+        print("prove-breaks: no break selected", file=sys.stderr)
+        return 2
+    for rel in sorted({b["file"] for b in breaks}):
+        if dirty(rel):
+            print(f"prove-breaks: {rel} has uncommitted changes; commit or set them aside first", file=sys.stderr)
+            return 2
+
+    results = []
+    for b in breaks:
+        path = REPO / b["file"]
+        original = path.read_bytes()
+        text = original.decode()
+        if text.count(b["old"]) != 1:
+            results.append((b, "STALE", f"the text to break occurs {text.count(b['old'])} times; update breaks.json"))
+            continue
+        try:
+            path.write_bytes(text.replace(b["old"], b["new"]).encode())
+            proc = subprocess.run([str(VERIFY), "run", b["journey"]], capture_output=True, text=True, env=os.environ)
+        finally:
+            path.write_bytes(original)
+        out = proc.stdout + proc.stderr
+        run_dir = next((l[4:] for l in out.splitlines() if l.startswith("run ")), "?")
+        failed_at = next((l[6:] for l in out.splitlines() if l.startswith("FAIL: ")), None)
+        if proc.returncode == 0:
+            results.append((b, "MISSED", f"journey passed ({run_dir})"))
+        elif failed_at == b["fails_at"]:
+            results.append((b, "CAUGHT", f"failed at \"{failed_at}\" ({run_dir})"))
+        else:
+            results.append((b, "WRONG", f"failed at \"{failed_at}\", expected \"{b['fails_at']}\" ({run_dir})"))
+        print(f"{results[-1][1]:7} {b['journey']:16} {b['break']}: {results[-1][2]}", flush=True)
+        if dirty(b["file"]):
+            print(f"prove-breaks: {b['file']} was not restored", file=sys.stderr)
+            return 2
+
+    caught = sum(r[1] == "CAUGHT" for r in results)
+    print(f"\n{caught} of {len(results)} breaks caught at the predicted claim")
+    return 0 if caught == len(results) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
