@@ -12,8 +12,9 @@
 # stayed ended ~10 polls with no handback (a worker waiting on a question or stopped early: read the pane); 3 when
 # the last record is unanswered and the transcript has been silent ~8 min: the turn halted without ending (a
 # safety-filter stop leaves the pane idle at its prompt), so read the pane; 1 on the cap. A running tool shows an
-# assistant tool call last, so a long foreground test never trips 3. Run it with terminal(background=true,
-# notify=true). Use `test -f`, never `ls`, in such shells: an interactive alias can turn `ls` into another tool.
+# assistant tool call last, so a long foreground test never trips 3. From Pi, start it with the watch_worker tool
+# (dot-pi/agent/extensions/worker-watch.ts), which wakes the session when it exits; from Hermes, with
+# terminal(background=true, notify=true). Use `test -f`, never `ls`, in such shells: an interactive alias can turn `ls` into another tool.
 T=$1; H=$2; end=$(( $(date +%s) + $3 )); M=${4:-}; n=0; st=""
 STALL=${REX_WAIT_STALL_SECONDS:-480}; POLL=${REX_WAIT_POLL_SECONDS:-60}; ENDED_POLLS=${REX_WAIT_ENDED_POLLS:-10}
 while [ "$(date +%s)" -lt "$end" ]; do

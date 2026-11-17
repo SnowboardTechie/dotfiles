@@ -79,6 +79,7 @@ check "reconcile: apply exits 0" "0" "$rc"
 check "reconcile: apply links the extension" "$EXT" "$(readlink "$RH/.pi/agent/extensions/pi-seat.ts")"
 check "reconcile: apply links pi-rex" "$REPO_ROOT/dot-pi/agent/extensions/pi-rex.ts" "$(readlink "$RH/.pi/agent/extensions/pi-rex.ts")"
 check "reconcile: apply links pi-split" "$REPO_ROOT/dot-pi/agent/extensions/pi-split.ts" "$(readlink "$RH/.pi/agent/extensions/pi-split.ts")"
+check "reconcile: apply links worker-watch" "$REPO_ROOT/dot-pi/agent/extensions/worker-watch.ts" "$(readlink "$RH/.pi/agent/extensions/worker-watch.ts")"
 check "reconcile: apply links global AGENTS.md" "$REPO_ROOT/dot-pi/agent/AGENTS.md" "$(readlink "$RH/.pi/agent/AGENTS.md")"
 PI_EXTENSIONS_HOME="$RH" "$RECON" --check >/dev/null; rc=$?
 check "reconcile: check is clean after apply" "no" "$(PI_EXTENSIONS_HOME="$RH" "$RECON" --check | grep -q MISSING && echo yes || echo no)"

@@ -172,7 +172,9 @@ predicted next prompt into the input line (`capture --format=html` shows it at
 `hermes chat --query-file "$S/<lane>-prompt.md"` as the worker command, as
 `next-session` starts Hermes in Rex. It has no transcript `rex_wait.sh` reads,
 so settle it on the handback file plus `capture`. Wait on the handback's last
-paragraph, read in paragraph mode, as a background job with `notify=true`:
+paragraph, read in paragraph mode, as a background job with `notify=true` (from
+a Pi parent, run this loop in the foreground with a `bash` timeout; `watch_worker`
+needs a transcript):
 `until test -f "$H" && awk 'BEGIN{RS=""} {p=$0} END{exit !(p ~ /^Divergence:/)}' "$H"; do sleep 60; done`
 (add a cap). Independently check its smart approvals and no yolo mode first. A
 Hermes worker still notifies Bryan: OSC 7501, the bell and an OSC 9 desktop
@@ -200,8 +202,11 @@ accepted that for rare Hermes workers (2026-11-03).
   `assistant stop` means the turn ended; `assistant toolUse`, `toolResult` or
   `user` means working.
 - Wait with `scripts/rex_wait.sh <transcript> <handback> <cap seconds>
-  [marker]`, run with `terminal(background=true, notify=true)` so settlement
-  wakes the coordinator. It polls every 60 s and also exits (code 2) when
+  [marker]`, armed so settlement wakes the coordinator: from Pi, the
+  `watch_worker` tool (it runs this script in the background and wakes the
+  session with its exit code and output); from Hermes,
+  `terminal(background=true, notify=true)`. Arm it after every start and every
+  typed turn, before ending your own turn. It polls every 60 s and also exits (code 2) when
   the turn has stayed ended about ten minutes with no handback: a worker waiting on a
   question or one that stopped early, so read the pane. It exits 3 when the
   last message is an unanswered user prompt or tool result and the transcript
@@ -267,7 +272,7 @@ for a resend instead of acting.
 
 Confirm a new `user` record in the transcript that it was accepted before you
 report it delivered; `capture` can still show an empty prompt for several
-seconds after a good submit. Then start `rex_wait.sh` with the marker.
+seconds after a good submit. Then arm the watch with the marker (`watch_worker` from Pi), before ending your turn.
 
 ## Close
 

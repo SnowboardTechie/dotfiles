@@ -20,6 +20,7 @@ PI_FILES=(
     extensions/pi-seat.ts
     extensions/pi-split.ts
     extensions/stream-rules.ts
+    extensions/worker-watch.ts
 )
 
 for rel in "${PI_FILES[@]}"; do

@@ -374,11 +374,31 @@ any retry: the user may have answered in the visible pane or the prompt may have
 timed out. Do not invent which actor resolved it.
 
 Wait on the handback, not on a turn's end alone. A worker turn can end while its
-own background test shell is still running and its handback is unwritten. Run
-`scripts/rex_wait.sh` as a tracked background process, which settles only when
-the transcript shows the turn ended *and* the contract's handback section ends
-with its `Divergence:` line. Never re-send a prompt to recover a completion
-signal.
+own background test shell is still running and its handback is unwritten.
+`scripts/rex_wait.sh` settles only when the transcript shows the turn ended
+*and* the contract's handback section ends with its `Divergence:` line. Never
+re-send a prompt to recover a completion signal.
+
+**Every worker turn in flight has a watch, from the moment it starts until the
+parent has read its handback.** This is the parent's job, not Bryan's: never end
+a turn with a worker running and nothing armed to wake you, and never tell Bryan
+that nothing will wake you or that you can't monitor it. How to arm it:
+
+- **Pi parent:** call the `watch_worker` tool (worker label, transcript,
+  handback, and the correction's heading as `marker` on a later turn) right after
+  each start and each typed turn. It runs `rex_wait.sh` in the background,
+  returns at once, and wakes this session with the result when the worker
+  settles, so you can still answer Bryan meanwhile. Pi's `bash` has no
+  background notify: a `&` job or a `bash` timeout wakes nothing. When the wake
+  says the wait ended without settling (exit 1, 2 or 3), read the pane, act,
+  and call `watch_worker` again; call it with `release: true` only once the
+  worker is closed or its handback is accepted. Several workers get one call
+  each. The `worker-watch` extension makes Pi continue any run that started or
+  prompted a worker without one. Without the tool (an older Pi, the extension
+  not linked), block in the foreground on `rex_wait.sh` with a `bash` timeout
+  just above its cap; that is the only other way to stay attached.
+- **Hermes parent:** run `rex_wait.sh` with
+  `terminal(background=true, notify=true)`.
 
 Complete when the original worker settles and its identity still matches the
 record.
@@ -453,8 +473,9 @@ batch), follow this shape:
   prefix every new file with the lane name (`<lane>-contract.md`,
   `<lane>-handback.md`, `<lane>-worker-identity.json`), and make the contract
   name that exact handback path, because the worker writes wherever the contract
-  says. Run every `scripts/rex_wait.sh` wait as a background terminal job with
-  `notify=true`, so each settlement wakes the coordinator.
+  says. Watch every lane as "Wait on the handback" in step 4 says (Pi:
+  `watch_worker`, one per lane; Hermes: a background `rex_wait.sh` with
+  `notify=true`), so each settlement wakes the coordinator.
 - **Integrate before the gate.** Merge the current `origin/main` into the feature
   branch (a signed merge commit, never a rebase) before the canonical gate. The
   gate and final review then judge the integrated candidate.
@@ -641,6 +662,7 @@ resume a visible Rex worker's identity.
 - [ ] Seat capacity passed (below 75% of a 5-hour window, or 90% of a weekly one) and no other turn was in flight in the worker runtime session
 - [ ] No overlapping turn targeted the same session; unrelated sessions were not blocked
 - [ ] Delivery claims have acknowledgement evidence, not merely a background process handle
+- [ ] Every worker turn in flight had a watch that wakes the parent (Pi: `watch_worker`) until its handback was read
 - [ ] Rejected or uncertain submissions were inspected and recovered without bypass or duplicate delivery
 - [ ] Parent read a substantive handback, dispositioned remaining gates in order, and tested the actual candidate
 - [ ] One integrated parent review and AC sweep completed
