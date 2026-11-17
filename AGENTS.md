@@ -152,6 +152,20 @@ git diff --check                 # Trailing whitespace check
 - `AGENTS.md` is globally gitignored via `dot-config/git/ignore`. Repos that need to track it (dotfiles, nix-configs) use `!AGENTS.md` in their `.gitignore` to override.
 - `extensions.worktreeconfig` is deliberately OFF here (`core.repositoryformatversion = 0`). It was on with format version 1, which made strict git backends refuse to open the repo — `tea` errored with `does not support extension: worktreeconfig`, and p10k's bundled gitstatusd silently dropped the git prompt segment. Nothing used per-worktree config. If a `git worktree` or `sparse-checkout` operation re-enables it, the prompt goes quiet again: `git config --unset extensions.worktreeConfig && git config core.repositoryformatversion 0`.
 
+## Verifying the setup scripts
+
+`.agents/skills/verify/` is the project skill for proving a change to what setup does to a home: a control command
+(`doctor`, `run <journey>`, `cleanup`) that drives `setup-platform-configs.sh`, `scripts/setup-omarchy.sh` and the
+reconcilers (`--check`, then `--apply`, then again, with foreign entries) in throwaway homes under a macOS
+`sandbox-exec` profile that allows writes only to the run's scratch and no network, plus a feature map. Never run those
+scripts against the real `$HOME` to verify them. It was generated with pstack's `create-verification-skill`; correct it
+with `maintain-verification-skill`. It replaces none of `tests/`.
+
+- **A journey counts only once it has been seen to fail** on the break it exists to catch.
+  `.agents/skills/verify/scripts/prove-breaks` applies each break in `scripts/breaks.json`, runs its journey, and
+  restores the file; the feature map lists them. Add a break with every new claim.
+- `.agents/` is excluded from Stow (`^/\.agents$` in `.stow-local-ignore`), so the skill never lands in `~/.agents/skills`.
+
 ## Notes vault
 
 This repo has `vault/`.

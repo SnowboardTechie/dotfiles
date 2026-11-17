@@ -1,0 +1,394 @@
+[
+ {
+  "journey": "agent-skills",
+  "file": "scripts/reconcile-agent-skills.sh",
+  "break": "--check creates the tool directories",
+  "old": "    if [[ \"$MODE\" == \"apply\" ]]; then\n        mkdir -p \"$dest\"",
+  "new": "    if true; then\n        mkdir -p \"$dest\"",
+  "fails_at": "check left the home unchanged"
+ },
+ {
+  "journey": "agent-skills",
+  "file": "scripts/reconcile-agent-skills.sh",
+  "break": "draw-it dropped from Pi's curation",
+  "old": "technical-demo-preparation draw-it)",
+  "new": "technical-demo-preparation)",
+  "fails_at": "Pi gets draw-it (Pi-only)"
+ },
+ {
+  "journey": "agent-skills",
+  "file": "scripts/reconcile-agent-skills.sh",
+  "break": "a dangling pool link is kept instead of pruned",
+  "old": "                    \"$SKILLS_SRC\"/*)\n                        if [[ $keep -eq 0 ]]; then\n                            op \"prune stale pool link\" \"$name\"",
+  "new": "                    \"$SKILLS_SRC\"/*)\n                        if [[ $keep -eq 0 && -e \"$existing\" ]]; then\n                            op \"prune stale pool link\" \"$name\"",
+  "fails_at": "dangling links to retired pool skills (vault-capture, grilling, guided-learning) are pruned"
+ },
+ {
+  "journey": "agent-skills",
+  "file": "scripts/reconcile-agent-skills.sh",
+  "break": "a foreign or broken link is pruned instead of kept",
+  "old": "                            echo \"  preserved (foreign symlink): $name\"",
+  "new": "                            [[ \"$MODE\" == apply ]] && rm \"$existing\"",
+  "fails_at": "a broken foreign link is kept"
+ },
+ {
+  "journey": "agent-skills",
+  "file": "scripts/reconcile-agent-skills.sh",
+  "break": "a foreign link on a curated name is overwritten",
+  "old": "                        echo \"  WARNING: $label/$name is a foreign symlink; preserved, not linked\"",
+  "new": "                        [[ \"$MODE\" == apply ]] && ln -sfn \"$SKILLS_SRC/$name\" \"$dest/$name\"",
+  "fails_at": "a foreign link on a curated name is kept, pointing where it did"
+ },
+ {
+  "journey": "agent-skills",
+  "file": "scripts/reconcile-agent-skills.sh",
+  "break": "a pool link no longer curated is kept, not pruned",
+  "old": "                            op \"prune stale pool link\" \"$name\"\n                            if [[ \"$MODE\" == \"apply\" ]]; then\n                                rm \"$existing\"",
+  "new": "                            op \"prune stale pool link\" \"$name\"\n                            if false; then\n                                rm \"$existing\"",
+  "fails_at": "an uncurated pool link is pruned"
+ },
+ {
+  "journey": "agent-skills",
+  "file": "scripts/reconcile-agent-skills.sh",
+  "break": "a real directory on a curated name is deleted and replaced by the pool link",
+  "old": "            echo \"  WARNING: $label/$name exists and is not a symlink; preserved, not linked\"",
+  "new": "            [[ \"$MODE\" == apply && -d \"$dest/$name\" ]] && { rm -rf \"$dest/$name\"; ln -sfn \"$SKILLS_SRC/$name\" \"$dest/$name\"; }",
+  "fails_at": "a real directory on a curated name is kept with its content"
+ },
+ {
+  "journey": "agent-skills",
+  "file": "scripts/reconcile-agent-skills.sh",
+  "break": "a regular file on a curated name is deleted and replaced by the pool link",
+  "old": "            echo \"  WARNING: $label/$name exists and is not a symlink; preserved, not linked\"",
+  "new": "            [[ \"$MODE\" == apply && -f \"$dest/$name\" ]] && { rm -f \"$dest/$name\"; ln -sfn \"$SKILLS_SRC/$name\" \"$dest/$name\"; }",
+  "fails_at": "a regular file on a curated name is kept with its content"
+ },
+ {
+  "journey": "agent-skills",
+  "file": "scripts/reconcile-agent-skills.sh",
+  "break": "draw-it also curated for Hermes",
+  "old": "    yunohost-updates superwhisper-meetings bot-planning bot-reminders",
+  "new": "    yunohost-updates superwhisper-meetings bot-planning bot-reminders draw-it",
+  "fails_at": ".hermes/skills/personal does not get draw-it"
+ },
+ {
+  "journey": "agent-skills",
+  "file": "scripts/reconcile-agent-skills.sh",
+  "break": "links into Matt Pocock's checkout listed as foreign instead of counted",
+  "old": "                        elif [[ $keep -eq 0 && \"$(readlink \"$existing\")\" == \"$MATTPOCOCK_CHECKOUT/skills/\"* ]]; then",
+  "new": "                        elif false; then",
+  "fails_at": "his link is counted, not listed as foreign"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/setup-omarchy.sh",
+  "break": "every host counts as Omarchy",
+  "old": "is_omarchy() {\n",
+  "new": "is_omarchy() {\n    return 0\n",
+  "fails_at": "exits 1"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/setup-omarchy.sh",
+  "break": "--check runs every reconciler with --apply",
+  "old": "    \"$reconciler\" \"--$MODE\"",
+  "new": "    \"$reconciler\" --apply",
+  "fails_at": "check left the home unchanged"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/setup-omarchy.sh",
+  "break": "the Pi extensions reconciler dropped from the list",
+  "old": "    \"$SCRIPT_DIR/reconcile-pi-extensions.sh\"\n",
+  "new": "",
+  "fails_at": "check runs Pi extensions (check)"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/reconcile-pi-extensions.sh",
+  "break": "Pi extensions apply links nothing",
+  "old": "        ln -s \"$src\" \"$dest\"\n        echo \"  Linked $dest\"",
+  "new": "        echo \"  Linked $dest\"",
+  "fails_at": "Pi extensions linked"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/reconcile-omarchy-auto-suspend.sh",
+  "break": "enabling replaces Omarchy's plugin list instead of adding to it",
+  "old": ".plugins = ((.plugins // []) + [{id: $id}])",
+  "new": ".plugins = [{id: $id}]",
+  "fails_at": "shell.json keeps Omarchy's plugin and adds ours once"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/reconcile-omarchy-auto-suspend.sh",
+  "break": "the existing-entry count ignored, so every apply adds the service again",
+  "old": "entry_count=\"$(jq --arg id \"$PLUGIN_ID\" '[.plugins[]? | select(.id == $id)] | length' \"$SHELL_CONFIG\")\"",
+  "new": "entry_count=0",
+  "fails_at": "second apply left every path and file identical"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/reconcile-pi-extensions.sh",
+  "break": "a foreign file in ~/.pi/agent is replaced by the repo link",
+  "old": "    elif [[ -e \"$dest\" || -L \"$dest\" ]]; then\n        echo \"  WARNING: $dest is not managed by this repository, skipping\"",
+  "new": "    elif [[ \"$MODE\" == \"--apply\" && ( -e \"$dest\" || -L \"$dest\" ) ]]; then\n        ln -sfn \"$src\" \"$dest\"",
+  "fails_at": "Bryan's own Pi AGENTS.md is kept"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/reconcile-mattpocock-skills.sh",
+  "break": "a fresh clone is checked out one commit off the pin",
+  "old": "        git -C \"$tmp\" -c advice.detachedHead=false checkout --quiet --detach \"$PIN\"",
+  "new": "        git -C \"$tmp\" -c advice.detachedHead=false checkout --quiet --detach HEAD~1",
+  "fails_at": "Matt Pocock's checkout is at the pin"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/setup-omarchy.sh",
+  "break": "the Pi packages reconciler dropped from the list",
+  "old": "    \"$SCRIPT_DIR/reconcile-pi-packages.sh\"\n",
+  "new": "",
+  "fails_at": "check runs Pi packages (check)"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/reconcile-bash-enhancements.sh",
+  "break": "Ble.sh check mode proposes nothing",
+  "old": "        echo \"  would append: guarded Ble.sh source line\"",
+  "new": "        true",
+  "fails_at": "check proposes: would append: guarded Ble.sh source line"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/retire-agent-memory.py",
+  "break": "the retired Hindsight Pi extension is no longer removed",
+  "old": "    prune_list_entries(settings, (\"extensions\", \"packages\"), removed)",
+  "new": "    prune_list_entries(settings, (\"packages\",), removed)",
+  "fails_at": "check proposes: would remove from"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/reconcile-pi-packages.sh",
+  "break": "apply installs nothing",
+  "old": "        command pi install \"$want\"\n",
+  "new": "",
+  "fails_at": "the pinned Pi packages are installed"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/reconcile-omarchy-auto-suspend.sh",
+  "break": "Omarchy's shell is not restarted after enabling the plugin",
+  "old": "        if omarchy restart shell >/dev/null 2>&1; then",
+  "new": "        if true; then",
+  "fails_at": "Omarchy's shell was restarted to load the plugin"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/setup-omarchy.sh",
+  "break": "setup-omarchy.sh runs stow over the home",
+  "old": "echo \"Omarchy additive setup ($MODE)\"\n",
+  "new": "echo \"Omarchy additive setup ($MODE)\"\n[[ $MODE == apply ]] && stow . --dotfiles --target \"$HOME\"\n",
+  "fails_at": "nothing ran stow, sudo or systemctl"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/reconcile-mattpocock-skills.sh",
+  "break": "Pi settings entries not written",
+  "old": "    write_settings\n    echo \"  Set Pi settings entries for skills/engineering and skills/productivity\"",
+  "new": "    echo \"  Set Pi settings entries for skills/engineering and skills/productivity\"",
+  "fails_at": "Pi lists his two skill directories"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/reconcile-mattpocock-skills.sh",
+  "break": "the OpenCode links are never made",
+  "old": "        reconcile_links \"OpenCode\" \"$OPENCODE_DEST\" \"$1\"\n    fi",
+  "new": "        reconcile_links \"OpenCode\" \"$OPENCODE_DEST\" \"\"\n    fi",
+  "fails_at": "his tdd is linked for OpenCode"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "setup-platform-configs.sh",
+  "break": "~/.secrets created world-readable",
+  "old": "    chmod 700 \"$SECRETS_DIR\"",
+  "new": "    chmod 755 \"$SECRETS_DIR\"",
+  "fails_at": "~/.secrets is created private"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "setup-platform-configs.sh",
+  "break": "a differing OpenCode AGENTS.md is replaced by the link",
+  "old": "            echo \"  WARNING: $OPENCODE_AGENTS_DEST differs from the source, skipping\"",
+  "new": "            rm \"$OPENCODE_AGENTS_DEST\"; ln -s \"$OPENCODE_AGENTS_SRC\" \"$OPENCODE_AGENTS_DEST\"",
+  "fails_at": "the file is untouched"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-rex-agent-sessions.sh",
+  "break": "the watcher is bootstrapped into launchd on every run",
+  "old": "if [[ \"$MODE\" == \"--apply\" ]] && ! \"$LAUNCHCTL\" print \"gui/$(id -u)/$LABEL\" >/dev/null 2>&1; then",
+  "new": "if [[ \"$MODE\" == \"--apply\" ]]; then",
+  "fails_at": "launchd is not reloaded"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-pi-claude-code.sh",
+  "break": "an anthropic default is treated as an explicit choice and left",
+  "old": "elif [[ -n \"$current\" && \"$current\" != \"anthropic\" ]]; then",
+  "new": "elif [[ -n \"$current\" ]]; then",
+  "fails_at": "Pi's anthropic default switches to claude-code"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-pi-packages.sh",
+  "break": "a package whose name merely starts with a pinned name counts as another version of it, so it is removed",
+  "old": "re.fullmatch(r\"npm:\" + re.escape(name) + r\"(@[^@/]*)?\", src)",
+  "new": "re.match(r\"npm:\" + re.escape(name), src)",
+  "fails_at": "another package whose name starts with a pinned one is kept"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/retire-agent-memory.py",
+  "break": "every hook counts as the retired cache-heal hook",
+  "old": "    if CACHE_HEAL_HOOK in command:",
+  "new": "    if True:",
+  "fails_at": "the retired Hindsight hook and context-mode plugin are removed, Bryan's hook, plugin and model kept"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "setup-platform-configs.sh",
+  "break": "a retired tmux link of this repository's is kept",
+  "old": "            rm \"$link_path\"",
+  "new": "            true",
+  "fails_at": "the retired repo-owned tmux link is removed"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-mattpocock-skills.sh",
+  "break": "Claude Code links to his skills are never made",
+  "old": "    reconcile_links \"Claude Code\" \"$CLAUDE_DEST\" \"$1\"",
+  "new": "    reconcile_links \"Claude Code\" \"$CLAUDE_DEST\" \"\"",
+  "fails_at": "his grilling is linked for Claude Code"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-mattpocock-skills.sh",
+  "break": "a foreign link on one of his names is repointed to his skill",
+  "old": "            else\n                echo \"    WARNING: $path is a link to $raw; kept, not linked to his $name\"",
+  "new": "            else\n                [[ \"$MODE\" == \"apply\" ]] && ln -sfn \"$want\" \"$path\"",
+  "fails_at": "a foreign link on one of his names is kept"
+ },
+ {
+  "journey": "agent-commands",
+  "file": "scripts/reconcile-agent-commands.sh",
+  "break": "conflicts reported but the run exits 0",
+  "old": "if [[ $conflicts -gt 0 ]]; then",
+  "new": "if false; then",
+  "fails_at": "file, check: exits 1"
+ },
+ {
+  "journey": "agent-commands",
+  "file": "scripts/reconcile-agent-commands.sh",
+  "break": "a live link into another checkout is treated as stale and repointed",
+  "old": "        if [[ -e \"$dest\" || \"$current\" != */dot-agents/bin/\"$name\" ]]; then",
+  "new": "        if [[ \"$current\" != */dot-agents/bin/\"$name\" ]]; then",
+  "fails_at": "live-link, check: exits 1"
+ },
+ {
+  "journey": "agent-commands",
+  "file": "dot-agents/bin/forgejo-map",
+  "break": "forgejo-map no longer follows its own link to find the adapter",
+  "old": "while [[ -L \"$self\" ]]; do",
+  "new": "while false; do",
+  "fails_at": "--help exits 0"
+ },
+ {
+  "journey": "agent-commands",
+  "file": "scripts/reconcile-agent-commands.sh",
+  "break": "a stale link left by a removed worktree is reported but not repaired",
+  "old": "            ln -sfn \"$src\" \"$dest\"",
+  "new": "            true",
+  "fails_at": "the link now points here"
+ },
+ {
+  "journey": "agent-commands",
+  "file": "scripts/reconcile-agent-commands.sh",
+  "break": "check creates ~/.local/bin",
+  "old": "    else\n        echo \"  MISSING $dest (would link)\"",
+  "new": "    else\n        mkdir -p \"$DEST_DIR\"\n        echo \"  MISSING $dest (would link)\"",
+  "fails_at": "check left the home unchanged"
+ },
+ {
+  "journey": "agent-commands",
+  "file": "scripts/reconcile-agent-commands.sh",
+  "break": "apply also drops a stray file into ~/.local",
+  "old": "        mkdir -p \"$DEST_DIR\"\n        ln -s \"$src\" \"$dest\"",
+  "new": "        mkdir -p \"$DEST_DIR\"\n        touch \"$HOME/.local/.agent-commands-stamp\"\n        ln -s \"$src\" \"$dest\"",
+  "fails_at": "apply changed nothing but the link"
+ },
+ {
+  "journey": "agent-commands",
+  "file": "scripts/reconcile-agent-commands.sh",
+  "break": "every apply rewrites a stamp file",
+  "old": "echo \"Agent commands (${MODE#--}) for $DEST_DIR\"",
+  "new": "echo \"Agent commands (${MODE#--}) for $DEST_DIR\"\n[[ $MODE == --apply && -d \"$DEST_DIR\" ]] && date +%s%N >\"$DEST_DIR/.stamp\"",
+  "fails_at": "second apply left the home identical"
+ },
+ {
+  "journey": "shell-additions",
+  "file": "scripts/reconcile-shell-additions.sh",
+  "break": "~/.bashrc created when missing",
+  "old": "if [[ ! -f \"$BASHRC\" ]]; then",
+  "new": "if false; then",
+  "fails_at": "~/.bashrc still does not exist"
+ },
+ {
+  "journey": "shell-additions",
+  "file": "scripts/reconcile-shell-additions.sh",
+  "break": "the line appended on every apply",
+  "old": "if grep -qF \"dot-config/shell/aliases.sh\" \"$BASHRC\"; then",
+  "new": "if false; then",
+  "fails_at": "a second apply appends nothing"
+ },
+ {
+  "journey": "shell-additions",
+  "file": "dot-config/shell/aliases.sh",
+  "break": "the shared aliases stop loading in bash",
+  "old": "# Modern tool replacements\n",
+  "new": "return 0 2>/dev/null\n# Modern tool replacements\n",
+  "fails_at": "gs is git status"
+ },
+ {
+  "journey": "shell-additions",
+  "file": "scripts/reconcile-bash-enhancements.sh",
+  "break": "Bryan's own Ble.sh settings replaced by the link",
+  "old": "        echo \"  WARNING: $BLESH_RC_TARGET exists and is not this repository's file;\"",
+  "new": "        [[ \"$MODE\" == apply ]] && ln -sfn \"$BLESH_RC_SOURCE\" \"$BLESH_RC_TARGET\"",
+  "fails_at": "warns and keeps the file"
+ },
+ {
+  "journey": "shell-additions",
+  "file": "scripts/reconcile-bash-enhancements.sh",
+  "break": "check creates ~/.config/blesh",
+  "old": "    elif [[ \"$MODE\" == \"check\" ]]; then\n        echo \"  would link: $BLESH_RC_TARGET -> $BLESH_RC_SOURCE\"",
+  "new": "    elif [[ \"$MODE\" == \"check\" ]]; then\n        mkdir -p \"$(dirname \"$BLESH_RC_TARGET\")\"\n        echo \"  would link: $BLESH_RC_TARGET -> $BLESH_RC_SOURCE\"",
+  "fails_at": "check left the home unchanged"
+ },
+ {
+  "journey": "shell-additions",
+  "file": "scripts/reconcile-shell-additions.sh",
+  "break": "apply also writes a backup of ~/.bashrc",
+  "old": "    printf '\\n%s\\n%s\\n' \"$MARKER\" \"$SOURCE_LINE\" >> \"$BASHRC\"",
+  "new": "    cp \"$BASHRC\" \"$BASHRC.bak\"\n    printf '\\n%s\\n%s\\n' \"$MARKER\" \"$SOURCE_LINE\" >> \"$BASHRC\"",
+  "fails_at": "apply changed only ~/.bashrc and the Ble.sh settings link"
+ },
+ {
+  "journey": "shell-additions",
+  "file": "scripts/reconcile-bash-enhancements.sh",
+  "break": "every apply rewrites a stamp beside the Ble.sh settings",
+  "old": "reconcile_bashrc\nreconcile_blesh_rc\n",
+  "new": "reconcile_bashrc\nreconcile_blesh_rc\n[[ $MODE == apply ]] && date +%s%N >\"$(dirname \"$BLESH_RC_TARGET\")/.applied\"\n",
+  "fails_at": "a second apply left the home identical"
+ }
+]
