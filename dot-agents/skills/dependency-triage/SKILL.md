@@ -183,11 +183,11 @@ Cap **concurrency, not coverage**. Delegation is capped at three concurrent task
 | PR | Reviewer skill | What the background agent runs | Serial follow-up by the main agent |
 |----|----------------|------------------------|-------------------------------------|
 | Catalog workflow PR | `catalog-review` | the whole skill — it has no local-build step (it judges the CI validation path) | none; the verdict is complete |
-| Every other PR (green isolated, website-framework, tooling, runtime, GitHub Actions, major bump, broad grouped) | `dependency-review` | **read-only analysis only — its Steps 0–4** (metadata, update type, fix-status, CI-log diagnosis, release attribution) | local verification, if and only if the verdict warrants it (below) |
+| Every other PR (green isolated, website-framework, tooling, runtime, GitHub Actions, major bump, broad grouped) | `dependency-review` | **read-only analysis only — its Steps 0–4** (metadata, dependency update type, fix-status, CI-log diagnosis, release attribution) | local verification, if and only if the verdict warrants it (below) |
 
-The only routing decision you make here is *catalog vs. not* (a catalog PR changes `pnpm-workspace.yaml` / catalog-managed versions). Each background agent self-classifies the PR's update type, so triage and the reviewer never diverge.
+The only routing decision you make here is *catalog vs. not* (a catalog PR changes `pnpm-workspace.yaml` / catalog-managed versions). Each background agent self-classifies the PR's dependency update type, so triage and the reviewer never diverge.
 
-Each background agent returns: its decision (Safe to merge / Fix in this PR / Hold / Close), the update type it classified, and a one-line reason.
+Each background agent returns: its decision (Safe to merge / Fix in this PR / Hold / Close), the dependency update type it classified, and a one-line reason.
 
 ### Do NOT fan out local verification
 

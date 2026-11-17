@@ -6,7 +6,7 @@ argument-hint: <pr-number-or-url>
 
 # Dependency Review
 
-Review a single dependency pull request in the SGG / CommonGrants monorepo and decide whether it is safe to merge, needs a focused fix, should be held, or should be closed as not worth the churn. Its update types, commands, and release-attribution rules are project-specific.
+Review a single dependency pull request in the SGG / CommonGrants monorepo and decide whether it is safe to merge, needs a focused fix, should be held, or should be closed as not worth the churn. Its dependency update types, commands, and release-attribution rules are project-specific.
 
 ---
 
@@ -61,11 +61,11 @@ git diff {baseRefName}...HEAD
 
 ---
 
-## Step 2: Determine the Update Type
+## Step 2: Determine the Dependency Update Type
 
 Classify the PR before deciding what to do.
 
-Possible update types:
+Possible dependency update types:
 
 - Python isolated lockfile
 - website framework
@@ -75,7 +75,7 @@ Possible update types:
 - catalog workflow
 - major version bump
 
-State the update type explicitly in your review.
+State the dependency update type explicitly in your review.
 
 ---
 
@@ -207,9 +207,9 @@ Before recommending "safe to merge," check out the branch and run the relevant v
 gh pr checkout {number}
 ```
 
-### Verification by update type
+### Verification by dependency update type
 
-| Update type | Verification command | What it covers |
+| Dependency update type | Verification command | What it covers |
 |-------------|---------------------|----------------|
 | npm root (tooling/runtime) | `pnpm run ci` | Full workspace build + test in dependency order |
 | website-framework | `pnpm run ci:website` | Website build, checks, link validation |
@@ -221,7 +221,7 @@ Use `pnpm run ci`, not `pnpm ci`: pnpm still reserves the latter as an
 unimplemented native command (`ERR_PNPM_CI_NOT_IMPLEMENTED`). Verified against
 pnpm 11.20.0, the version this repo pins in `packageManager`.
 
-If running the full workspace CI is too slow, use the package-specific command for the affected update type:
+If running the full workspace CI is too slow, use the package-specific command for the affected dependency update type:
 
 - `pnpm run ci:core` — core package
 - `pnpm run ci:cli` — CLI package
@@ -251,14 +251,14 @@ Use these defaults:
 
 ### Approved “Fix in this PR” handoff
 
-The recommendation is not authorization to edit or publish. Present the diagnosis, proposed scope, acceptance criteria, and required checks for its update type, then ask whether to implement the fix.
+The recommendation is not authorization to edit or publish. Present the diagnosis, proposed scope, acceptance criteria, and required checks for its dependency update type, then ask whether to implement the fix.
 
 If the user approves and the current harness is a Pi orchestrator or a Codex-backed Hermes orchestrator:
 
 1. Create or reuse an isolated worktree for the dependency PR; do not switch the primary checkout in place.
 2. Load `coding-agent-handoff-supervision`, reuse or create the governing project-workspace issue, and launch the normal visible Pi background agent handoff through Rex. An unavailable Rex route stops the handoff; do not silently choose a hidden background route instead.
 3. Give the background agent the issue/PR URLs, exact implementation repository and worktree, explicit authority boundaries, and this skill's Step 5 verification outcome. Do not duplicate a self-contained implementation plan into the prompt.
-4. The orchestrator inspects the actual diff and independently reruns the verification for its update type. Return to Step 6 and recompute the recommendation from the final evidence.
+4. The orchestrator inspects the actual diff and independently reruns the verification for its dependency update type. Return to Step 6 and recompute the recommendation from the final evidence.
 
 The background agent's local commit, push, and PR/issue permissions must each be stated explicitly; the normal route forbids all three and leaves local commit creation and the reviewed dependency-PR branch push orchestrator-owned. The user's approval to implement the fix authorizes the orchestrator to edit, verify, commit, and push that reviewed unit without a second prompt. Commenting, approving, closing, and merging each still require their own direct request under Hard Rules. In other harnesses, use the approved harness-native implementation workflow while preserving the same diagnosis, verification, and authorization contract.
 
@@ -274,7 +274,7 @@ Use this format:
 ## Dependency Review
 
 - PR: #123
-- Update type: tooling
+- Dependency update type: tooling
 - Decision: Fix in this PR
 
 ### What changed
