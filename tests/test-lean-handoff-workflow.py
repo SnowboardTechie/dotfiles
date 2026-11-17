@@ -120,7 +120,8 @@ class LeanIssueWorkContractTests(unittest.TestCase):
         skill = POOL / "coding-agent-handoff-supervision"
         self.assertEqual(
             sorted(p.name for p in (skill / "scripts").iterdir() if p.suffix in (".py", ".sh")),
-            ["claude-usage.sh", "rex_background_agent_slot.py", "rex_wait.sh"],
+            # rex_subagent_slot.py is a stand-in at the old name, for launchers written before the rename.
+            ["claude-usage.sh", "rex_background_agent_slot.py", "rex_subagent_slot.py", "rex_wait.sh"],
         )
         self.assertEqual(
             sorted(p.name for p in (skill / "tests").glob("test_*.py")),
