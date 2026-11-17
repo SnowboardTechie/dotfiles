@@ -63,7 +63,7 @@ class CrossRepoContextTests(unittest.TestCase):
     def test_cross_repository_context_is_admitted(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            ticket = self.make_repo(root, "private-workspace", "git@private.example:example/workspace.git")
+            issue_checkout = self.make_repo(root, "private-workspace", "git@private.example:example/workspace.git")
             implementation_trunk = self.make_repo(
                 root, "public-project", "git@public.example:example/project.git"
             )
@@ -73,7 +73,7 @@ class CrossRepoContextTests(unittest.TestCase):
                 cwd=implementation_trunk,
                 check=True,
             )
-            state = ticket / ".agent-work" / "issue-work" / "example-workspace-7"
+            state = issue_checkout / ".agent-work" / "issue-work" / "example-workspace-7"
             url = "https://private.example/example/workspace/issues/7"
             self.write_progress(
                 state,
@@ -87,7 +87,7 @@ class CrossRepoContextTests(unittest.TestCase):
             )
 
             result = validator.validate_context(
-                ticket_trunk=ticket,
+                ticket_trunk=issue_checkout,
                 state_dir=state,
                 worktree=implementation,
                 ticket_url=url,
@@ -111,7 +111,7 @@ class CrossRepoContextTests(unittest.TestCase):
     def test_cross_repository_review_paths_are_admitted_end_to_end(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            ticket = self.make_repo(
+            issue_checkout = self.make_repo(
                 root,
                 "private-workspace",
                 "git@private.example:example/workspace.git",
@@ -135,7 +135,7 @@ class CrossRepoContextTests(unittest.TestCase):
                 cwd=implementation_trunk,
                 check=True,
             )
-            state = ticket / ".agent-work" / "issue-work" / "example-workspace-7"
+            state = issue_checkout / ".agent-work" / "issue-work" / "example-workspace-7"
             url = "https://private.example/example/workspace/issues/7"
             self.write_progress(
                 state,
@@ -148,7 +148,7 @@ class CrossRepoContextTests(unittest.TestCase):
                 branch="feature",
             )
             context = validator.validate_context(
-                ticket_trunk=ticket,
+                ticket_trunk=issue_checkout,
                 state_dir=state,
                 worktree=implementation,
                 ticket_url=url,
@@ -169,7 +169,7 @@ class CrossRepoContextTests(unittest.TestCase):
                     sys.executable,
                     str(SCRIPT.resolve()),
                     "--ticket-trunk",
-                    str(ticket),
+                    str(issue_checkout),
                     "--state-dir",
                     str(state),
                     "--worktree",
@@ -264,9 +264,9 @@ class CrossRepoContextTests(unittest.TestCase):
     def test_wrong_progress_identity_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            ticket = self.make_repo(root, "private-workspace", "git@private.example:example/workspace.git")
+            issue_checkout = self.make_repo(root, "private-workspace", "git@private.example:example/workspace.git")
             implementation = self.make_repo(root, "public-project", "git@public.example:example/project.git")
-            state = ticket / ".agent-work" / "issue-work" / "example-workspace-7"
+            state = issue_checkout / ".agent-work" / "issue-work" / "example-workspace-7"
             url = "https://private.example/example/workspace/issues/7"
             self.write_progress(
                 state,
@@ -280,7 +280,7 @@ class CrossRepoContextTests(unittest.TestCase):
 
             with self.assertRaisesRegex(validator.ContextError, "progress implementation_repository"):
                 validator.validate_context(
-                    ticket_trunk=ticket,
+                    ticket_trunk=issue_checkout,
                     state_dir=state,
                     worktree=implementation,
                     ticket_url=url,
@@ -290,12 +290,12 @@ class CrossRepoContextTests(unittest.TestCase):
                     implementation_repo="example/project",
                 )
 
-    def test_ticket_url_repository_must_match_ticket_repo(self) -> None:
+    def test_issue_url_repository_must_match_ticket_repo(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            ticket = self.make_repo(root, "private-workspace", "git@private.example:example/workspace.git")
+            issue_checkout = self.make_repo(root, "private-workspace", "git@private.example:example/workspace.git")
             implementation = self.make_repo(root, "public-project", "git@public.example:example/project.git")
-            state = ticket / ".agent-work" / "issue-work" / "example-workspace-7"
+            state = issue_checkout / ".agent-work" / "issue-work" / "example-workspace-7"
             wrong_url = "https://private.example/example/other/issues/7"
             self.write_progress(
                 state,
@@ -307,9 +307,9 @@ class CrossRepoContextTests(unittest.TestCase):
                 implementation_trunk=implementation,
             )
 
-            with self.assertRaisesRegex(validator.ContextError, "ticket URL repository"):
+            with self.assertRaisesRegex(validator.ContextError, "issue URL repository"):
                 validator.validate_context(
-                    ticket_trunk=ticket,
+                    ticket_trunk=issue_checkout,
                     state_dir=state,
                     worktree=implementation,
                     ticket_url=wrong_url,
@@ -348,17 +348,17 @@ class CrossRepoContextTests(unittest.TestCase):
 
             self.assertEqual(result["state_dir"], str(state.resolve()))
 
-    def test_state_root_itself_is_rejected(self) -> None:
+    def test_issue_work_directory_itself_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             repo = self.make_repo(root, "project", "git@forge.example:example/project.git")
             for name in (".agent-work", ".hermes"):
-                state_root = repo / name / "issue-work"
-                state_root.mkdir(parents=True)
-                with self.assertRaisesRegex(validator.ContextError, "per-ticket child"):
+                issue_work_dir = repo / name / "issue-work"
+                issue_work_dir.mkdir(parents=True)
+                with self.assertRaisesRegex(validator.ContextError, "per-issue child"):
                     validator.validate_context(
                         ticket_trunk=repo,
-                        state_dir=state_root,
+                        state_dir=issue_work_dir,
                         worktree=repo,
                         ticket_url="https://forge.example/example/project/issues/4",
                         ticket_host="forge.example",
@@ -367,17 +367,17 @@ class CrossRepoContextTests(unittest.TestCase):
                         implementation_repo="example/project",
                     )
 
-    def test_state_dir_must_stay_under_ticket_state_root(self) -> None:
+    def test_state_dir_must_stay_under_the_issue_work_directory(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            ticket = self.make_repo(root, "private-workspace", "git@private.example:example/workspace.git")
+            issue_checkout = self.make_repo(root, "private-workspace", "git@private.example:example/workspace.git")
             implementation = self.make_repo(root, "public-project", "git@public.example:example/project.git")
             outside = root / "outside"
             outside.mkdir()
 
             with self.assertRaisesRegex(validator.ContextError, "state directory"):
                 validator.validate_context(
-                    ticket_trunk=ticket,
+                    ticket_trunk=issue_checkout,
                     state_dir=outside,
                     worktree=implementation,
                     ticket_url="https://private.example/example/workspace/issues/7",
