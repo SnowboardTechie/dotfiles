@@ -1,0 +1,174 @@
+{
+  "upstream": "https://github.com/DietrichGebert/ponytail",
+  "version": "5.3.3",
+  "commit": "96608e078b2d5ea607c5c3b8b5a54d1c1fba6846",
+  "license": "MIT",
+  "licenseFile": "ponytail-LICENSE",
+  "attribution": "The Ponytail review pass is named after and adapted from Ponytail, a Claude Code plugin, MIT licensed, Copyright (c) 2026 DietrichGebert. Retained in ponytail-LICENSE.",
+  "verifiedOn": "2026-11-16",
+  "notes": [
+    "Concept adaptation, not a vendored copy: the pass is rewritten prose inside `pr-self-review`'s review contract, and no plugin, command, hook or skill of upstream's is installed.",
+    "History, from this repository's log: the plugin was installed on 2026-06-17 (`ponytail@ponytail` in `dot-claude/settings.json`, f206612); `pr-self-review` gained a required over-engineering lens carrying `ponytail:ponytail-review` inline on 2026-06-18 (762aa05); the pass was rewritten into the shared `code-review` skill on 2026-08-21 so it needs no plugin (f521786); the plugin and its marketplace were uninstalled on 2026-10-16 (96d500b); local `code-review` retired on 2026-11-16 and the pass moved into `pr-self-review`'s review contract, which `teammate-pr-review` also runs.",
+    "No commit was recorded when the pass was adapted. `adaptedFrom` is upstream's `main` when 762aa05 was made (2026-06-18 18:15 UTC): 91aef5d, version 4.7.0. Upstream's `skills/ponytail-review/SKILL.md` changed only in scope wording between then and the 2026-08-21 rewrite (bd6176a).",
+    "\"Simplicity review\" is another name for the Ponytail pass (Bryan, 2026-11-16). Bryan keeps the name Ponytail.",
+    "Upstream paths are relative to the repository root at the pinned commit."
+  ],
+  "adaptedFrom": "91aef5dfefa986cb87e4557b95970eeb6b149c03",
+  "updatePolicy": {
+    "readOnlyDetection": true,
+    "humanApprovedPinAdvance": true,
+    "autoApply": false,
+    "monitor": "pi-bots job adapted-skill-watch",
+    "description": "The pi-bots scheduled job `adapted-skill-watch` compares `commit` with upstream's head each week and, when a watched file changed since the pin, posts how many commits behind the pin is and which watched files changed. It never edits this file. Re-reading the watched files, deciding each change and advancing `commit`, `version` and `verifiedOn` is a reviewed local change."
+  },
+  "adaptations": [
+    {
+      "skill": "pr-self-review",
+      "upstreamPaths": [
+        "skills/ponytail-review/SKILL.md",
+        "skills/ponytail/SKILL.md"
+      ],
+      "localPaths": [
+        "dot-agents/skills/pr-self-review/references/review-contract.md",
+        "dot-agents/skills/pr-self-review/SKILL.md",
+        "dot-agents/skills/teammate-pr-review/SKILL.md"
+      ],
+      "localChanges": [
+        "A review pass inside one integrated review (Standards, Spec, conditional Risk, then Ponytail last), not a plugin command or an always-on mode.",
+        "Findings use the review contract's artifact (`review-ponytail.md`), severity scale and finding gate, not upstream's own output format.",
+        "Reads the spec for outcomes, not form: a spec line that names a form Ponytail would cut is reported as over-specified.",
+        "Reports over-engineering only; correctness, security, spec conformance, coverage, naming, formatting and generic maintainability belong to the other passes.",
+        "`teammate-pr-review` runs the same pass on other people's pull requests."
+      ],
+      "acceptedUpstreamRules": [
+        "The ladder, largest deletion first: `delete`, `yagni`, `reuse`, `stdlib`, `native`, then `shrink`, each with the smaller replacement shown.",
+        "Never invent deletions to look useful; a clean pass says `Lean already. Ship.`",
+        "Before reporting a cut, confirm it: the code really is unused, the helper named by `reuse` really exists.",
+        "Never propose cutting validation at a trust boundary, error handling that prevents data loss, security measures or accessibility.",
+        "The one small test or assert-based self-check that non-trivial logic needs is not bloat.",
+        "A shortcut marked with a `shortcut:` (or older `ponytail:`) comment that names its limit is a decision, not a finding, unless the expected load already crosses it."
+      ],
+      "rejectedUpstreamRules": [
+        "Ponytail 5's full quality review (bug, risk, scale, missing test, speed, then lean): correctness and risk are separate passes here, so Ponytail stays narrow.",
+        "Upstream's output format (plain-English four-part findings in Must/Should/Nice groups, numbered for \"fix 2 and 5\", `Verdict:` and `Lean: -N lines possible.` lines): the review contract's artifacts, severity and Bryan's drafting rules own the shape.",
+        "The always-on authoring persona (`/ponytail lite|full|ultra|off`, triggering on any coding task, ending each reply with what was skipped): only the review pass is adopted.",
+        "Writing code to the ladder, comprehension-first bug fixing and leaving `shortcut:` comments in new code: rules for authoring, not review.",
+        "`merge:` and `split:` findings: duplicated code and functions mixing jobs belong to Standards.",
+        "\"Never cut anything the user asked for\": here a spec that names a form Ponytail would cut is reported as over-specified.",
+        "Plugin, marketplace, hook, status-line and per-harness installs: the pass needs none."
+      ],
+      "watchedFiles": [
+        "skills/ponytail-review/SKILL.md",
+        "skills/ponytail/SKILL.md"
+      ]
+    }
+  ],
+  "refreshes": [
+    {
+      "on": "2026-11-16",
+      "from": "91aef5dfefa986cb87e4557b95970eeb6b149c03",
+      "to": "96608e078b2d5ea607c5c3b8b5a54d1c1fba6846",
+      "commitsBehind": 297,
+      "changes": [
+        {
+          "upstream": "b0c5820, bd6176a",
+          "file": "skills/ponytail-review/SKILL.md",
+          "change": "Scope wording: over-engineering and complexity only; correctness, security and performance go to a normal review.",
+          "decision": "accepted",
+          "reason": "Already the local rule (\"Ponytail does not report correctness, security...\"); no edit."
+        },
+        {
+          "upstream": "446e4ad, 003cd40",
+          "file": "skills/ponytail-review/SKILL.md",
+          "change": "A `reuse:` tag: an equivalent helper already in the repository; name the path.",
+          "decision": "accepted",
+          "reason": "Re-implementing what already lives a few files away is common over-engineering the five old tags missed. Added to the ladder."
+        },
+        {
+          "upstream": "1b1a0c5",
+          "file": "skills/ponytail-review/SKILL.md",
+          "change": "Number findings across the report so the user can say \"fix 2 and 5\".",
+          "decision": "rejected",
+          "reason": "Findings here go to the acceptance owner for disposition and into `integrated-review.json`, not to Bryan to pick by number."
+        },
+        {
+          "upstream": "01cbf81",
+          "file": "skills/ponytail-review/SKILL.md",
+          "change": "Ponytail 5: the review becomes a full quality review (bug, risk, scale, missing test, speed, lean), reading callers and the expected load.",
+          "decision": "rejected",
+          "reason": "Standards, Spec and Risk already cover correctness and risk as separate passes; folding them into Ponytail would duplicate them and break the narrow pass the contract and its tests require."
+        },
+        {
+          "upstream": "01cbf81",
+          "file": "skills/ponytail-review/SKILL.md",
+          "change": "Check before you report: every finding needs a concrete case; re-read the lines and confirm the code really is unused.",
+          "decision": "accepted",
+          "reason": "Guards against cutting code that is in use or naming a helper that doesn't exist. One sentence added."
+        },
+        {
+          "upstream": "01cbf81",
+          "file": "skills/ponytail-review/SKILL.md",
+          "change": "Plain-English output, four-part findings in Must/Should/Nice groups, `Verdict:`; `Lean already. Ship.` becomes `Looks good. Ship.` and `net:` becomes `Lean: -N lines possible.`",
+          "decision": "rejected",
+          "reason": "The artifact shape, severity scale and clean-summary string are load-bearing for `ship`, the lane-reviewer agents and tests; Bryan's drafting rules own the human-facing text."
+        },
+        {
+          "upstream": "01cbf81",
+          "file": "skills/ponytail-review/SKILL.md",
+          "change": "New `merge:` (near-copies) and `split:` (a function doing unrelated jobs) lean findings.",
+          "decision": "rejected",
+          "reason": "Duplicated code and divergent change are Standards smells here; Ponytail stays on what to cut."
+        },
+        {
+          "upstream": "2a1fe84",
+          "file": "skills/ponytail-review/SKILL.md",
+          "change": "A shortcut marked `shortcut:` (or older `ponytail:`) that names its limit is a decision, not a finding, unless the load already crosses it.",
+          "decision": "accepted",
+          "reason": "A deliberate, documented shortcut is the kind of simplicity Ponytail wants; flagging it is noise. One sentence added."
+        },
+        {
+          "upstream": "0e3fd0c",
+          "file": "skills/ponytail/SKILL.md",
+          "change": "Trigger the persona on any coding task, not only on keywords.",
+          "decision": "rejected",
+          "reason": "The always-on authoring persona is not adopted; only the review pass is."
+        },
+        {
+          "upstream": "dedc97c",
+          "file": "skills/ponytail/SKILL.md",
+          "change": "A reuse rung (already in this codebase) on the ladder; understand the problem before climbing it; bug fixes go to the root cause.",
+          "decision": "accepted",
+          "reason": "Reuse rung accepted as the `reuse` tag. Comprehension-first and root-cause fixing are authoring rules for correctness and are rejected for this pass."
+        },
+        {
+          "upstream": "b6c0448",
+          "file": "skills/ponytail/SKILL.md",
+          "change": "Use the `ponytail:` marker only for real corner-cuts with a known ceiling.",
+          "decision": "rejected",
+          "reason": "An authoring rule for writing markers; the review side is covered by the accepted shortcut-marker rule."
+        },
+        {
+          "upstream": "01cbf81",
+          "file": "skills/ponytail/SKILL.md",
+          "change": "Ponytail 5 rules: the smallest complete change, keep the codebase's structure, comment only the why, one small check for non-trivial logic, and never cut validation at trust boundaries, data-loss error handling, security, accessibility, hardware calibration or anything the user asked for.",
+          "decision": "accepted",
+          "reason": "Accepted for review: never propose cutting validation, data-loss error handling, security or accessibility, and the one small check for non-trivial logic is not bloat. Rejected: the authoring rules, and \"anything the user asked for\", which the local over-specified-spec rule overrides."
+        },
+        {
+          "upstream": "2a1fe84",
+          "file": "skills/ponytail/SKILL.md",
+          "change": "New code uses a neutral `shortcut:` comment marker instead of `ponytail:`.",
+          "decision": "accepted",
+          "reason": "Accepted only as recognising both markers in review (above); the pass writes no code."
+        },
+        {
+          "upstream": "df9e899",
+          "file": "skills/ponytail/SKILL.md",
+          "change": "An `off` level in the argument hint.",
+          "decision": "rejected",
+          "reason": "Levels belong to the persona, which is not adopted."
+        }
+      ]
+    }
+  ]
+}

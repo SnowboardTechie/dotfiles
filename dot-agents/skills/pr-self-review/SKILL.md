@@ -1,6 +1,6 @@
 ---
 name: pr-self-review
-description: Use for bounded review of an authored candidate.
+description: Use for bounded review of an authored candidate, or a simplicity review (the Ponytail pass) of one.
 version: 2.0.0
 author: Bryan Thompson + Hermes Agent
 license: MIT
@@ -214,6 +214,15 @@ One review context reads the diff and authorities once and writes
 `review-ponytail.md`. Keep dimension artifacts separate even though execution is
 integrated. Each artifact records the full candidate identity and expected
 branch.
+
+### Ponytail, the simplicity review
+
+Ponytail checks the candidate for over-engineering only: what could be deleted
+or made smaller. It is named after the Ponytail plugin, recorded in
+[`dot-agents/upstreams/ponytail.json`](../../upstreams/ponytail.json), and
+"simplicity review" is another name for it. A request for only a simplicity
+review runs the contract's Ponytail section against the frozen candidate (§2)
+and writes `review-ponytail.md`; it corrects nothing.
 
 Do not build broad related-issue or vault-topic caches. Read only explicitly
 linked context needed to establish intent or ownership.

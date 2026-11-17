@@ -15,6 +15,8 @@ Provenance: moved here on 2026-11-16 from the retired local `code-review`
 skill, which was adapted from Matt Pocock's `code-review`. Matt Pocock's own
 `code-review` now carries that name; its pin is in
 [`dot-agents/upstreams/mattpocock-skills.json`](../../../upstreams/mattpocock-skills.json).
+The Ponytail pass is adapted from the Ponytail plugin; its record is
+[`dot-agents/upstreams/ponytail.json`](../../../upstreams/ponytail.json).
 
 ## When it applies
 
@@ -129,12 +131,26 @@ Report concrete exploitable or operationally dangerous behavior. Name the actor,
 path, and consequence. Do not emit generic hardening advice without a path in the
 candidate.
 
-### Ponytail (mandatory, last)
+### Ponytail, the simplicity review (mandatory, last)
+
+Ponytail checks the candidate for over-engineering: code that could be deleted
+or made smaller. It is named after the Ponytail plugin
+([record](../../../upstreams/ponytail.json)); "simplicity review" is another
+name for this pass.
 
 Review over-engineering only. Walk from largest deletion to smallest
-simplification: `delete`, `yagni`, `stdlib`, `native`, then `shrink`. Show the
-smaller replacement. Never invent deletions to look useful. If nothing should be
-cut, write exactly `Lean already. Ship.` in the Summary.
+simplification: `delete`, `yagni`, `reuse` (a helper already in the repository;
+name its path), `stdlib`, `native`, then `shrink`. Show the smaller
+replacement. Before reporting a cut, re-read the lines and confirm it: the code
+really is unused, the helper really exists. Never invent deletions to look
+useful. If nothing should be cut, write exactly `Lean already. Ship.` in the
+Summary.
+
+Never propose cutting validation at a trust boundary, error handling that
+prevents data loss, security measures, or accessibility. One small test or
+assert-based self-check for non-trivial logic is not bloat. A shortcut marked
+with a `shortcut:` (or older `ponytail:`) comment that names its limit is a
+decision, not a finding, unless the expected load already crosses it.
 
 Ponytail reads the spec for outcomes, not for form. When a spec line names a
 form rather than a behavior (a comment, a doc paragraph, a wrapper, a helper, a

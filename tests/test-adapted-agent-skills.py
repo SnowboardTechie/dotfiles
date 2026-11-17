@@ -19,6 +19,7 @@ Run: python3 -m unittest tests/test-adapted-agent-skills.py
 from __future__ import annotations
 
 import json
+import os
 import re
 import unittest
 from pathlib import Path
@@ -378,6 +379,85 @@ class UpstreamLedgerTest(unittest.TestCase):
         for path in re.findall(r"`((?:dot-agents|scripts)/[^`\s]+)`", notes):
             with self.subTest(path=path):
                 self.assertTrue((REPO_ROOT / path).exists(), f"ledger notes name missing {path}")
+
+
+class AdaptedSourceRecordTest(unittest.TestCase):
+    """Every source other than Matt Pocock's is adapted, and its pin is a reviewed change."""
+
+    MONITOR = "pi-bots job adapted-skill-watch"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.records = {
+            path.stem: json.loads(read(path))
+            for path in sorted(UPSTREAMS.glob("*.json"))
+            if path.name != LEDGER_PATH.name
+        }
+
+    def test_ponytail_and_pstack_are_recorded(self) -> None:
+        self.assertEqual(sorted(self.records), ["ponytail", "pstack-claude"])
+        self.assertEqual(self.records["ponytail"]["upstream"], "https://github.com/DietrichGebert/ponytail")
+
+    def test_each_record_has_an_exact_pin_and_its_licence(self) -> None:
+        for name, record in self.records.items():
+            with self.subTest(record=name):
+                self.assertRegex(record.get("commit", ""), r"\A[0-9a-f]{40}\Z")
+                self.assertRegex(record.get("verifiedOn", ""), r"\A\d{4}-\d{2}-\d{2}\Z")
+                self.assertEqual(record.get("license"), "MIT")
+                self.assertIn("MIT License", read(UPSTREAMS / record["licenseFile"]))
+
+    def test_each_reviewed_pin_is_watched_by_the_adapted_skill_watch(self) -> None:
+        # The pi-bots scheduled job reads every record whose pin is a reviewed
+        # change and refuses one that names any other monitor.
+        for name, record in self.records.items():
+            with self.subTest(record=name):
+                policy = record["updatePolicy"]
+                self.assertIs(policy["autoApply"], False)
+                self.assertIs(policy["humanApprovedPinAdvance"], True)
+                self.assertEqual(policy["monitor"], self.MONITOR)
+                self.assertTrue(any(a.get("watchedFiles") for a in record["adaptations"]))
+
+    def test_every_named_monitor_exists_where_pi_bots_is_checked_out(self) -> None:
+        # PI_BOTS_DIR names another pi-bots checkout, such as a worktree.
+        pi_bots = Path(os.environ.get("PI_BOTS_DIR") or Path.home() / "code" / "pi-bots") / "jobs"
+        if not pi_bots.is_dir():
+            self.skipTest(f"no pi-bots checkout at {pi_bots.parent}")
+        for record in [*self.records.values(), json.loads(read(LEDGER_PATH))]:
+            monitor = record["updatePolicy"]["monitor"]
+            with self.subTest(monitor=monitor):
+                self.assertRegex(monitor, r"\Api-bots job [a-z0-9-]+\Z")
+                job = monitor.removeprefix("pi-bots job ")
+                if job == "adapted-skill-watch" and not (pi_bots / f"{job}.json").is_file():
+                    self.skipTest(f"{pi_bots.parent} does not have the adapted skill watch yet")
+                self.assertTrue((pi_bots / f"{job}.json").is_file(), f"{monitor} has no job file")
+
+    def test_each_local_path_exists(self) -> None:
+        for name, record in self.records.items():
+            for adaptation in record["adaptations"]:
+                for path in adaptation["localPaths"]:
+                    with self.subTest(record=name, path=path):
+                        self.assertTrue((REPO_ROOT / path).is_file())
+
+    def test_every_refresh_decides_each_change_with_a_reason(self) -> None:
+        for name, record in self.records.items():
+            for refresh in record.get("refreshes", []):
+                self.assertEqual(refresh["to"], record["commit"])
+                for change in refresh["changes"]:
+                    with self.subTest(record=name, change=change["change"][:40]):
+                        self.assertIn(change["decision"], ("accepted", "rejected", "none"))
+                        self.assertTrue(change["reason"].strip())
+
+    def test_ponytail_is_defined_and_called_a_simplicity_review_where_it_runs(self) -> None:
+        for skill in ("pr-self-review", "teammate-pr-review"):
+            with self.subTest(skill=skill):
+                path = POOL / skill / "SKILL.md"
+                body = read(path)
+                self.assertIn("simplicity review", frontmatter_fields(path)["description"])
+                self.assertRegex(body, r"(?m)^##+ .*Ponytail, the simplicity review")
+                self.assertIn("Ponytail checks the", body)
+                self.assertIn("named after the Ponytail plugin", " ".join(body.split()))
+                self.assertIn("upstreams/ponytail.json", body)
+                self.assertTrue((path.parent / "../../upstreams/ponytail.json").resolve().is_file())
 
 
 class CurationTest(unittest.TestCase):
