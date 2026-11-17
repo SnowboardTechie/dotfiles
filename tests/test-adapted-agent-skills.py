@@ -5,8 +5,9 @@ These lock the *accepted target* from the reviewed adoption plan. Ordinary
 explanatory prose may be rewritten freely, but workflow phase headings,
 canonical output strings, and fail-closed shell shapes asserted below are
 load-bearing contract surfaces:
-adapted upstream cores under `dot-agents/skills/`, a machine-readable
-provenance ledger, deterministic review-lane selection, curation that
+the retired adapted cores staying out of `dot-agents/skills/` (Matt Pocock's
+own skills replace them), a machine-readable provenance ledger, the Forgejo
+adapter beside its tracker doc, deterministic review-lane selection, curation that
 matches the intended per-runtime roles, and a timestamp-free upstream
 monitor. They deliberately assert structure and authority wording, not
 prose style — a skill body may be rewritten freely as long as the
@@ -30,20 +31,29 @@ LICENSE_PATH = UPSTREAMS / "mattpocock-skills-LICENSE"
 RECONCILER = REPO_ROOT / "scripts" / "reconcile-agent-skills.sh"
 REVIEW_CONTRACT = POOL / "pr-self-review" / "references" / "review-contract.md"
 
-# The cores this plan adds. `guided-learning` deliberately goes only to Pi and
-# Hermes until real use earns wider distribution. The local `code-review`
-# retired on 2026-11-16: its review contract moved into `pr-self-review`
-# (`REVIEW_CONTRACT`), and `teammate-pr-review` reviews other people's PRs on
-# top of Matt Pocock's own `code-review`.
-ADAPTED_CORES = (
+FORGEJO_TRACKER = REPO_ROOT / "dot-agents" / "forgejo-tracker"
+
+# The skills once adapted from Matt Pocock's suite. All retired on 2026-11-16 in
+# favour of his own, which every harness loads from one checkout through
+# scripts/reconcile-mattpocock-skills.sh: `codebase-architecture` for his
+# `codebase-design` and `improve-codebase-architecture`, `guided-learning` for
+# his `teach`, the other four for his skills of the same name. The local
+# `code-review` retired the same day: its review contract moved into
+# `pr-self-review` (`REVIEW_CONTRACT`), and `teammate-pr-review` reviews other
+# people's PRs on top of his `code-review`.
+RETIRED_ADAPTED_SKILLS = (
     "grilling",
     "wayfinder",
     "tdd",
     "diagnosing-bugs",
     "codebase-architecture",
+    "guided-learning",
+    "code-review",
 )
-PI_HERMES_ONLY_CORES = ("guided-learning",)
-ALL_NEW_SKILLS = ADAPTED_CORES + PI_HERMES_ONLY_CORES
+# Names his promoted skills hold that the pool once also held. A pool copy of
+# one of them would shadow his in Pi from `~` and collide in Claude Code and
+# OpenCode, where his are linked under the same names.
+HIS_NAMES_ONCE_LOCAL = ("code-review", "grilling", "tdd", "wayfinder", "diagnosing-bugs")
 
 # Routes retired by this plan. A name may still appear in prose that
 # explicitly marks it as history; see `_HISTORICAL_MARKERS`.
@@ -101,7 +111,7 @@ def skill_dirs() -> list[Path]:
 # Arrays in the reconciler that are *not* a per-tool curation list. They are
 # inputs to one (a shared set of names) or operational allowlists, so asserting
 # curation rules against them is a category error.
-_NON_CURATION_ARRAYS = frozenset({"ADAPTED_CORES", "RETIRED_POOL_TARGETS"})
+_NON_CURATION_ARRAYS = frozenset({"RETIRED_POOL_TARGETS"})
 
 
 def curation_arrays() -> dict[str, list[str]]:
@@ -186,41 +196,19 @@ class SkillFrontmatterTest(unittest.TestCase):
                     f"{skill.name}/SKILL.md needs a non-empty description",
                 )
 
-    def test_new_cores_exist(self) -> None:
-        for name in ALL_NEW_SKILLS:
+    def test_retired_adapted_copies_are_gone(self) -> None:
+        for name in RETIRED_ADAPTED_SKILLS:
             with self.subTest(skill=name):
-                self.assertTrue(
-                    (POOL / name / "SKILL.md").is_file(),
-                    f"expected adapted skill {name} in the canonical pool",
-                )
+                self.assertFalse((POOL / name).exists(), f"{name} retired; his copy replaces it")
 
-    def test_orchestration_skills_require_explicit_invocation(self) -> None:
-        """`grilling`, `wayfinder`, and `guided-learning` never auto-start.
-
-        Claude reads `disable-model-invocation`; Hermes and OpenCode do
-        not, so the *body* must carry the same rule in prose for the
-        runtimes that ignore the frontmatter key.
-        """
-        for name in ("grilling", "wayfinder", "guided-learning"):
+    def test_no_pool_skill_takes_one_of_his_names(self) -> None:
+        for name in HIS_NAMES_ONCE_LOCAL:
             with self.subTest(skill=name):
-                path = POOL / name / "SKILL.md"
-                fields = frontmatter_fields(path)
-                self.assertEqual(
-                    fields.get("disable-model-invocation"),
-                    "true",
-                    f"{name} must set disable-model-invocation: true for Claude",
-                )
-                body = read(path).lower()
-                self.assertIn(
-                    "explicit",
-                    body,
-                    f"{name} must state its explicit-invocation rule in the body "
-                    "for runtimes that ignore the frontmatter key",
-                )
+                self.assertFalse((POOL / name).exists())
 
     def test_model_invoked_primitives_stay_model_invocable(self) -> None:
         """The delivery primitives load when their trigger is genuinely present."""
-        for name in ("tdd", "diagnosing-bugs", "teammate-pr-review", "codebase-architecture"):
+        for name in ("teammate-pr-review",):
             with self.subTest(skill=name):
                 fields = frontmatter_fields(POOL / name / "SKILL.md")
                 self.assertNotIn(
@@ -236,7 +224,9 @@ class SkillFrontmatterTest(unittest.TestCase):
         illustrative markdown in their examples (`](Note.md)`,
         `](target)`) that is documentation, not a link to follow.
         """
-        owned = set(ALL_NEW_SKILLS) | {
+        owned = {
+            "issue-plan",
+            "session-handoff",
             "pr-self-review",
             "teammate-pr-review",
             "worktrunk",
@@ -366,53 +356,28 @@ class UpstreamLedgerTest(unittest.TestCase):
         for key in ("commit", "version", "verifiedOn"):
             self.assertRegex(text, rf'(?m)^  "{key}": "[^"]*",?$')
 
-    def test_every_adaptation_maps_upstream_to_canonical_local_paths(self) -> None:
-        adaptations = self.ledger.get("adaptations", [])
-        self.assertTrue(adaptations, "ledger must record at least one adaptation")
-        for entry in adaptations:
-            with self.subTest(skill=entry.get("skill")):
-                for key in (
-                    "skill",
-                    "upstreamPaths",
-                    "localPaths",
-                    "localChanges",
-                    "acceptedUpstreamRules",
-                    "rejectedUpstreamRules",
-                    "watchedFiles",
-                ):
-                    self.assertIn(key, entry)
-                self.assertTrue(entry["upstreamPaths"], "adaptation needs its upstream sources")
-                self.assertTrue(entry["watchedFiles"], "adaptation needs watched upstream files")
-                for local in entry["localPaths"]:
-                    self.assertTrue(
-                        (REPO_ROOT / local).exists(),
-                        f"ledger points at missing local path {local}",
-                    )
+    def test_no_adaptation_remains(self) -> None:
+        # Every adapted copy retired on 2026-11-16; his skills load as written.
+        self.assertNotIn("adaptations", self.ledger)
 
-    def test_watched_files_are_a_subset_of_declared_upstream_paths(self) -> None:
-        """A watched file with no mapping cannot be assessed for relevance."""
-        for entry in self.ledger.get("adaptations", []):
-            with self.subTest(skill=entry.get("skill")):
-                self.assertTrue(
-                    set(entry["watchedFiles"]).issubset(set(entry["upstreamPaths"])),
-                    f"{entry.get('skill')} watches upstream files it does not declare as sources",
-                )
+    def test_notes_record_what_sits_on_top_of_his_skills(self) -> None:
+        notes = " ".join(self.ledger.get("notes", []))
+        for phrase in (
+            "~/.local/share/mattpocock-skills",
+            "dot-agents/forgejo-tracker/scripts/forgejo_wayfinder.py",
+            "forgejo-map",
+            "dot-agents/forgejo-tracker/issue-tracker-forgejo.md",
+            "teammate-pr-review",
+            "references/review-contract.md",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, notes)
 
-    def test_every_adapted_skill_carries_ledger_provenance(self) -> None:
-        for name in ALL_NEW_SKILLS:
-            with self.subTest(skill=name):
-                body = read(POOL / name / "SKILL.md")
-                self.assertIn(
-                    "mattpocock-skills.json",
-                    body,
-                    f"{name}/SKILL.md must point at the adaptation ledger",
-                )
-
-    def test_every_adapted_skill_is_in_the_ledger(self) -> None:
-        recorded = {entry.get("skill") for entry in self.ledger.get("adaptations", [])}
-        for name in ALL_NEW_SKILLS:
-            with self.subTest(skill=name):
-                self.assertIn(name, recorded)
+    def test_every_local_path_the_notes_name_exists(self) -> None:
+        notes = " ".join(self.ledger.get("notes", []))
+        for path in re.findall(r"`((?:dot-agents|scripts)/[^`\s]+)`", notes):
+            with self.subTest(path=path):
+                self.assertTrue((REPO_ROOT / path).exists(), f"ledger notes name missing {path}")
 
 
 class CurationTest(unittest.TestCase):
@@ -422,37 +387,21 @@ class CurationTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.arrays = curation_arrays()
 
-    def test_cores_are_curated_for_claude_opencode_and_hermes(self) -> None:
-        for tool in ("CLAUDE_SKILLS", "OPENCODE_SKILLS", "HERMES_SKILLS"):
-            for name in ADAPTED_CORES:
+    def test_retired_adapted_skills_are_uncurated_everywhere(self) -> None:
+        for name in RETIRED_ADAPTED_SKILLS:
+            for tool, members in self.arrays.items():
                 with self.subTest(tool=tool, skill=name):
-                    self.assertIn(name, self.arrays.get(tool, []))
+                    self.assertNotIn(name, members)
 
-    def test_guided_learning_is_pi_and_hermes_only(self) -> None:
-        # Pi took Hermes's desk skills in W34.7 (dotfiles-workspace#34).
-        for tool in ("HERMES_SKILLS", "PI_SKILLS"):
-            with self.subTest(tool=tool):
-                self.assertIn("guided-learning", self.arrays.get(tool, []))
-        for tool in ("CLAUDE_SKILLS", "OPENCODE_SKILLS", "CODEX_SKILLS"):
-            with self.subTest(tool=tool):
-                self.assertNotIn("guided-learning", self.arrays.get(tool, []))
-
-    def test_codex_target_skips_cores_that_share_his_names(self) -> None:
-        # Pi reads Codex's ~/.agents/skills, and from `~` a copy there beats
-        # Matt Pocock's skill of the same name.
-        codex = self.arrays.get("CODEX_SKILLS", [])
-        for name in ("grilling", "tdd", "wayfinder", "diagnosing-bugs"):
+    def test_existing_links_to_retired_adapted_skills_are_pruned(self) -> None:
+        # Their pool directories are gone, so only the raw-target allowlist
+        # recognises a dangling link to one as the pool's.
+        match = re.search(r"^RETIRED_POOL_TARGETS=\((.*?)\)", read(RECONCILER), re.DOTALL | re.MULTILINE)
+        self.assertIsNotNone(match)
+        retired = match.group(1).split()
+        for name in RETIRED_ADAPTED_SKILLS:
             with self.subTest(skill=name):
-                self.assertNotIn(name, codex)
-        self.assertIn("codebase-architecture", codex)
-
-    def test_pi_receives_no_adapted_core_directly(self) -> None:
-        # codebase-architecture reaches Pi through Codex's ~/.agents/skills,
-        # which Pi also reads; the four shared-name cores must not reach it at
-        # all, and guided-learning is in PI_SKILLS directly.
-        for name in set(ALL_NEW_SKILLS) - {"guided-learning"}:
-            with self.subTest(skill=name):
-                self.assertNotIn(name, self.arrays.get("PI_SKILLS", []))
+                self.assertIn(name, retired)
 
     def test_local_code_review_is_retired_everywhere(self) -> None:
         self.assertFalse((POOL / "code-review").exists())
@@ -466,7 +415,7 @@ class CurationTest(unittest.TestCase):
                 with self.subTest(tool=tool):
                     self.assertIn("teammate-pr-review", members)
 
-    def test_adr_and_spec_coach_survives_as_the_pilot_control(self) -> None:
+    def test_adr_and_spec_coach_stays_available_on_request(self) -> None:
         for tool in ("CLAUDE_SKILLS", "OPENCODE_SKILLS", "HERMES_SKILLS"):
             with self.subTest(tool=tool):
                 self.assertIn("adr-and-spec-coach", self.arrays.get(tool, []))
@@ -930,124 +879,35 @@ class ReviewContractTest(_MatchMixin, unittest.TestCase):
                 self.assertIn(phrase, " ".join(self.teammate.split()))
 
 
-class GuidedLearningTest(_MatchMixin, unittest.TestCase):
-    """Learning state is Bryan's; the skill may never write into itself."""
+class ForgejoAdapterTest(_MatchMixin, unittest.TestCase):
+    """The Forgejo adapter is a command under his `wayfinder`, not a skill."""
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.body = read(POOL / "guided-learning" / "SKILL.md")
-
-    def test_requires_an_absolute_workspace_path(self) -> None:
-        self.assert_matches(
-            self.body, r"(?i)absolute .*path", "missing required wording: absolute path"
-        )
-
-    def test_refuses_to_write_into_its_installed_skill_directory(self) -> None:
-        self.assert_matches(self.body, r"(?i)refuse", "missing required wording: refuse")
-        self.assert_matches(
-            self.body,
-            r"(?i)installed skill directory",
-            "missing required wording: installed skill directory",
-        )
-
-    def test_does_not_precreate_learning_machinery(self) -> None:
-        for forbidden in ("lessons/", "assets/", "quiz"):
-            with self.subTest(item=forbidden):
-                self.assertNotIn(
-                    f"create {forbidden}",
-                    self.body.lower(),
-                    "guided learning must stay a minimal lazy zone",
-                )
-
-    def test_never_treats_memory_as_proof_of_learning(self) -> None:
-        self.assert_matches(self.body, r"(?i)agent memory", "missing required wording: agent memory")
-        self.assert_matches(self.body, r"(?i)evidence", "missing required wording: evidence")
-
-
-class WayfinderContractTest(_MatchMixin, unittest.TestCase):
-    """Tracker mechanics are a deterministic helper, not free-form API prose."""
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.body = read(POOL / "wayfinder" / "SKILL.md")
-
-    def test_adapter_and_references_exist(self) -> None:
-        base = POOL / "wayfinder"
+    def test_adapter_tests_and_reference_live_beside_the_tracker_doc(self) -> None:
         for relative in (
             "scripts/forgejo_wayfinder.py",
             "tests/test_forgejo_wayfinder.py",
             "references/forgejo-tracker.md",
-            "references/prototype-routing.md",
+            "issue-tracker-forgejo.md",
         ):
             with self.subTest(path=relative):
-                self.assertTrue((base / relative).is_file())
+                self.assertTrue((FORGEJO_TRACKER / relative).is_file())
 
-    def test_skill_requires_a_private_tracker(self) -> None:
-        self.assert_matches(self.body, r"(?i)private", "missing required wording: private")
-        self.assert_matches(
-            self.body,
-            r"(?i)public .*(tracker|repositor)",
-            "missing required wording: public tracker or repository",
-        )
+    def test_the_tracker_directory_is_not_a_skill(self) -> None:
+        self.assertFalse((FORGEJO_TRACKER / "SKILL.md").exists())
 
-    def test_skill_requires_preview_before_mutation(self) -> None:
-        self.assert_matches(
-            self.body,
-            r"(?i)dry[- ]run|preview",
-            "missing required wording: dry run or preview",
-        )
-        self.assertIn("forgejo_wayfinder.py", self.body)
+    def test_launcher_runs_the_moved_adapter(self) -> None:
+        launcher = read(REPO_ROOT / "dot-agents" / "bin" / "forgejo-map")
+        self.assertIn('"$bin_dir/../forgejo-tracker/scripts"', launcher)
+        self.assertNotIn("skills/wayfinder", launcher)
 
-    # Named prototype workflows and where each one actually lives. `spike` and
-    # `sketch` are Hermes builtins, not pool members, so pool membership is the
-    # wrong test — availability per runtime is the contract.
-    PROTOTYPE_ROUTES = {
-        "spike": "hermes-builtin",
-        "sketch": "hermes-builtin",
-        "dx-target": "pool",
-        "dx-preview": "pool",
-    }
+    def test_reference_runs_the_adapter_from_its_new_path(self) -> None:
+        body = read(FORGEJO_TRACKER / "references" / "forgejo-tracker.md")
+        self.assertIn("dot-agents/forgejo-tracker/scripts/forgejo_wayfinder.py", body)
+        self.assertNotIn("skills/wayfinder", body)
 
-    def test_prototype_routing_names_every_approved_route(self) -> None:
-        routing = read(POOL / "wayfinder" / "references" / "prototype-routing.md")
-        for workflow in self.PROTOTYPE_ROUTES:
-            with self.subTest(workflow=workflow):
-                self.assertIn(f"`{workflow}`", routing)
-
-    def test_pool_routes_are_actually_in_the_pool(self) -> None:
-        for name, home in self.PROTOTYPE_ROUTES.items():
-            if home != "pool":
-                continue
-            with self.subTest(workflow=name):
-                self.assertTrue(
-                    (POOL / name / "SKILL.md").is_file(),
-                    f"prototype routing selects pooled '{name}', which is not in the pool",
-                )
-
-    def test_routing_declares_availability_and_a_fallback_per_route(self) -> None:
-        """A named route that is unavailable needs a stated fallback, not silence.
-
-        `spike` and `sketch` are Hermes builtins; Claude and OpenCode do not have
-        them. The reference has to say so and say what to do instead, or the
-        route is a dead end on two of three runtimes.
-        """
-        routing = read(POOL / "wayfinder" / "references" / "prototype-routing.md")
-        self.assertRegex(routing, r"(?i)runtime availability")
-        for name, home in self.PROTOTYPE_ROUTES.items():
-            with self.subTest(workflow=name):
-                self.assertRegex(
-                    routing,
-                    rf"\|\s*`{re.escape(name)}`[^|]*\|[^|]+\|[^|]+\|",
-                    f"{name} needs a row naming where it lives and what to do elsewhere",
-                )
-        for shape in ("feasibility spike", "logic walkthrough", "UI variants"):
-            with self.subTest(fallback=shape):
-                self.assertIn(f"Inline fallback: {shape}", routing)
-
-    def test_questionnaire_is_a_disclosed_reference_not_a_top_level_skill(self) -> None:
-        self.assertTrue((POOL / "grilling" / "references" / "questionnaire.md").is_file())
-        self.assertFalse((POOL / "to-questionnaire").exists())
-        self.assertFalse((POOL / "questionnaire").exists())
+    def test_adapter_still_refuses_a_public_tracker(self) -> None:
+        body = read(FORGEJO_TRACKER / "scripts" / "forgejo_wayfinder.py")
+        self.assert_matches(body, r"(?i)private only", "missing required wording: private only")
 
 
 class WritingGovernanceTest(_MatchMixin, unittest.TestCase):

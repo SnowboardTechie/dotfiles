@@ -150,7 +150,7 @@ rm -f "$TMP/args"
 out="$(launch "$repo/sub/dir" --tracker owner/tracker frontier --map 7)"; rc=$?
 check "launcher in a repo with origin exits 0" "0" "$rc"
 check "launcher fills --origin and passes the rest unchanged" \
-    "$(printf '%s\n' "$REPO_ROOT/dot-agents/skills/wayfinder/scripts/forgejo_wayfinder.py" --origin ssh://git@forge.example/owner/repo.git --tracker owner/tracker frontier --map 7)" \
+    "$(printf '%s\n' "$REPO_ROOT/dot-agents/forgejo-tracker/scripts/forgejo_wayfinder.py" --origin ssh://git@forge.example/owner/repo.git --tracker owner/tracker frontier --map 7)" \
     "$(cat "$TMP/args" 2>/dev/null)"
 
 rm -f "$TMP/args"

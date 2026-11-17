@@ -167,10 +167,16 @@ echo ""
 "$REPO_ROOT/scripts/reconcile-pi-packages.sh" --apply || \
     echo "  (Pi packages incomplete; resolve the reported problem and re-run)"
 
-# Matt Pocock's skills, loaded in Pi from a checkout at the ledger's pin.
+# Matt Pocock's skills, from one checkout at the ledger's pin: listed in Pi's
+# settings, linked into Claude Code and OpenCode (not OpenCode on Gnarbox).
 echo ""
-"$REPO_ROOT/scripts/reconcile-mattpocock-skills.sh" --apply || \
-    echo "  (Matt Pocock's skills incomplete; resolve the reported problem and re-run)"
+if [[ "$GNARBOX_PROFILE" == true ]]; then
+    RECONCILE_OPENCODE_SKILLS=0 "$REPO_ROOT/scripts/reconcile-mattpocock-skills.sh" --apply || \
+        echo "  (Matt Pocock's skills incomplete; resolve the reported problem and re-run)"
+else
+    "$REPO_ROOT/scripts/reconcile-mattpocock-skills.sh" --apply || \
+        echo "  (Matt Pocock's skills incomplete; resolve the reported problem and re-run)"
+fi
 
 # Repository commands for agents (forgejo-map), linked into ~/.local/bin.
 echo ""

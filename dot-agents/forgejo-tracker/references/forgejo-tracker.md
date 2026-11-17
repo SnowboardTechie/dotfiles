@@ -259,7 +259,7 @@ intentional repository Git setting merely to work around Tea; if repository
 instructions declare the setting accidental, repair it separately.
 
 ```bash
-S="$PWD/dot-agents/skills/wayfinder/scripts/forgejo_wayfinder.py"
+S="$PWD/dot-agents/forgejo-tracker/scripts/forgejo_wayfinder.py"
 ORIGIN=$(git remote get-url origin)
 # If Tea rejects this checkout:
 TEA_CWD=$(mktemp -d)

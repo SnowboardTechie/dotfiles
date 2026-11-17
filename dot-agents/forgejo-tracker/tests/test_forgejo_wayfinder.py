@@ -9,7 +9,7 @@ earlier versions wrong: `CreateIssueOption.labels` takes numeric ids, and a
 Nothing here touches the network, and no test can be made to pass by reaching
 a real tracker.
 
-Run: python3 -m unittest dot-agents/skills/wayfinder/tests/test_forgejo_wayfinder.py
+Run: python3 -m unittest dot-agents/forgejo-tracker/tests/test_forgejo_wayfinder.py
 """
 
 from __future__ import annotations

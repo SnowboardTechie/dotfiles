@@ -3,7 +3,8 @@
 
 Wayfinder charts a body of work as one **map** issue plus **decision ticket**
 child issues on a private Forgejo tracker. This module owns the mechanics so
-the skill body does not have to carry API prose that drifts.
+the tracker doc that routes Matt Pocock's `wayfinder` here does not have to
+carry API prose that drifts. It runs as the `forgejo-map` command.
 
 Design constraints, each of which is a test in
 `../tests/test_forgejo_wayfinder.py`:

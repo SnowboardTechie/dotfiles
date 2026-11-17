@@ -66,9 +66,15 @@ resolve_path() {
 # was replaced by the backend-neutral `knowledge-capture` router (2026-09-16);
 # `apple-notes-pkm` was removed when the second brain returned to Markdown
 # (2026-10-31). The local `code-review` split into `pr-self-review`'s review
-# contract and `teammate-pr-review` (2026-11-16); Matt Pocock's own `code-review`
-# never comes from the pool.
-RETIRED_POOL_TARGETS=(agent-workspace git-master vault-capture apple-notes-pkm code-review)
+# contract and `teammate-pr-review` (2026-11-16). The six skills adapted from
+# Matt Pocock's retired the same day in favour of his own (`grilling`,
+# `wayfinder`, `tdd`, `diagnosing-bugs`, `codebase-architecture` for his
+# `codebase-design` and `improve-codebase-architecture`, `guided-learning` for
+# his `teach`). His skills never come from the pool:
+# scripts/reconcile-mattpocock-skills.sh links them into Claude Code and
+# OpenCode and lists them in Pi's settings.
+RETIRED_POOL_TARGETS=(agent-workspace git-master vault-capture apple-notes-pkm code-review
+    grilling wayfinder tdd diagnosing-bugs codebase-architecture guided-learning)
 
 is_legacy_pool_link() { # <link-path> -> 0 when it names a retired pool skill
     local raw legacy
@@ -83,6 +89,11 @@ is_legacy_pool_link() { # <link-path> -> 0 when it names a retired pool skill
 }
 
 SKILLS_SRC="$(resolve_path "$REPO_ROOT/dot-agents/skills")"
+
+# Matt Pocock's checkout, whose per-skill links in the Claude Code and OpenCode
+# directories scripts/reconcile-mattpocock-skills.sh owns. They are left alone
+# like any foreign link, but counted rather than listed one by one.
+MATTPOCOCK_CHECKOUT="$HOME/.local/share/mattpocock-skills"
 
 if [[ -z "$SKILLS_SRC" || ! -d "$SKILLS_SRC" ]]; then
     echo "ERROR: skill pool not found at $REPO_ROOT/dot-agents/skills" >&2
@@ -102,20 +113,11 @@ COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review teammate-pr-r
 # Claude dropped these on 2026-09-28 (no recorded use); OpenCode, Pi, and Codex keep them.
 NON_CLAUDE_COMMON=(skill-retrospective obsidian)
 
-# Planning and delivery cores adapted from an upstream suite (see
-# dot-agents/upstreams/mattpocock-skills.json). Curated for the implementation runtimes
-# Bryan actually plans and implements on. `guided-learning` goes only to Pi and
-# Hermes until real use earns wider distribution. The local `code-review` retired
-# on 2026-11-16: its review contract lives in `pr-self-review`, and reviewing other
-# people's PRs is `teammate-pr-review` (both in COMMON_SKILLS), which loads Matt
-# Pocock's own `code-review`. In Pi that and his other promoted skills come from
-# scripts/reconcile-mattpocock-skills.sh. They win a name only while no copy of
-# that name is in ~/.agents/skills or ~/.pi/agent/skills: from `~` (or a non-Git
-# directory under it) Pi reads ~/.agents/skills as project skills, and a copy
-# there wins. Pi also reads Codex's ~/.agents/skills, so `codebase-architecture`
-# reaches it without a PI_SKILLS entry (Pi skips a second link to the same pool
-# file).
-ADAPTED_CORES=(grilling wayfinder tdd diagnosing-bugs codebase-architecture)
+# Matt Pocock's promoted skills (his `grilling`, `wayfinder`, `tdd`,
+# `code-review` and the rest) are not in these lists: one checkout of his
+# repository serves every harness through scripts/reconcile-mattpocock-skills.sh.
+# No pool skill may share a name with one of his. Reviewing other people's PRs
+# is `teammate-pr-review` (in COMMON_SKILLS), which loads his `code-review`.
 
 # Pi is becoming the primary harness (dotfiles-workspace#34), so it grows past
 # the common core as each workflow is made to run from Pi.
@@ -126,42 +128,37 @@ ADAPTED_CORES=(grilling wayfinder tdd diagnosing-bugs codebase-architecture)
 # then reviews, publishes and merges (manual-merge).
 # Desk skills that were Hermes-only, so no shared desk workflow needs a Hermes
 # session: dual-model teammate review, DX preview, proven cores, sprint updates,
-# guided learning, and demo prep (technical-demo-preparation, moved from a
+# and demo prep (technical-demo-preparation, moved from a
 # Hermes-local copy on 2026-11-12). Hermes's own bots and cron (bot-planning, bot-reminders,
 # yunohost-updates) stay with Hermes until the bot service replaces them.
 PI_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}" next-session
     manual-merge issue-create issue-plan issue-work loop-issue
     coding-agent-handoff-supervision dx-target
     multiagent-pr-review dx-preview proven-cores sprint-deliverable-update
-    technical-demo-preparation guided-learning draw-it)
+    technical-demo-preparation draw-it)
 
 # Codex uses the supported user scope (~/.agents/skills), not its bundled
 # ~/.codex/skills/.system directory. Share the portable coding/planning core;
 # leave Hermes-specific orchestration and specialist workflows opt-in.
 # Pi reads ~/.agents/skills too, and from `~` a copy there beats Matt Pocock's
-# skill of the same name. So the adapted cores that share a name with his
-# (grilling, wayfinder, tdd, diagnosing-bugs) stay out of it; Claude Code and
-# OpenCode keep them (2026-11-16; Bryan no longer uses Codex). Their existing
-# links here are pruned as stale pool links.
+# skill of the same name, which is one more reason no pool skill takes one of
+# his names.
 CODEX_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
     manual-merge issue-create issue-plan issue-work loop-issue
     adr-and-spec-coach conforming-tech-specs voice-bryan
     catalog-review dependency-review dependency-triage
-    superwhisper-meetings
-    codebase-architecture)
+    superwhisper-meetings)
 
 CLAUDE_SKILLS=("${COMMON_SKILLS[@]}"
     manual-merge issue-create issue-plan issue-work
     adr-and-spec-coach dx-target conforming-tech-specs proven-cores
     catalog-review dependency-review dependency-triage
-    voice-bryan superwhisper-meetings
-    "${ADAPTED_CORES[@]}")
+    voice-bryan superwhisper-meetings)
 
 OPENCODE_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
     manual-merge issue-create issue-plan issue-work loop-issue
     adr-and-spec-coach conforming-tech-specs
-    voice-bryan gamedev
-    "${ADAPTED_CORES[@]}")
+    voice-bryan gamedev)
 
 # Hermes keeps its bundled/local obsidian and vault-pkm implementations. Personal
 # skills live in a dedicated category so the shared pool remains canonical while
@@ -178,8 +175,7 @@ HERMES_SKILLS=(
     dx-target dx-preview conforming-tech-specs proven-cores
     catalog-review dependency-review dependency-triage sprint-deliverable-update
     technical-demo-preparation
-    "${ADAPTED_CORES[@]}"
-    guided-learning yunohost-updates superwhisper-meetings bot-planning bot-reminders
+    yunohost-updates superwhisper-meetings bot-planning bot-reminders
     rex
 )
 
@@ -201,7 +197,7 @@ reconcile_tool() {
     local label="$1" dest="$2" legacy_dest="$3"; shift 3
     local wanted=("$@")
     local existing name tgt w keep fresh=0
-    local n_create=0 n_refresh=0 n_ok=0 n_prune=0 n_foreign=0 n_collide=0 n_untouched=0 n_missing=0
+    local n_create=0 n_refresh=0 n_ok=0 n_prune=0 n_foreign=0 n_collide=0 n_untouched=0 n_missing=0 n_his=0
 
     echo ""
     echo "$label ($dest):"
@@ -265,6 +261,8 @@ reconcile_tool() {
                                 rm "$existing"
                             fi
                             n_prune=$((n_prune + 1))
+                        elif [[ $keep -eq 0 && "$(readlink "$existing")" == "$MATTPOCOCK_CHECKOUT/skills/"* ]]; then
+                            n_his=$((n_his + 1))
                         elif [[ $keep -eq 0 ]]; then
                             # Foreign or broken symlink (e.g. Omarchy package skills):
                             # never touched. Curated-name collisions are reported in
@@ -330,6 +328,9 @@ reconcile_tool() {
     echo "  summary: $n_create create, $n_refresh refresh, $n_ok ok, $n_prune prune," \
         "$n_foreign foreign preserved, $n_collide collisions preserved," \
         "$n_untouched unmanaged untouched, $n_missing missing"
+    if [[ $n_his -gt 0 ]]; then
+        echo "  $n_his links to Matt Pocock's skills left to scripts/reconcile-mattpocock-skills.sh"
+    fi
     return 0
 }
 
