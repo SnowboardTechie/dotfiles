@@ -16,7 +16,7 @@ retired-memory cleanup. It has no flags: every run applies.
   his `grilling` is linked into `~/.claude/skills` and `~/.config/opencode/skills` after the old dangling skill pool
   `grilling` link is pruned, and Bryan's own `~/.claude/skills/tdd` link on one of his names is kept; Hermes's
   Studio-only step skips; no `stow`, `sudo` or `brew`; pstack's own Pi directory `~/.pi/pstack` holds pi-claude-code
-  and the pstack port at the commit in `dot-agents/upstreams/pstack-claude.json` (and nothing else) in its
+  and the pstack port at the commit in `dot-agents/skill-sources/pstack-claude.json` (and nothing else) in its
   `settings.json` with `defaultProvider` `claude-code` and `defaultModel` `claude-opus-5-5`, links `pstack-models.md`
   and `AGENTS.md` into this checkout, and has an `auth.json` at mode `600` whose `opencode-go` key is the
   `!cat "$HOME/.secrets/opencode-api-key"` command; the main Pi directory's packages hold no pstack port.

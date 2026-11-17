@@ -62,7 +62,7 @@ expect "the retired Hindsight hook and context-mode plugin are removed, Bryan's 
 expect "Hermes's Studio-only assets are skipped on another machine" has "$OUT" "Skipped (Studio-only assets)"
 expect "nothing ran stow, sudo or brew" test -z "$(calls "$H" stow)$(calls "$H" sudo)$(calls "$H" brew)"
 D="$H/.pi/pstack"
-PSTACK_PIN="$(jq -r .commit "$REPO/dot-agents/upstreams/pstack-claude.json")"
+PSTACK_PIN="$(jq -r .commit "$REPO/dot-agents/skill-sources/pstack-claude.json")"
 expect "pstack's port is not installed into the main Pi directory" \
     test -z "$(jq -r '.packages[] | select(contains("pstack-claude"))' "$H/.pi/agent/settings.json")"
 expect "pstack's directory holds pi-claude-code and the port at its pin" \
