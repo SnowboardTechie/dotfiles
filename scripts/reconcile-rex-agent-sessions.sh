@@ -27,7 +27,7 @@ fi
 if [[ -L "$EXT_DEST" && "$(readlink "$EXT_DEST")" == "$EXT_SRC" ]]; then
     echo "  OK   $EXT_DEST"
 elif [[ -e "$EXT_DEST" || -L "$EXT_DEST" ]]; then
-    echo "  WARNING: $EXT_DEST is not managed by this repository, skipping"
+    echo "  WARNING: $EXT_DEST is foreign (this repository did not make it), skipping"
 elif [[ "$MODE" == "--apply" ]]; then
     mkdir -p "$(dirname "$EXT_DEST")"
     ln -s "$EXT_SRC" "$EXT_DEST"
@@ -41,7 +41,7 @@ rendered="$(sed -e "s|__REPO__|$REPO_ROOT|g" -e "s|__HOME__|$HOME_DIR|g" "$PLIST
 if [[ -f "$PLIST_DEST" && "$(cat "$PLIST_DEST")" == "$rendered" ]]; then
     echo "  OK   $PLIST_DEST"
 elif [[ -e "$PLIST_DEST" ]] && ! grep -q "rex-agent-sessions.py" "$PLIST_DEST"; then
-    echo "  WARNING: $PLIST_DEST is not managed by this repository, skipping"
+    echo "  WARNING: $PLIST_DEST is foreign (this repository did not make it), skipping"
     exit 0
 elif [[ "$MODE" == "--apply" ]]; then
     mkdir -p "$(dirname "$PLIST_DEST")" "$STATE_DIR"

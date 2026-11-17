@@ -26,9 +26,9 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILL_POOL = REPO_ROOT / "dot-agents" / "skills"
-UPSTREAMS = REPO_ROOT / "dot-agents" / "upstreams"
-SOURCE_RECORD_PATH = UPSTREAMS / "mattpocock-skills.json"
-LICENSE_PATH = UPSTREAMS / "mattpocock-skills-LICENSE"
+SKILL_SOURCES = REPO_ROOT / "dot-agents" / "skill-sources"
+SOURCE_RECORD_PATH = SKILL_SOURCES / "mattpocock-skills.json"
+LICENSE_PATH = SKILL_SOURCES / "mattpocock-skills-LICENSE"
 RECONCILER = REPO_ROOT / "scripts" / "reconcile-agent-skills.sh"
 REVIEW_CONTRACT = SKILL_POOL / "pr-self-review" / "references" / "review-contract.md"
 
@@ -330,7 +330,7 @@ class SourceRecordTest(unittest.TestCase):
         cls.source_record = json.loads(read(SOURCE_RECORD_PATH)) if SOURCE_RECORD_PATH.is_file() else {}
 
     def test_license_is_retained_beside_the_source_record(self) -> None:
-        self.assertTrue(LICENSE_PATH.is_file(), "upstream MIT license must be stored beside the source record")
+        self.assertTrue(LICENSE_PATH.is_file(), "the skill source's MIT license must be stored beside the source record")
         self.assertIn("MIT License", read(LICENSE_PATH))
         self.assertIn("Matt Pocock", read(LICENSE_PATH))
 
@@ -340,7 +340,7 @@ class SourceRecordTest(unittest.TestCase):
                 self.assertIn(key, self.source_record)
         self.assertRegex(self.source_record.get("commit", ""), r"\A[0-9a-f]{40}\Z")
         self.assertEqual(self.source_record.get("license"), "MIT")
-        self.assertTrue((UPSTREAMS / self.source_record["licenseFile"]).is_file())
+        self.assertTrue((SKILL_SOURCES / self.source_record["licenseFile"]).is_file())
 
     def test_update_policy_is_automatic_pin_advance(self) -> None:
         # Bryan chose automatic advance on 2026-11-16: the pi-bots job moves the
@@ -353,7 +353,7 @@ class SourceRecordTest(unittest.TestCase):
 
     def test_the_pin_fields_are_one_per_line_for_the_job_that_rewrites_them(self) -> None:
         # The job rewrites exactly these three lines and refuses any other shape.
-        text = (UPSTREAMS / "mattpocock-skills.json").read_text(encoding="utf-8")
+        text = (SKILL_SOURCES / "mattpocock-skills.json").read_text(encoding="utf-8")
         for key in ("commit", "version", "verifiedOn"):
             self.assertRegex(text, rf'(?m)^  "{key}": "[^"]*",?$')
 
@@ -390,7 +390,7 @@ class AdaptedSourceRecordTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.records = {
             path.stem: json.loads(read(path))
-            for path in sorted(UPSTREAMS.glob("*.json"))
+            for path in sorted(SKILL_SOURCES.glob("*.json"))
             if path.name != SOURCE_RECORD_PATH.name
         }
 
@@ -404,7 +404,7 @@ class AdaptedSourceRecordTest(unittest.TestCase):
                 self.assertRegex(record.get("commit", ""), r"\A[0-9a-f]{40}\Z")
                 self.assertRegex(record.get("verifiedOn", ""), r"\A\d{4}-\d{2}-\d{2}\Z")
                 self.assertEqual(record.get("license"), "MIT")
-                self.assertIn("MIT License", read(UPSTREAMS / record["licenseFile"]))
+                self.assertIn("MIT License", read(SKILL_SOURCES / record["licenseFile"]))
 
     def test_each_reviewed_pin_is_watched_by_the_adapted_skill_watch(self) -> None:
         # The pi-bots scheduled job reads every record whose pin is a reviewed
@@ -456,8 +456,8 @@ class AdaptedSourceRecordTest(unittest.TestCase):
                 self.assertRegex(body, r"(?m)^##+ .*Ponytail, the simplicity review")
                 self.assertIn("Ponytail checks the", body)
                 self.assertIn("named after the Ponytail plugin", " ".join(body.split()))
-                self.assertIn("upstreams/ponytail.json", body)
-                self.assertTrue((path.parent / "../../upstreams/ponytail.json").resolve().is_file())
+                self.assertIn("skill-sources/ponytail.json", body)
+                self.assertTrue((path.parent / "../../skill-sources/ponytail.json").resolve().is_file())
 
 
 class CurationTest(unittest.TestCase):
@@ -582,15 +582,15 @@ class IssueWorkRoutingTest(_MatchMixin, unittest.TestCase):
             with self.subTest(field=field):
                 self.assertIn(field, self.handoff)
         for token in (
-            "issue-xrepo-{ticket_digest}",
+            "issue-xrepo-{issue_digest}",
             "publication-summary.md",
-            "each distinct ticket and",
+            "each distinct issue and",
             "source_issue_mode: github_shorthand",
             "wrong forge",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, self.body)
-        self.assertIn("{TICKET_PRIMARY_CHECKOUT}/repos/{repo}", self.repo_resolution)
+        self.assertIn("{ISSUE_PRIMARY_CHECKOUT}/repos/{repo}", self.repo_resolution)
         self.assertIn("Do not rescue an identity mismatch", self.repo_resolution)
 
     def test_imperative_work_authorizes_reviewable_pr_not_merge(self) -> None:
@@ -712,11 +712,11 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
             SKILL_POOL
             / "coding-agent-handoff-supervision"
             / "tests"
-            / "test_rex_background_agent_slot.py"
+            / "test_rex_background_agent_pane.py"
         )
 
     def test_preparation_reuses_or_creates_one_ticket(self) -> None:
-        for token in ("Reuse the ticket", "issue-create", "duplicate", "read it back"):
+        for token in ("Reuse the issue", "issue-create", "duplicate", "read it back"):
             with self.subTest(token=token):
                 self.assertIn(token, self.body)
 
@@ -724,7 +724,7 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
         self.assertIn("artifact, not the prompt", self.body)
         self.assert_matches(
             self.body,
-            r"(?is)ticket or plan URL/path.*implementation repository.*worktree.*authority boundaries.*permissions",
+            r"(?is)issue or plan URL/path.*implementation repository.*worktree.*authority boundaries.*permissions",
             "the prompt must contain locators and authority only",
         )
         self.assert_matches(
@@ -753,10 +753,10 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
         )
 
     def test_rex_scripts_and_tests_exist(self) -> None:
-        self.assertTrue((self.scripts / "rex_background_agent_slot.py").is_file())
+        self.assertTrue((self.scripts / "rex_background_agent_pane.py").is_file())
         self.assertTrue((self.scripts / "rex_wait.sh").stat().st_mode & 0o111)
         self.assertTrue(self.tests.is_file())
-        for script in ("rex_background_agent_slot.py", "rex_wait.sh"):
+        for script in ("rex_background_agent_pane.py", "rex_wait.sh"):
             with self.subTest(script=script):
                 self.assertIn(script, self.body)
                 self.assertIn(script, self.rex)
@@ -773,8 +773,8 @@ class CodingAgentHandoffContractTest(_MatchMixin, unittest.TestCase):
         ):
             with self.subTest(token=token):
                 self.assertIn(token.lower(), (self.body + self.rex).lower())
-        self.assertIn("*weekly*) ceiling=90 ;; *) ceiling=75 ;;", self.rex)
-        self.assertIn('[ -n "$cap" ] && [ "$cap" -lt "$ceiling" ]', self.rex)
+        self.assertIn("*weekly*) threshold=90 ;; *) threshold=75 ;;", self.rex)
+        self.assertIn('[ -n "$cap" ] && [ "$cap" -lt "$threshold" ]', self.rex)
 
     def test_visible_authority_and_identity_remain_fail_closed(self) -> None:
         for token in (

@@ -69,13 +69,13 @@ def select_agent(
     implementation_repo: str | None = None,
     implementation_host: str | None = None,
 ) -> dict[str, Any]:
-    ticket_key = normalize_repo(ticket_repo)
+    issue_key = normalize_repo(ticket_repo)
     implementation_repo = implementation_repo or ticket_repo
     implementation_key = normalize_repo(implementation_repo)
     remote_host, remote_repo = identity_from_remote(remote_url)
     remote_key = normalize_repo(remote_repo)
     ticket_host = ticket_host.strip().lower() if ticket_host else remote_host
-    cross_repository = implementation_key != ticket_key or ticket_host != remote_host
+    cross_repository = implementation_key != issue_key or ticket_host != remote_host
     if cross_repository and not implementation_host:
         raise RoutingError("cross-repository routing requires --implementation-host")
     if implementation_host and implementation_host.strip().lower() != remote_host:
@@ -83,7 +83,7 @@ def select_agent(
             f"implementation forge {implementation_host} does not match origin forge {remote_host}"
         )
     if implementation_key != remote_key:
-        identity_label = "implementation repository" if cross_repository else "ticket repository"
+        identity_label = "implementation repository" if cross_repository else "issue repository"
         raise RoutingError(
             f"{identity_label} {implementation_repo} does not match origin repository {remote_repo}"
         )

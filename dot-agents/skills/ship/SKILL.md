@@ -18,9 +18,9 @@ Push the current branch, create or update one **draft** pull request, fill the
 repository's PR template, apply labels only when authorized, and report the
 clickable URL. This skill does not merge or declare the branch review-ready.
 
-For end-to-end ticket work, use `issue-work`. For an independent review of an
+For end-to-end issue work, use `issue-work`. For an independent review of an
 already-open PR, use `pr-self-review`. To decide whether a draft is ready, or to
-mark it ready and request reviewers once Bryan says so, follow
+mark it ready and request human reviewers once Bryan says so, follow
 `references/ready-for-review.md`. It includes re-watching CI after every push,
 because audit jobs fail on newly published CVEs.
 
@@ -61,7 +61,7 @@ Record one authority mode:
 ### 2. Verify the branch and exact-candidate review
 
 Inspect `git status`, the branch diff, and the repository's own instructions.
-Run the relevant test, lint, typecheck, and formatting gates.
+Run the relevant test, lint, typecheck, and formatting checks.
 
 For every candidate authored by the authenticated user, an exact-candidate
 review is mandatory before publication:
@@ -74,7 +74,7 @@ review is mandatory before publication:
   context; use an independent background agent when the active orchestrator authored the code;
 - require every artifact to identify the same base SHA, head SHA, merge-base SHA,
   diff hash, expected branch, and clean worktree;
-- invalidate the review after any candidate change and rerun the complete gate.
+- invalidate the review after any candidate change and rerun the complete review.
 
 When dispatching that background agent, hand it the spec as acceptance criteria stated as
 outcomes, one line each (`the release gate blocks at high`, `the job graph is
@@ -90,8 +90,8 @@ see `pr-self-review` §1). Missing or stale Ponytail evidence blocks
 publication.
 
 If a caller supplies already-current verification and review artifacts, inspect
-them and avoid rerunning unchanged expensive gates. Any failed or missing
-required gate blocks publication.
+them and avoid rerunning unchanged expensive checks. Any failed or missing
+required check or review blocks publication.
 
 ### 3. Draft the PR body
 
@@ -269,7 +269,7 @@ Report the PR as a Markdown link.
 ## Verification Checklist
 
 - [ ] Current branch is not the default branch
-- [ ] Required repository gates passed
+- [ ] Required repository checks passed
 - [ ] Exact-candidate Standards, Spec, conditional Risk, and Ponytail review passed
 - [ ] Review identity still matches the branch candidate and clean worktree
 - [ ] Existing same-branch PR count is zero or one

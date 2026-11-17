@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Trust the bots' parent directory in Pi, so a Pi started in a bot's directory reads its
 // `.pi/settings.json` (model, thinking level, extensions). Pi ignores a project's settings
-// until the project is trusted; the bot service's own Pis pass --approve, but a desk Pi
+// until the project is trusted; the bot service's own Pis pass --approve, but an interactive Pi
 // opened there (to look at or work on a bot) would otherwise ask, or silently skip them.
 //
 // Usage: reconcile-pi-bots-trust.mjs --check | --apply

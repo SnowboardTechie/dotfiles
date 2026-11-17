@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Integration tests for scripts/reconcile-omarchy-auto-suspend.sh.
-# All writes are isolated inside a temporary HOME tree.
+# All writes are isolated inside a throwaway home.
 
 set -u
 

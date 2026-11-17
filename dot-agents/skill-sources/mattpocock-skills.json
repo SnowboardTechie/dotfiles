@@ -20,6 +20,6 @@
     "humanApprovedPinAdvance": false,
     "autoApply": true,
     "monitor": "pi-bots job mattpocock-skill-watch",
-    "description": "The pi-bots job `mattpocock-skill-watch` runs weekly. When upstream's `main` is ahead of `commit`, it lists the promoted skills added, removed and changed, writes the new `commit`, `version` and `verifiedOn` here, runs `scripts/reconcile-mattpocock-skills.sh --apply`, and checks that Pi loads every promoted skill from the checkout and nothing else from it. On a pass it commits this file alone to `main`, signed, and announces the advance in Matrix with the rollback. On a failure it puts the old pin back and commits nothing. Bryan chose automatic advance with no review step on 2026-11-16."
+    "description": "The pi-bots scheduled job `mattpocock-skill-watch` runs weekly. When his repository's `main` is ahead of `commit`, it lists the promoted skills added, removed and changed, writes the new `commit`, `version` and `verifiedOn` here, runs `scripts/reconcile-mattpocock-skills.sh --apply`, and checks that Pi loads every promoted skill from the checkout and nothing else from it. On a pass it commits this file alone to `main`, signed, and announces the advance in Matrix with the rollback. On a failure it puts the old pin back and commits nothing. Bryan chose automatic advance with no review step on 2026-11-16."
   }
 }

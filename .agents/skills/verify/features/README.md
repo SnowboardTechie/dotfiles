@@ -8,13 +8,13 @@ use the matching feature file as the recipe. The harness is `dotfiles-verify`, t
 
 - `$V doctor` prints no `FAIL`.
 - `DOTFILES_VERIFY_EVIDENCE`, if set, is outside the repository.
-- Every journey starts from empty homes it makes itself, seeded in the journey with what a host would already hold.
+- Every journey starts from empty homes it makes itself, seeded in the journey with what a machine would already hold.
 - Never point a journey at a real home. There is no shared instance to drive.
 
 ## Driving conventions
 
 - One journey per run; each starts from empty homes.
-- Drive the entry point a host runs (`setup-platform-configs.sh`, `scripts/setup-omarchy.sh`, a reconciler) with its
+- Drive the setup entry point or reconciler a machine runs (`setup-platform-configs.sh`, `scripts/setup-omarchy.sh`, a reconciler) with its
   real flags. Seed state with plain shell; never call into a script's functions.
 - Every `--check` claim compares home trees before and after. Every idempotence claim compares trees after two
   applies.
@@ -29,7 +29,7 @@ use the matching feature file as the recipe. The harness is `dotfiles-verify`, t
 
 ## Feature entry contract
 
-Each feature file starts with an H1 title and one paragraph on what the host sees. Four H2 sections follow, in this
+Each feature file starts with an H1 title and one paragraph on what the machine sees. Four H2 sections follow, in this
 order: `Sub-features`, `How to get to it (user POV)`, `Driving it with dotfiles-verify` (starting with
 `Preconditions:`) and `Gotchas`.
 
@@ -39,12 +39,12 @@ order: `Sub-features`, `How to get to it (user POV)`, `Driving it with dotfiles-
 | --- | --- | --- |
 | [Agent skill links](./agent-skills.md) | `agent-skills` | 2026-11-16 |
 | [Omarchy additive setup](./omarchy-setup.md) | `omarchy-setup` | 2026-11-16 |
-| [macOS setup after Stow](./platform-setup.md) | `platform-setup` | 2026-11-16 |
+| [macOS setup after Stow](./platform-setup.md) | `platform-setup` | 2026-11-17 |
 | [Agent commands on PATH](./agent-commands.md) | `agent-commands` | 2026-11-16 |
 | [Shell additions in ~/.bashrc](./shell-additions.md) | `shell-additions` | 2026-11-16 |
 
 "Last proved" means the journey passed on the unbroken checkout and failed at the predicted claim on each break below,
-on that date (`prove-breaks`: 49 of 49 caught).
+on that date (`prove-breaks`: 60 of 60 caught).
 
 ## Breaks each journey catches
 
@@ -63,7 +63,7 @@ restored. Rerun them all with `../scripts/prove-breaks`. Add a row and an entry 
 | a regular file on a curated name is deleted and replaced by the skill pool link | `scripts/reconcile-agent-skills.sh` | `agent-skills` | a regular file on a curated name is kept with its content |
 | draw-it also curated for Hermes | `scripts/reconcile-agent-skills.sh` | `agent-skills` | .hermes/skills/personal does not get draw-it |
 | links into Matt Pocock's checkout listed as foreign instead of counted | `scripts/reconcile-agent-skills.sh` | `agent-skills` | his link is counted, not listed as foreign |
-| every host counts as Omarchy | `scripts/setup-omarchy.sh` | `omarchy-setup` | exits 1 |
+| every machine counts as Omarchy | `scripts/setup-omarchy.sh` | `omarchy-setup` | exits 1 |
 | `--check` runs every reconciler with `--apply` | `scripts/setup-omarchy.sh` | `omarchy-setup` | check left the home unchanged |
 | the Pi extensions reconciler dropped from the list | `scripts/setup-omarchy.sh` | `omarchy-setup` | check runs Pi extensions (check) |
 | Pi extensions apply links nothing | `scripts/reconcile-pi-extensions.sh` | `omarchy-setup` | Pi extensions linked |
@@ -88,6 +88,17 @@ restored. Rerun them all with `../scripts/prove-breaks`. Add a row and an entry 
 | a retired tmux link of this repository's is kept | `setup-platform-configs.sh` | `platform-setup` | the retired repo-owned tmux link is removed |
 | Claude Code links to his skills are never made | `scripts/reconcile-mattpocock-skills.sh` | `platform-setup` | his grilling is linked for Claude Code |
 | a foreign link on one of his names is repointed to his skill | `scripts/reconcile-mattpocock-skills.sh` | `platform-setup` | a foreign link on one of his names is kept |
+| pi runs without PI_CODING_AGENT_DIR, so pstack's packages land in the main Pi directory | `scripts/reconcile-pi-pstack.sh` | `platform-setup` | pstack's port is not installed into the main Pi directory |
+| the pstack port is never installed | `scripts/reconcile-pi-pstack.sh` | `platform-setup` | pstack's directory holds pi-claude-code and the port at its pin |
+| pstack's default model is another one | `scripts/reconcile-pi-pstack.sh` | `platform-setup` | pstack's directory defaults to claude-code and claude-opus-5-5 |
+| the model sheet is never linked | `scripts/reconcile-pi-pstack.sh` | `platform-setup` | pstack's model sheet is linked |
+| pstack's AGENTS.md is never linked | `scripts/reconcile-pi-pstack.sh` | `platform-setup` | pstack's AGENTS.md is linked |
+| auth.json created readable by everyone | `scripts/reconcile-pi-pstack.sh` | `platform-setup` | pstack's auth.json is mode 600 |
+| auth.json holds a literal key instead of the !cat command | `scripts/reconcile-pi-pstack.sh` | `platform-setup` | pstack's auth.json reads the OpenCode key from ~/.secrets with !cat |
+| an existing auth.json is rewritten | `scripts/reconcile-pi-pstack.sh` | `platform-setup` | Bryan's own pstack auth.json is not rewritten |
+| an auth.json without the OpenCode entry is not reported | `scripts/reconcile-pi-pstack.sh` | `platform-setup` | the missing OpenCode entry is reported |
+| installed packages are never recognised, so every run reinstalls them | `scripts/reconcile-pi-pstack.sh` | `platform-setup` | every path and file is unchanged |
+| the stub pi ignores PI_CODING_AGENT_DIR and always edits the main Pi directory | `.agents/skills/verify/scripts/dotfiles-verify` | `platform-setup` | pstack's port is not installed into the main Pi directory |
 | conflicts reported but the run exits 0 | `scripts/reconcile-agent-commands.sh` | `agent-commands` | file, check: exits 1 |
 | a live link into another checkout is treated as stale and repointed | `scripts/reconcile-agent-commands.sh` | `agent-commands` | live-link, check: exits 1 |
 | forgejo-map no longer follows its own link to find the adapter | `dot-agents/bin/forgejo-map` | `agent-commands` | --help exits 0 |

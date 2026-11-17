@@ -10,7 +10,7 @@
 #   - prune only symlinks that resolve into the skill pool and are no longer curated
 #   - preserve real directories, regular files, foreign and broken symlinks
 #
-# Requires only Bash plus the utilities the legacy setup script already used
+# Requires only Bash plus the utilities the setup entry point already used
 # (perl for path resolution). No Stow, no network, no elevation.
 
 set -euo pipefail
@@ -29,7 +29,7 @@ Usage: reconcile-agent-skills.sh (--check | --apply)
             that do not resolve into this repository's skill pool.
 
   RECONCILE_OPENCODE_SKILLS=0 retires only OpenCode links into the skill pool
-            on hosts that no longer run OpenCode; other harnesses are unchanged.
+            on machines that no longer run OpenCode; other harnesses are unchanged.
   RECONCILE_HERMES_SKILLS=0 skips Hermes entirely: no links are created or
             pruned in ~/.hermes/skills/personal.
 EOF
@@ -64,7 +64,7 @@ resolve_path() {
 # This is an exact allowlist of historical targets, never a pattern. Every
 # other broken or foreign link is still preserved untouched. `vault-capture`
 # was replaced by the backend-neutral `knowledge-capture` router (2026-09-16);
-# `apple-notes-pkm` was removed when the second brain returned to Markdown
+# `apple-notes-pkm` was removed when the personal vault returned to Markdown
 # (2026-10-31). The local `code-review` split into `pr-self-review`'s review
 # contract and `teammate-pr-review` (2026-11-16). The six skills adapted from
 # Matt Pocock's retired the same day in favour of his own (`grilling`,
@@ -102,10 +102,10 @@ fi
 
 # Common core shared by Claude, OpenCode, Pi, and Codex: dev/PR and PKM.
 # PKM: vault-pkm (every Markdown vault, including the personal ~/second-brain)
-# and knowledge-capture (the router that decides personal vs. project).
+# and knowledge-capture (the router that decides between the personal vault and a workspace's vault).
 # apple-notes-pkm was removed 2026-10-31.
 # black-box-verification is a shared verification method (see
-# dot-agents/upstreams/pstack-claude.json), so every harness, Pi included, receives it.
+# dot-agents/skill-sources/pstack-claude.json), so every harness, Pi included, receives it.
 COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review teammate-pr-review
     vault-pkm knowledge-capture session-handoff
     black-box-verification)
@@ -126,10 +126,10 @@ NON_CLAUDE_COMMON=(skill-retrospective obsidian)
 # Delivery skills: a Pi orchestrator runs the issue workflows, the visible
 # handoff they delegate through, and the DX planning step issue-plan loads,
 # then reviews, publishes and merges (manual-merge).
-# Desk skills that were Hermes-only, so no shared desk workflow needs a Hermes
+# Skills for the interactive Pi that were Hermes-only, so no workflow it shares needs a Hermes
 # session: dual-model teammate review, DX preview, proven cores, sprint updates,
 # and demo prep (technical-demo-preparation, moved from a
-# Hermes-local copy on 2026-11-12). Hermes's own bots and cron (bot-planning, bot-reminders,
+# Hermes-local copy on 2026-11-12). Hermes's own bots and scheduled jobs (bot-planning, bot-reminders,
 # yunohost-updates) stay with Hermes until the bot service replaces them.
 PI_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}" next-session
     manual-merge issue-create issue-plan issue-work loop-issue
@@ -228,7 +228,7 @@ reconcile_tool() {
     fi
 
     # Scan pass: prune stale skill pool links, report foreign links that are
-    # preserved, count unmanaged real entries. Skipped when the destination
+    # preserved, count foreign real entries. Skipped when the destination
     # does not exist yet (or is a legacy link that check mode leaves in place).
     if [[ $fresh -eq 0 || "$MODE" == "apply" ]]; then
         for existing in "$dest"/*; do
@@ -327,7 +327,7 @@ reconcile_tool() {
 
     echo "  summary: $n_create create, $n_refresh refresh, $n_ok ok, $n_prune prune," \
         "$n_foreign foreign preserved, $n_collide collisions preserved," \
-        "$n_untouched unmanaged untouched, $n_missing missing"
+        "$n_untouched foreign real entries untouched, $n_missing missing"
     if [[ $n_his -gt 0 ]]; then
         echo "  $n_his links to Matt Pocock's skills left to scripts/reconcile-mattpocock-skills.sh"
     fi

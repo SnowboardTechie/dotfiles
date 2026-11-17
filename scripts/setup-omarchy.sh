@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# setup-omarchy.sh — conservative, additive dotfiles setup for Omarchy hosts.
+# setup-omarchy.sh — conservative, additive dotfiles setup for Omarchy machines.
 #
 # Omarchy owns its own environment (shell, terminal, editor, Git, GPG,
-# Zed, and tool settings). This entry point deploys only additive personal
+# Zed, and tool settings). This setup entry point deploys only additive personal
 # assets — curated skills, portable aliases, guarded Bash enhancements,
 # personal shell plugins, Pi's extensions and Claude Code provider, and retired
 # agent-memory cleanup — and never runs Stow, installs system packages, or uses
@@ -21,9 +21,9 @@ Usage: setup-omarchy.sh (--check | --apply) [--force]
 
   --check   Report what --apply would change. Never mutates the filesystem.
   --apply   Perform the additive setup through the registered reconcilers.
-  --force   Proceed even if this host does not identify as Omarchy.
+  --force   Proceed even if this machine does not identify as Omarchy.
 
-Never run 'stow .' or 'stow --adopt' against your home on an Omarchy host;
+Never run 'stow .' or 'stow --adopt' against your home on an Omarchy machine;
 this script is the supported installation path there.
 EOF
 }
@@ -59,9 +59,9 @@ is_omarchy() {
 
 if ! is_omarchy; then
     if [[ $FORCE -eq 1 ]]; then
-        echo "WARNING: host does not identify as Omarchy; continuing (--force)."
+        echo "WARNING: this machine does not identify as Omarchy; continuing (--force)."
     else
-        echo "ERROR: this host does not identify as Omarchy (/etc/os-release ID" >&2
+        echo "ERROR: this machine does not identify as Omarchy (/etc/os-release ID" >&2
         echo "or the omarchy command). Use --force to run anyway, or use the" >&2
         echo "documented macOS/NixOS installation instead." >&2
         exit 1
@@ -70,7 +70,7 @@ fi
 
 echo "Omarchy additive setup ($MODE)"
 
-# Omarchy hosts don't run Hermes; set RECONCILE_HERMES_SKILLS=1 to link its skills anyway.
+# Omarchy machines don't run Hermes; set RECONCILE_HERMES_SKILLS=1 to link its skills anyway.
 export RECONCILE_HERMES_SKILLS="${RECONCILE_HERMES_SKILLS:-0}"
 
 RECONCILERS=(

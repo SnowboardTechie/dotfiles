@@ -54,7 +54,7 @@ export type Spawn = (script: string, args: string[]) => ChildProcess;
 
 export default function (pi: ExtensionAPI, spawnWait: Spawn = (s, a) => spawn(s, a, { stdio: ["ignore", "pipe", "pipe"] })) {
 	const script = waitScript(fileURLToPath(import.meta.url));
-	const running = new Map<string, ChildProcess>(); // transcript -> waiter
+	const running = new Map<string, ChildProcess>(); // transcript -> watch
 	const unsettled = new Map<string, string>(); // transcript -> label, ended without settling
 	let promptedThisRun = false;
 	let nudgedThisRun = false;

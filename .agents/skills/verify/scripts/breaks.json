@@ -82,7 +82,7 @@
  {
   "journey": "omarchy-setup",
   "file": "scripts/setup-omarchy.sh",
-  "break": "every host counts as Omarchy",
+  "break": "every machine counts as Omarchy",
   "old": "is_omarchy() {\n",
   "new": "is_omarchy() {\n    return 0\n",
   "fails_at": "exits 1"
@@ -131,8 +131,8 @@
   "journey": "omarchy-setup",
   "file": "scripts/reconcile-pi-extensions.sh",
   "break": "a foreign file in ~/.pi/agent is replaced by the repo link",
-  "old": "    elif [[ -e \"$dest\" || -L \"$dest\" ]]; then\n        echo \"  WARNING: $dest is not managed by this repository, skipping\"",
-  "new": "    elif [[ \"$MODE\" == \"--apply\" && ( -e \"$dest\" || -L \"$dest\" ) ]]; then\n        ln -sfn \"$src\" \"$dest\"",
+  "old": "        echo \"  OK   $dest\"\n    elif [[ -e \"$dest\" || -L \"$dest\" ]]; then\n        echo \"  WARNING: $dest is foreign (this repository did not make it), skipping\"",
+  "new": "        echo \"  OK   $dest\"\n    elif [[ \"$MODE\" == \"--apply\" && ( -e \"$dest\" || -L \"$dest\" ) ]]; then\n        ln -sfn \"$src\" \"$dest\"",
   "fails_at": "Bryan's own Pi AGENTS.md is kept"
  },
  {
@@ -390,5 +390,93 @@
   "old": "reconcile_bashrc\nreconcile_blesh_rc\n",
   "new": "reconcile_bashrc\nreconcile_blesh_rc\n[[ $MODE == apply ]] && date +%s%N >\"$(dirname \"$BLESH_RC_TARGET\")/.applied\"\n",
   "fails_at": "a second apply left the home identical"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-pi-pstack.sh",
+  "break": "pi runs without PI_CODING_AGENT_DIR, so pstack's packages land in the main Pi directory",
+  "old": "pi_here() { PI_CODING_AGENT_DIR=\"$DIR\" command pi \"$@\"; }",
+  "new": "pi_here() { command pi \"$@\"; }",
+  "fails_at": "pstack's port is not installed into the main Pi directory"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-pi-pstack.sh",
+  "break": "the pstack port is never installed",
+  "old": "ensure_package \"$PSTACK\" \"git:github\\\\.com/michael-denyer/pstack-claude(@.*)?\"",
+  "new": ": ensure_package \"$PSTACK\" \"git:github\\\\.com/michael-denyer/pstack-claude(@.*)?\"",
+  "fails_at": "pstack's directory holds pi-claude-code and the port at its pin"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-pi-pstack.sh",
+  "break": "pstack's default model is another one",
+  "old": "MODEL=\"claude-opus-5-5\"",
+  "new": "MODEL=\"claude-sonnet-5-5\"",
+  "fails_at": "pstack's directory defaults to claude-code and claude-opus-5-5"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-pi-pstack.sh",
+  "break": "the model sheet is never linked",
+  "old": "ensure_link \"$DIR/pstack-models.md\" \"$SHEET_REL\"",
+  "new": ": ensure_link \"$DIR/pstack-models.md\" \"$SHEET_REL\"",
+  "fails_at": "pstack's model sheet is linked"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-pi-pstack.sh",
+  "break": "pstack's AGENTS.md is never linked",
+  "old": "ensure_link \"$DIR/AGENTS.md\" \"$INSTRUCTIONS_REL\"",
+  "new": ": ensure_link \"$DIR/AGENTS.md\" \"$INSTRUCTIONS_REL\"",
+  "fails_at": "pstack's AGENTS.md is linked"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-pi-pstack.sh",
+  "break": "auth.json created readable by everyone",
+  "old": "    chmod 600 \"$AUTH\"\n",
+  "new": "    chmod 644 \"$AUTH\"\n",
+  "fails_at": "pstack's auth.json is mode 600"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-pi-pstack.sh",
+  "break": "auth.json holds a literal key instead of the !cat command",
+  "old": "\"key\": \"!cat \\\"$HOME/.secrets/opencode-api-key\\\"\"",
+  "new": "\"key\": \"PASTE-KEY-HERE\"",
+  "fails_at": "pstack's auth.json reads the OpenCode key from ~/.secrets with !cat"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-pi-pstack.sh",
+  "break": "an existing auth.json is rewritten",
+  "old": "if [[ -e \"$AUTH\" || -L \"$AUTH\" ]]; then",
+  "new": "if false; then",
+  "fails_at": "Bryan's own pstack auth.json is not rewritten"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-pi-pstack.sh",
+  "break": "an auth.json without the OpenCode entry is not reported",
+  "old": "        no) echo \"  NOTE: $AUTH has no opencode-go entry;",
+  "new": "        no) : \"  NOTE: $AUTH has no opencode-go entry;",
+  "fails_at": "the missing OpenCode entry is reported"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-pi-pstack.sh",
+  "break": "installed packages are never recognised, so every run reinstalls them",
+  "old": "    if re.fullmatch(sys.argv[2], src):\n        print(src)",
+  "new": "    if re.fullmatch(sys.argv[2], src):\n        print(src + \"-not-it\")",
+  "fails_at": "every path and file is unchanged"
+ },
+ {
+  "journey": "platform-setup",
+  "file": ".agents/skills/verify/scripts/dotfiles-verify",
+  "break": "the stub pi ignores PI_CODING_AGENT_DIR and always edits the main Pi directory",
+  "old": "dir=\"${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}\"",
+  "new": "dir=\"$HOME/.pi/agent\"",
+  "fails_at": "pstack's port is not installed into the main Pi directory"
  }
 ]

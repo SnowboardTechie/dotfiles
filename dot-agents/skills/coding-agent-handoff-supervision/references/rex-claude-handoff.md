@@ -1,7 +1,7 @@
 # Visible Pi background agents in Rex
 
 A Pi or Hermes CLI session in a Rex pane starts and supervises its Pi background agent with the `rex` CLI
-directly, and does these checks by hand: identity record, capacity gate, one
+directly, and does these checks by hand: identity record, capacity limit, one
 turn per session, settlement, close. Everything else in the skill (assignment file,
 one-line prompt, permissions, orchestrator acceptance, correction bound) is unchanged.
 Verified end to end (start, settle, close) on durable-pi-workspace#278's
@@ -48,13 +48,13 @@ session, without taking focus:
   moved without stopping it: `"$REX" block move -s "$REX_SESSION" <block> right
   <a block in the "Background Agents" tab>`.
 
-`scripts/rex_background_agent_slot.py` makes the choice from the live layout (tested in
-`tests/test_rex_background_agent_slot.py`): it prints `{"action":"new","tab_label":…}`
+`scripts/rex_background_agent_pane.py` makes the choice from the live layout (tested in
+`tests/test_rex_background_agent_pane.py`): it prints `{"action":"new","tab_label":…}`
 or `{"action":"split","anchor":…,"direction":…}`. Run it right before each
 start, never from a cached layout:
 
 ```sh
-S=<ticket state dir>; W=<worktree>; NAME=<agent name, e.g. sgg-278-layout>
+S=<issue state directory>; W=<worktree>; NAME=<agent name, e.g. sgg-278-layout>
 SK=~/code/dotfiles/dot-agents/skills/coding-agent-handoff-supervision
 # Who pays follows the worktree (Bryan, 2026-11-03): SGG repos under ~/code/sgg use the
 # work subscription (the default login); everything else, durable-pi-workspace included, the
@@ -62,16 +62,16 @@ SK=~/code/dotfiles/dot-agents/skills/coding-agent-handoff-supervision
 case "$W/" in "$HOME/code/sgg/"*) CCD= ;; *) CCD="$HOME/.claude-personal" ;; esac
 usage=$(env ${CCD:+CLAUDE_CONFIG_DIR="$CCD"} "$SK/scripts/claude-usage.sh")
 cap=$(printf %s "$usage" | grep -oE '[0-9]+%' | head -1 | tr -d %)
-# The ceiling is 75% of a 5-hour window and 90% of a weekly one (Bryan, 2026-11-14).
-case "$usage" in *weekly*) ceiling=90 ;; *) ceiling=75 ;; esac
-[ -n "$cap" ] && [ "$cap" -lt "$ceiling" ] || { echo "capacity $cap (ceiling $ceiling): stop"; exit 1; }
+# The usage threshold is 75% of a 5-hour usage window and 90% of a weekly one (Bryan, 2026-11-14).
+case "$usage" in *weekly*) threshold=90 ;; *) threshold=75 ;; esac
+[ -n "$cap" ] && [ "$cap" -lt "$threshold" ] || { echo "capacity $cap (usage threshold $threshold): stop"; exit 1; }
 UUID=$(uuidgen | tr A-Z a-z)
 if [ -n "$CCD" ]; then SUBSCRIPTION=(env PI_CLAUDE_CODE_CONFIG_DIR="$CCD"); else SUBSCRIPTION=(env -u PI_CLAUDE_CODE_CONFIG_DIR); fi
 AGENT=("${SUBSCRIPTION[@]}" PI_PROGRAM_STATUS=0 pi --name "$NAME" --session-id "$UUID"
   --model claude-code/claude-opus-5-5 --thinking medium "@$S/<workstream>-prompt.md")
-SLOT=$("$REX" window ls -s "$REX_SESSION" --json |
-  python3 "$SK/scripts/rex_background_agent_slot.py" --caller-block "$REX_BLOCK")
-get() { python3 -c 'import json,sys;print(json.loads(sys.argv[1])[sys.argv[2]])' "$SLOT" "$1"; }
+PANE=$("$REX" window ls -s "$REX_SESSION" --json |
+  python3 "$SK/scripts/rex_background_agent_pane.py" --caller-block "$REX_BLOCK")
+get() { python3 -c 'import json,sys;print(json.loads(sys.argv[1])[sys.argv[2]])' "$PANE" "$1"; }
 if [ "$(get action)" = new ]; then
   "$REX" window new -s "$REX_SESSION" "$(get tab_label)" --focus=false \
     --keep-open -c "$W" --json -- "${AGENT[@]}" > "$S/<workstream>-rex-split.json"
@@ -121,12 +121,12 @@ background agent removes the tab.
 - `--focus=false` keeps Bryan's focus; `--keep-open` keeps the pane readable
   after Pi exits. Record `background_agent_rex_window` as the "Background Agents" tab.
 - The background agent spends the Claude subscription its `PI_CLAUDE_CODE_CONFIG_DIR` names, so
-  the capacity gate reads that subscription. An empty capacity reading is a stop, never a pass. The usage line reports
-  the 5-hour window when the subscription has one (e.g. `<icon> 72% ↻1:11`) and the
-  weekly window when it doesn't (e.g. `<icon> 25% weekly ↻6d 3h`). Either way
+  the capacity check reads that subscription. An empty capacity reading is a stop, never a pass. The usage line reports
+  the 5-hour usage window when the subscription has one (e.g. `<icon> 72% ↻1:11`) and the
+  weekly one when it doesn't (e.g. `<icon> 25% weekly ↻6d 3h`). Either way
   the first `NN%` is the utilization. The line begins with a non-ASCII icon,
   so an anchored `^ *[0-9]+` never matches; parse it with `grep -oE '[0-9]+%'`
-  as above, and make any capacity waiter fail at once on an empty reading
+  as above, and make any wait for capacity fail at once on an empty reading
   instead of looping.
 - `claude-code/claude-opus-5-5` at `medium` thinking is the default (Bryan,
   2026-10-23). Set another model only when Bryan explicitly selects it, and a
@@ -143,11 +143,11 @@ Then write `<workstream>-background-agent-identity.json` yourself: `background_a
 checking the `.jsonl` exists), `background_agent_transcript` (its path),
 `background_agent_worktree_identity` (branch, git common dir, root),
 `capacity_start_percent`, `closed: false`. Use a fresh path: never overwrite an
-existing identity file, including a closed one.
+existing identity record, including a closed one.
 
 ### Other harnesses for background agents (explicit selection only)
 
-**A Claude background agent** keeps the same placement, gate and identity record, with
+**A Claude background agent** keeps the same placement, capacity limit and identity record, with
 this command; its transcript lands at
 `${CCD:-~/.claude}/projects/<worktree path with / and . as ->/<UUID>.jsonl`
 (about 20 s after start), and `rex_wait.sh` reads it too:
@@ -213,7 +213,7 @@ accepted that for rare Hermes background agents (2026-11-03).
   has been silent about eight minutes: the turn halted without ending and the
   pane sits idle
   at its prompt. A model safety-filter stop ("…safeguards stopped the response")
-  looks like this. A waiter keyed only on the turn ending sits until its cap while
+  looks like this. A wait keyed only on the turn ending sits until its cap while
   Bryan wonders why nothing moves. Read the pane, then send the same session one
   short continuation (not a correction pass). If exploit-style wording in the
   assignment tripped the filter, restate the work as defensive checks and tests.
@@ -236,7 +236,7 @@ accepted that for rare Hermes background agents (2026-11-03).
   `Divergence:` line, so without it the wait settles on the old turn.
 - Background shells load the interactive profile: use `test -f`, never `ls`,
   to check a path there, because an alias can swap `ls` for a tool that rejects
-  the argument and kills the waiter before it starts.
+  the argument and kills the wait before it starts.
 - **A background agent that backgrounds its own long check may not resume.** A background agent can
   start a long run (a full mutant search, a test suite) as a background shell,
   end its turn and promise to finish "once it reports". Put "run long checks in
@@ -247,10 +247,10 @@ accepted that for rare Hermes background agents (2026-11-03).
   only what the governing plan already settles, through `rex send` and
   `rex send-key`; anything new goes to Bryan.
 - **"Read outside the working directories."** (Claude background agents only.) The
-  ticket state directory sits outside the worktree, so Claude asks before
+  issue's state directory sits outside the worktree, so Claude asks before
   reading the completion report it must append to. Choose the narrowest yes, "Yes, but
   ask again next time" (`down down down enter`, after `capture` shows the path
-  is the state dir). Never "keep allowing any reads". Pi doesn't ask.
+  is the state directory). Never "keep allowing any reads". Pi doesn't ask.
 
 ## A second turn (correction)
 
@@ -286,7 +286,7 @@ pane, then confirm it is gone:
 "$REX" block ls -s "$REX_SESSION" --json | grep -c <block>    # expect 0
 ```
 
-Mark the identity file `closed: true` with the end capacity. The transcript
+Mark the identity record `closed: true` with the end capacity. The transcript
 stays at its path; `pi --session <UUID>` in the worktree, with the background agent's
 subscription, reopens it later. (A Claude background agent exits with `/exit` instead.)
 
@@ -299,7 +299,7 @@ must still show the recorded label and tab.
 
 ## Failure rules
 
-- Never edit an identity file to make a mismatch pass.
+- Never edit an identity record to make a mismatch pass.
 - Never switch providers when capacity or identity fails.
 - Never target a globally focused pane when the caller's `REX_BLOCK` is
   unavailable.

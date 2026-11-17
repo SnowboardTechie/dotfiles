@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Tests for scripts/reconcile-mattpocock-skills.sh: the shared checkout, Pi's
 # settings and the Claude Code and OpenCode links. Uses a stub `pi`, a local
-# stand-in git repository for upstream and a copy of the script beside its own
-# source record, all under one temporary directory removed on exit. No network.
+# fake of his repository (the skill source) and a copy of the script beside its
+# own source record, all under one temporary directory removed on exit. No network.
 
 set -u
 
@@ -23,8 +23,8 @@ check() { # <description> <expected> <actual>
 }
 yn() { "$@" && echo yes || echo no; }
 
-# Stand-in upstream with two commits.
-UP="$TMP/upstream"
+# A fake of the skill source's repository with two commits.
+UP="$TMP/skill-source"
 git init --quiet "$UP"
 gitc() { git -C "$UP" -c user.name=t -c user.email=t@example.invalid -c commit.gpgsign=false "$@"; }
 mkdir -p "$UP/skills/engineering/tdd" "$UP/skills/productivity/teach" "$UP/skills/misc/x"
@@ -38,13 +38,13 @@ gitc commit --quiet -am two
 C2="$(git -C "$UP" rev-parse HEAD)"
 
 # The script reads its source record relative to itself, so give it a copy whose pin
-# and upstream the tests control.
+# and skill source the tests control.
 SCRIPTS="$TMP/repo/scripts"
-SOURCE_RECORD="$TMP/repo/dot-agents/upstreams/mattpocock-skills.json"
+SOURCE_RECORD="$TMP/repo/dot-agents/skill-sources/mattpocock-skills.json"
 mkdir -p "$SCRIPTS" "${SOURCE_RECORD%/*}"
 cp "$REPO_ROOT/scripts/reconcile-mattpocock-skills.sh" "$SCRIPTS/"
 pin() { # <commit>
-    python3 - "$REPO_ROOT/dot-agents/upstreams/mattpocock-skills.json" "$SOURCE_RECORD" "$UP" "$1" <<'PY'
+    python3 - "$REPO_ROOT/dot-agents/skill-sources/mattpocock-skills.json" "$SOURCE_RECORD" "$UP" "$1" <<'PY'
 import json, sys
 src, dst, up, commit = sys.argv[1:]
 d = json.load(open(src))
@@ -71,11 +71,11 @@ snapshot() { # <home>: every path and content hash under it
 }
 
 check "real source record pin is a full SHA" "yes" \
-    "$(yn grep -qE '"commit": "[0-9a-f]{40}"' "$REPO_ROOT/dot-agents/upstreams/mattpocock-skills.json")"
+    "$(yn grep -qE '"commit": "[0-9a-f]{40}"' "$REPO_ROOT/dot-agents/skill-sources/mattpocock-skills.json")"
 check "the pin lives only in the source record" "no" \
     "$(yn grep -qE '[0-9a-f]{40}' "$REPO_ROOT/scripts/reconcile-mattpocock-skills.sh")"
 
-# More upstream history: C3 changes teach; C4 drops teach and promotes zoom-out.
+# More history in the skill source: C3 changes teach; C4 drops teach and promotes zoom-out.
 echo "three" >>"$UP/skills/productivity/teach/SKILL.md"
 gitc commit --quiet -am three
 C3="$(git -C "$UP" rev-parse HEAD)"
@@ -84,7 +84,7 @@ mkdir -p "$UP/skills/engineering/zoom-out"
 printf -- '---\nname: zoom-out\ndescription: d\n---\n' >"$UP/skills/engineering/zoom-out/SKILL.md"
 gitc add -A && gitc commit --quiet -m four
 C4="$(git -C "$UP" rev-parse HEAD)"
-git -C "$UP" -c advice.detachedHead=false checkout --quiet --detach "$C1"   # upstream's own checkout must not matter
+git -C "$UP" -c advice.detachedHead=false checkout --quiet --detach "$C1"   # the skill source's own checkout must not matter
 
 run_env() { # <home> <bin-dir> <mode> [VAR=value...]
     local h="$1" b="$2" m="$3"; shift 3
@@ -157,7 +157,7 @@ check "moved pin: checkout follows" "$C2" "$(git -C "$CO" rev-parse HEAD)"
 check "moved pin: entries not duplicated" "2" \
     "$(python3 -c 'import json,sys; s=json.load(open(sys.argv[1]))["skills"]; print(len([x for x in s if "mattpocock" in x]))' "$H/.pi/agent/settings.json")"
 
-# A pin the checkout has never seen is fetched from upstream.
+# A pin the checkout has never seen is fetched from the skill source.
 pin "$C3"
 out="$(run "$H" "$TMP/bin" --apply)"; rc=$?
 check "unseen pin: fetched and moved" "0 $C3" "$rc $(git -C "$CO" rev-parse HEAD)"
@@ -183,7 +183,7 @@ check "foreign entries: the free name is still linked" \
 out="$(run "$H" "$TMP/bin" --check)"
 check "foreign entries: check reports them too" "3" "$(grep -c 'WARNING: .* kept' <<<"$out")"
 
-# A skill upstream no longer promotes loses its link; a new one gains one; own
+# A skill the skill source no longer promotes loses its link; a new one gains one; own
 # stale links are repointed.
 H="$TMP/home-dropped"
 mkdir -p "$H"
@@ -199,9 +199,9 @@ check "dropped: check plans the repoint" "yes" "$(yn grep -qF "would repoint: Cl
 check "dropped: check leaves the link" "yes" "$(yn test -L "$H/.claude/skills/teach")"
 out="$(run "$H" "$TMP/bin" --apply)"; rc=$?
 check "dropped: apply exits 0" "0" "$rc"
-check "dropped: Claude Code links follow upstream" \
+check "dropped: Claude Code links follow the skill source" \
     "$(printf 'tdd -> %s\nzoom-out -> %s' "$CO/skills/engineering/tdd" "$CO/skills/engineering/zoom-out")" "$(links "$H/.claude/skills")"
-check "dropped: OpenCode links follow upstream" \
+check "dropped: OpenCode links follow the skill source" \
     "$(printf 'tdd -> %s\nzoom-out -> %s' "$CO/skills/engineering/tdd" "$CO/skills/engineering/zoom-out")" "$(links "$H/.config/opencode/skills")"
 
 # RECONCILE_OPENCODE_SKILLS=0 leaves OpenCode without links of this script's,
@@ -250,7 +250,7 @@ before="$(snapshot "$H")"
 run "$H" "$TMP/bin" --apply >/dev/null
 check "migrate: second apply changes nothing" "$before" "$(snapshot "$H")"
 
-# Both places hold a clean checkout: the old one goes when upstream has its commits.
+# Both places hold a clean checkout: the old one goes when its origin has its commits.
 H="$TMP/home-both"
 OLD="$H/.pi/agent/upstreams/mattpocock-skills"
 mkdir -p "${OLD%/*}"
@@ -260,14 +260,14 @@ git -c advice.detachedHead=false clone --quiet "$UP" "$OLD" && git -C "$OLD" -c 
 out="$(run "$H" "$TMP/bin" --apply)"; rc=$?
 check "both clean: old copy removed" "0 no" "$rc $(yn test -e "$OLD")"
 
-# ... and stays, with a stop, when it holds a commit upstream lacks.
+# ... and stays, with a stop, when it holds a commit its origin lacks.
 git -c advice.detachedHead=false clone --quiet "$UP" "$OLD" && git -C "$OLD" -c advice.detachedHead=false checkout --quiet --detach "$C2"
 git -C "$OLD" -c user.name=t -c user.email=t@example.invalid -c commit.gpgsign=false commit --quiet --allow-empty -m local
 local_head="$(git -C "$OLD" rev-parse HEAD)"
 out="$(run "$H" "$TMP/bin" --apply 2>&1)"; rc=$?
 check "both, old has a local commit: apply stops" "1" "$rc"
 check "both, old has a local commit: kept" "$local_head" "$(git -C "$OLD" rev-parse HEAD)"
-check "both, old has a local commit: reported" "yes" "$(yn grep -q 'has commits upstream lacks' <<<"$out")"
+check "both, old has a local commit: reported" "yes" "$(yn grep -q 'has commits its origin lacks' <<<"$out")"
 
 # A dirty old checkout is never moved or deleted.
 H="$TMP/home-old-dirty"
@@ -337,7 +337,7 @@ check "no colliding copy: check prints no warning" "no" "$(yn grep -q WARNING <<
 mkdir -p "$H/.agents/skills/tdd" "$H/.pi/agent/skills" "$H/skill-pool/teach" "$H/.agents/skills/misc-x"
 echo local >"$H/.agents/skills/tdd/SKILL.md"
 ln -s "$H/skill-pool/teach" "$H/.pi/agent/skills/teach"
-ln -s "$H/skill-pool/x" "$H/.agents/skills/x"   # unpromoted upstream name, and dangling
+ln -s "$H/skill-pool/x" "$H/.agents/skills/x"   # a name he does not promote, and dangling
 out="$(run "$H" "$TMP/bin" --check)"; rc=$?
 check "colliding copy: check exits 0" "0" "$rc"
 check "colliding copy: check warns about ~/.agents/skills" "yes" \

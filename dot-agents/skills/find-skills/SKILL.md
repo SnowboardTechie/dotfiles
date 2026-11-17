@@ -177,8 +177,8 @@ An adapted copy without a pin is a silent fork. Add an entry to
 new — carrying the skill source's repository and **exact commit**, the license and
 where it is retained, the skill source's paths this adaptation came from, the local
 paths, what was changed locally and why, which of the skill source's rules were accepted or
-rejected, and the skill source's files worth watching. See the section on adapted
-skills in [`dot-agents/README.md`](../../README.md).
+rejected, and the skill source's files worth watching. See
+[`dot-agents/README.md`](../../README.md) → *Adaptations from skill sources*.
 
 ### Curate the harnesses
 

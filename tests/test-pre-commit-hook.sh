@@ -33,12 +33,12 @@ repo="$(new_repo missing)"
 printf 'token = "%s"\n' "$fake_token" > "$repo/config.env"
 git -C "$repo" add config.env
 if ! output="$(PATH="$no_gitleaks_path" git -C "$repo" commit -q -m "No scanner" 2>&1)"; then
-    echo "FAIL: a host without gitleaks must not block commits" >&2
+    echo "FAIL: a machine without gitleaks must not block commits" >&2
     echo "$output" >&2
     exit 1
 fi
 if [[ "$output" != *"gitleaks not installed"* ]]; then
-    echo "FAIL: a host without gitleaks must warn that nothing was scanned" >&2
+    echo "FAIL: a machine without gitleaks must warn that nothing was scanned" >&2
     exit 1
 fi
 echo "ok   missing gitleaks warns without blocking"

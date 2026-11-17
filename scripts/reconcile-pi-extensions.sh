@@ -36,7 +36,7 @@ for rel in "${PI_FILES[@]}"; do
     if [[ -L "$dest" && "$(readlink "$dest")" == "$src" ]]; then
         echo "  OK   $dest"
     elif [[ -e "$dest" || -L "$dest" ]]; then
-        echo "  WARNING: $dest is not managed by this repository, skipping"
+        echo "  WARNING: $dest is foreign (this repository did not make it), skipping"
     elif [[ "$MODE" == "--apply" ]]; then
         mkdir -p "$(dirname "$dest")"
         ln -s "$src" "$dest"
@@ -68,7 +68,7 @@ for rel in "${RENAMED_FROM[@]}"; do
             echo "  STALE $dest"
         fi
     elif [[ -e "$dest" || -L "$dest" ]]; then
-        echo "  WARNING: $dest is not managed by this repository, skipping"
+        echo "  WARNING: $dest is foreign (this repository did not make it), skipping"
     fi
 done
 

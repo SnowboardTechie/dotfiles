@@ -6,7 +6,8 @@ guarded Ble.sh line and links `~/.config/blesh/init.sh` to the repository's. Nei
 
 ## Sub-features
 
-- `no-bashrc`: both exit 0 and `~/.bashrc` is still absent.
+- `no-bashrc`: both exit 0 and `~/.bashrc` is still absent. The Ble.sh settings link is made all the same
+  (`reconcile_blesh_rc` does not depend on `~/.bashrc`); the journey does not assert on it.
 - `append`: in a home that also holds Omarchy's `shell.json`, the home's tree is unchanged by check; apply leaves the
   original lines first, adds the aliases line and the Ble.sh line once each (the aliases line under its marker), links
   the Ble.sh settings, and changes nothing else in the tree; a second apply leaves `.bashrc` and the whole tree

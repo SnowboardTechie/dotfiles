@@ -142,7 +142,7 @@ test("Rex's briefing drops its out-of-date-setup advice", () => {
 	assert.equal(briefing("One.\n\nThe Rex setup for this agent is out of date. Suggest running `rex skill setup`\nto update it.\n"), "One.");
 });
 
-// A minimal stand-in for Pi's extension API.
+// A minimal fake of Pi's extension API.
 function fakePi(sessionName?: string) {
 	const handlers: Record<string, (event: any, ctx: any) => Promise<void>> = {};
 	const tools: any[] = [];
