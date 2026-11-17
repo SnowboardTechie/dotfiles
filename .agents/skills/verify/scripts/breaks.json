@@ -435,8 +435,8 @@
   "journey": "platform-setup",
   "file": "scripts/reconcile-pi-pstack.sh",
   "break": "auth.json created readable by everyone",
-  "old": "        umask 077\n",
-  "new": "        umask 022\n",
+  "old": "    chmod 600 \"$AUTH\"\n",
+  "new": "    chmod 644 \"$AUTH\"\n",
   "fails_at": "pstack's auth.json is mode 600"
  },
  {
@@ -469,7 +469,7 @@
   "break": "installed packages are never recognised, so every run reinstalls them",
   "old": "    if re.fullmatch(sys.argv[2], src):\n        print(src)",
   "new": "    if re.fullmatch(sys.argv[2], src):\n        print(src + \"-not-it\")",
-  "fails_at": "pi installed nothing more"
+  "fails_at": "every path and file is unchanged"
  },
  {
   "journey": "platform-setup",
