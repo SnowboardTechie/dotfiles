@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# cleanup-proof <output dir> [bash ...]: prove dotfiles-verify removes only what
+# it made. Writes cleanup-proof.txt and the runs' evidence under <output dir>
+# (outside the repository; it is replaced). Each bash given (default: the bash
+# on PATH and /bin/bash) runs the temporary-directory cases; the rest run under
+# the bash on PATH. Exit 0 when every check passes.
+#
+#   1. TMPDIR missing or unwritable: doctor, run and cleanup exit non-zero and a
+#      sentinel in the directory they were started from survives.
+#   2. Crafted run.json files naming an unrelated process and directories the
+#      harness did not make: refused, nothing stopped or removed.
+#   3. A normal run cleans up after itself.
+#   4. A hung run is stopped and cleaned from another shell.
+set -u
+SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+V="$SCRIPTS/dotfiles-verify"
+P="${1:?usage: cleanup-proof <output dir> [bash ...]}"; shift
+BASHES=("$@"); [[ ${#BASHES[@]} -gt 0 ]] || BASHES=("$(command -v bash)" /bin/bash)
+case "$P" in /|"$HOME"|"$HOME"/|"$(cd "$SCRIPTS/../../../.." && pwd -P)"*) echo "refusing output dir $P" >&2; exit 2 ;; esac
+rm -rf "$P"; mkdir -p "$P/ev"; P="$(cd "$P" && pwd -P)"; export DOTFILES_VERIFY_EVIDENCE="$P/ev"
+LOG="$P/cleanup-proof.txt"; : >"$LOG"
+say() { echo "$*" | tee -a "$LOG"; }
+T="$(cd "${TMPDIR:-/tmp}" && pwd -P)"
+started() { LC_ALL=C ps -o lstart= -p "$1" | sed 's/  */ /g; s/^ //; s/ $//'; }
+pass=0; failn=0
+check() { if eval "$2"; then say "PASS $1"; pass=$((pass+1)); else say "FAIL $1"; failn=$((failn+1)); fi; }
+
+say "== 1. an unusable TMPDIR"
+WORK="$P/started-here"; mkdir -p "$WORK"; echo sentinel >"$WORK/sentinel"
+RO="$P/read-only-tmp"; mkdir -p "$RO"; chmod 555 "$RO"
+for B in "${BASHES[@]}"; do
+    say "-- $B ($("$B" -c 'echo $BASH_VERSION'))"
+    for kind in missing unwritable; do
+        if [[ $kind == missing ]]; then TD="$P/no-such-tmp"; else TD="$RO"; fi
+        for cmd in doctor "run agent-commands" cleanup; do
+            ( cd "$WORK" && TMPDIR="$TD" DOTFILES_VERIFY_EVIDENCE="$P/ev-$kind" "$B" "$V" $cmd ) >"$P/tmp-$kind-${cmd%% *}-$(basename "$B").txt" 2>&1
+            rc=$?
+            say "   $kind TMPDIR, $cmd: exit $rc; $(grep -m1 -E 'dotfiles-verify:|FAIL' "$P/tmp-$kind-${cmd%% *}-$(basename "$B").txt")"
+            check "$B: $kind TMPDIR, $cmd exits non-zero" '[[ $rc -ne 0 ]]'
+            check "$B: $kind TMPDIR, $cmd: the sentinel in its start directory survives" '[[ "$(cat "$WORK/sentinel" 2>/dev/null)" == sentinel ]]'
+        done
+    done
+    check "$B: no missing TMPDIR was created" '[[ ! -e "$P/no-such-tmp" ]]'
+    check "$B: nothing was written in the unwritable TMPDIR" '[[ -z "$(ls -A "$RO")" ]]'
+done
+chmod 755 "$RO"
+
+say "== 2. crafted run.json files naming an unrelated process and directories the harness did not make"
+( exec -a "dotfiles-verify run fake" /bin/sleep 300 ) & UNREL=$!
+sleep 0.3; ST="$(started $UNREL)"
+say "unrelated process $UNREL: $(ps -o command= -p $UNREL)"
+VICTIM="$(mktemp -d "$T/dotfiles-verify-scratch.XXXXXX")"; echo keep >"$VICTIM/keep"
+OTHER="$(mktemp -d "$T/victim.XXXXXX")"; echo keep >"$OTHER/keep"
+LINK="$T/dotfiles-verify-scratch.LnKd01"; ln -s "$VICTIM" "$LINK"
+mk() { # <name> <scratch>
+    mkdir -p "$P/ev/$1"
+    python3 -c 'import json,sys; json.dump({"journey":"x","scratch":sys.argv[1],"token":"t0k","processes":[{"role":"run","pid":int(sys.argv[2]),"started":sys.argv[3]}],"state":"running"},open(sys.argv[4],"w"))' \
+        "$2" "$UNREL" "$ST" "$P/ev/$1/run.json"
+}
+mk glob-match-no-marker "$VICTIM"
+mk other-directory "$OTHER"
+mk traversal "$T/dotfiles-verify-scratch.ABCDEF/../$(basename "$VICTIM")"
+mk symlink "$LINK"
+mk checkout "$(cd "$SCRIPTS/../../../.." && pwd -P)"
+mk home "$HOME"
+mk root "/"
+mk empty ""
+mk absent-but-named "$T/dotfiles-verify-scratch.ZZZZZZ"
+mkdir -p "$P/ev/forged-marker"
+printf 'wrong\n%s\nrun %s %s\n' "$P/ev/forged-marker" "$UNREL" "$ST" >"$VICTIM/.dotfiles-verify-run"
+mk forged-marker "$VICTIM"
+"$V" cleanup >>"$LOG" 2>&1; rc=$?
+check "cleanup over crafted runs exits 1" '[[ $rc -eq 1 ]]'
+check "the unrelated process survives" 'kill -0 $UNREL 2>/dev/null'
+check "the scratch-named directory without this run's marker survives" '[[ "$(cat "$VICTIM/keep")" == keep ]]'
+check "another directory survives" '[[ "$(cat "$OTHER/keep")" == keep ]]'
+check "the symlink survives" '[[ -L "$LINK" ]]'
+for d in glob-match-no-marker other-directory traversal symlink checkout home root empty forged-marker; do
+    check "$d refused, run.json not marked cleaned" '[[ "$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))[\"state\"])" "$P/ev/'$d'/run.json")" == running ]]'
+done
+check "absent-but-named: nothing to remove, no process stopped" 'kill -0 $UNREL 2>/dev/null'
+kill $UNREL; wait $UNREL 2>/dev/null
+rm -rf "$VICTIM" "$OTHER" "$LINK" "$P/ev/"{glob-match-no-marker,other-directory,traversal,symlink,checkout,home,root,empty,forged-marker,absent-but-named}
+
+say "== 3. a normal run cleans up after itself"
+"$V" run shell-additions >"$P/normal-run.txt" 2>&1; rc=$?
+R="$(sed -n 's/^run //p' "$P/normal-run.txt")"; S="$(sed -n 's/^scratch //p' "$P/normal-run.txt")"
+check "normal run passed" '[[ $rc -eq 0 ]]'
+check "normal run marked cleaned" '[[ "$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))[\"state\"])" "$R/run.json")" == cleaned ]]'
+check "normal run scratch removed" '[[ -n "$S" && ! -e "$S" ]]'
+check "normal run evidence kept" '[[ -s "$R/log.txt" ]]'
+
+say "== 4. a hung run is stopped and cleaned from another shell"
+printf '# hang\nstep wait\nsleep 300\n' >"$P/hang.sh"
+"$V" run "$P/hang.sh" >"$P/hang-run.txt" 2>&1 & RUNPID=$!
+sleep 3
+R="$(sed -n 's/^run //p' "$P/hang-run.txt")"; S="$(sed -n 's/^scratch //p' "$P/hang-run.txt")"
+"$V" cleanup >>"$LOG" 2>&1; crc=$?
+wait $RUNPID 2>/dev/null
+sleep 1
+check "cleanup of the hung run exits 0" '[[ $crc -eq 0 ]]'
+check "hung run process gone" '! kill -0 $RUNPID 2>/dev/null'
+check "no sleep 300 left" '! pgrep -f "^sleep 300$" >/dev/null'
+check "hung run marked cleaned" '[[ "$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))[\"state\"])" "$R/run.json")" == cleaned ]]'
+check "hung run scratch removed" '[[ -n "$S" && ! -e "$S" ]]'
+check "hung run evidence kept" '[[ -s "$R/log.txt" && -s "$R/run.json" ]]'
+
+say "== $pass passed, $failn failed"
+[[ $failn -eq 0 ]]

@@ -24,10 +24,62 @@ usage() {
 
 die() { echo "dotfiles-verify: $*" >&2; exit 2; }
 
+# canon_dir <path>: the canonical path of a directory that exists. Fails, and
+# never runs `cd ""` (which stays in place under bash before 5.3), for an empty
+# path or one that is not a directory.
+canon_dir() {
+    [[ -n "${1:-}" && -d "$1" ]] || return 1
+    (cd "$1" && pwd -P)
+}
+
+# tmp_parent: the canonical temporary directory every scratch and probe is made
+# in. Fails with the reason when $TMPDIR (or /tmp) is unusable.
+tmp_parent() {
+    local want="${TMPDIR:-/tmp}" canon
+    canon="$(canon_dir "$want")" || { echo "temporary directory '$want' does not exist or is not a directory" >&2; return 1; }
+    [[ -n "$canon" && "$canon" == /* && "$canon" != / ]] || { echo "temporary directory '$want' resolves to '$canon'" >&2; return 1; }
+    [[ -w "$canon" ]] || { echo "temporary directory '$canon' is not writable" >&2; return 1; }
+    echo "$canon"
+}
+
+# is_generated <path> <prefix>: 0 only for a non-empty path that is exactly
+# <canonical temp dir>/<prefix>.XXXXXX, and none of the checkout, $HOME or /.
+is_generated() {
+    local path="${1:-}" prefix="$2" parent
+    [[ -n "$path" ]] || return 1
+    parent="$(tmp_parent 2>/dev/null)" || return 1
+    [[ "$path" != / && "$path" != "$REPO_ROOT" && "$path" != "${HOME:-/}" ]] || return 1
+    [[ "$path" =~ ^"$parent"/"$prefix"\.[A-Za-z0-9]{6}$ ]]
+}
+
+# make_tmp <prefix>: mktemp -d in the temp dir, checked; prints the canonical
+# path or exits 2 with the reason. Nothing is ever used from a failed mktemp.
+make_tmp() {
+    local prefix="$1" parent made canon
+    parent="$(tmp_parent)" || die "cannot make a $prefix directory: see above"
+    made="$(mktemp -d "$parent/$prefix.XXXXXX")" || die "mktemp failed in $parent"
+    [[ -n "$made" && -d "$made" && ! -L "$made" ]] || die "mktemp returned '$made', not a new directory"
+    canon="$(canon_dir "$made")" || die "cannot resolve '$made'"
+    is_generated "$canon" "$prefix" || die "mktemp returned '$canon', not $parent/$prefix.XXXXXX"
+    echo "$canon"
+}
+
+# remove_tmp <path> <prefix>: rm -rf, but only of a directory make_tmp could
+# have made. Anything else is refused and left alone.
+remove_tmp() {
+    if is_generated "${1:-}" "$2" && [[ -d "$1" && ! -L "$1" ]]; then
+        rm -rf "$1"
+    elif [[ -n "${1:-}" && ( -e "$1" || -L "$1" ) ]]; then
+        echo "dotfiles-verify: refused to remove '$1': not a $2.XXXXXX directory in the temporary directory" >&2
+        return 1
+    fi
+}
+
 evidence_root() {
+    [[ -n "$EVIDENCE_ROOT" ]] || die "no evidence root"
     mkdir -p "$EVIDENCE_ROOT" || die "cannot create evidence root $EVIDENCE_ROOT"
     local root
-    root="$(cd "$EVIDENCE_ROOT" && pwd -P)"
+    root="$(canon_dir "$EVIDENCE_ROOT")" || die "cannot resolve evidence root $EVIDENCE_ROOT"
     case "$root/" in
         "$REPO_ROOT"/*) die "evidence root $root is inside the repository; set DOTFILES_VERIFY_EVIDENCE elsewhere" ;;
     esac
@@ -54,10 +106,18 @@ doctor() {
         command -v "$t" >/dev/null && ok "tool $t: $(command -v "$t")" || bad "tool $t missing"
     done
     if [[ "$(bash -c 'echo ${BASH_VERSINFO[0]}')" -ge 4 ]]; then ok "bash on PATH is version 4 or later"; else bad "bash on PATH is older than 4"; fi
+    # Checked before anything is created under it: the default evidence root
+    # lives in the temporary directory, and mkdir -p would make a missing one.
+    local why
+    if ! why="$(tmp_parent 2>&1)"; then
+        bad "temporary directory: $why"
+        echo "dotfiles-verify: stopping: every run needs a usable temporary directory" >&2
+        return 1
+    fi
+    ok "temporary directory: $why"
     root="$(evidence_root)" && ok "evidence: $root" || bad "evidence root"
     # The sandbox must refuse a write outside the run's directories.
-    probe="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-verify-probe.XXXXXX")"
-    probe="$(cd "$probe" && pwd -P)"
+    probe="$(make_tmp dotfiles-verify-probe)" || return 1
     mkdir "$probe/allowed"
     if sandbox-exec -p "$(profile "$probe/allowed")" bash -c "echo x > '$probe/allowed/f' && ! { echo x > '$probe/denied'; } 2>/dev/null" \
         && [[ -f "$probe/allowed/f" && ! -e "$probe/denied" ]]; then
@@ -65,7 +125,7 @@ doctor() {
     else
         bad "sandbox did not confine writes"
     fi
-    rm -rf "$probe"
+    remove_tmp "$probe" dotfiles-verify-probe || bad "probe directory not removed"
     local stale=0 r
     for r in "$root"/*/run.json; do
         [[ -f "$r" ]] || continue
@@ -238,12 +298,12 @@ run_journey() {
     else die "no journey '$arg'; see: dotfiles-verify journeys"; fi
     JOURNEY="$(basename "$file" .sh)"
     command -v sandbox-exec >/dev/null || die "sandbox-exec missing; this harness runs only on macOS (see doctor)"
+    tmp_parent >/dev/null || die "every run needs a usable temporary directory"
     local root; root="$(evidence_root)" || exit 2
     RUN_DIR="$root/$(date -u +%Y%m%dT%H%M%SZ)-$JOURNEY"
     while [[ -e "$RUN_DIR" ]]; do RUN_DIR="$RUN_DIR-x"; done
     mkdir -p "$RUN_DIR"
-    SCRATCH="$(mktemp -d "$(scratch_parent)/dotfiles-verify-scratch.XXXXXX")"
-    SCRATCH="$(cd "$SCRATCH" && pwd -P)"
+    SCRATCH="$(make_tmp dotfiles-verify-scratch)" || exit 2
     RUN_TOKEN="$(python3 -c 'import secrets; print(secrets.token_hex(16))')"
     write_marker
     mkdir -p "$SCRATCH/homes" "$SCRATCH/calls" "$SCRATCH/stubs" "$SCRATCH/tools" "$SCRATCH/tmp"
@@ -258,7 +318,7 @@ run_journey() {
     write_run_json running
     # On a signal, stop the journey (this run's own children, by parent pid) and
     # remove the scratch; cleanup may already have marked the run cleaned.
-    trap 'kill_tree $$; [[ "$(run_field "$RUN_DIR/run.json" state)" == cleaned ]] || write_run_json interrupted; rm -rf "$SCRATCH"; exit 130' INT TERM
+    trap 'kill_tree $$; [[ "$(run_field "$RUN_DIR/run.json" state)" == cleaned ]] || write_run_json interrupted; remove_tmp "$SCRATCH" dotfiles-verify-scratch; exit 130' INT TERM
     log "run $RUN_DIR"
     log "journey $file"
     log "repo $REPO_ROOT at $(git -C "$REPO_ROOT" rev-parse --short HEAD)$( [[ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]] && echo ' (with local changes)')"
@@ -295,7 +355,7 @@ write_marker() {
 }
 
 # The directory every run's scratch is made in, canonical.
-scratch_parent() { (cd "${TMPDIR:-/tmp}" && pwd -P); }
+scratch_parent() { tmp_parent; }
 
 run_field() { # <run.json> <key>  -> the value, or nothing when unreadable
     python3 -c 'import json,sys
@@ -311,7 +371,7 @@ except Exception: pass' "$1" "$2"
 owned_scratch() {
     local dir="$1" json="$2" scratch token parent canon
     scratch="$(run_field "$json" scratch)"; token="$(run_field "$json" token)"
-    parent="$(scratch_parent)"
+    parent="$(scratch_parent)" || return 1
     [[ -n "$scratch" && -n "$token" ]] || { echo "no scratch or token recorded" >&2; return 1; }
     # The recorded path itself must have the exact generated shape, so no
     # traversal or other directory can pass even when it does not exist.
@@ -319,7 +379,7 @@ owned_scratch() {
         || { echo "'$scratch' is not $parent/dotfiles-verify-scratch.XXXXXX" >&2; return 1; }
     [[ -e "$scratch" || -L "$scratch" ]] || { echo "ABSENT"; return 0; }
     [[ ! -L "$scratch" && -d "$scratch" ]] || { echo "'$scratch' is not a real directory" >&2; return 1; }
-    canon="$(cd "$scratch" && pwd -P)"
+    canon="$(canon_dir "$scratch")" || { echo "cannot resolve '$scratch'" >&2; return 1; }
     [[ "$canon" == "$scratch" ]] || { echo "'$scratch' is not canonical (resolves to '$canon')" >&2; return 1; }
     [[ "$(dirname "$canon")" == "$parent" ]] || { echo "'$canon' is not directly in $parent" >&2; return 1; }
     [[ "$(basename "$canon")" =~ ^dotfiles-verify-scratch\.[A-Za-z0-9]{6}$ ]] || { echo "'$canon' does not have the generated name" >&2; return 1; }
@@ -347,7 +407,7 @@ stop_recorded() {
 
 cleanup_run() { # <run dir>
     local dir json scratch
-    dir="$(cd "$1" 2>/dev/null && pwd -P)" || { echo "skip  $1 (not a directory)"; return 1; }
+    dir="$(canon_dir "${1:-}")" || { echo "skip  '${1:-}' (not a directory)"; return 1; }
     json="$dir/run.json"
     [[ -f "$json" && ! -L "$json" ]] || { echo "skip  $dir (no run.json)"; return 1; }
     [[ "$(run_field "$json" state)" == cleaned ]] && { echo "ok    $dir (already cleaned)"; return 0; }
@@ -363,7 +423,7 @@ cleanup_run() { # <run dir>
     if [[ "$scratch" != ABSENT ]]; then
         stop_recorded "$scratch"
         sleep 1
-        rm -rf "$scratch"
+        remove_tmp "$scratch" dotfiles-verify-scratch || return 1
     fi
     python3 -c 'import json,sys
 d = json.load(open(sys.argv[1])); d["state"] = "cleaned"
@@ -372,6 +432,7 @@ json.dump(d, open(sys.argv[1], "w"), indent=2)' "$json"
 }
 
 cleanup() {
+    tmp_parent >/dev/null || die "cleanup needs a usable temporary directory to validate scratch paths"
     if [[ $# -gt 0 ]]; then cleanup_run "$1"; return; fi
     local root r rc=0; root="$(evidence_root)" || exit 2
     for r in "$root"/*/run.json; do [[ -f "$r" ]] && { cleanup_run "$(dirname "$r")" || rc=1; }; done

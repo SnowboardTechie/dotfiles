@@ -59,7 +59,8 @@ $V doctor
 
 Read-only apart from creating the evidence root and one probe directory it removes. Exits 1 on any `FAIL`. It checks
 macOS and `sandbox-exec`, each tool above, that the `bash` on `PATH` is 4 or later (macOS's `/bin/bash` 3.2 is not
-enough for the reconcilers), the evidence root, that the sandbox really refuses a write outside the run, and that no
+enough for the reconcilers), that the temporary directory (`$TMPDIR`, else `/tmp`) exists and is writable (if not it
+stops there, before creating anything), the evidence root, that the sandbox really refuses a write outside the run, and that no
 earlier run was left uncleaned. Run it first, and again whenever anything looks wrong.
 
 ## Drive
@@ -95,7 +96,7 @@ Each run writes `$DOTFILES_VERIFY_EVIDENCE/<UTC time>-<journey>/`:
 | `NN-<label>.txt` | The command, its home, extra environment, exit code and full output |
 | `NN-<label>.tree` | A home at that moment: each path, each link's target, each file's SHA-256 prefix |
 | `log.txt` | Steps, drives and claims, in order, ending `PASSED` or `FAILED` |
-| `run.json` | Journey, checkout, `HEAD`, scratch path, pid, state (`running`, `finished`, `cleaned`) |
+| `run.json` | Journey, checkout, `HEAD`, scratch path, the run's token, the processes it started (role, pid, start time), state (`running`, `finished`, `interrupted`, `cleaned`) |
 
 Proof standards:
 
@@ -143,7 +144,28 @@ directory match. A refused run prints `REFUSED <dir>: <reason>`, keeps its state
 accepted run it takes the processes from the marker and sends SIGTERM to each, journey first and its descendants
 before it, only while that pid still has the recorded start time and a `dotfiles-verify run` command line. Then it
 removes the scratch and marks the run `cleaned`. A recorded scratch that no longer exists stops nothing. It never
-removes evidence. Ctrl-C on a run unwinds the same way.
+removes evidence. Ctrl-C on a run stops the journey and removes the scratch through the same path check (below).
+
+Every temporary directory the command makes, scratch and doctor's probe alike, goes through one check. `mktemp -d`
+must succeed and return an existing, non-link directory, and its canonical path must be exactly
+`<canonical temporary directory>/<prefix>.XXXXXX`; otherwise the command stops with the reason and uses nothing it
+returned. Every `rm -rf` of such a directory first checks the path the same way and refuses anything else (empty, the
+checkout, `$HOME`, `/`). `doctor`, `run` and `cleanup` all exit non-zero, before creating anything, when the temporary
+directory is missing or unwritable. The command never runs `cd ""`, which stays in place under bash before 5.3.
+
+Prove all of this, after any change to the command:
+
+```sh
+.agents/skills/verify/scripts/cleanup-proof /path/outside/the/repo/cleanup-proof   # bash on PATH and /bin/bash
+```
+
+It starts `doctor`, `run` and `cleanup` from a directory holding a sentinel file with `TMPDIR` missing, then
+unwritable, under each bash (default: the one on `PATH` and macOS's `/bin/bash` 3.2), and checks each exits non-zero
+and the sentinel survives. It then feeds `cleanup` crafted `run.json` files (a scratch-named directory without this
+run's marker, another directory, a `../` path, a symlink, the checkout, `$HOME`, `/`, an empty path, a forged marker)
+naming an unrelated live process whose command line is `dotfiles-verify run fake`, and checks all are refused and
+survive. Last, it runs a normal journey and a hung one and checks both are cleaned with their evidence kept. Its
+transcript is `cleanup-proof.txt` in the output directory.
 
 ## Gotchas
 
