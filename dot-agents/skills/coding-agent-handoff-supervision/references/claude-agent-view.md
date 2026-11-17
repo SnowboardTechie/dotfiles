@@ -30,7 +30,7 @@ right background agent exists.
 ## Monitoring contract
 
 Claude's background supervisor and the orchestrator harness's notifications are separate.
-If the orchestrator must report completion, start a tracked watcher supported by the
+If the orchestrator must report completion, start a tracked watch supported by the
 current harness or inspect at explicit named gates:
 
 ```sh
