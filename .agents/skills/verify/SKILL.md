@@ -156,21 +156,23 @@ directory is missing or unwritable. The command never runs `cd ""`, which stays 
 Prove all of this, after any change to the command:
 
 ```sh
-.agents/skills/verify/scripts/cleanup-proof /path/outside/the/repo/cleanup-proof   # bash on PATH and /bin/bash
+.agents/skills/verify/scripts/cleanup-proof                          # the bash on PATH and /bin/bash
+.agents/skills/verify/scripts/cleanup-proof /opt/homebrew/bin/bash   # or the bashes you name
 ```
 
-The output directory must be absent or empty. It is compared by canonical path and refused, with the reason and
-nothing created or removed, when it is the checkout or inside it (in any spelling, `../<checkout>` and relative names
-included), `$HOME` (`$HOME//`, `$HOME/../<home>`), `/`, a symbolic link, or not empty. The script never removes it.
-It first proves exactly that refusal: under each bash, given `../<checkout>`, a stand-in `$HOME//`, `$HOME/../<home>`,
-`/`, absent and relative paths inside the checkout, and a non-empty directory, it exits non-zero and a sentinel in each
-survives. Then it starts `doctor`, `run` and `cleanup` from a directory holding a sentinel file with `TMPDIR` missing, then
-unwritable, under each bash (default: the one on `PATH` and macOS's `/bin/bash` 3.2), and checks each exits non-zero
-and the sentinel survives. It then feeds `cleanup` crafted `run.json` files (a scratch-named directory without this
-run's marker, another directory, a `../` path, a symlink, the checkout, `$HOME`, `/`, an empty path, a forged marker)
-naming an unrelated live process whose command line is `dotfiles-verify run fake`, and checks all are refused and
-survive. Last, it runs a normal journey and a hung one and checks both are cleaned with their evidence kept. Its
-transcript is `cleanup-proof.txt` in the output directory.
+It takes no path. It makes its own output directory with the command's own `make_tmp`
+(`<temporary directory>/dotfiles-verify-proof.XXXXXX`), writes everything there, never removes it, and prints its path
+as the last line: read `cleanup-proof.txt` there, and remove the directory yourself when done. Its only arguments are
+the bashes to run under; an argument that is not an executable that runs as bash is refused before anything is made.
+
+It first checks that refusal: given a directory, a missing file and a non-bash executable, it exits non-zero and
+makes no output directory. Then it starts `doctor`, `run` and `cleanup` from a directory holding a sentinel file with
+`TMPDIR` missing, then unwritable, under each bash (default: the one on `PATH` and macOS's `/bin/bash` 3.2), and
+checks each exits non-zero and the sentinel survives. It then feeds `cleanup` crafted `run.json` files (a
+scratch-named directory without this run's marker, another directory, a `../` path, a symlink, the checkout, `$HOME`,
+`/`, an empty path, a forged marker) naming an unrelated live process whose command line is `dotfiles-verify run fake`,
+and checks all are refused and survive. Last, it runs a normal journey and a hung one and checks both are cleaned with
+their evidence kept.
 
 ## Gotchas
 

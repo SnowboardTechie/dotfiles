@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
-# cleanup-proof <output dir> [bash ...]: prove dotfiles-verify removes only what
-# it made. Writes cleanup-proof.txt and the runs' evidence under <output dir>,
-# which must be absent or empty, outside the repository, and not $HOME or /;
-# anything else is refused with the reason and nothing is removed. Each bash
-# given (default: the bash on PATH and /bin/bash) runs the refusal and
-# temporary-directory cases; the rest run under the bash on PATH. Exit 0 when
-# every check passes.
+# cleanup-proof [bash ...]: prove dotfiles-verify removes only what it made.
+# Takes no path from the caller: it makes its own output directory with
+# dotfiles-verify's make_tmp (dotfiles-verify-proof.XXXXXX in the temporary
+# directory), writes cleanup-proof.txt and the runs' evidence there, never
+# removes it, and prints its path as the last line. Each argument is a bash to
+# run the temporary-directory cases under (default: the bash on PATH and
+# /bin/bash); the rest run under the bash on PATH. An argument that is not an
+# executable bash is refused before anything is made. Exit 0 when every check
+# passes.
 #
-#   0. An output directory that is the checkout (spelled ../<checkout>), $HOME
-#      (spelled $HOME//), /, inside the checkout, or not empty: refused, exit
-#      non-zero, its sentinel survives.
+#   0. cleanup-proof given an argument that is not an executable bash refuses
+#      it, exits non-zero and makes no output directory.
 #   1. TMPDIR missing or unwritable: doctor, run and cleanup exit non-zero and a
 #      sentinel in the directory they were started from survives.
 #   2. Crafted run.json files naming an unrelated process and directories the
@@ -17,46 +18,30 @@
 #   3. A normal run cleans up after itself.
 #   4. A hung run is stopped and cleaned from another shell.
 set -u
+# Case 0 runs this script with bad arguments, which must be refused before it
+# does anything; a run that got past the refusal would start case 0 again.
+if [[ -n "${CLEANUP_PROOF_NESTED:-}" && $# -gt 0 ]]; then NESTED=1; else NESTED=""; fi
 SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)" || { echo "cleanup-proof: cannot find its own directory" >&2; exit 2; }
 V="$SCRIPTS/dotfiles-verify"
 # canon_dir, make_tmp, remove_tmp, tmp_parent and REPO_ROOT, as the command has them.
 # shellcheck source=dotfiles-verify
 source "$V" || { echo "cleanup-proof: cannot load $V" >&2; exit 2; }
 set +o pipefail
-refuse() { echo "cleanup-proof: refusing output directory '$ARG': $*; nothing was created or removed" >&2; exit 2; }
 
-ARG="${1:-}"; [[ $# -gt 0 ]] && shift
-[[ -n "$ARG" ]] || { echo "usage: cleanup-proof <output dir> [bash ...]" >&2; exit 2; }
+# Each argument must be an executable that reports itself as bash.
 BASHES=("$@"); [[ ${#BASHES[@]} -gt 0 ]] || BASHES=("$(command -v bash)" /bin/bash)
+for B in "${BASHES[@]}"; do
+    [[ -n "$B" && -f "$B" && -x "$B" ]] \
+        || { echo "cleanup-proof: refusing '$B': not an executable file; give only bash executables" >&2; exit 2; }
+    [[ "$("$B" -c 'echo "bash-version:${BASH_VERSION:-}"' </dev/null 2>/dev/null)" =~ ^bash-version:[0-9]+\.[0-9]+ ]] \
+        || { echo "cleanup-proof: refusing '$B': it does not run as bash" >&2; exit 2; }
+done
 
-# The output directory is never removed. It must be absent or an empty real
-# directory; it is compared by canonical path, so no spelling of the checkout,
-# $HOME or / passes.
-REPO_CANON="$(canon_dir "$REPO_ROOT")" || { echo "cleanup-proof: cannot resolve the checkout" >&2; exit 2; }
-HOME_CANON="$(canon_dir "${HOME:-}")" || HOME_CANON=""
-trimmed="$ARG"; while [[ "$trimmed" == */ && "$trimmed" != / ]]; do trimmed="${trimmed%/}"; done
-if [[ -L "$trimmed" ]]; then refuse "it is a symbolic link"; fi
-if [[ -e "$trimmed" ]]; then
-    [[ -d "$trimmed" ]] || refuse "it exists and is not a directory"
-    P="$(canon_dir "$trimmed")" || refuse "it cannot be resolved"
-    CREATE=0
-else
-    base="$(basename "$trimmed")"
-    [[ -n "$base" && "$base" != . && "$base" != .. ]] || refuse "it has no final name"
-    parent="$(canon_dir "$(dirname "$trimmed")")" || refuse "its parent directory does not exist"
-    P="${parent%/}/$base"
-    CREATE=1
+if [[ -n "$NESTED" ]]; then
+    echo "cleanup-proof: accepted '$*' when it should have refused it; stopping before making anything" >&2
+    exit 3
 fi
-[[ -n "$P" && "$P" != / ]] || refuse "it is /"
-[[ "$P" != "$REPO_CANON" && "$P/" != "$REPO_CANON"/* ]] || refuse "it is or is inside the checkout $REPO_CANON"
-[[ -z "$HOME_CANON" || "$P" != "$HOME_CANON" ]] || refuse "it is \$HOME ($HOME_CANON)"
-[[ "$P" != "$SCRIPTS" ]] || refuse "it is this script's directory"
-if [[ $CREATE -eq 0 ]]; then
-    [[ -z "$(ls -A "$P" 2>/dev/null)" ]] || refuse "it is not empty"
-    [[ -w "$P" ]] || refuse "it is not writable"
-else
-    mkdir "$P" || refuse "it could not be created"
-fi
+P="$(make_tmp dotfiles-verify-proof)" || { echo "cleanup-proof: cannot make its output directory" >&2; exit 2; }
 mkdir "$P/ev" || { echo "cleanup-proof: cannot create $P/ev" >&2; exit 2; }
 export DOTFILES_VERIFY_EVIDENCE="$P/ev"
 LOG="$P/cleanup-proof.txt"; : >"$LOG"
@@ -65,39 +50,19 @@ T="$(tmp_parent)" || { echo "cleanup-proof: no usable temporary directory" >&2; 
 started() { LC_ALL=C ps -o lstart= -p "$1" | sed 's/  */ /g; s/^ //; s/ $//'; }
 pass=0; failn=0
 check() { if eval "$2"; then say "PASS $1"; pass=$((pass+1)); else say "FAIL $1"; failn=$((failn+1)); fi; }
+proof_dirs() { ls -d "$T"/dotfiles-verify-proof.* 2>/dev/null | sort; }
 
-say "== 0. output directories cleanup-proof must refuse"
+say "output directory: $P"
+say "== 0. an argument that is not an executable bash is refused"
 SELF="$SCRIPTS/cleanup-proof"
-STAND_HOME="$P/stand-in-home"; mkdir "$STAND_HOME"; echo sentinel >"$STAND_HOME/sentinel"
-EMPTY_HOME="$P/empty-stand-in-home"; mkdir "$EMPTY_HOME"
-FULL="$P/not-empty"; mkdir "$FULL"; echo sentinel >"$FULL/sentinel"
-CHECKOUT_SENTINEL="$REPO_CANON/.cleanup-proof-sentinel.$$"
-echo sentinel >"$CHECKOUT_SENTINEL"
-REL_CHECKOUT="../$(basename "$REPO_CANON")"
-INSIDE="$REPO_CANON/.agents/skills/verify/../../../cleanup-proof-out.$$"
-for B in "${BASHES[@]}"; do
-    say "-- $B ($("$B" -c 'echo $BASH_VERSION'))"
-    # name | directory to run from | HOME | argument | file that must survive | path that must not appear
-    while IFS='|' read -r name from home arg keep absent; do
-        ( cd "$from" || exit 99; HOME="$home" "$B" "$SELF" "$arg" ) >"$P/refuse-$name-$(basename "$B").txt" 2>&1; rc=$?
-        check "$B: $name: started from $from" '[[ $rc -ne 99 ]]'
-        say "   $name ('$arg' from $from): exit $rc; $(head -1 "$P/refuse-$name-$(basename "$B").txt")"
-        check "$B: $name refused, exit non-zero" '[[ $rc -ne 0 ]] && grep -q "refusing output directory" "$P/refuse-$name-$(basename "$B").txt"'
-        check "$B: $name: the sentinel survives" '[[ "$(cat "$keep" 2>/dev/null)" == sentinel ]]'
-        [[ -z "$absent" ]] || check "$B: $name: nothing was created" '[[ ! -e "$absent" ]]'
-    done <<LIST
-checkout-as-relative|$REPO_CANON|$HOME|$REL_CHECKOUT|$CHECKOUT_SENTINEL|
-home-with-slashes|$REPO_CANON|$STAND_HOME|$STAND_HOME//|$STAND_HOME/sentinel|
-empty-home-with-slashes|$REPO_CANON|$EMPTY_HOME|$EMPTY_HOME//|$CHECKOUT_SENTINEL|$EMPTY_HOME/ev
-home-through-parent|$REPO_CANON|$STAND_HOME|$STAND_HOME/../$(basename "$STAND_HOME")|$STAND_HOME/sentinel|
-root|$REPO_CANON|$HOME|/|$CHECKOUT_SENTINEL|
-absent-inside-checkout|$REPO_CANON|$HOME|$INSIDE|$CHECKOUT_SENTINEL|$REPO_CANON/cleanup-proof-out.$$
-relative-inside-checkout|$REPO_CANON|$HOME|out.$$|$CHECKOUT_SENTINEL|$REPO_CANON/out.$$
-not-empty|$P|$HOME|$FULL|$FULL/sentinel|
-LIST
+NOT_BASH="$P/not-bash"; printf '#!/usr/bin/env python3\nprint("not bash")\n' >"$NOT_BASH"; chmod +x "$NOT_BASH"
+for arg in "$P" "$P/no-such-bash" "$NOT_BASH"; do
+    before="$(proof_dirs)"
+    CLEANUP_PROOF_NESTED=1 "$SELF" "$arg" </dev/null >"$P/refuse-$(basename "$arg").txt" 2>&1; rc=$?
+    say "   '$arg': exit $rc; $(head -1 "$P/refuse-$(basename "$arg").txt")"
+    check "'$(basename "$arg")' refused, exit non-zero" '[[ $rc -ne 0 && $rc -ne 3 ]] && grep -q "cleanup-proof: refusing" "$P/refuse-$(basename "$arg").txt"'
+    check "'$(basename "$arg")': no output directory made" '[[ "$(proof_dirs)" == "$before" ]]'
 done
-rm -f "$CHECKOUT_SENTINEL"
-check "the checkout sentinel was removed again by this proof" '[[ ! -e "$CHECKOUT_SENTINEL" ]]'
 
 say "== 1. an unusable TMPDIR"
 WORK="$P/started-here"; mkdir -p "$WORK"; echo sentinel >"$WORK/sentinel"
@@ -138,7 +103,7 @@ mk glob-match-no-marker "$VICTIM"
 mk other-directory "$OTHER"
 mk traversal "$T/dotfiles-verify-scratch.ABCDEF/../$(basename "$VICTIM")"
 mk symlink "$LINK"
-mk checkout "$REPO_CANON"
+mk checkout "$(canon_dir "$REPO_ROOT")"
 mk home "$HOME"
 mk root "/"
 mk empty ""
@@ -187,4 +152,5 @@ check "hung run scratch removed" '[[ -n "$S" && ! -e "$S" ]]'
 check "hung run evidence kept" '[[ -s "$R/log.txt" && -s "$R/run.json" ]]'
 
 say "== $pass passed, $failn failed"
+echo "$P"
 [[ $failn -eq 0 ]]
