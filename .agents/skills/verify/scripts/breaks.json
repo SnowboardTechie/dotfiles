@@ -131,8 +131,8 @@
   "journey": "omarchy-setup",
   "file": "scripts/reconcile-pi-extensions.sh",
   "break": "a foreign file in ~/.pi/agent is replaced by the repo link",
-  "old": "    elif [[ -e \"$dest\" || -L \"$dest\" ]]; then\n        echo \"  WARNING: $dest is not managed by this repository, skipping\"",
-  "new": "    elif [[ \"$MODE\" == \"--apply\" && ( -e \"$dest\" || -L \"$dest\" ) ]]; then\n        ln -sfn \"$src\" \"$dest\"",
+  "old": "        echo \"  OK   $dest\"\n    elif [[ -e \"$dest\" || -L \"$dest\" ]]; then\n        echo \"  WARNING: $dest is not managed by this repository, skipping\"",
+  "new": "        echo \"  OK   $dest\"\n    elif [[ \"$MODE\" == \"--apply\" && ( -e \"$dest\" || -L \"$dest\" ) ]]; then\n        ln -sfn \"$src\" \"$dest\"",
   "fails_at": "Bryan's own Pi AGENTS.md is kept"
  },
  {
