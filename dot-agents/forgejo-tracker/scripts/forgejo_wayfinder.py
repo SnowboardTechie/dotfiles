@@ -3082,7 +3082,8 @@ def _as_json(value: Any) -> Any:
 def _emit(value: Any) -> None:
     if isinstance(value, Preview):
         print(value.render())
-    elif isinstance(value, (dict, list)):
+    elif isinstance(value, (dict, list, tuple)):
+        # A tuple (wire-blocking's blockers) goes out as a JSON array, like every other result.
         print(json.dumps(value, indent=2, sort_keys=True, default=_as_json))
     else:
         print(json.dumps(_as_json(value), indent=2, sort_keys=True, default=_as_json))

@@ -104,8 +104,9 @@ forgejo-map --tracker <owner>/<repo> <command> [arguments]
 
 `forgejo-map <command> --help` lists each command's arguments. Its usage line names the script behind the command,
 `forgejo_wayfinder.py`, and shows `--origin` as required; `forgejo-map` supplies that. Output is JSON, except that
-`wire-blocking --apply` prints only the ticket's blockers as a bare string such as `"(3, 4)"`: read the edge back
-with `list-tickets` (`blocked_by`). Every write that labels an issue creates any missing `wayfinder:` label first.
+`wire-blocking --apply` prints the ticket's blockers after the write as a JSON array of issue numbers, such as
+`[3, 4]`. The array holds every blocker the ticket now has, not only the one just added. Every write that labels an
+issue creates any missing `wayfinder:` label first.
 
 **Writes preview first.** Without `--apply`, a write prints `DRY RUN` with the exact steps and changes nothing.
 To perform it, run the same command again with `--apply` placed **before the command name**
@@ -181,7 +182,7 @@ can be rerun as often as needed, and only the applied preview's `--creation` id 
   the answer and the gist, and leaves the pointer out.
 
 The map and ticket body shapes, the claim and index records, and how claims are decided between racing sessions
-are described in `dot-agents/skills/wayfinder/references/forgejo-tracker.md` in the `bryan/dotfiles` repository.
+are described in `dot-agents/forgejo-tracker/references/forgejo-tracker.md` in the `bryan/dotfiles` repository.
 
 ## Labels
 

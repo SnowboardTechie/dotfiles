@@ -4672,5 +4672,21 @@ class FormerPublicExceptionTest(unittest.TestCase):
             WF.WayfinderTracker(public, SGG_REPO).require_private()
 
 
+class EmitTest(unittest.TestCase):
+    """Every result is printed as JSON, whatever sequence type it is."""
+
+    def test_a_tuple_of_blockers_is_printed_as_a_json_array(self) -> None:
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            WF._emit((3, 4))
+        self.assertEqual(json.loads(out.getvalue()), [3, 4])
+
+    def test_an_empty_tuple_is_printed_as_an_empty_json_array(self) -> None:
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            WF._emit(())
+        self.assertEqual(json.loads(out.getvalue()), [])
+
+
 if __name__ == "__main__":
     unittest.main()
