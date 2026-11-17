@@ -8,6 +8,9 @@
 # agent-memory cleanup — and never runs Stow, installs system packages, or uses
 # elevated privileges.
 #
+# It deliberately leaves out reconcile-pi-pstack.sh: pstack's own Pi directory
+# (~/.pi/pstack) serves the ticket runner, which runs only on the Mac.
+#
 # Future additive reconcilers get appended to the RECONCILERS list below;
 # application-specific mutation logic never lives in this script itself.
 
