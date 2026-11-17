@@ -44,7 +44,7 @@ order: `Sub-features`, `How to get to it (user POV)`, `Driving it with dotfiles-
 | [Shell additions in ~/.bashrc](./shell-additions.md) | `shell-additions` | 2026-11-16 |
 
 "Last proved" means the journey passed on the unbroken checkout and failed at the predicted claim on each break below,
-on that date (`prove-breaks`: 45 of 45 caught).
+on that date (`prove-breaks`: 49 of 49 caught).
 
 ## Breaks each journey catches
 
@@ -55,14 +55,14 @@ restored. Rerun them all with `../scripts/prove-breaks`. Add a row and an entry 
 | --- | --- | --- | --- |
 | `--check` creates the tool directories | `scripts/reconcile-agent-skills.sh` | `agent-skills` | check left the home unchanged |
 | draw-it dropped from Pi's curation | `scripts/reconcile-agent-skills.sh` | `agent-skills` | Pi gets draw-it (Pi-only) |
-| grilling added to Codex's `~/.agents/skills`, where it beats Matt Pocock's copy in Pi | `scripts/reconcile-agent-skills.sh` | `agent-skills` | Codex (~/.agents/skills) gets no grilling, so Matt Pocock's copy wins in Pi |
+| a dangling pool link is kept instead of pruned | `scripts/reconcile-agent-skills.sh` | `agent-skills` | dangling links to retired pool skills (vault-capture, grilling, guided-learni … |
 | a foreign or broken link is pruned instead of kept | `scripts/reconcile-agent-skills.sh` | `agent-skills` | a broken foreign link is kept |
 | a foreign link on a curated name is overwritten | `scripts/reconcile-agent-skills.sh` | `agent-skills` | a foreign link on a curated name is kept, pointing where it did |
 | a pool link no longer curated is kept, not pruned | `scripts/reconcile-agent-skills.sh` | `agent-skills` | an uncurated pool link is pruned |
 | a real directory on a curated name is deleted and replaced by the pool link | `scripts/reconcile-agent-skills.sh` | `agent-skills` | a real directory on a curated name is kept with its content |
 | a regular file on a curated name is deleted and replaced by the pool link | `scripts/reconcile-agent-skills.sh` | `agent-skills` | a regular file on a curated name is kept with its content |
 | draw-it also curated for Hermes | `scripts/reconcile-agent-skills.sh` | `agent-skills` | .hermes/skills/personal does not get draw-it |
-| diagnosing-bugs added to Codex's `~/.agents/skills` | `scripts/reconcile-agent-skills.sh` | `agent-skills` | Codex (~/.agents/skills) gets no diagnosing-bugs, so Matt Pocock's copy wins … |
+| links into Matt Pocock's checkout listed as foreign instead of counted | `scripts/reconcile-agent-skills.sh` | `agent-skills` | his link is counted, not listed as foreign |
 | every host counts as Omarchy | `scripts/setup-omarchy.sh` | `omarchy-setup` | exits 1 |
 | `--check` runs every reconciler with `--apply` | `scripts/setup-omarchy.sh` | `omarchy-setup` | check left the home unchanged |
 | the Pi extensions reconciler dropped from the list | `scripts/setup-omarchy.sh` | `omarchy-setup` | check runs Pi extensions (check) |
@@ -77,6 +77,8 @@ restored. Rerun them all with `../scripts/prove-breaks`. Add a row and an entry 
 | apply installs nothing | `scripts/reconcile-pi-packages.sh` | `omarchy-setup` | the pinned Pi packages are installed |
 | Omarchy's shell is not restarted after enabling the plugin | `scripts/reconcile-omarchy-auto-suspend.sh` | `omarchy-setup` | Omarchy's shell was restarted to load the plugin |
 | setup-omarchy.sh runs stow over the home | `scripts/setup-omarchy.sh` | `omarchy-setup` | nothing ran stow, sudo or systemctl |
+| Pi settings entries not written | `scripts/reconcile-mattpocock-skills.sh` | `omarchy-setup` | Pi lists his two skill directories |
+| the OpenCode links are never made | `scripts/reconcile-mattpocock-skills.sh` | `omarchy-setup` | his tdd is linked for OpenCode |
 | `~/.secrets` created world-readable | `setup-platform-configs.sh` | `platform-setup` | ~/.secrets is created private |
 | a differing OpenCode AGENTS.md is replaced by the link | `setup-platform-configs.sh` | `platform-setup` | the file is untouched |
 | the watcher is bootstrapped into launchd on every run | `scripts/reconcile-rex-agent-sessions.sh` | `platform-setup` | launchd is not reloaded |
@@ -84,6 +86,8 @@ restored. Rerun them all with `../scripts/prove-breaks`. Add a row and an entry 
 | a package whose name merely starts with a pinned name counts as another version of it, so it is removed | `scripts/reconcile-pi-packages.sh` | `platform-setup` | another package whose name starts with a pinned one is kept |
 | every hook counts as the retired cache-heal hook | `scripts/retire-agent-memory.py` | `platform-setup` | the retired Hindsight hook and context-mode plugin are removed, Bryan's hook, … |
 | a retired tmux link of this repository's is kept | `setup-platform-configs.sh` | `platform-setup` | the retired repo-owned tmux link is removed |
+| Claude Code links to his skills are never made | `scripts/reconcile-mattpocock-skills.sh` | `platform-setup` | his grilling is linked for Claude Code |
+| a foreign link on one of his names is repointed to his skill | `scripts/reconcile-mattpocock-skills.sh` | `platform-setup` | a foreign link on one of his names is kept |
 | conflicts reported but the run exits 0 | `scripts/reconcile-agent-commands.sh` | `agent-commands` | file, check: exits 1 |
 | a live link into another checkout is treated as stale and repointed | `scripts/reconcile-agent-commands.sh` | `agent-commands` | live-link, check: exits 1 |
 | forgejo-map no longer follows its own link to find the adapter | `dot-agents/bin/forgejo-map` | `agent-commands` | --help exits 0 |
@@ -101,5 +105,5 @@ restored. Rerun them all with `../scripts/prove-breaks`. Add a row and an entry 
 
 Not mapped yet, but the repository's tests cover them: the Gnarbox profile (`tests/test-gnarbox-dotfiles-profile.sh`),
 the clipboard bridge (`tests/test-omarchy-clipboard-bridge.sh`), Pi trust for the bots (`tests/test-bot-alias.sh`),
-and a moved or dirty Matt Pocock checkout (`tests/test-reconcile-mattpocock-skills.sh`). Hermes's Studio-only
+and a moved, dirty or old-path Matt Pocock checkout (`tests/test-reconcile-mattpocock-skills.sh`). Hermes's Studio-only
 installer (`hermes/install.py`) has no journey: it runs only on the Studio host name.

@@ -45,7 +45,9 @@ Preconditions:
   exactly `omarchy restart shell`; Pi's `packages` holds exactly the two pins from `reconcile-pi-packages.sh`; Pi's
   `extensions` is `["/opt/pi/mine.js"]`; the seeded
   `~/.pi/agent/AGENTS.md` still a file with its text; `worker-watch.ts` linked; `defaultProvider` `claude-code`; the
-  Matt Pocock checkout's `HEAD` equals the ledger's pin; `forgejo-map` linked; no `clipboard-bridge.service`; the
+  Matt Pocock checkout at `~/.local/share/mattpocock-skills` has `HEAD` at the ledger's pin and nothing is left under
+  `~/.pi/agent/upstreams`; Pi's `skills` is exactly his `skills/engineering` and `skills/productivity` directories; his
+  `tdd` is linked into both `~/.claude/skills` and `~/.config/opencode/skills`; `forgejo-map` linked; no `clipboard-bridge.service`; the
   `stow`, `sudo` and `systemctl` call logs are empty.
 - **Repeat.** Trees after the first and second apply are identical; a check after prints none of `would `, `MISSING`,
   `WOULD`, `Installed`, `appended`, `linked:`, `Linked`.
@@ -54,9 +56,10 @@ Preconditions:
 
 - The sandbox has no network. `mattpocock_upstream` gives git a local bare copy of the upstream, copied read-only
   from a local clone that holds the pin (see `../SKILL.md`, Gotchas). Without one the journey fails at setup; it never
-  fetches. The real clone's fetch is not proven, only the checkout at the pin and the settings entries.
-- What the retired-memory cleanup and `omarchy restart shell` do is read back, but not every reconciler's every
-  effect: the Matt Pocock settings entries are checked only through the checkout at the pin.
+  fetches. The real clone's fetch is not proven, only the checkout at the pin, the Pi settings entries and the links.
+- Of his 27 promoted skills only `tdd` is read back as a link; the rest are covered by the repeat run's identical
+  trees, not one by one. Moving a checkout from the old `~/.pi/agent/upstreams` path is not driven here;
+  `tests/test-reconcile-mattpocock-skills.sh` covers it.
 - `pi install` is a stub that edits `settings.json`; nothing is downloaded. Whether Pi then loads the package is not
   proven.
 - The clipboard bridge skips at `wl-paste is not installed`, before it reads the host file. Its unit writing is in

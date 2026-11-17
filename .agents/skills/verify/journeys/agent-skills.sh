@@ -22,9 +22,6 @@ expect "Pi gets draw-it (Pi-only)" links_to "$H/.pi/agent/skills/draw-it" "$POOL
 for d in .claude/skills .config/opencode/skills .agents/skills .hermes/skills/personal; do
     expect "$d does not get draw-it" test ! -e "$H/$d/draw-it" -a ! -L "$H/$d/draw-it"
 done
-for s in grilling tdd wayfinder diagnosing-bugs; do
-    expect "Codex (~/.agents/skills) gets no $s, so Matt Pocock's copy wins in Pi" test ! -e "$H/.agents/skills/$s" -a ! -L "$H/.agents/skills/$s"
-done
 capture "$H" after-apply; APPLIED="$TREE"
 
 step "repeat: a second apply and a check change nothing"
@@ -47,6 +44,13 @@ ln -s "$H/elsewhere/ship" "$H/.claude/skills/ship"            # foreign link on 
 ln -s "/nowhere/omarchy" "$H/.claude/skills/omarchy"          # broken foreign link
 ln -s "$POOL/gamedev" "$H/.claude/skills/gamedev"             # pool link Claude no longer curates
 ln -s "$POOL/vault-capture" "$H/.claude/skills/vault-capture" # retired pool skill, dangling
+# The six skills adapted from Matt Pocock's retired from the pool on 2026-11-16;
+# an upgraded home still has dangling links to them.
+mkdir -p "$H/.agents/skills" "$H/.hermes/skills/personal"
+ln -s "$POOL/grilling" "$H/.agents/skills/grilling"
+ln -s "$POOL/guided-learning" "$H/.hermes/skills/personal/guided-learning"
+# A link of reconcile-mattpocock-skills.sh's own, into his checkout.
+ln -s "$H/.local/share/mattpocock-skills/skills/engineering/zoom-out" "$H/.claude/skills/zoom-out"
 capture "$H" lived-before; LIVED="$TREE"
 drive check-lived "$H" -- "$R" --check
 capture "$H" lived-after-check
@@ -63,5 +67,9 @@ expect "a foreign link on a curated name is kept, pointing where it did" test "$
 expect "the collision is reported" has "$OUT" "Claude/ship is a foreign symlink; preserved"
 expect "a broken foreign link is kept" test -L "$H/.claude/skills/omarchy"
 expect "an uncurated pool link is pruned" test ! -e "$H/.claude/skills/gamedev" -a ! -L "$H/.claude/skills/gamedev"
-expect "a retired pool link is pruned" test ! -L "$H/.claude/skills/vault-capture"
+expect "dangling links to retired pool skills (vault-capture, grilling, guided-learning) are pruned" \
+    test ! -L "$H/.claude/skills/vault-capture" -a ! -L "$H/.agents/skills/grilling" -a ! -L "$H/.hermes/skills/personal/guided-learning"
+expect "a link into Matt Pocock's checkout is kept" test "$(readlink "$H/.claude/skills/zoom-out")" = "$H/.local/share/mattpocock-skills/skills/engineering/zoom-out"
+expect "his link is counted, not listed as foreign" \
+    bash -c 'grep -qF "1 links to Matt Pocock'"'"'s skills left to scripts/reconcile-mattpocock-skills.sh" <<<"$1" && ! grep -qF "preserved (foreign symlink): zoom-out" <<<"$1"' _ "$OUT"
 capture "$H" lived-after-apply

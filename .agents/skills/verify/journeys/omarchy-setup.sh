@@ -45,7 +45,7 @@ Clipboard bridge (check)|
 Pi extensions (check)|MISSING
 Pi Claude Code provider (check)|WOULD SET defaultProvider <unset> -> claude-code
 Pi packages (check)|MISSING package npm:pi-web-access@
-Matt Pocock's skills in Pi (check)|checkout: missing
+Matt Pocock's skills (check)|checkout: missing
 Retired agent-memory cleanup (check)|would remove from
 Agent commands (check)|(would link)
 LIST
@@ -75,7 +75,13 @@ expect "the retired Hindsight extension is removed from Pi's settings, Bryan's k
     test "$(jq -c .extensions "$H/.pi/agent/settings.json")" = '["/opt/pi/mine.js"]'
 expect "Omarchy's shell was restarted to load the plugin" test "$(calls "$H" omarchy)" = "omarchy restart shell"
 expect "Pi's default provider is claude-code" test "$(jq -r .defaultProvider "$H/.pi/agent/settings.json")" = claude-code
-expect "Matt Pocock's checkout is at the pin" test "$(git -C "$H/.pi/agent/upstreams/mattpocock-skills" rev-parse HEAD)" = "$MATTPOCOCK_PIN"
+M="$H/.local/share/mattpocock-skills"
+expect "Matt Pocock's checkout is at the pin" test "$(git -C "$M" rev-parse HEAD)" = "$MATTPOCOCK_PIN"
+expect "nothing is left at the old Pi-only checkout path" test ! -e "$H/.pi/agent/upstreams"
+expect "Pi lists his two skill directories" \
+    test "$(jq -c '[.skills[]?]' "$H/.pi/agent/settings.json")" = "[\"$M/skills/engineering\",\"$M/skills/productivity\"]"
+expect "his tdd is linked for Claude Code" test "$(readlink "$H/.claude/skills/tdd")" = "$M/skills/engineering/tdd"
+expect "his tdd is linked for OpenCode" test "$(readlink "$H/.config/opencode/skills/tdd")" = "$M/skills/engineering/tdd"
 expect "forgejo-map linked into ~/.local/bin" links_to "$H/.local/bin/forgejo-map" "$REPO/dot-agents/bin/forgejo-map"
 expect "no clipboard bridge unit without a configured Mac" test ! -e "$H/.config/systemd/user/clipboard-bridge.service"
 expect "nothing ran stow, sudo or systemctl" test -z "$(calls "$H" stow)$(calls "$H" sudo)$(calls "$H" systemctl)"

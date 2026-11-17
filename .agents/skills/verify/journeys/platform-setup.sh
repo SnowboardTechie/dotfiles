@@ -17,6 +17,9 @@ H="$(new_home mac)"
 mkdir -p "$H/.config/opencode" "$H/.tmux" "$H/.claude"
 ln -s "$REPO/dot-tmux.conf" "$H/.tmux.conf"                     # retired repo-owned tmux link
 ln -s "/opt/elsewhere/claude-usage.sh" "$H/.tmux/claude-usage.sh" # foreign link under a retired name
+mkdir -p "$H/.claude/skills"
+ln -s "/opt/elsewhere/tdd" "$H/.claude/skills/tdd"               # Bryan's own link on one of Matt Pocock's names
+ln -s "$REPO/dot-agents/skills/grilling" "$H/.claude/skills/grilling" # the retired adapted copy, dangling
 # Claude settings with one retired Hindsight hook and one retired plugin beside Bryan's own entries.
 cat >"$H/.claude/settings.json" <<'JSON'
 {"model": "opus",
@@ -38,6 +41,12 @@ expect "a foreign link under a retired tmux name is kept" test "$(readlink "$H/.
 expect "~/.secrets is created private" test "$(stat -f %Lp "$H/.secrets")" = 700
 expect "an identical OpenCode AGENTS.md copy becomes the repo link" links_to "$H/.config/opencode/AGENTS.md" "$REPO/dot-config/opencode/AGENTS.md"
 expect "skills linked for Claude and Hermes" bash -c '[[ -L "$1/.claude/skills/ship" && -L "$1/.hermes/skills/personal/ship" ]]' _ "$H"
+M="$H/.local/share/mattpocock-skills"
+expect "Matt Pocock's checkout is at the pin" test "$(git -C "$M" rev-parse HEAD)" = "$MATTPOCOCK_PIN"
+expect "his grilling is linked for Claude Code" test "$(readlink "$H/.claude/skills/grilling")" = "$M/skills/productivity/grilling"
+expect "his grilling is linked for OpenCode" test "$(readlink "$H/.config/opencode/skills/grilling")" = "$M/skills/productivity/grilling"
+expect "a foreign link on one of his names is kept" test "$(readlink "$H/.claude/skills/tdd")" = /opt/elsewhere/tdd
+expect "the old pool grilling link is pruned and his takes the name" has "$OUT" "pool link: grilling"
 P="$H/Library/LaunchAgents/com.snowboardtechie.rex-agent-sessions.plist"
 expect "the Rex watcher plist is written" test -f "$P"
 expect "the plist names this checkout and this home, no placeholders left" \

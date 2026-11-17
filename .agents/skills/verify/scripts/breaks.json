@@ -11,17 +11,17 @@
   "journey": "agent-skills",
   "file": "scripts/reconcile-agent-skills.sh",
   "break": "draw-it dropped from Pi's curation",
-  "old": "technical-demo-preparation guided-learning draw-it)",
-  "new": "technical-demo-preparation guided-learning)",
+  "old": "technical-demo-preparation draw-it)",
+  "new": "technical-demo-preparation)",
   "fails_at": "Pi gets draw-it (Pi-only)"
  },
  {
   "journey": "agent-skills",
   "file": "scripts/reconcile-agent-skills.sh",
-  "break": "grilling added to Codex's ~/.agents/skills, where it beats Matt Pocock's copy in Pi",
-  "old": "    superwhisper-meetings\n    codebase-architecture)",
-  "new": "    superwhisper-meetings grilling\n    codebase-architecture)",
-  "fails_at": "Codex (~/.agents/skills) gets no grilling, so Matt Pocock's copy wins in Pi"
+  "break": "a dangling pool link is kept instead of pruned",
+  "old": "                    \"$SKILLS_SRC\"/*)\n                        if [[ $keep -eq 0 ]]; then\n                            op \"prune stale pool link\" \"$name\"",
+  "new": "                    \"$SKILLS_SRC\"/*)\n                        if [[ $keep -eq 0 && -e \"$existing\" ]]; then\n                            op \"prune stale pool link\" \"$name\"",
+  "fails_at": "dangling links to retired pool skills (vault-capture, grilling, guided-learning) are pruned"
  },
  {
   "journey": "agent-skills",
@@ -67,17 +67,17 @@
   "journey": "agent-skills",
   "file": "scripts/reconcile-agent-skills.sh",
   "break": "draw-it also curated for Hermes",
-  "old": "    guided-learning yunohost-updates superwhisper-meetings bot-planning bot-reminders",
-  "new": "    guided-learning yunohost-updates superwhisper-meetings bot-planning bot-reminders draw-it",
+  "old": "    yunohost-updates superwhisper-meetings bot-planning bot-reminders",
+  "new": "    yunohost-updates superwhisper-meetings bot-planning bot-reminders draw-it",
   "fails_at": ".hermes/skills/personal does not get draw-it"
  },
  {
   "journey": "agent-skills",
   "file": "scripts/reconcile-agent-skills.sh",
-  "break": "diagnosing-bugs added to Codex's ~/.agents/skills",
-  "old": "    superwhisper-meetings\n    codebase-architecture)",
-  "new": "    superwhisper-meetings diagnosing-bugs\n    codebase-architecture)",
-  "fails_at": "Codex (~/.agents/skills) gets no diagnosing-bugs, so Matt Pocock's copy wins in Pi"
+  "break": "links into Matt Pocock's checkout listed as foreign instead of counted",
+  "old": "                        elif [[ $keep -eq 0 && \"$(readlink \"$existing\")\" == \"$MATTPOCOCK_CHECKOUT/skills/\"* ]]; then",
+  "new": "                        elif false; then",
+  "fails_at": "his link is counted, not listed as foreign"
  },
  {
   "journey": "omarchy-setup",
@@ -192,6 +192,22 @@
   "fails_at": "nothing ran stow, sudo or systemctl"
  },
  {
+  "journey": "omarchy-setup",
+  "file": "scripts/reconcile-mattpocock-skills.sh",
+  "break": "Pi settings entries not written",
+  "old": "    write_settings\n    echo \"  Set Pi settings entries for skills/engineering and skills/productivity\"",
+  "new": "    echo \"  Set Pi settings entries for skills/engineering and skills/productivity\"",
+  "fails_at": "Pi lists his two skill directories"
+ },
+ {
+  "journey": "omarchy-setup",
+  "file": "scripts/reconcile-mattpocock-skills.sh",
+  "break": "the OpenCode links are never made",
+  "old": "        reconcile_links \"OpenCode\" \"$OPENCODE_DEST\" \"$1\"\n    fi",
+  "new": "        reconcile_links \"OpenCode\" \"$OPENCODE_DEST\" \"\"\n    fi",
+  "fails_at": "his tdd is linked for OpenCode"
+ },
+ {
   "journey": "platform-setup",
   "file": "setup-platform-configs.sh",
   "break": "~/.secrets created world-readable",
@@ -246,6 +262,22 @@
   "old": "            rm \"$link_path\"",
   "new": "            true",
   "fails_at": "the retired repo-owned tmux link is removed"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-mattpocock-skills.sh",
+  "break": "Claude Code links to his skills are never made",
+  "old": "    reconcile_links \"Claude Code\" \"$CLAUDE_DEST\" \"$1\"",
+  "new": "    reconcile_links \"Claude Code\" \"$CLAUDE_DEST\" \"\"",
+  "fails_at": "his grilling is linked for Claude Code"
+ },
+ {
+  "journey": "platform-setup",
+  "file": "scripts/reconcile-mattpocock-skills.sh",
+  "break": "a foreign link on one of his names is repointed to his skill",
+  "old": "            else\n                echo \"    WARNING: $path is a link to $raw; kept, not linked to his $name\"",
+  "new": "            else\n                [[ \"$MODE\" == \"apply\" ]] && ln -sfn \"$want\" \"$path\"",
+  "fails_at": "a foreign link on one of his names is kept"
  },
  {
   "journey": "agent-commands",

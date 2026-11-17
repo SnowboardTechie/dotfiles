@@ -32,5 +32,5 @@ Preconditions:
 ## Gotchas
 
 - `forgejo-map frontier` is driven only to its no-origin refusal; nothing reaches Forgejo (the sandbox has no network).
-  The adapter's own behaviour is tested in `dot-agents/skills/wayfinder/tests/test_forgejo_wayfinder.py`.
+  The adapter's own behaviour is tested in `dot-agents/forgejo-tracker/tests/test_forgejo_wayfinder.py`.
 - The `PATH` note (`~/.local/bin is not on PATH`) always prints here; nothing asserts on it.

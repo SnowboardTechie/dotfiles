@@ -53,6 +53,7 @@ def main() -> int:
         text = original.decode()
         if text.count(b["old"]) != 1:
             results.append((b, "STALE", f"the text to break occurs {text.count(b['old'])} times; update breaks.json"))
+            print(f"{'STALE':7} {b['journey']:16} {b['break']}: {results[-1][2]}", flush=True)
             continue
         try:
             path.write_bytes(text.replace(b["old"], b["new"]).encode())
