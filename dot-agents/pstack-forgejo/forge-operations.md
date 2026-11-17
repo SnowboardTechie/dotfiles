@@ -110,8 +110,9 @@ watch-pr-forgejo --pr <n>                          # poll until READY or BLOCKER
 reported `WAITING` with the pending check, then `READY` when the check passed.
 `--status-only` exits 0 with a table (CI, review, merge); exit 0 means it was
 read, not that the PR is ready. Without
-`--allow-draft` a draft is a merge gate. Set `PSTACK_WATCH_PR_DIR` when pstack
-is not installed under the Pi agent directory.
+`--allow-draft` a draft is a merge gate. It looks in `$PI_CODING_AGENT_DIR`,
+`~/.pi/pstack` and `~/.pi/agent`; set `PSTACK_WATCH_PR_DIR` when pstack is
+elsewhere.
 
 Where a repository's CI reports commit statuses, the watcher reads them as its
 checks, and `READY` is reachable. Most of Bryan's repositories report none: CI
