@@ -686,10 +686,8 @@ weaker review, or fabricated completion claim.
    suite the change can break (for SGG grant builders, `packages/foundation/test`), so the one full test run rarely fails.
    On #243 slice 3 the orchestrator ran 11 full test runs for 4 PRs. For a small PR in durable-pi-workspace (Bryan,
    2026-11-07): one review, Minor findings recorded in the PR body rather than corrected in another round, a
-   correction only for a real blocker, then the one full test run. In durable-pi-workspace that run is CI: the PR head's
-   `Typecheck and tests` check in Forgejo Actions (affected mode against the base, full mode on main after merge):
-   push the final head and merge once it is green, with no local test run. If main moved after the green run, merge main
-   in and let the check run on that head (`self-hosted-ci-runners`).
+   correction only for a real blocker, then the one full test run. durable-pi-workspace has no CI (removed 2026-11-17): run the
+   test files the change touches and say in the PR what ran; the full suite runs only when Bryan asks for it.
 6. Asking for plan or PR permission already carried by an imperative work command.
 7. Treating a background agent report or green focused test as final acceptance.
 8. Keeping panes open through publication or merge.

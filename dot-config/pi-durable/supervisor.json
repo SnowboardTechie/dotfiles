@@ -47,9 +47,6 @@
   "follow": {
     "enabled": true,
     "every_seconds": 300,
-    "status_command": [
-      "/run/current-system/sw/bin/pi-durable-commit-status"
-    ],
     "verify_signature": true
   }
 }
