@@ -1,5 +1,10 @@
 # pstack's models on Pi, with a verifier from another family
 
+> **2026-11-17:** the sheet has used no OpenCode Go model since this date. Bryan decided
+> that no scheduled job spends on OpenCode Go, whose subscription is for the bots he talks to,
+> so each panel's second member is now another Claude model. What follows records what was
+> proven on 2026-11-16.
+
 Read this when you set up the Pi agent directory pstack runs in, or change which
 models its roles use. Everything here was run on 2026-11-16 in the trial agent
 directory (`~/.pi/pstack-trial`), with Pi 1.5.2, the pstack port at
