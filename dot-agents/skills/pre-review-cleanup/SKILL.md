@@ -129,7 +129,11 @@ Write the plan to a scratch file outside both repositories. With a draft:
   only for a range.
 - Each new inline is a `missed` row with an anchor and a body. A finding from an older head's draft that you post is a
   `missed` row too: the current draft didn't have it.
-- With no draft for the head: `"findings": []`, every inline a `missed` row, and add `--no-draft` to both commands below.
+- With no draft for the head: `"findings": []`, every inline a `missed` row, and `event` and `summary` given explicitly:
+  there is no draft for them to default to.
+
+With a draft, `<case>` below is the review task ID. With no draft, it is `owner/name#N` (the current head, never a
+review task ID) followed by `--no-draft`; the tool refuses `--no-draft` while the head has a draft.
 
 Run `evidence.js preview <case> --plan <file>` and show its output in full, unedited. Its `--confirm` hash binds this
 exact proposal. On Bryan's go for that preview:
@@ -140,8 +144,13 @@ evidence.js post <case> --plan <file> --confirm <hash> --basis approved-proposal
 
 Any change to the plan is a new preview shown in full before posting. Report what `post` prints: the review link, any
 warning, each destination published or pending. For a refusal, a partial post or a pending destination, follow the
-submit skill's rules (`~/code/durable-pi-workspace/workspaces/sgg/plugin/skills/submit/SKILL.md`, step 4 and "Refusals
-are the rules"); the only way to post is `evidence.js post`.
+submit skill's rules (`~/code/durable-pi-workspace/workspaces/sgg/plugin/skills/submit/SKILL.md`, step 4, "A pull
+request whose current head has no draft" and "Refusals are the rules"); the only way to post is `evidence.js post`.
+
+An interrupted post is finished with `evidence.js resume`, which never posts: it records a review that landed and
+publishes what is pending (`evidence.js status` shows what is recorded). With a draft: `resume <review task ID>`. With
+no draft: `resume owner/name#N --no-draft`, or `resume owner/name#N@<head> --no-draft` once the pull request has moved
+past the head that was posted (`status` takes the same forms).
 
 ## 7. Rate the draft
 
@@ -150,8 +159,8 @@ from the meanings in `RATINGS` (`workspaces/sgg/src/ratings.ts`): 👍 `successf
 ➖ `not_needed` (he didn't need this review; not a quality rating) or 👎 `unsatisfactory` (he had to change it
 drastically). His go covers the post and the rating.
 
-After the post: `evidence.js rate <review task ID> <rating>`. Report what it prints; the notification's reaction follows
-from the service's mirror within a minute. When the deployed build has no `rate` command, say so and leave the rating
+After the post: `evidence.js rate <review task ID> <rating>`; `clear` in place of the rating removes one set by mistake.
+Report what it prints; the notification's reaction follows from the service's mirror within a minute. When the deployed build has no `rate` command, say so and leave the rating
 for Bryan to set on the pre-review page (`https://bryans-mac-studio.tail5ba690.ts.net:8790/#/list/all`). With no draft
 there is nothing to rate: say so.
 
