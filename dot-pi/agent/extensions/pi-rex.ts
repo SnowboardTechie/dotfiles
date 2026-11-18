@@ -2,7 +2,10 @@
 // Codex (Rex reports hooks as unsupported for Pi). Inside a Rex pane, an interactive Pi:
 //   - is told which Rex session and pane it runs in, with the text Rex itself prints for
 //     agents (`rex __internal session-start`), so a Rex upgrade updates it;
-//   - names its pane, its tab and the Rex session through the `rex_name` tool.
+//   - names its pane, its tab and the Rex session through the `rex_name` tool;
+//   - names the pane and tab itself after its first run settles, if the model didn't call
+//     `rex_name` and they still carry placeholders. A local Ollama model reads the first
+//     request and proposes the names; without it, the request's first words become them.
 // Naming follows how the work is laid out: a session is one initiative ("Pi Durable"), a
 // tab is one workstream of it ("Subscription Rename"), a pane is one agent ("w31-9-review", the same
 // slug as the Pi session name). Every level is named once, and only while it still carries
@@ -179,7 +182,71 @@ function rexRunner(command: string): Run {
 		);
 }
 
-export default function (pi: ExtensionAPI, run: Run = rexRunner(rexCommand()), claims: Claims = fileClaims(), env: NodeJS.ProcessEnv = process.env) {
+/** Proposes a pane slug and tab title for a first request; undefined when it can't. */
+export type Namer = (request: string) => Promise<Wanted | undefined>;
+
+/** Strip pasted markup and keep a request short enough for a naming prompt. */
+export function requestText(request: string): string {
+	return request.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 2000);
+}
+
+/** A pane slug of at most three words. */
+export function shortSlug(text: string): string {
+	return slug(slug(text).split("-").filter(Boolean).slice(0, 3).join("-"));
+}
+
+/** Names from the request's own first words, for when no model answers. */
+export function wordsNames(request: string): Wanted {
+	const words = requestText(request).split(" ").filter((w) => /[a-z0-9]/i.test(w)).slice(0, 4).join(" ");
+	return { pane: shortSlug(words), tab: title(words.replace(/\b\w/g, (c) => c.toUpperCase())) };
+}
+
+// A local model through Ollama's chat API. Thinking off and a JSON schema keep the answer to
+// two short strings (about 1.5 s warm, about 20 s when the model must load first). keep_alive
+// unloads it a minute later, so a 28 GB model doesn't sit in memory for pane names.
+export function ollamaNamer(env: NodeJS.ProcessEnv = process.env, request: typeof fetch = fetch): Namer {
+	const url = (env.PI_REX_NAMER_URL ?? "http://127.0.0.1:11434").replace(/\/+$/, "");
+	const model = env.PI_REX_NAMER_MODEL ?? "qwen3.8-pi:27b-q8";
+	return async (text) => {
+		try {
+			const response = await request(`${url}/api/chat`, {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				signal: AbortSignal.timeout(90_000),
+				body: JSON.stringify({
+					model,
+					stream: false,
+					think: false,
+					keep_alive: "1m",
+					format: { type: "object", properties: { pane: { type: "string" }, tab: { type: "string" } }, required: ["pane", "tab"] },
+					messages: [
+						{
+							role: "system",
+							content:
+								"Name a terminal pane after the task in the user's first message to a coding agent. pane: a lowercase hyphenated slug of one to three words for the task. tab: a short Title Case name for the workstream. Reply with JSON only.",
+						},
+						{ role: "user", content: requestText(text) },
+					],
+				}),
+			});
+			if (!response.ok) return undefined;
+			const answer = JSON.parse(((await response.json()) as { message?: { content?: string } }).message?.content ?? "");
+			const pane = shortSlug(String(answer.pane ?? ""));
+			const tab = title(String(answer.tab ?? ""));
+			return pane && tab ? { pane, tab } : undefined;
+		} catch {
+			return undefined;
+		}
+	};
+}
+
+export default function (
+	pi: ExtensionAPI,
+	run: Run = rexRunner(rexCommand()),
+	claims: Claims = fileClaims(),
+	env: NodeJS.ProcessEnv = process.env,
+	namer: Namer = ollamaNamer(env),
+) {
 	const sessionId = env.REX_SESSION;
 	const blockId = env.REX_BLOCK;
 	if (!sessionId || !blockId) return;
@@ -191,6 +258,12 @@ export default function (pi: ExtensionAPI, run: Run = rexRunner(rexCommand()), c
 	// The note can go stale after `rex_name` renames things; the tool's result already tells
 	// the model what changed, and the tool itself only renames placeholders.
 	let section: string | undefined;
+	// The first request, and whether naming after the first run is still to do. The model's own
+	// `rex_name` call settles it, so the check after the run is skipped.
+	let firstRequest: string | undefined;
+	let namingOpen = true;
+	/** The naming after the first run, exposed so tests can wait for it. */
+	let naming: Promise<void> = Promise.resolve();
 
 	// A Pi session that already has a name (`pi --name`, /name, a resumed session) labels
 	// its pane without asking the model.
@@ -217,6 +290,7 @@ export default function (pi: ExtensionAPI, run: Run = rexRunner(rexCommand()), c
 				additionalProperties: false,
 			} as never,
 			async execute(_id, params: Wanted) {
+				namingOpen = false;
 				const report = await applyNames(run, sessionId, blockId, params, claims);
 				// The pane label and the Pi session name are the same slug in this setup.
 				if (params.pane && slug(params.pane) && !pi.getSessionName()) pi.setSessionName(slug(params.pane));
@@ -228,8 +302,37 @@ export default function (pi: ExtensionAPI, run: Run = rexRunner(rexCommand()), c
 
 	pi.on("session_info_changed", labelPaneFromSessionName);
 
-	pi.on("before_agent_start", async (event) => {
+	// Names what the model left as a placeholder. Only the pane and tab: the Rex session stays
+	// with the model, whose naming note covers which Pi may name it.
+	const nameAfterFirstRun = async () => {
+		const request = firstRequest;
+		if (!request) return;
+		const view = await run(["session", "inspect", sessionId, "--json"]);
+		const loc = view.code === 0 ? locate(JSON.parse(view.stdout), blockId) : undefined;
+		if (!loc) return;
+		const paneOpen = placeholder.pane(loc.pane);
+		const tabOpen = placeholder.tab(loc.tab);
+		if (!paneOpen && !tabOpen) return;
+		const proposed = (await namer(request)) ?? wordsNames(request);
+		const want: Wanted = {};
+		if (paneOpen && proposed.pane) want.pane = proposed.pane;
+		if (tabOpen && proposed.tab) want.tab = proposed.tab;
+		await applyNames(run, sessionId, blockId, want, claims);
+		if (want.pane && !pi.getSessionName()) pi.setSessionName(slug(want.pane));
+	};
+
+	pi.on("agent_settled", async () => {
+		if (!interactive || !namingOpen || !firstRequest) return;
+		namingOpen = false;
+		// Not awaited: a cold model takes about 20 s, and the next prompt must not wait for it.
+		naming = nameAfterFirstRun().catch(() => {});
+	});
+
+	pi.on("before_agent_start", async (event: any) => {
 		if (!interactive) return;
+		if (firstRequest === undefined && event.messageType !== "custom" && typeof event.prompt === "string" && event.prompt.trim()) {
+			firstRequest = event.prompt;
+		}
 		if (section === undefined) {
 			try {
 				const out = await run(["__internal", "session-start", "--agent", "pi", "--feature-session-naming=false"]);
@@ -246,4 +349,5 @@ export default function (pi: ExtensionAPI, run: Run = rexRunner(rexCommand()), c
 		}
 		if (section) (event.systemPromptOptions.sections ??= {}).rex = section;
 	});
+	return { naming: () => naming };
 }
