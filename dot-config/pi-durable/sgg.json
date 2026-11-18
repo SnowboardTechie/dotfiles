@@ -4,7 +4,7 @@
   "self": "SnowboardTechie",
   "secrets_file": "~/.secrets/pi-durable/sgg.env",
   "evidence_dir": "/Users/bryan/.local/state/pi-durable/sgg/evidence/workspaces/sgg/evidence",
-  "tunables": {},
+  "settings": {},
   "jev": true,
   "page": {
     "port": 8790,
@@ -42,7 +42,7 @@
       },
       {
         "id": "personal",
-        "lines": {
+        "usage_thresholds": {
           "five_hour": 50,
           "weekly": 50
         }
@@ -58,7 +58,7 @@
     "anchor": "net-anchor-pi-durable-sgg",
     "proxy": "http://192.168.128.1:8888",
     "prior_reviews": "~/code/sgg/vault/reviews",
-    "canaries": [
+    "blocked_addresses": [
       "192.168.128.1:7000",
       "192.168.128.1:22",
       "192.168.1.2:22",
@@ -68,7 +68,7 @@
       "image": "pi-durable-sgg-agent:34c8ce1"
     }
   },
-  "gates": {
+  "readiness_checks": {
     "sandbox": {
       "container_version": "1.5.0",
       "attestation": "2026-10-26T17:05:36Z, Claude orchestrator under Bryan's #174-#176 approval: SGG_LIVE_SANDBOX=1 sandbox.test.js live test (confinement and the VM's own loopback, 62 host services, the #174 allowlist active after update-system) passed on container 1.5.0 at e0c4333084aec62a8496aa2286bd06e9e859bbf7; log /Users/bryan/code/durable-pi-workspace/.hermes/issue-work/bryan-durable-pi-workspace-174/live-sandbox-gate-e0c4333.log"
@@ -93,7 +93,7 @@
       "HHS/simpler-grants-protocol"
     ],
     "room": "dependencies-test",
-    "gates": {}
+    "write_permissions": {}
   },
   "timezone": "America/Los_Angeles",
   "rooms": {
@@ -149,7 +149,7 @@
             "command": "pnpm audit --audit-level=high"
           }
         ],
-        "proving": [
+        "verification_steps": [
           {
             "id": "catalog-deps",
             "command": "./.github/scripts/validate-catalog-deps.sh"
@@ -192,7 +192,7 @@
             "command": "pnpm audit"
           }
         ],
-        "proving": [
+        "verification_steps": [
           {
             "id": "install",
             "command": "pnpm install --frozen-lockfile"
@@ -205,12 +205,12 @@
       }
     ],
     "room": "dependencies-test",
-    "gates": {
+    "write_permissions": {
       "HHS/simpler-grants-protocol": { "open_draft": "Bryan, 2026-11-04: open drafts live (durable-pi-workspace#278 slice 3; the accepted replay and his sound protocol rating are the bar, and he rates the live drafts)" },
       "common-grants/ts-cg-grants-gov": { "open_draft": "Bryan, 2026-11-04: open drafts live (durable-pi-workspace#278 slice 3; the accepted replay and his sound protocol rating are the bar, and he rates the live drafts)" }
     },
     "accepted_replay": "20261115T225141Z sha256:0d5ef75f7b0b529e5e52fc34ccfd4b9efe7763eea59bde5336b0956efc1d4fd8",
-    "lines": {
+    "usage_thresholds": {
       "five_hour": 75,
       "weekly": 75
     }

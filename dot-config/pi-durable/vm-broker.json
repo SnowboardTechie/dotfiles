@@ -12,7 +12,7 @@
     "network": "pi-durable-sgg",
     "anchor": "net-anchor-pi-durable-sgg",
     "proxy": "http://192.168.128.1:8888",
-    "canaries": [
+    "blocked_addresses": [
       "192.168.128.1:7000",
       "192.168.128.1:22",
       "192.168.1.2:22",
@@ -22,7 +22,7 @@
   "model": {
     "subscription": "personal"
   },
-  "forge": {
+  "forgejo_proxy": {
     "repo": "bryan/durable-pi-workspace"
   }
 }

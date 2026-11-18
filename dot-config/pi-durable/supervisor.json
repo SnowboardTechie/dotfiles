@@ -44,7 +44,7 @@
     "-c",
     "gpg.program=/run/current-system/sw/bin/pi-durable-verify-commit-signature"
   ],
-  "follow": {
+  "auto_deploy": {
     "enabled": true,
     "every_seconds": 300,
     "verify_signature": true

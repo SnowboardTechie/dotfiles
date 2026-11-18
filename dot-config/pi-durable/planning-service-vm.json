@@ -5,7 +5,7 @@
   "network": "pi-durable-planning",
   "anchor": "net-anchor-pi-durable-planning",
   "gateway": "192.168.129.1",
-  "forge": {
+  "forgejo": {
     "repo": "bryan/durable-pi-workspace"
   }
 }
