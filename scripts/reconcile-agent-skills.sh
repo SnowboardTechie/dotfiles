@@ -129,13 +129,15 @@ NON_CLAUDE_COMMON=(skill-retrospective obsidian)
 # Skills for the interactive Pi that were Hermes-only, so no workflow it shares needs a Hermes
 # session: dual-model teammate review, DX preview, proven cores, sprint updates,
 # and demo prep (technical-demo-preparation, moved from a
-# Hermes-local copy on 2026-11-12). Hermes's own bots and scheduled jobs (bot-planning, bot-reminders,
+# Hermes-local copy on 2026-11-12).
+# pre-review-cleanup (Pi and Claude, 2026-11-17): Bryan turns the SGG pre-review
+# service's draft into his posted review and records the feedback in the sgg vault. Hermes's own bots and scheduled jobs (bot-planning, bot-reminders,
 # yunohost-updates) stay with Hermes until the bot service replaces them.
 PI_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}" next-session
     manual-merge issue-create issue-plan issue-work loop-issue
     coding-agent-handoff-supervision dx-target
     multiagent-pr-review dx-preview proven-cores sprint-deliverable-update
-    technical-demo-preparation draw-it)
+    technical-demo-preparation draw-it pre-review-cleanup)
 
 # Codex uses the supported user scope (~/.agents/skills), not its bundled
 # ~/.codex/skills/.system directory. Share the portable coding/planning core;
@@ -153,7 +155,7 @@ CLAUDE_SKILLS=("${COMMON_SKILLS[@]}"
     manual-merge issue-create issue-plan issue-work
     adr-and-spec-coach dx-target conforming-tech-specs proven-cores
     catalog-review dependency-review dependency-triage
-    voice-bryan superwhisper-meetings)
+    voice-bryan superwhisper-meetings pre-review-cleanup)
 
 OPENCODE_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
     manual-merge issue-create issue-plan issue-work loop-issue
