@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import init, { applyNames, briefing, fileClaims, locate, namingNote, ollamaNamer, placeholder, requestText, rexCommand, shortSlug, slug, title, wordsNames, type Claims, type Namer, type Run } from "../dot-pi/agent/extensions/pi-rex.ts";
+import init, { applyNames, briefing, fileClaims, locate, ollamaNamer, renameRule, placeholder, requestText, rexCommand, shortSlug, slug, title, wordsNames, type Claims, type Namer, type Run, type Wanted } from "../dot-pi/agent/extensions/pi-rex.ts";
 
 const S = "session:1";
 const B = "block:2";
@@ -120,24 +120,6 @@ test("the claim marker can be taken once per Rex session", () => {
 	assert.equal(b.take("session:01a1/../x", "Two"), true);
 });
 
-test("the note asks only for the levels that are still placeholders", () => {
-	const fresh = namingNote({ session: "dawn-canyon", windowId: W, tab: "Window 1bd453b0", pane: "shell", tabs: 1 }, false);
-	assert.match(fresh, /`pane`/);
-	assert.match(fresh, /`tab`/);
-	assert.match(fresh, /`session`/);
-	assert.match(fresh, /same name/);
-	const partlyNamed = namingNote({ session: "Pi > Hermes", windowId: W, tab: "Window 1bd453b0", pane: "split-ab12", tabs: 4 }, false);
-	assert.match(partlyNamed, /`pane`/);
-	assert.match(partlyNamed, /`tab`/);
-	assert.doesNotMatch(partlyNamed, /`session`:/);
-	assert.doesNotMatch(partlyNamed, /same name/);
-	const claimed = namingNote({ session: "dawn-canyon", windowId: W, tab: "PiRex", pane: "shell", tabs: 1 }, true);
-	assert.doesNotMatch(claimed, /`session`:/);
-	const named = namingNote({ session: "Pi > Hermes", windowId: W, tab: "Subscription Rename", pane: "w31-9", tabs: 4 }, false);
-	assert.match(named, /already named/);
-	assert.doesNotMatch(named, /rex_name/);
-});
-
 test("Rex's briefing drops its out-of-date-setup advice", () => {
 	assert.equal(briefing("One.\n\nThe Rex setup for this agent is out of date. Suggest running `rex skill setup`\nto update it.\n"), "One.");
 });
@@ -179,13 +161,14 @@ test("an interactive Pi gets Rex's briefing and the naming note as one prompt se
 	const rex = fakeRex(view("dawn-canyon", "Window 1bd453b0", "shell"));
 	init(fake.pi, rex.run, memoryClaims(), { REX_SESSION: S, REX_BLOCK: B });
 	await fake.handlers.session_start({}, { mode: "tui" });
-	assert.deepEqual(fake.tools.map((t) => t.name), ["rex_name"]);
+	assert.deepEqual(fake.tools, [], "no naming tool for the model");
 	const event = { systemPromptOptions: { sections: {} as Record<string, string> } };
 	await fake.handlers.before_agent_start(event, {});
 	const text = event.systemPromptOptions.sections.rex;
 	assert.match(text, /^You're running in a Rex terminal\./);
 	assert.doesNotMatch(text, /out of date/);
-	assert.match(text, /rex_name/);
+	assert.ok(text.endsWith(renameRule));
+	assert.doesNotMatch(text, /rex_name/);
 	assert.deepEqual(rex.calls[0], ["__internal", "session-start", "--agent", "pi", "--feature-session-naming=false"]);
 	await fake.handlers.before_agent_start(event, {});
 	assert.equal(rex.calls.filter((c) => c[0] === "__internal").length, 1, "Rex's text is fetched once");
@@ -209,7 +192,7 @@ test("the prompt section stays byte-identical after a rename, and later turns do
 	await fake.handlers.session_start({}, { mode: "tui" });
 	const first = { systemPromptOptions: { sections: {} as Record<string, string> } };
 	await fake.handlers.before_agent_start(first, {});
-	assert.match(first.systemPromptOptions.sections.rex, /still placeholders/);
+	assert.match(first.systemPromptOptions.sections.rex, /Rex terminal/);
 
 	current.v = view("Pi Durable", "PiRex", "rex-naming");
 	const before = calls.length;
@@ -235,18 +218,7 @@ test("an unreachable Rex on the first turn is tried again on the next", async ()
 	up = true;
 	const second = { systemPromptOptions: { sections: {} as Record<string, string> } };
 	await fake.handlers.before_agent_start(second, {});
-	assert.match(second.systemPromptOptions.sections.rex, /already named/);
-});
-
-test("the tool names the pane and gives an unnamed Pi session the same slug", async () => {
-	const fake = fakePi();
-	const rex = fakeRex(view("dawn-canyon", "Window 1bd453b0", "shell"));
-	init(fake.pi, rex.run, memoryClaims(), { REX_SESSION: S, REX_BLOCK: B });
-	await fake.handlers.session_start({}, { mode: "tui" });
-	const result = await fake.tools[0].execute("id", { pane: "Rex Naming", tab: "PiRex", session: "PiRex" });
-	assert.equal(rex.renames().length, 3);
-	assert.equal(fake.name(), "rex-naming");
-	assert.match(result.content[0].text, /pane: renamed to "rex-naming"/);
+	assert.ok(second.systemPromptOptions.sections.rex.endsWith(renameRule));
 });
 
 test("a Pi session that already has a name labels its pane at start", async () => {
@@ -257,25 +229,23 @@ test("a Pi session that already has a name labels its pane at start", async () =
 	assert.deepEqual(rex.renames(), [["block", "rename", "-s", S, B, "w31-9-review"]]);
 });
 
-// Naming after the first run: the model was asked to call `rex_name` and didn't.
+// Naming from the first request, by a local model, with no naming work for the model the user talks to.
 const ask = (prompt: string) => ({ messageType: "user", prompt, systemPromptOptions: { sections: {} as Record<string, string> } });
 
-async function firstRun(namer: Namer, v = view("dawn-canyon", "Window 1bd453b0", "shell"), callTool?: (tool: any) => Promise<unknown>) {
+async function firstRequest(namer: Namer, v = view("dawn-canyon", "Window 1bd453b0", "shell"), claims = memoryClaims()) {
 	const fake = fakePi();
 	const rex = fakeRex(v);
-	const ext = init(fake.pi, rex.run, memoryClaims(), { REX_SESSION: S, REX_BLOCK: B }, namer) as any;
-	await fake.handlers.session_start({}, { mode: "tui" });
+	const ext = init(fake.pi, rex.run, claims, { REX_SESSION: S, REX_BLOCK: B }, namer) as any;
+	await fake.handlers.session_start({}, { mode: "tui", cwd: "/Users/bryan/code/pi-durable" });
 	await fake.handlers.before_agent_start(ask("It seems like Opus has stopped renaming the Rex panes"), {});
-	if (callTool) await callTool(fake.tools[0]);
-	await fake.handlers.agent_settled({}, {});
 	await ext.naming();
 	return { fake, rex, ext };
 }
 
-test("a pane, tab and only-tab session the model left as placeholders are named from the first request", async () => {
-	const seen: string[] = [];
-	const { fake, rex } = await firstRun(async (r) => (seen.push(r), { pane: "rex-naming-debug", tab: "Rex Pane Naming" }));
-	assert.deepEqual(seen, ["It seems like Opus has stopped renaming the Rex panes"]);
+test("the first request names the pane, tab and an only-tab session", async () => {
+	const seen: string[][] = [];
+	const { fake, rex } = await firstRequest(async (r, d) => (seen.push([r, d]), { pane: "rex-naming-debug", tab: "Rex Pane Naming", session: "Pi Tooling" }));
+	assert.deepEqual(seen, [["It seems like Opus has stopped renaming the Rex panes", "pi-durable"]]);
 	assert.deepEqual(rex.renames(), [
 		["block", "rename", "-s", S, B, "rex-naming-debug"],
 		["window", "rename", "-s", S, W, "Rex Pane Naming"],
@@ -284,65 +254,63 @@ test("a pane, tab and only-tab session the model left as placeholders are named 
 	assert.equal(fake.name(), "rex-naming-debug");
 });
 
-test("after the run, a session with other tabs keeps its name for the model to give", async () => {
-	const { rex } = await firstRun(async () => ({ pane: "a", tab: "B", session: "C" }), view("dawn-canyon", "Window 1bd453b0", "shell", 1));
-	assert.ok(!rex.renames().some((c) => c[0] === "session"));
+test("a session with other tabs takes the namer's own session name", async () => {
+	const { rex } = await firstRequest(async () => ({ pane: "a", tab: "B", session: "Pi Tooling" }), view("dawn-canyon", "Window 1bd453b0", "shell", 1));
+	assert.deepEqual(rex.renames().at(-1), ["session", "rename", S, "Pi Tooling"]);
 });
 
-test("after the run, a session another Pi already named is left alone", async () => {
-	const fake = fakePi();
-	const rex = fakeRex(view("dawn-canyon", "Window 1bd453b0", "shell"));
-	const claims = memoryClaims();
-	claims.take(S, "Earlier");
-	const ext = init(fake.pi, rex.run, claims, { REX_SESSION: S, REX_BLOCK: B }, async () => ({ pane: "a", tab: "B" })) as any;
-	await fake.handlers.session_start({}, { mode: "tui" });
-	await fake.handlers.before_agent_start(ask("hello"), {});
-	await fake.handlers.agent_settled({}, {});
-	await ext.naming();
+test("a session another Pi already named is left alone", async () => {
+	const { rex } = await firstRequest(async () => ({ pane: "a", tab: "B", session: "C" }), undefined, memoryClaims([S]));
 	assert.ok(!rex.renames().some((c) => c[0] === "session"));
-});
-
-test("when the model called rex_name, nothing is checked or named after the run", async () => {
-	let asked = 0;
-	const { rex } = await firstRun(async () => (asked++, { pane: "x", tab: "Y" }), undefined, (tool) => tool.execute("id", { pane: "own-name", tab: "Own" }));
-	assert.equal(asked, 0);
-	assert.deepEqual(rex.renames().map((c) => c.at(-1)), ["own-name", "Own"]);
 });
 
 test("names already set are left, and the namer isn't asked", async () => {
 	let asked = 0;
-	const { rex } = await firstRun(async () => (asked++, { pane: "x", tab: "Y" }), view("dawn-canyon", "Subscription Rename", "w31-9"));
+	const { rex } = await firstRequest(async () => (asked++, { pane: "x", tab: "Y" }), view("Pi Durable", "Subscription Rename", "w31-9"));
 	assert.equal(asked, 0);
 	assert.deepEqual(rex.renames(), []);
 });
 
 test("only a placeholder level is renamed", async () => {
-	const { rex } = await firstRun(async () => ({ pane: "rex-naming", tab: "Rex Naming" }), view("dawn-canyon", "Subscription Rename", "split-ab12"));
+	const { rex } = await firstRequest(async () => ({ pane: "rex-naming", tab: "Rex Naming", session: "Pi" }), view("Pi Durable", "Subscription Rename", "split-ab12"));
 	assert.deepEqual(rex.renames(), [["block", "rename", "-s", S, B, "rex-naming"]]);
 });
 
-test("without an answer from the namer, the request's first words name the pane", async () => {
-	const { rex } = await firstRun(async () => undefined);
+test("without an answer from the namer, the request's first words name everything", async () => {
+	const { rex } = await firstRequest(async () => undefined);
 	assert.deepEqual(rex.renames().map((c) => c.at(-1)), ["it-seems-like", "It Seems Like Opus", "It Seems Like Opus"]);
 });
 
-test("naming happens once, after the first run only", async () => {
+test("naming happens once, for the first request only", async () => {
 	let asked = 0;
-	const { fake, ext } = await firstRun(async () => (asked++, undefined));
+	const { fake, ext } = await firstRequest(async () => (asked++, undefined));
 	await fake.handlers.before_agent_start(ask("second request"), {});
-	await fake.handlers.agent_settled({}, {});
 	await ext.naming();
 	assert.equal(asked, 1);
 });
 
-test("a headless Pi names nothing after its run", async () => {
+test("the run doesn't wait for a slow namer", async () => {
+	const fake = fakePi();
+	const rex = fakeRex(view("dawn-canyon", "Window 1bd453b0", "shell"));
+	let answer!: (w: Wanted) => void;
+	const ext = init(fake.pi, rex.run, memoryClaims(), { REX_SESSION: S, REX_BLOCK: B }, () => new Promise((r) => (answer = r))) as any;
+	await fake.handlers.session_start({}, { mode: "tui", cwd: "/x" });
+	const event = ask("hello");
+	await fake.handlers.before_agent_start(event, {});
+	assert.match(event.systemPromptOptions.sections.rex, /Rex terminal/, "the turn went ahead");
+	assert.deepEqual(rex.renames(), []);
+	answer({ pane: "p", tab: "T", session: "S" });
+	await ext.naming();
+	assert.equal(rex.renames().length, 3);
+});
+
+test("a headless Pi names nothing", async () => {
 	const fake = fakePi("headless");
 	const rex = fakeRex(view("dawn-canyon", "Window 1bd453b0", "shell"));
 	let asked = 0;
 	const ext = init(fake.pi, rex.run, memoryClaims(), { REX_SESSION: S, REX_BLOCK: B }, async () => (asked++, undefined)) as any;
 	await fake.handlers.session_start({}, { mode: "print" });
 	await fake.handlers.before_agent_start(ask("hi"), {});
-	await fake.handlers.agent_settled({}, {});
 	await ext.naming();
 	assert.equal(asked, 0);
 	assert.deepEqual(rex.calls, []);
@@ -353,13 +321,11 @@ test("a run started by an extension message isn't taken as the first request", a
 	const rex = fakeRex(view("dawn-canyon", "Window 1bd453b0", "shell"));
 	const seen: string[] = [];
 	const ext = init(fake.pi, rex.run, memoryClaims(), { REX_SESSION: S, REX_BLOCK: B }, async (r) => (seen.push(r), undefined)) as any;
-	await fake.handlers.session_start({}, { mode: "tui" });
+	await fake.handlers.session_start({}, { mode: "tui", cwd: "/x" });
 	await fake.handlers.before_agent_start({ messageType: "custom", systemPromptOptions: { sections: {} } }, {});
-	await fake.handlers.agent_settled({}, {});
 	await ext.naming();
 	assert.deepEqual(seen, []);
 	await fake.handlers.before_agent_start(ask("the real request"), {});
-	await fake.handlers.agent_settled({}, {});
 	await ext.naming();
 	assert.deepEqual(seen, ["the real request"]);
 });
@@ -367,22 +333,24 @@ test("a run started by an extension message isn't taken as the first request", a
 test("request text and slugs are cut down for naming", () => {
 	assert.equal(requestText("<file name=x>body</file>  and\n more"), "body and more");
 	assert.equal(shortSlug("debug-rex-pane-renaming"), "debug-rex-pane");
-	assert.deepEqual(wordsNames("<skill>x</skill> fix the pydantic errors"), { pane: "x-fix-the", tab: "X Fix The Pydantic" });
+	assert.deepEqual(wordsNames("<skill>x</skill> fix the pydantic errors"), { pane: "x-fix-the", tab: "X Fix The Pydantic", session: "X Fix The Pydantic" });
 });
 
 test("the Ollama namer asks for JSON with thinking off and cleans the answer", async () => {
 	let sent: any;
 	const fetchStub = (async (url: string, init: any) => {
 		sent = { url, body: JSON.parse(init.body) };
-		return { ok: true, json: async () => ({ message: { content: JSON.stringify({ pane: "Debug Rex Pane Renaming", tab: " Agent\nDebugging " }) } }) };
+		return { ok: true, json: async () => ({ message: { content: JSON.stringify({ pane: "Debug Rex Pane Renaming", tab: " Agent\nDebugging ", session: "Pi Tooling" }) } }) };
 	}) as never;
-	const names = await ollamaNamer({ PI_REX_NAMER_URL: "http://host:1/", PI_REX_NAMER_MODEL: "m" }, fetchStub)("hello");
+	const names = await ollamaNamer({ PI_REX_NAMER_URL: "http://host:1/", PI_REX_NAMER_MODEL: "m" }, fetchStub)("hello", "pi-durable");
 	assert.equal(sent.url, "http://host:1/api/chat");
 	assert.equal(sent.body.model, "m");
 	assert.equal(sent.body.think, false);
-	assert.deepEqual(names, { pane: "debug-rex-pane", tab: "Agent Debugging" });
+	assert.equal(sent.body.messages[1].content, "Directory: pi-durable\n\nhello");
+	assert.deepEqual(sent.body.format.required, ["pane", "tab", "session"]);
+	assert.deepEqual(names, { pane: "debug-rex-pane", tab: "Agent Debugging", session: "Pi Tooling" });
 	const failing = ollamaNamer({}, (async () => { throw new Error("down"); }) as never);
-	assert.equal(await failing("hello"), undefined);
+	assert.equal(await failing("hello", "d"), undefined);
 	const bad = ollamaNamer({}, (async () => ({ ok: true, json: async () => ({ message: { content: "not json" } }) })) as never);
-	assert.equal(await bad("hello"), undefined);
+	assert.equal(await bad("hello", "d"), undefined);
 });

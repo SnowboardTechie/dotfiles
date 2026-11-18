@@ -2,11 +2,11 @@
 // Codex (Rex reports hooks as unsupported for Pi). Inside a Rex pane, an interactive Pi:
 //   - is told which Rex session and pane it runs in, with the text Rex itself prints for
 //     agents (`rex __internal session-start`), so a Rex upgrade updates it;
-//   - names its pane, its tab and the Rex session through the `rex_name` tool;
-//   - names the pane and tab itself after its first run settles, if the model didn't call
-//     `rex_name` and they still carry placeholders. A local Ollama model reads the first
-//     request and proposes the names; without it, the request's first words become them.
-//     When that tab is the session's only one, the Rex session gets the tab's name too.
+//   - names its pane, its tab and the Rex session when the first request arrives, in the
+//     background. A local Ollama model reads the request and the working directory's name
+//     and proposes the names; without it, the request's first words become them. The model
+//     the user talks to has no naming tool and no naming note, so naming costs it no tokens.
+//     A session whose only tab this is gets the tab's name.
 // Naming follows how the work is laid out: a session is one initiative ("Pi Durable"), a
 // tab is one workstream of it ("Subscription Rename"), a pane is one agent ("w31-9-review", the same
 // slug as the Pi session name). Every level is named once, and only while it still carries
@@ -18,7 +18,7 @@
 import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 export type Run = (args: string[]) => Promise<{ code: number; stdout: string }>;
@@ -84,30 +84,8 @@ export function briefing(text: string): string {
 	return text.split(/\n{2,}/).filter((p) => p.trim() && !/^The Rex setup for this agent is out of date/.test(p.trim())).join("\n\n").trim();
 }
 
-export function namingNote(loc: Location, sessionClaimed: boolean): string {
-	const open: string[] = [];
-	const sessionOpen = placeholder.session(loc.session) && !sessionClaimed;
-	if (placeholder.pane(loc.pane)) {
-		open.push("`pane`: a lowercase hyphenated slug of one to three words for this agent's task, such as `w31-9-review`");
-	}
-	if (placeholder.tab(loc.tab)) {
-		open.push("`tab`: a short Title Case name for the workstream in this tab, such as `Subscription Rename`");
-	}
-	if (sessionOpen) {
-		open.push("`session`: a short Title Case name for the whole initiative, such as `Pi Durable`");
-	}
-	const rule = "Don't rename the Rex session, tabs or panes with the rex CLI unless the user asks.";
-	if (!open.length) return `This pane, its tab and the Rex session are already named. ${rule}`;
-	const lines = [
-		"Some Rex names here are still placeholders. Once the first request makes the work clear, call the `rex_name` tool once, without being asked, and pass only these:",
-		...open.map((line) => `- ${line}`),
-	];
-	if (loc.tabs === 1 && sessionOpen && placeholder.tab(loc.tab)) {
-		lines.push("This is the session's only tab, so give `tab` and `session` the same name.");
-	}
-	lines.push(`Names the user or a launcher already set are kept. ${rule}`);
-	return lines.join("\n");
-}
+/** Appended to Rex's briefing: the names are this extension's to give, not the model's. */
+export const renameRule = "Don't rename the Rex session, tabs or panes with the rex CLI unless the user asks.";
 
 export interface Wanted {
 	pane?: string;
@@ -183,8 +161,8 @@ function rexRunner(command: string): Run {
 		);
 }
 
-/** Proposes a pane slug and tab title for a first request; undefined when it can't. */
-export type Namer = (request: string) => Promise<Wanted | undefined>;
+/** Proposes names for a first request made in the named directory; undefined when it can't. */
+export type Namer = (request: string, directory: string) => Promise<Wanted | undefined>;
 
 /** Strip pasted markup and keep a request short enough for a naming prompt. */
 export function requestText(request: string): string {
@@ -199,16 +177,17 @@ export function shortSlug(text: string): string {
 /** Names from the request's own first words, for when no model answers. */
 export function wordsNames(request: string): Wanted {
 	const words = requestText(request).split(" ").filter((w) => /[a-z0-9]/i.test(w)).slice(0, 4).join(" ");
-	return { pane: shortSlug(words), tab: title(words.replace(/\b\w/g, (c) => c.toUpperCase())) };
+	const tab = title(words.replace(/\b\w/g, (c) => c.toUpperCase()));
+	return { pane: shortSlug(words), tab, session: tab };
 }
 
 // A local model through Ollama's chat API. Thinking off and a JSON schema keep the answer to
-// two short strings (about 1.5 s warm, about 20 s when the model must load first). keep_alive
+// three short strings (about 1.5 s warm, about 20 s when the model must load first). keep_alive
 // unloads it a minute later, so a 28 GB model doesn't sit in memory for pane names.
 export function ollamaNamer(env: NodeJS.ProcessEnv = process.env, request: typeof fetch = fetch): Namer {
 	const url = (env.PI_REX_NAMER_URL ?? "http://127.0.0.1:11434").replace(/\/+$/, "");
 	const model = env.PI_REX_NAMER_MODEL ?? "qwen3.8-pi:27b-q8";
-	return async (text) => {
+	return async (text, directory) => {
 		try {
 			const response = await request(`${url}/api/chat`, {
 				method: "POST",
@@ -219,14 +198,18 @@ export function ollamaNamer(env: NodeJS.ProcessEnv = process.env, request: typeo
 					stream: false,
 					think: false,
 					keep_alive: "1m",
-					format: { type: "object", properties: { pane: { type: "string" }, tab: { type: "string" } }, required: ["pane", "tab"] },
+					format: {
+						type: "object",
+						properties: { pane: { type: "string" }, tab: { type: "string" }, session: { type: "string" } },
+						required: ["pane", "tab", "session"],
+					},
 					messages: [
 						{
 							role: "system",
 							content:
-								"Name a terminal pane after the task in the user's first message to a coding agent. pane: a lowercase hyphenated slug of one to three words for the task. tab: a short Title Case name for the workstream. Reply with JSON only.",
+								"Name a terminal pane after the task in the user's first message to a coding agent, working in the named directory. pane: a lowercase hyphenated slug of one to three words for the task. tab: a short Title Case name for the workstream. session: a short Title Case name for the wider initiative or project the work belongs to. Reply with JSON only.",
 						},
-						{ role: "user", content: requestText(text) },
+						{ role: "user", content: `Directory: ${directory}\n\n${requestText(text)}` },
 					],
 				}),
 			});
@@ -234,7 +217,8 @@ export function ollamaNamer(env: NodeJS.ProcessEnv = process.env, request: typeo
 			const answer = JSON.parse(((await response.json()) as { message?: { content?: string } }).message?.content ?? "");
 			const pane = shortSlug(String(answer.pane ?? ""));
 			const tab = title(String(answer.tab ?? ""));
-			return pane && tab ? { pane, tab } : undefined;
+			const session = title(String(answer.session ?? ""));
+			return pane && tab ? { pane, tab, session: session || tab } : undefined;
 		} catch {
 			return undefined;
 		}
@@ -253,21 +237,17 @@ export default function (
 	if (!sessionId || !blockId) return;
 
 	let interactive = false;
+	let directory = "";
 	// The whole `rex` section, built once per Pi process. A changed section reaches Claude as a
 	// mid-conversation system message, which costs a prompt-cache write and, through
 	// pi-claude-code, pushed requests past Anthropic's four cache breakpoints ("Found 5").
-	// The note can go stale after `rex_name` renames things; the tool's result already tells
-	// the model what changed, and the tool itself only renames placeholders.
 	let section: string | undefined;
-	// The first request, and whether naming after the first run is still to do. The model's own
-	// `rex_name` call settles it, so the check after the run is skipped.
-	let firstRequest: string | undefined;
-	let namingOpen = true;
-	/** The naming after the first run, exposed so tests can wait for it. */
+	let namingStarted = false;
+	/** The naming of the first request, exposed so tests can wait for it. */
 	let naming: Promise<void> = Promise.resolve();
 
 	// A Pi session that already has a name (`pi --name`, /name, a resumed session) labels
-	// its pane without asking the model.
+	// its pane without asking a model.
 	const labelPaneFromSessionName = async () => {
 		const name = pi.getSessionName();
 		if (interactive && name) await applyNames(run, sessionId, blockId, { pane: name }, claims).catch(() => {});
@@ -276,76 +256,46 @@ export default function (
 	pi.on("session_start", async (_event, ctx) => {
 		interactive = ctx.mode === "tui";
 		if (!interactive) return;
-		pi.registerTool({
-			name: "rex_name",
-			label: "Name Rex pane",
-			description:
-				"Name this agent's Rex pane, its tab, and the Rex session after the work. Each is renamed only while it still has a placeholder name; names the user set are kept, and the result says which were applied.",
-			parameters: {
-				type: "object",
-				properties: {
-					pane: { type: "string", description: "Lowercase hyphenated slug for this agent's task, one to three words." },
-					tab: { type: "string", description: "Short Title Case name for the workstream in this tab." },
-					session: { type: "string", description: "Short Title Case name for the whole initiative." },
-				},
-				additionalProperties: false,
-			} as never,
-			async execute(_id, params: Wanted) {
-				namingOpen = false;
-				const report = await applyNames(run, sessionId, blockId, params, claims);
-				// The pane label and the Pi session name are the same slug in this setup.
-				if (params.pane && slug(params.pane) && !pi.getSessionName()) pi.setSessionName(slug(params.pane));
-				return { content: [{ type: "text", text: report.join("\n") || "Nothing to name." }], details: undefined };
-			},
-		});
+		directory = basename(ctx.cwd ?? process.cwd());
 		await labelPaneFromSessionName();
 	});
 
 	pi.on("session_info_changed", labelPaneFromSessionName);
 
-	// Names what the model left as a placeholder: the pane and tab, and the Rex session when this
-	// is its only tab (the naming note asks the model for the same), under the same claim marker.
-	const nameAfterFirstRun = async () => {
-		const request = firstRequest;
-		if (!request) return;
+	// Names whatever still has a placeholder, from the first request. A session whose only tab
+	// this is takes the tab's name; one with other tabs takes the namer's own session name. The
+	// claim marker still lets only one Pi name a session.
+	const nameFromFirstRequest = async (request: string) => {
 		const view = await run(["session", "inspect", sessionId, "--json"]);
 		const loc = view.code === 0 ? locate(JSON.parse(view.stdout), blockId) : undefined;
 		if (!loc) return;
 		const paneOpen = placeholder.pane(loc.pane);
 		const tabOpen = placeholder.tab(loc.tab);
-		const sessionOpen = loc.tabs === 1 && tabOpen && placeholder.session(loc.session) && !claims.has(sessionId);
-		if (!paneOpen && !tabOpen) return;
-		const proposed = (await namer(request)) ?? wordsNames(request);
+		const sessionOpen = placeholder.session(loc.session) && !claims.has(sessionId);
+		if (!paneOpen && !tabOpen && !sessionOpen) return;
+		const proposed = (await namer(request, directory)) ?? wordsNames(request);
 		const want: Wanted = {};
 		if (paneOpen && proposed.pane) want.pane = proposed.pane;
 		if (tabOpen && proposed.tab) want.tab = proposed.tab;
-		if (sessionOpen && proposed.tab) want.session = proposed.tab;
+		const sessionName = loc.tabs === 1 && tabOpen ? proposed.tab : proposed.session;
+		if (sessionOpen && sessionName) want.session = sessionName;
 		await applyNames(run, sessionId, blockId, want, claims);
 		if (want.pane && !pi.getSessionName()) pi.setSessionName(slug(want.pane));
 	};
 
-	pi.on("agent_settled", async () => {
-		if (!interactive || !namingOpen || !firstRequest) return;
-		namingOpen = false;
-		// Not awaited: a cold model takes about 20 s, and the next prompt must not wait for it.
-		naming = nameAfterFirstRun().catch(() => {});
-	});
-
 	pi.on("before_agent_start", async (event: any) => {
 		if (!interactive) return;
-		if (firstRequest === undefined && event.messageType !== "custom" && typeof event.prompt === "string" && event.prompt.trim()) {
-			firstRequest = event.prompt;
+		if (!namingStarted && event.messageType !== "custom" && typeof event.prompt === "string" && event.prompt.trim()) {
+			namingStarted = true;
+			// Not awaited: a cold model takes about 20 s, and the run must not wait for it.
+			naming = nameFromFirstRequest(event.prompt).catch(() => {});
 		}
 		if (section === undefined) {
 			try {
 				const out = await run(["__internal", "session-start", "--agent", "pi", "--feature-session-naming=false"]);
 				const rexText = out.code === 0 ? briefing(out.stdout) : "";
-				const view = await run(["session", "inspect", sessionId, "--json"]);
-				const loc = view.code === 0 ? locate(JSON.parse(view.stdout), blockId) : undefined;
-				const text = [rexText, loc ? namingNote(loc, claims.has(sessionId)) : ""].filter(Boolean).join("\n\n");
 				// Keep only a complete result; an unreachable Rex is asked again next turn.
-				if (rexText && loc) section = text;
-				else if (text) (event.systemPromptOptions.sections ??= {}).rex = text;
+				if (rexText) section = `${rexText}\n\n${renameRule}`;
 			} catch {
 				// Rex being unreachable must never block a turn.
 			}
