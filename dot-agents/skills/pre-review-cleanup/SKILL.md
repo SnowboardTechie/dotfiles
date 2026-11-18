@@ -159,6 +159,10 @@ from the meanings in `RATINGS` (`workspaces/sgg/src/ratings.ts`): 👍 `successf
 ➖ `not_needed` (he didn't need this review; not a quality rating) or 👎 `unsatisfactory` (he had to change it
 drastically). His go covers the post and the rating.
 
+Rate the draft's quality, not whether anything gets posted. A draft that is right but arrives when Bryan has nothing
+to add (his earlier approval stands, the new head only applies his suggestion) is 👍 `successful` when it makes sense;
+posting nothing doesn't make it ➖ (Bryan, 2026-11-17, PR 1401 at `8d592c59`).
+
 After the post: `evidence.js rate <review task ID> <rating>`; `clear` in place of the rating removes one set by mistake.
 Report what it prints; the notification's reaction follows from the service's mirror within a minute. When the deployed build has no `rate` command, say so and leave the rating
 for Bryan to set on the pre-review page (`https://bryans-mac-studio.tail5ba690.ts.net:8790/#/list/all`). With no draft
