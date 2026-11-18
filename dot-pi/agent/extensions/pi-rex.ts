@@ -6,6 +6,7 @@
 //   - names the pane and tab itself after its first run settles, if the model didn't call
 //     `rex_name` and they still carry placeholders. A local Ollama model reads the first
 //     request and proposes the names; without it, the request's first words become them.
+//     When that tab is the session's only one, the Rex session gets the tab's name too.
 // Naming follows how the work is laid out: a session is one initiative ("Pi Durable"), a
 // tab is one workstream of it ("Subscription Rename"), a pane is one agent ("w31-9-review", the same
 // slug as the Pi session name). Every level is named once, and only while it still carries
@@ -302,8 +303,8 @@ export default function (
 
 	pi.on("session_info_changed", labelPaneFromSessionName);
 
-	// Names what the model left as a placeholder. Only the pane and tab: the Rex session stays
-	// with the model, whose naming note covers which Pi may name it.
+	// Names what the model left as a placeholder: the pane and tab, and the Rex session when this
+	// is its only tab (the naming note asks the model for the same), under the same claim marker.
 	const nameAfterFirstRun = async () => {
 		const request = firstRequest;
 		if (!request) return;
@@ -312,11 +313,13 @@ export default function (
 		if (!loc) return;
 		const paneOpen = placeholder.pane(loc.pane);
 		const tabOpen = placeholder.tab(loc.tab);
+		const sessionOpen = loc.tabs === 1 && tabOpen && placeholder.session(loc.session) && !claims.has(sessionId);
 		if (!paneOpen && !tabOpen) return;
 		const proposed = (await namer(request)) ?? wordsNames(request);
 		const want: Wanted = {};
 		if (paneOpen && proposed.pane) want.pane = proposed.pane;
 		if (tabOpen && proposed.tab) want.tab = proposed.tab;
+		if (sessionOpen && proposed.tab) want.session = proposed.tab;
 		await applyNames(run, sessionId, blockId, want, claims);
 		if (want.pane && !pi.getSessionName()) pi.setSessionName(slug(want.pane));
 	};

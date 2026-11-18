@@ -272,19 +272,33 @@ async function firstRun(namer: Namer, v = view("dawn-canyon", "Window 1bd453b0",
 	return { fake, rex, ext };
 }
 
-test("a pane and tab the model left as placeholders are named from the first request", async () => {
+test("a pane, tab and only-tab session the model left as placeholders are named from the first request", async () => {
 	const seen: string[] = [];
 	const { fake, rex } = await firstRun(async (r) => (seen.push(r), { pane: "rex-naming-debug", tab: "Rex Pane Naming" }));
 	assert.deepEqual(seen, ["It seems like Opus has stopped renaming the Rex panes"]);
 	assert.deepEqual(rex.renames(), [
 		["block", "rename", "-s", S, B, "rex-naming-debug"],
 		["window", "rename", "-s", S, W, "Rex Pane Naming"],
+		["session", "rename", S, "Rex Pane Naming"],
 	]);
 	assert.equal(fake.name(), "rex-naming-debug");
 });
 
-test("the Rex session is never named after the run; that stays with the model", async () => {
-	const { rex } = await firstRun(async () => ({ pane: "a", tab: "B", session: "C" }));
+test("after the run, a session with other tabs keeps its name for the model to give", async () => {
+	const { rex } = await firstRun(async () => ({ pane: "a", tab: "B", session: "C" }), view("dawn-canyon", "Window 1bd453b0", "shell", 1));
+	assert.ok(!rex.renames().some((c) => c[0] === "session"));
+});
+
+test("after the run, a session another Pi already named is left alone", async () => {
+	const fake = fakePi();
+	const rex = fakeRex(view("dawn-canyon", "Window 1bd453b0", "shell"));
+	const claims = memoryClaims();
+	claims.take(S, "Earlier");
+	const ext = init(fake.pi, rex.run, claims, { REX_SESSION: S, REX_BLOCK: B }, async () => ({ pane: "a", tab: "B" })) as any;
+	await fake.handlers.session_start({}, { mode: "tui" });
+	await fake.handlers.before_agent_start(ask("hello"), {});
+	await fake.handlers.agent_settled({}, {});
+	await ext.naming();
 	assert.ok(!rex.renames().some((c) => c[0] === "session"));
 });
 
@@ -309,7 +323,7 @@ test("only a placeholder level is renamed", async () => {
 
 test("without an answer from the namer, the request's first words name the pane", async () => {
 	const { rex } = await firstRun(async () => undefined);
-	assert.deepEqual(rex.renames().map((c) => c.at(-1)), ["it-seems-like", "It Seems Like Opus"]);
+	assert.deepEqual(rex.renames().map((c) => c.at(-1)), ["it-seems-like", "It Seems Like Opus", "It Seems Like Opus"]);
 });
 
 test("naming happens once, after the first run only", async () => {
