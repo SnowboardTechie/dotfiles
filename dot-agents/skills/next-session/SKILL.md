@@ -7,7 +7,7 @@ description: Use when Bryan asks to launch the next session you suggested. Start
 
 Many sessions end by suggesting what Bryan should say to the next agent. A
 Wayfinder ticket, for example, names the next decision on the map. This skill
-does that handoff for him: it splits this session's Rex pane to the right
+launches that session for him: it splits this session's Rex pane to the right
 (a vertical divider), starts a fresh Hermes or Pi session in the new pane, and seeds
 it with the suggested prompt as its first turn. Bryan then closes this session
 and carries on in the new one.
@@ -22,6 +22,9 @@ implementation slices use `session-handoff`.
 - Only when Bryan asks for it ("launch it", "start the next one", "split and
   start it"). Suggesting the prompt is the default ending; launching is his call,
   because the new session starts working (and, on a map, claims a ticket) at once.
+- "Hand off", "hand this off", "do a handoff" or "write the prompt" is **not** a
+  request to launch. Give him the prompt to paste and stop; he usually pastes it
+  himself (Bryan, 2026-11-18).
 - Only from a Hermes CLI or Pi session inside Rex. If the helper can't find this
   session's pane, give him the prompt to paste and say why. That is a normal
   outcome, not a failure to work around.

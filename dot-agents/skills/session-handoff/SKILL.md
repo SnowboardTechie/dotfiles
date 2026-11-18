@@ -15,7 +15,16 @@ description: >
 # Session Handoff
 
 Slice untracked implementation work out of this session's head and into fresh
-contexts. First select the delivery boundary: ordinary requests to implement or
+contexts.
+
+**"Hand off" means a prompt, not a launch.** When Bryan says "hand this off",
+"do a handoff" or "write the prompt" and does not say to launch or start it in
+the same message, the deliverable is the prompt for him to paste (see
+"Default: emit the prompt"). Start no session, pane or background agent
+(Bryan, 2026-11-18). The rest of this section applies only once he has asked
+for the work to be started.
+
+First select the delivery boundary: ordinary requests to implement or
 hand work to a background agent route to `coding-agent-handoff-supervision`, retaining orchestrator
 review, correction and authorized publication. Use the handoff-only procedure
 below only when Bryan explicitly chooses separate acceptance, status-only
