@@ -48,7 +48,7 @@ export const RULES: Rule[] = [
 		id: "done-with-loose-ends",
 		pattern: /^\s*(\*\*)?yes\b[\s\S]*\b(loose ends?|one (more )?(cleanup|thing)|still (open|pending))\b/i,
 		instruction:
-			"Never answer \"yes\" to whether work is done while something is still open. Start with \"No\" and name each open item.",
+			"Never answer \"yes\" to whether work is done while part of the task is still open. If you can finish it, finish it now and then answer. Otherwise start with \"No\" and name only what needs Bryan, one line each.",
 	},
 ];
 
