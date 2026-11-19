@@ -1,6 +1,6 @@
 ---
 name: coding-agent-handoff-supervision
-description: Use for visible CLI or Matrix coding-agent handoffs.
+description: Use when Bryan says "hand off", "hand this off", "handoff" or "do a handoff", or otherwise gives work to a background agent; also for visible CLI or Matrix coding-agent handoffs. A handoff is a background agent this session starts, watches and reports on, never a prompt for Bryan to paste and never a session he drives (that is "launch", next-session).
 version: 3.0.0
 author: Bryan Thompson + Hermes Agent
 license: MIT
@@ -11,6 +11,13 @@ metadata:
 ---
 
 # Coding Agent Handoff Supervision
+
+**"Hand off" means this skill.** When Bryan says "hand off", "hand this off", "handoff"
+or "do a handoff", start a background agent on it with an assignment and a watch, the
+same way as every other slice, and tell him when it settles. Don't print a prompt for
+him to paste, and don't launch a session beside this one for him to drive
+(`next-session` is for "launch"). He asked for a handoff so he wouldn't have to drive
+it, and so this session would know when it finished (Bryan, 2026-11-18).
 
 ## Overview
 

@@ -1,6 +1,6 @@
 ---
 name: next-session
-description: Use when Bryan asks to launch the next session you suggested. Starts it in a Rex split beside this one, with the prompt as its first turn, so he can close this session and continue there without copy-paste.
+description: Use when Bryan asks to launch a next session or a fresh session ("launch it", "launch the next session", "start a fresh session"). Starts a Pi or Hermes he drives in a Rex split beside this one, with the prompt as its first turn. Not for "hand off": that is a background agent this session starts and watches (coding-agent-handoff-supervision).
 ---
 
 # Next session
@@ -13,18 +13,27 @@ it with the suggested prompt as its first turn. Bryan then closes this session
 and carries on in the new one.
 
 It hands over the **conversation**, not a background agent. The new session is Bryan's to
-drive; nothing here supervises it, reads its pane or waits on it. For a
-supervised coding background agent use `coding-agent-handoff-supervision`; for untracked
-implementation slices use `session-handoff`.
+drive; nothing here supervises it, reads its pane or waits on it.
+
+**Launching is not handing off.** Bryan's words decide which one he wants:
+
+| He says | He means | Skill |
+|---|---|---|
+| "launch it", "launch a next session", "start a fresh session" | a session beside this one that **he** drives; nothing watches it | this one |
+| "hand off", "hand this off", "handoff", "do a handoff" | a background agent **this session** starts, watches and reports on | `coding-agent-handoff-supervision` |
+| "give me the prompt", "I'll paste it" | the prompt text, nothing started | none: print it |
+
+On 2026-11-18 an agent told "handoff the cleanup" launched a session with this skill,
+so nothing told it when the cleanup finished; another, after a wrong fix, answered
+"handoff doing that" with a prompt to paste. Both were wrong: a handoff is a watched
+background agent.
 
 ## When
 
 - Only when Bryan asks for it ("launch it", "start the next one", "split and
   start it"). Suggesting the prompt is the default ending; launching is his call,
   because the new session starts working (and, on a map, claims a ticket) at once.
-- "Hand off", "hand this off", "do a handoff" or "write the prompt" is **not** a
-  request to launch. Give him the prompt to paste and stop; he usually pastes it
-  himself (Bryan, 2026-11-18).
+- Never for "hand off" or "handoff": see the table above.
 - Only from a Hermes CLI or Pi session inside Rex. If the helper can't find this
   session's pane, give him the prompt to paste and say why. That is a normal
   outcome, not a failure to work around.

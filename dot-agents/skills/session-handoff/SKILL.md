@@ -1,15 +1,13 @@
 ---
 name: session-handoff
 description: >
-  Use when the next slab of implementation work lives in Bryan's head rather
-  than on a tracker, and he wants it carried out by fresh sessions instead of
-  this one. Triggers: "hand this off", "what's next here and who runs it",
-  "write the prompt for the next session", "can this be split across agents",
-  "spin up a fresh context for this". Reconciles the vault record, decides
-  whether the frontier is one separable slice or several, and emits a handoff
-  prompt per slice. Needs no issue. Decides slicing and agent topology.
-  Ordinary implementation handoffs retain supervised delivery; status-only or
-  separate acceptance requires Bryan's explicit choice and a durable completion report.
+  Use when Bryan explicitly asks for a handoff he won't supervise from here:
+  "status-only", "just tell me when it's done", "fire and forget", or work
+  whose acceptance a later session owns. Reconciles the vault record, decides
+  whether the frontier is one separable slice or several, and starts a
+  background agent per slice. A plain "hand off" or "hand this off" is not this
+  skill: that is a supervised background agent (coding-agent-handoff-supervision).
+  Not for "launch a next session" (next-session).
 ---
 
 # Session Handoff
@@ -17,12 +15,13 @@ description: >
 Slice untracked implementation work out of this session's head and into fresh
 contexts.
 
-**"Hand off" means a prompt, not a launch.** When Bryan says "hand this off",
-"do a handoff" or "write the prompt" and does not say to launch or start it in
-the same message, the deliverable is the prompt for him to paste (see
-"Default: emit the prompt"). Start no session, pane or background agent
-(Bryan, 2026-11-18). The rest of this section applies only once he has asked
-for the work to be started.
+**A handoff is a background agent, never a prompt to paste.** "Hand off",
+"hand this off" or "do a handoff" means this session starts a background agent and
+watches it; by default that is `coding-agent-handoff-supervision`, with this session
+reviewing and accepting the result. This skill is only for the handoffs Bryan
+explicitly doesn't want supervised from here. A session he drives himself is
+"launch" (`next-session`). Print a prompt for him to paste only when he asks for the
+prompt itself (Bryan, 2026-11-18: "that skill is not for me to copy and paste").
 
 First select the delivery boundary: ordinary requests to implement or
 hand work to a background agent route to `coding-agent-handoff-supervision`, retaining orchestrator
@@ -155,10 +154,10 @@ Nothing survived alone. One slice, one agent.
 
 ## 3. Route
 
-### Default: emit the prompt
+### The prompt
 
-Print it for Bryan to carry into a fresh context. The prompt is a **pointer, not
-a copy**.
+Write one prompt per slice: the background agent's first turn. The prompt is a
+**pointer, not a copy**.
 
 Carry only what does not autoload and what drifts:
 
@@ -172,14 +171,14 @@ Do **not** restate steps, files, tests, requirements, or safeguards that the
 reachable note already carries, and do not tell the agent to read `AGENTS.md` —
 it autoloads. A second copy of the specification is the copy that goes stale.
 
-### On explicit handoff-only launch: status watch
+### Default: start it with a status watch
 
-Only when Bryan asks for the background agent to be started, **and** this harness is
+Start the background agent; that is what Bryan asked for. It needs this harness
 sitting in a Rex pane. Check first: non-empty `REX_BLOCK` and `REX_SESSION`
 (found as `coding-agent-handoff-supervision` describes when the tool shell
-lacks them). Without them there is no launch route — emit the prompt as above,
-say why, and stop. That is a normal outcome, not a failure: the prompt is the
-deliverable and the launch is only convenience.
+lacks them). Without them there is no way to start it: print the prompt, say
+why, and stop. That is the only time the prompt goes to Bryan, apart from his
+asking for the prompt itself.
 
 Write the prompt to **session scratch beside the identity record** — not the vault,
 not `.agent-work/` (or legacy `.hermes/`). It is a disposable pointer with no
@@ -236,7 +235,8 @@ Three distinct states; never collapse them:
    every required vault artifact is reachable from the synchronized commit with
    no handoff-only working-tree delta; each slice passed all four parts of the
    test; one prompt exists per slice, each a pointer rather than a copy; and
-   the prompt reached the background agent (or was emitted for Bryan to carry).
+   the prompt reached the background agent (or, with no Rex pane, was printed
+   for Bryan and the reason said).
 2. **Background agent's turn settled** — the status-only watch reported a terminal
    status. Say "the background agent's turn is done" (or blocked/failed), never "done":
    the qualifier is mandatory, because this is not evidence that tests passed, a
