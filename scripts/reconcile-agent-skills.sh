@@ -136,12 +136,16 @@ NON_CLAUDE_COMMON=(skill-retrospective obsidian)
 # server-update-checks (Pi, 2026-11-19): Bryan asks Pi to settle what Steve's
 # YunoHost report marked "needs a check"; it reaches the server through
 # yunohost-updates' access model, so Pi gets that skill too.
+# hex-meeting-notes (2026-11-19): Hex is Bryan's meeting recorder; agents kept
+# missing it because its only guide was a Hermes-profile skill. Every harness
+# that reads meetings gets it beside superwhisper-meetings.
 PI_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}" next-session
     manual-merge issue-create issue-plan issue-work loop-issue
     coding-agent-handoff-supervision dx-target
     multiagent-pr-review dx-preview proven-cores sprint-deliverable-update
     technical-demo-preparation draw-it pre-review-cleanup
-    server-update-checks yunohost-updates)
+    server-update-checks yunohost-updates
+    hex-meeting-notes superwhisper-meetings)
 
 # Codex uses the supported user scope (~/.agents/skills), not its bundled
 # ~/.codex/skills/.system directory. Share the portable coding/planning core;
@@ -153,13 +157,13 @@ CODEX_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
     manual-merge issue-create issue-plan issue-work loop-issue
     adr-and-spec-coach conforming-tech-specs voice-bryan
     catalog-review dependency-review dependency-triage
-    superwhisper-meetings)
+    hex-meeting-notes superwhisper-meetings)
 
 CLAUDE_SKILLS=("${COMMON_SKILLS[@]}"
     manual-merge issue-create issue-plan issue-work
     adr-and-spec-coach dx-target conforming-tech-specs proven-cores
     catalog-review dependency-review dependency-triage
-    voice-bryan superwhisper-meetings pre-review-cleanup)
+    voice-bryan hex-meeting-notes superwhisper-meetings pre-review-cleanup)
 
 OPENCODE_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
     manual-merge issue-create issue-plan issue-work loop-issue
@@ -181,7 +185,7 @@ HERMES_SKILLS=(
     dx-target dx-preview conforming-tech-specs proven-cores
     catalog-review dependency-review dependency-triage sprint-deliverable-update
     technical-demo-preparation
-    yunohost-updates superwhisper-meetings bot-planning bot-reminders
+    yunohost-updates hex-meeting-notes superwhisper-meetings bot-planning bot-reminders
     rex
 )
 

@@ -2,23 +2,16 @@
 name: superwhisper-meetings
 author: Bryan
 description: >
-  Use when Bryan asks about a meeting recorded in Superwhisper (meetings
-  through 2026-10-29; Hex records everything since): find a meeting,
-  answer questions about it, pull decisions and action items, compare meetings,
-  or draft follow-ups. Reads meetings read-only through the local superwhisper
-  CLI on Bryan's Mac; falls back to notes or transcripts Bryan pastes or shares.
+  Use when Bryan asks about a meeting from 2026-10-23 to 2026-10-29, the week
+  only Superwhisper recorded: find it, answer questions about it, pull decisions
+  and action items. Every other meeting is in Hex (hex-meeting-notes).
 ---
 
 # Superwhisper Meetings
 
-Hex replaced Superwhisper as Bryan's meeting recorder in early November 2026
-(first Hex meeting 2026-11-03; Superwhisper's last is 2026-10-29). For any
-newer meeting use Hex: `/Applications/Hex.app/Contents/MacOS/hex meetings list
---json`, then the meeting's `manifest.json` `notes.summary`; the SGG profile's
-`sgg-meeting-prep` skill has the full reference (`references/hex-meetings.md`).
-The transcript-privacy rules below apply to Hex too: `hex meetings show`, the
-transcript files and the exports carry the full transcript. Hex keeps meetings for a
-month (`meetings.retention`), then moves them to the Trash.
+Superwhisper holds Bryan's meetings from 2026-10-23 to 2026-10-29, plus four
+Granola imports from 2026-10-15 to 10-22. Hex holds everything else, Granola-era
+meetings included: use the `hex-meeting-notes` skill for those.
 
 ## Access
 
@@ -51,19 +44,11 @@ Do not use `record`, `start`, `stop`, `switch`, `transcribe`, `vocab`,
 
 ## Imported Granola meetings
 
-138 Granola meetings (through 2026-10-22, Agile6 account) were imported on
-2026-10-23 as Superwhisper meeting folders. By 2026-10-31 only 4 of them
-(2026-10-15..22) remained in Superwhisper (recordings folder starts at
-2026-10-15; cause unknown, retention is set to 1 year). All 138 were imported
-into Hex (ids `<epoch-ms>-granola`), but on 2026-11-06 Hex's month retention
-moved the 130 older than a month to the Trash, and Bryan chose to leave them
-there; the rest expire the same way. Use `~/granola-export` for Granola-era
-meetings. Recognize them by summary text
-starting `_Imported from Granola. Participants: ..._` and speaker names
-`Microphone` / `System audio` / `System audio (<name>)`. They have no audio.
-`Microphone` is the recorder's mic (usually Bryan, not guaranteed); plain
-`System audio` can be several people. Speakers are Granola's labels, not
-voice-separated by Superwhisper. Summaries are Granola's AI summaries.
+The 138 Granola meetings (2026-03-19 to 2026-10-22) are read through Hex
+(`hex-meeting-notes`), which holds all of them. Superwhisper kept only 4
+(2026-10-15 to 10-22); recognize them by summary text starting
+`_Imported from Granola. Participants: ..._` and speakers `Microphone` /
+`System audio`. They have no audio.
 
 Durable Markdown copy (outside iCloud): `~/granola-export/index.md` and
 `~/granola-export/meetings/*.md`; raw MCP responses in `~/granola-export/raw/`;
