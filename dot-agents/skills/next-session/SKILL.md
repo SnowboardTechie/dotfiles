@@ -1,6 +1,6 @@
 ---
 name: next-session
-description: Use when Bryan asks to launch a next session or a fresh session ("launch it", "launch the next session", "start a fresh session"). Starts a Pi or Hermes he drives in a Rex split beside this one, with the prompt as its first turn. Not for "hand off": that is a background agent this session starts and watches (coding-agent-handoff-supervision).
+description: 'Use when Bryan asks to launch a next session or a fresh session ("launch it", "launch the next session", "start a fresh session"). Starts a Pi or Hermes he drives in a Rex split beside this one, with the prompt as its first turn. Not for "hand off": that is a background agent this session starts and watches (coding-agent-handoff-supervision).'
 ---
 
 # Next session
