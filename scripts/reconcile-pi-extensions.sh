@@ -19,7 +19,6 @@ echo "Pi extensions (${MODE#--}) for $HOME_DIR/.pi/agent"
 PI_FILES=(
     AGENTS.md
     extensions/background-agent-watch.ts
-    extensions/copy-block.ts
     extensions/pi-rex.ts
     extensions/pi-split.ts
     extensions/pi-subscription.ts
