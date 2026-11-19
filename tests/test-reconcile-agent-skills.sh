@@ -87,7 +87,7 @@ check "t1: Codex gets teammate PR review" link_resolves_to "$H/.agents/skills/te
 check "t1: Codex excludes Hermes orchestration" test ! -e "$H/.agents/skills/coding-agent-handoff-supervision"
 check "t1: Claude receives 23 skill pool links"   test "$(links_into_skill_pool "$H/.claude/skills")" -eq 23
 check "t1: OpenCode receives 20 skill pool links" test "$(links_into_skill_pool "$H/.config/opencode/skills")" -eq 20
-check "t1: Pi receives 26 skill pool links"       test "$(links_into_skill_pool "$H/.pi/agent/skills")" -eq 26
+check "t1: Pi receives 28 skill pool links"       test "$(links_into_skill_pool "$H/.pi/agent/skills")" -eq 28
 check "t1: Hermes receives 33 skill pool links"   test "$(links_into_skill_pool "$H/.hermes/skills/personal")" -eq 33
 check "t1: Claude-only skill is linked"     link_resolves_to "$H/.claude/skills/dx-target" "$SKILL_POOL/dx-target"
 check "t1: Claude excludes non-Claude common" test ! -e "$H/.claude/skills/obsidian"
@@ -297,7 +297,7 @@ out="$(HOME="$H12" RECONCILE_OPENCODE_SKILLS=0 "$RECONCILER" --apply 2>&1)"; rc=
 check "t12: disabled OpenCode apply exits 0" test "$rc" -eq 0
 check "t12: OpenCode skill pool links are removed" test "$(links_into_skill_pool "$H12/.config/opencode/skills")" -eq 0
 check "t12: foreign OpenCode link survives" test -L "$H12/.config/opencode/skills/foreign"
-check "t12: Pi links are retained" test "$(links_into_skill_pool "$H12/.pi/agent/skills")" -eq 26
+check "t12: Pi links are retained" test "$(links_into_skill_pool "$H12/.pi/agent/skills")" -eq 28
 
 # --- Test 13: RECONCILE_HERMES_SKILLS=0 leaves Hermes untouched ----------------
 H13="$(new_home)"
@@ -306,7 +306,7 @@ out="$(HOME="$H13" RECONCILE_HERMES_SKILLS=0 "$RECONCILER" --apply 2>&1)"; rc=$?
 check "t13: Hermes-skipped apply exits 0" test "$rc" -eq 0
 check "t13: Hermes skip is reported" bash -c 'grep -q "Hermes: skipped" <<<"$1"' _ "$out"
 check "t13: no Hermes links are created" test ! -e "$H13/.hermes/skills/personal"
-check "t13: Pi links are still created" test "$(links_into_skill_pool "$H13/.pi/agent/skills")" -eq 26
+check "t13: Pi links are still created" test "$(links_into_skill_pool "$H13/.pi/agent/skills")" -eq 28
 HOME="$H13" "$RECONCILER" --apply >/dev/null 2>&1
 n13="$(links_into_skill_pool "$H13/.hermes/skills/personal")"
 HOME="$H13" RECONCILE_HERMES_SKILLS=0 "$RECONCILER" --apply >/dev/null 2>&1

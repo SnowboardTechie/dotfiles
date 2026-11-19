@@ -133,11 +133,15 @@ NON_CLAUDE_COMMON=(skill-retrospective obsidian)
 # pre-review-cleanup (Pi and Claude, 2026-11-17): Bryan turns the SGG pre-review
 # service's draft into his posted review and records the feedback in the sgg vault. Hermes's own bots and scheduled jobs (bot-planning, bot-reminders,
 # yunohost-updates) stay with Hermes until the bot service replaces them.
+# server-update-checks (Pi, 2026-11-19): Bryan asks Pi to settle what Steve's
+# YunoHost report marked "needs a check"; it reaches the server through
+# yunohost-updates' access model, so Pi gets that skill too.
 PI_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}" next-session
     manual-merge issue-create issue-plan issue-work loop-issue
     coding-agent-handoff-supervision dx-target
     multiagent-pr-review dx-preview proven-cores sprint-deliverable-update
-    technical-demo-preparation draw-it pre-review-cleanup)
+    technical-demo-preparation draw-it pre-review-cleanup
+    server-update-checks yunohost-updates)
 
 # Codex uses the supported user scope (~/.agents/skills), not its bundled
 # ~/.codex/skills/.system directory. Share the portable coding/planning core;
