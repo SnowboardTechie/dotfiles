@@ -1,6 +1,6 @@
 ---
 name: server-update-checks
-description: Use when Bryan asks to look over or check the server updates Steve's YunoHost report marked "needs a check", or invokes this skill. Settles each one with read-only checks and gives him the approval line to paste to Steve.
+description: Use when Bryan asks to look over or check the server updates Steve's YunoHost report marked "needs a check", or invokes this skill. Settles each one with read-only checks, then upgrades what he approves in this chat and posts the result in the report's thread as Steve.
 ---
 
 # Server update checks
@@ -8,9 +8,11 @@ description: Use when Bryan asks to look over or check the server updates Steve'
 Steve (pi-bots) posts the YunoHost update report in Bryan's Server Updates room each morning. Its model has no tools
 and never touches the server, so an item whose safety depends on the server's own setup comes out **needs a check**,
 with the command that would settle it. This skill is the check: read the latest report, settle every needs-a-check
-item from the change itself and from the server's state, read only, and tell Bryan what to approve.
+item from the change itself and from the server's state, read only, and tell Bryan what to approve. When he
+approves here, run those upgrades and post the outcome in the report's Matrix thread, under Steve's name.
 
-Bryan approves upgrades by replying to Steve. This skill upgrades nothing.
+Upgrades run only on Bryan's own approval in this chat, naming what to upgrade (step 5). Until then everything on the
+server is read only. Steve's conversation is left alone: never `pi-bots bot ask steve`.
 
 ## The server, read only
 
@@ -92,4 +94,31 @@ needs one of those, it needs root: give Bryan the exact command to run himself a
 
    `system` goes in only when every system package is now safe, because they upgrade together. Items the report
    called safe or on hold keep their verdicts, unless your check found something that changes one: say which and
-   why.
+   why. Say he can approve here instead, and you'll run it and post the result in the thread.
+
+5. **Upgrade what Bryan approves here.** His message in this chat is the approval for the targets it names or plainly
+   points at ("go ahead with those" means the approval line you just gave), and nothing more. A target on hold needs
+   him to say so despite the hold. Restate the targets in one line, then for each, one at a time, Synapse last (it
+   is the Matrix homeserver, so warn him that Matrix goes offline while it runs, and post its result once Matrix
+   answers again):
+
+   - Check nothing else is running: `ynh 'screen -ls || true'` must list no `ynh-*` session (Steve's tool and this
+     skill share the names, so one never starts beside the other).
+   - Start it detached, as Steve's tool does:
+     `ynh 'rm -f ~/upgrade-<target>.out && screen -dmS ynh-<target> bash -c "<command> > ~/upgrade-<target>.out 2>&1; echo EXIT=\$? >> ~/upgrade-<target>.out"'`,
+     where `<command>` is exactly `sudo -n /usr/bin/yunohost tools upgrade system` or
+     `sudo -n /usr/bin/yunohost app upgrade <app>`, the only upgrade commands the sudoers rule allows.
+   - Follow `~/upgrade-<target>.out` every 30 to 60 s until it ends with `EXIT=<code>`, as `yunohost-updates`
+     section 4 describes, then verify as its section 5 does.
+
+   Then post the outcome in the report's thread as Steve, from the Mac Studio:
+
+   ```bash
+   pi-bots job runs yunohost-report --limit 1      # "events": the report's event ID, the thread root
+   pi-bots send steve-bot server-updates --thread <event ID> --file <result.md>
+   ```
+
+   The post opens with "Bryan approved this from his terminal session.", then per target: succeeded or failed, the
+   version now (an app), the key lines of the output (`SUCCESS System upgraded`, or the error lines), and what the
+   checks found, in a sentence. When he approved from a different report (a rerun posted by hand), use that post's
+   event ID. Done when every approved target has ended, its result is in the thread, and you've told Bryan both.
