@@ -90,6 +90,7 @@ export default {
         "cms.gov/*",                     "*.cms.gov/*",
         // Agile6 + partners + tools
         "agile6.com/*",                  "*.agile6.com/*",
+        "*.agile6.workers.dev/*",        // Cloudflare previews, e.g. pr-1420-common-grants
         "unanet.biz/*",                  "*.unanet.biz/*",
         "navasage.atlassian.net/*",
         // Google (all)
