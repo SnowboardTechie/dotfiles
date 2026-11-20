@@ -231,6 +231,26 @@ If running the full workspace CI is too slow, use the package-specific command f
 
 Skip local verification only when the PR is green on GitHub CI and changes are clearly dev-only patches.
 
+### Model generator bumps (Python SDK)
+
+When the PR changes the `datamodel-code-generator` version in `lib/python-sdk`, also compare what the old and new versions generate, even when the skip rule above would apply. Its output is not committed (only `lib/python-sdk/generated/scripts/` is), so CI never shows the drift; the next `generate_models.sh` run would. Reviewers ask for this (Karina on [#1411](https://github.com/HHS/simpler-grants-protocol/pull/1411#discussion_r4635003037), 0.83 to 0.96).
+
+From the PR checkout's root, with `OLD` and `NEW` set to the exact versions from the lockfile diff:
+
+```bash
+repo=$(git rev-parse --show-toplevel); work=$(mktemp -d)
+cp "$repo"/lib/python-sdk/generated/scripts/*.sh "$work"/ && cd "$work"
+sed -i '' 's/poetry run datamodel-codegen/datamodel-codegen/' generate_models.sh
+for v in "$OLD" "$NEW"; do
+  uvx --python 3.13 --from "datamodel-code-generator==$v" \
+    bash ./generate_models.sh "$repo/website/public/schemas/yaml" "out-$v" >/dev/null 2>&1
+done
+ls "out-$OLD/pydantic" | wc -l   # non-zero, or the run failed
+diff -r -I '^#   timestamp:' "out-$OLD/pydantic" "out-$NEW/pydantic" && echo "no change beyond timestamps"
+```
+
+The scripts call each other by relative path, so they run from the copy's directory. The check is done when both versions generated the same non-zero file count and the diff is read. Report the result in the review: identical output, or what changed and in how many files.
+
 ---
 
 ## Step 6: Make a Recommendation
