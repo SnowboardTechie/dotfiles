@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import init, { applyNames, briefing, fileClaims, locate, ollamaNamer, renameRule, placeholder, requestText, rexCommand, shortSlug, slug, title, wordsNames, type Claims, type Namer, type Run, type Wanted } from "../dot-pi/agent/extensions/pi-rex.ts";
+import init, { applyNames, briefing, fileClaims, findReference, locate, namerPrompt, ollamaNamer, withReference, renameRule, placeholder, requestText, rexCommand, shortSlug, slug, title, wordsNames, type Claims, type Namer, type Run, type TitleReader, type Wanted } from "../dot-pi/agent/extensions/pi-rex.ts";
 
 const S = "session:1";
 const B = "block:2";
@@ -232,12 +232,14 @@ test("a Pi session that already has a name labels its pane at start", async () =
 // Naming from the first request, by a local model, with no naming work for the model the user talks to.
 const ask = (prompt: string) => ({ messageType: "user", prompt, systemPromptOptions: { sections: {} as Record<string, string> } });
 
-async function firstRequest(namer: Namer, v = view("dawn-canyon", "Window 1bd453b0", "shell"), claims = memoryClaims()) {
+const noTitle: TitleReader = async () => undefined;
+
+async function firstRequest(namer: Namer, v = view("dawn-canyon", "Window 1bd453b0", "shell"), claims = memoryClaims(), request = "It seems like Opus has stopped renaming the Rex panes", readTitle = noTitle) {
 	const fake = fakePi();
 	const rex = fakeRex(v);
-	const ext = init(fake.pi, rex.run, claims, { REX_SESSION: S, REX_BLOCK: B }, namer) as any;
+	const ext = init(fake.pi, rex.run, claims, { REX_SESSION: S, REX_BLOCK: B }, namer, readTitle) as any;
 	await fake.handlers.session_start({}, { mode: "tui", cwd: "/Users/bryan/code/pi-durable" });
-	await fake.handlers.before_agent_start(ask("It seems like Opus has stopped renaming the Rex panes"), {});
+	await fake.handlers.before_agent_start(ask(request), {});
 	await ext.naming();
 	return { fake, rex, ext };
 }
@@ -293,7 +295,7 @@ test("the run doesn't wait for a slow namer", async () => {
 	const fake = fakePi();
 	const rex = fakeRex(view("dawn-canyon", "Window 1bd453b0", "shell"));
 	let answer!: (w: Wanted) => void;
-	const ext = init(fake.pi, rex.run, memoryClaims(), { REX_SESSION: S, REX_BLOCK: B }, () => new Promise((r) => (answer = r))) as any;
+	const ext = init(fake.pi, rex.run, memoryClaims(), { REX_SESSION: S, REX_BLOCK: B }, () => new Promise((r) => (answer = r)), noTitle) as any;
 	await fake.handlers.session_start({}, { mode: "tui", cwd: "/x" });
 	const event = ask("hello");
 	await fake.handlers.before_agent_start(event, {});
@@ -353,4 +355,46 @@ test("the Ollama namer asks for JSON with thinking off and cleans the answer", a
 	assert.equal(await failing("hello", "d"), undefined);
 	const bad = ollamaNamer({}, (async () => ({ ok: true, json: async () => ({ message: { content: "not json" } }) })) as never);
 	assert.equal(await bad("hello", "d"), undefined);
+});
+
+test("a pull request or issue the request names is found, earliest first", () => {
+	assert.deepEqual(findReference("https://github.com/HHS/simpler-grants-protocol/pull/1411 Karina had feedback"), { label: "PR 1411", github: { repo: "HHS/simpler-grants-protocol", number: "1411" } });
+	assert.deepEqual(findReference("see https://github.com/HHS/simpler-grants-protocol/issues/1389 built on #872"), { label: "Issue 1389", github: { repo: "HHS/simpler-grants-protocol", number: "1389" } });
+	assert.deepEqual(findReference("https://forgejo.example/bryan/sgg-workspace/pulls/12 please"), { label: "PR 12" });
+	assert.deepEqual(findReference("address the comments on PR1399"), { label: "PR 1399" });
+	assert.deepEqual(findReference("work issue #1196 next"), { label: "Issue 1196" });
+	assert.deepEqual(findReference("fix #42 then"), { label: "#42" });
+	assert.equal(findReference("rework how Rex tabs are named"), undefined);
+	assert.equal(findReference("the color#fff and route a#1"), undefined);
+});
+
+test("names start with the reference, without repeating it", () => {
+	const ref = { label: "PR 1411" };
+	assert.deepEqual(withReference({ pane: "deps-feedback", tab: "Deps Bump Feedback", session: "SGG" }, ref), { pane: "pr-1411-deps-feedback", tab: "PR 1411 Deps Bump Feedback", session: "SGG" });
+	assert.deepEqual(withReference({ pane: "pr-1411-feedback", tab: "PR 1411: Deps Bump Feedback" }, ref), { pane: "pr-1411-feedback", tab: "PR 1411 Deps Bump Feedback" });
+	assert.deepEqual(withReference({ pane: "x", tab: "#1411 Feedback" }, ref).tab, "PR 1411 Feedback");
+	assert.deepEqual(withReference({ pane: "", tab: "" }, ref), { pane: "pr-1411", tab: "PR 1411" });
+	assert.deepEqual(withReference({ pane: "a", tab: "B" }, undefined), { pane: "a", tab: "B" });
+});
+
+test("a request naming a GitHub PR gives the namer its title and leads every name but the session's with it", async () => {
+	const seen: unknown[] = [];
+	const read: TitleReader = async (repo, n) => (seen.push([repo, n]), "chore(deps): bump the all-deps group");
+	const { rex } = await firstRequest(async (_r, _d, ref) => (seen.push(ref), { pane: "deps-feedback", tab: "Deps Bump Feedback", session: "Simpler Grants Protocol" }), undefined, undefined, "https://github.com/HHS/simpler-grants-protocol/pull/1411 Karina had some feedback", read);
+	assert.deepEqual(seen, [["HHS/simpler-grants-protocol", "1411"], { label: "PR 1411", github: { repo: "HHS/simpler-grants-protocol", number: "1411" }, title: "chore(deps): bump the all-deps group" }]);
+	assert.deepEqual(rex.renames().map((c) => c.at(-1)), ["pr-1411-deps-feedback", "PR 1411 Deps Bump Feedback", "Simpler Grants Protocol"]);
+});
+
+test("without the namer, a referenced request is still named for its reference, not its URL", async () => {
+	const { rex } = await firstRequest(async () => undefined, undefined, undefined, "https://github.com/HHS/simpler-grants-protocol/issues/1196 should be simple");
+	assert.deepEqual(rex.renames().map((c) => c.at(-1)).slice(0, 2), ["issue-1196-should-be", "Issue 1196 Should Be Simple"]);
+});
+
+test("the Ollama namer is shown the reference and the formats", async () => {
+	let sent: any;
+	const fetchStub = (async (_url: string, init: any) => ((sent = JSON.parse(init.body)), { ok: true, json: async () => ({ message: { content: "{}" } }) })) as never;
+	await ollamaNamer({}, fetchStub)("fix it", "sgg", { label: "Issue 1389", title: "Update the protocol docs" });
+	assert.equal(sent.messages[1].content, "Directory: sgg\nReference: Issue 1389 — Update the protocol docs\n\nfix it");
+	assert.match(namerPrompt, /PR 1520 Search Filter Feedback/);
+	assert.match(namerPrompt, /not 'Review Feedback'/);
 });

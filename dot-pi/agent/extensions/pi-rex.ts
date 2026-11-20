@@ -6,7 +6,10 @@
 //     background. A local Ollama model reads the request and the working directory's name
 //     and proposes the names; without it, the request's first words become them. The model
 //     the user talks to has no naming tool and no naming note, so naming costs it no tokens.
-//     A session whose only tab this is gets the tab's name.
+//     A session whose only tab this is gets the tab's name. When the request names a pull
+//     request or issue (a URL, "PR 1411", "issue 1389", "#123"), the pane and tab names start
+//     with it ("PR 1411 Deps Bump Feedback", "pr-1411-feedback"); a GitHub one's title is read
+//     with `gh` and given to the model, so the words after the number say what it is about.
 // Naming follows how the work is laid out: a session is one initiative ("Pi Durable"), a
 // tab is one workstream of it ("Subscription Rename"), a pane is one agent ("w31-9-review", the same
 // slug as the Pi session name). Every level is named once, and only while it still carries
@@ -161,8 +164,66 @@ function rexRunner(command: string): Run {
 		);
 }
 
+/** The pull request or issue a request is about, when it names one. */
+export interface Reference {
+	/** How names start: "PR 1411", "Issue 1389", or "#123" when the kind is unknown. */
+	label: string;
+	/** Where its title can be read: GitHub's `owner/repo` and number. */
+	github?: { repo: string; number: string };
+	/** Its title, when it could be read. */
+	title?: string;
+}
+
+// What a reference looks like in a request, earliest match first: a GitHub or Forgejo URL,
+// "PR 1411" / "PR1411" / "pull request #12", "issue 1196", or a bare "#123".
+const referencePatterns: [RegExp, (m: RegExpExecArray) => Reference][] = [
+	[/https?:\/\/([^/\s]+)\/([\w.-]+\/[\w.-]+)\/(pull|pulls|issues)\/(\d+)/i, (m) => ({
+		label: `${/^pull/i.test(m[3]) ? "PR" : "Issue"} ${m[4]}`,
+		...(m[1].toLowerCase() === "github.com" ? { github: { repo: m[2], number: m[4] } } : {}),
+	})],
+	[/\b(?:PR|pull request)\s*#?(\d+)\b/i, (m) => ({ label: `PR ${m[1]}` })],
+	[/\bissue\s*#?(\d+)\b/i, (m) => ({ label: `Issue ${m[1]}` })],
+	[/(?:^|[\s(])#(\d+)\b/, (m) => ({ label: `#${m[1]}` })],
+];
+
+/** The first pull request or issue the request names, if any. */
+export function findReference(request: string): Reference | undefined {
+	let best: { at: number; ref: Reference } | undefined;
+	for (const [pattern, make] of referencePatterns) {
+		const m = pattern.exec(request);
+		if (m && (!best || m.index < best.at)) best = { at: m.index, ref: make(m) };
+	}
+	return best?.ref;
+}
+
+/** Reads a GitHub issue or pull request title with `gh`; undefined when it can't. */
+export type TitleReader = (repo: string, number: string) => Promise<string | undefined>;
+
+export function ghTitle(command = "gh"): TitleReader {
+	return (repo, number) =>
+		new Promise((done) =>
+			execFile(command, ["api", `repos/${repo}/issues/${number}`, "--jq", ".title"], { timeout: 5000 }, (err, stdout) =>
+				done(err ? undefined : String(stdout ?? "").trim().slice(0, 200) || undefined)),
+		);
+}
+
+/** Start each name with the reference: "PR 1411 Deps Bump Feedback", "pr-1411-feedback". */
+export function withReference(want: Wanted, ref: Reference | undefined): Wanted {
+	if (!ref) return want;
+	const prefix = slug(ref.label);
+	const strip = (text: string, pattern: RegExp) => text.replace(pattern, "").trim();
+	const num = ref.label.replace(/\D/g, "");
+	const rest = strip(want.tab ?? "", new RegExp(`^(?:(?:PR|Issue|Pull Request)\\s*)?#?${num}\\b[\\s:·-]*`, "i"));
+	const paneRest = slug(want.pane ?? "").split("-").filter((w) => w && w !== num && w !== "pr" && w !== "issue").slice(0, 2).join("-");
+	return {
+		...want,
+		tab: title(rest ? `${ref.label} ${rest}` : ref.label),
+		pane: slug(paneRest ? `${prefix}-${paneRest}` : prefix),
+	};
+}
+
 /** Proposes names for a first request made in the named directory; undefined when it can't. */
-export type Namer = (request: string, directory: string) => Promise<Wanted | undefined>;
+export type Namer = (request: string, directory: string, ref?: Reference) => Promise<Wanted | undefined>;
 
 /** Strip pasted markup and keep a request short enough for a naming prompt. */
 export function requestText(request: string): string {
@@ -176,7 +237,7 @@ export function shortSlug(text: string): string {
 
 /** Names from the request's own first words, for when no model answers. */
 export function wordsNames(request: string): Wanted {
-	const words = requestText(request).split(" ").filter((w) => /[a-z0-9]/i.test(w)).slice(0, 4).join(" ");
+	const words = requestText(request).replace(/https?:\/\/\S+/g, " ").split(" ").filter((w) => /[a-z0-9]/i.test(w)).slice(0, 4).join(" ");
 	const tab = title(words.replace(/\b\w/g, (c) => c.toUpperCase()));
 	return { pane: shortSlug(words), tab, session: tab };
 }
@@ -184,10 +245,22 @@ export function wordsNames(request: string): Wanted {
 // A local model through Ollama's chat API. Thinking off and a JSON schema keep the answer to
 // three short strings (about 1.5 s warm, about 20 s when the model must load first). keep_alive
 // unloads it a minute later, so a 28 GB model doesn't sit in memory for pane names.
+export const namerPrompt = [
+	"Name a terminal pane after the task in the user's first message to a coding agent, working in the named directory. Reply with JSON only.",
+	"Name the specific subject of the work, never just the activity: 'Pydantic Error Cleanup', not 'Code Changes'; 'Search Filter Feedback', not 'Review Feedback' or 'PR Review Fixes'.",
+	"pane: a lowercase hyphenated slug of one to three words for the task.",
+	"tab: a Title Case name of two to five words for the workstream.",
+	"session: a short Title Case name for the wider initiative or project the work belongs to, never a PR or issue number.",
+	"When the message gives a Reference line, the work is that pull request or issue: tab is the reference followed by two to four words on its subject and what is being done, taken from its title and the request, and pane is the reference slug followed by one or two words.",
+	"Formats with a reference: tab 'PR 1520 Search Filter Feedback', pane 'pr-1520-feedback'; tab 'Issue 1530 Award Schema Docs', pane 'issue-1530-docs'; tab 'PR 1540 Auth Refactor Answers', pane 'pr-1540-answers'.",
+	"Formats without one: tab 'Pydantic Error Cleanup', pane 'pydantic-errors'; tab 'Laptop Backup Research', pane 'backup-research'.",
+].join(" ");
+
 export function ollamaNamer(env: NodeJS.ProcessEnv = process.env, request: typeof fetch = fetch): Namer {
 	const url = (env.PI_REX_NAMER_URL ?? "http://127.0.0.1:11434").replace(/\/+$/, "");
 	const model = env.PI_REX_NAMER_MODEL ?? "qwen3.8-pi:27b-q8";
-	return async (text, directory) => {
+	return async (text, directory, ref) => {
+		const reference = ref ? `Reference: ${ref.label}${ref.title ? ` — ${ref.title}` : ""}\n` : "";
 		try {
 			const response = await request(`${url}/api/chat`, {
 				method: "POST",
@@ -206,10 +279,9 @@ export function ollamaNamer(env: NodeJS.ProcessEnv = process.env, request: typeo
 					messages: [
 						{
 							role: "system",
-							content:
-								"Name a terminal pane after the task in the user's first message to a coding agent, working in the named directory. pane: a lowercase hyphenated slug of one to three words for the task. tab: a short Title Case name for the workstream. session: a short Title Case name for the wider initiative or project the work belongs to. Reply with JSON only.",
+							content: namerPrompt,
 						},
-						{ role: "user", content: `Directory: ${directory}\n\n${requestText(text)}` },
+						{ role: "user", content: `Directory: ${directory}\n${reference}\n${requestText(text)}` },
 					],
 				}),
 			});
@@ -231,6 +303,7 @@ export default function (
 	claims: Claims = fileClaims(),
 	env: NodeJS.ProcessEnv = process.env,
 	namer: Namer = ollamaNamer(env),
+	readTitle: TitleReader = ghTitle(),
 ) {
 	const sessionId = env.REX_SESSION;
 	const blockId = env.REX_BLOCK;
@@ -262,9 +335,11 @@ export default function (
 
 	pi.on("session_info_changed", labelPaneFromSessionName);
 
-	// Names whatever still has a placeholder, from the first request. A session whose only tab
-	// this is takes the tab's name; one with other tabs takes the namer's own session name. The
-	// claim marker still lets only one Pi name a session.
+	// Names whatever still has a placeholder, from the first request. When the request names a
+	// pull request or issue, every name but the session's starts with it, whatever the namer said.
+	// A session whose only tab this is takes the tab's name, unless that name is a reference;
+	// otherwise it takes the namer's own session name. The claim marker still lets only one Pi
+	// name a session.
 	const nameFromFirstRequest = async (request: string) => {
 		const view = await run(["session", "inspect", sessionId, "--json"]);
 		const loc = view.code === 0 ? locate(JSON.parse(view.stdout), blockId) : undefined;
@@ -273,11 +348,13 @@ export default function (
 		const tabOpen = placeholder.tab(loc.tab);
 		const sessionOpen = placeholder.session(loc.session) && !claims.has(sessionId);
 		if (!paneOpen && !tabOpen && !sessionOpen) return;
-		const proposed = (await namer(request, directory)) ?? wordsNames(request);
+		const ref = findReference(requestText(request));
+		if (ref?.github) ref.title = await readTitle(ref.github.repo, ref.github.number).catch(() => undefined);
+		const proposed = withReference((await namer(request, directory, ref)) ?? wordsNames(request), ref);
 		const want: Wanted = {};
 		if (paneOpen && proposed.pane) want.pane = proposed.pane;
 		if (tabOpen && proposed.tab) want.tab = proposed.tab;
-		const sessionName = loc.tabs === 1 && tabOpen ? proposed.tab : proposed.session;
+		const sessionName = loc.tabs === 1 && tabOpen && !ref ? proposed.tab : proposed.session;
 		if (sessionOpen && sessionName) want.session = sessionName;
 		await applyNames(run, sessionId, blockId, want, claims);
 		if (want.pane && !pi.getSessionName()) pi.setSessionName(slug(want.pane));
