@@ -383,6 +383,16 @@ the current review artifacts. Ship Readiness is one of:
 - `Acceptance authority unswept — do not merge`; or
 - `Verification failed — do not merge: {key output}`.
 
+Then run this skill's verifier and require it to exit 0 before returning to the
+caller:
+
+```sh
+python3 {this skill}/scripts/check_self_review.py --state-dir "$STATE_DIR" \
+  --worktree "$WORKTREE" --base "$base_sha"
+```
+
+The review is done only when it exits 0; otherwise its `problems` say what to fix.
+
 In standalone PR mode, update the existing branch only when already authorized
 and read it back. In `pre-pr`, return to `issue-work` for publication. Do not
 merge.
@@ -412,3 +422,4 @@ merge.
 - [ ] Final full verification ran once against the stable candidate
 - [ ] Current artifacts and summary match the exact candidate
 - [ ] Ship Readiness reflects blockers honestly
+- [ ] `scripts/check_self_review.py` exits 0 for the exact candidate

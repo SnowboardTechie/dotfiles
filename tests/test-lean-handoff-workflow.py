@@ -135,5 +135,79 @@ class LeanIssueWorkContractTests(unittest.TestCase):
                 self.assertIn(script, self.helper_reference)
 
 
+class SelfReviewGateContractTests(unittest.TestCase):
+    """A draft PR reaches Bryan only after pr-self-review passed on its exact head (Bryan, 2026-11-20)."""
+
+    VERIFIER = "check_self_review.py"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.issue_work = read("dot-agents/skills/issue-work/SKILL.md")
+        cls.handoff = read("dot-agents/skills/coding-agent-handoff-supervision/SKILL.md")
+        cls.review = read("dot-agents/skills/pr-self-review/SKILL.md")
+        cls.ship = read("dot-agents/skills/ship/SKILL.md")
+        cls.pi_rules = read("dot-pi/agent/AGENTS.md")
+
+    @staticmethod
+    def section(text: str, heading: str) -> str:
+        """The body under `heading`, up to the next heading of its level or higher, whitespace collapsed."""
+        level = len(heading.split(" ")[0])
+        lines = text[text.index(heading) + len(heading):].splitlines()
+        body, fenced = [], False
+        for line in lines:
+            if line.startswith("```"):
+                fenced = not fenced
+            elif not fenced and line.startswith("#") and len(line.split(" ")[0]) <= level:
+                break
+            body.append(line)
+        return " ".join(" ".join(body).split())
+
+    def test_verifier_script_exists_beside_the_classifier(self) -> None:
+        script = SKILL_POOL / "pr-self-review" / "scripts" / self.VERIFIER
+        self.assertTrue(script.is_file())
+        self.assertTrue(script.stat().st_mode & 0o111)
+
+    def test_issue_work_gates_sit_before_the_phases(self) -> None:
+        gates = self.section(self.issue_work, "## Gates")
+        self.assertLess(self.issue_work.index("## Gates"), self.issue_work.index("## Phase 1"))
+        for phrase in ("to the end", "Phases 4 and 5", "validate_cross_repo_context.py",
+                       "`pre-pr`", self.VERIFIER, "`ship`", "gh pr create", "final review"):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, gates)
+
+    def test_issue_work_names_the_verifier_where_it_runs(self) -> None:
+        self.assertIn(self.VERIFIER, self.section(self.issue_work, "### 2. Run bounded self-review"))
+        publish = self.section(self.issue_work, "## Phase 5")
+        self.assertIn(self.VERIFIER, publish)
+        self.assertIn("`pr-url`", publish)
+        self.assertRegex(publish, r"(?s)pr-self-review.{0,80}SKILL\.md")
+        self.assertIn("own review brief", publish)
+
+    def test_handoff_step_five_loads_the_review_and_ends_on_the_verifier(self) -> None:
+        step = self.section(self.handoff, "### 5. Treat completion as a claim")
+        self.assertIn("read it in full", step)
+        self.assertIn("is not that review", step)
+        self.assertIn(self.VERIFIER, step.split("Complete when")[-1])
+        checklist = self.section(self.handoff, "## Verification Checklist")
+        self.assertIn(self.VERIFIER, checklist)
+
+    def test_ship_runs_the_verifier_and_owns_pr_creation(self) -> None:
+        step = self.section(self.ship, "### 2. Verify the branch and exact-candidate review")
+        self.assertIn(self.VERIFIER, step)
+        self.assertIn("outside this skill", step)
+
+    def test_self_review_exits_through_the_verifier(self) -> None:
+        exit_step = self.section(self.review, "## 8. Write summary and exit")
+        self.assertIn(self.VERIFIER, exit_step)
+        self.assertIn("exits 0", exit_step)
+        self.assertIn(self.VERIFIER, self.section(self.review, "## Verification Checklist"))
+
+    def test_pi_rules_hold_the_gate(self) -> None:
+        rule = next(line for line in self.pi_rules.splitlines() if self.VERIFIER in line)
+        self.assertIn("(Bryan, 2026-11-20)", rule)
+        self.assertIn("readiness line", rule)
+        self.assertIn("hand-written brief", rule)
+
+
 if __name__ == "__main__":
     unittest.main()

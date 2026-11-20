@@ -26,6 +26,18 @@ and run full verification once when stable. For Bryan's SGG issue implementation
 closeout then includes a verified draft PR and a fresh background agent final PR self-review;
 that required final gate is not a redundant pre-publication reviewer fan-out.
 
+## Gates
+
+Read this skill to the end before starting: Phases 4 and 5 hold the review gates.
+
+- Intake: `scripts/validate_cross_repo_context.py` returns `ok: true` before the
+  background agent starts.
+- PR creation: `pr-self-review` (`pre-pr`) is complete for the exact head and
+  `pr-self-review/scripts/check_self_review.py` exits 0. The PR is created through
+  `ship`, never by a bare `gh pr create` or `tea` call.
+- Reporting a PR to Bryan as ready to look at: the final review is collected and
+  `check_self_review.py` exits 0 on the head he would be reading.
+
 ## Inputs and authority
 
 Accepted identifiers:
@@ -470,7 +482,9 @@ before merge. The final review reads the background agent's targeted results, no
 review artifacts; replace them during the required integrated rereview.
 
 Complete when current artifacts, acceptance criteria, and final verification all
-match one exact candidate with ready Ship Readiness.
+match one exact candidate with ready Ship Readiness, and
+`pr-self-review/scripts/check_self_review.py --state-dir {ISSUE_STATE_DIR}
+--worktree {worktree} --base {base_sha}` exits 0.
 
 ### 3. Present outcome without a redundant approval
 
@@ -502,14 +516,16 @@ Publish one draft PR under `ship`; draft publication is part of that established
 handoff workflow unless Bryan explicitly withheld it.
 
 After verifying the draft PR, start one fresh visible Pi background agent (Opus 5.5, medium thinking)
-for final `pr-self-review` in `pr-url` mode. Its authority is read-only review,
-not edits or live GitHub review submission. Pass the exact PR/base/head/diff
-identity, accepted outcomes, existing verification artifacts, and consumed global
-correction count. Require Standards, Spec, conditional Risk, Ponytail, and an
-independent acceptance sweep. Use existing verified full-test-run evidence instead
-of rerunning it unnecessarily. Capacity/transport failure is an incomplete final
-gate: report the blocker, never silently substitute another provider or declare
-the delivery complete.
+for final `pr-self-review` in `pr-url` mode. Its prompt points the reviewer at the
+`pr-self-review` skill file (`SKILL.md`) to read in full and follow in `pr-url`
+mode, and supplies only the inputs that skill asks for: the exact PR/base/head/diff
+identity, accepted outcomes, existing verification artifacts, consumed global
+correction count, and the state directory to write into. The orchestrator never
+writes its own review brief in place of the skill. Its authority is read-only review,
+not edits or live GitHub review submission. Use existing verified full-test-run
+evidence instead of rerunning it unnecessarily. Capacity/transport failure is an
+incomplete final gate: report the blocker, never silently substitute another
+provider or declare the delivery complete.
 
 The orchestrator reads and validates the final artifacts. Route only concrete in-scope blockers
 through the remaining bounded correction allowance; a candidate change requires
@@ -527,8 +543,11 @@ Send the terminal-completion notification from
 `references/matrix-attention-notifications.md` when that workflow was armed.
 
 Complete when the draft PR is remotely verifiable, the candidate SHA matches,
-Bryan's required final background agent review is collected and each finding has a resolution, current
-verification is accurately recorded, and handoff-owned resources are closed.
+Bryan's required final background agent review is collected and each finding has a resolution,
+`check_self_review.py` exits 0 against the final review's state directory on the PR's
+current head, current verification is accurately recorded, and handoff-owned
+resources are closed. Only then is the PR reported to Bryan as ready to look at,
+with the verifier's readiness line.
 Update and synchronize the canonical vault status/index/handoff at that boundary.
 
 ### Continue after readiness authorization
@@ -735,7 +754,7 @@ weaker review, or fabricated completion claim.
 - [ ] Corrections stayed within one normal plus one conditional pass
 - [ ] Targeted Risk deepening ran only when required
 - [ ] Full verification ran once on the stable candidate
-- [ ] Review artifacts match exact candidate identity
+- [ ] Review artifacts match exact candidate identity: `check_self_review.py` exited 0 before `ship` and again after the final review
 - [ ] Reviewable PR pushed and read back without a redundant approval
 - [ ] SGG closeout includes the collected fresh background agent final PR self-review, with the orchestrator's resolution of each finding
 - [ ] No merge or unapproved issue/deployment mutation occurred

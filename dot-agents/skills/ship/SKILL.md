@@ -66,8 +66,9 @@ Run the relevant test, lint, typecheck, and formatting checks.
 For every candidate authored by the authenticated user, an exact-candidate
 review is mandatory before publication:
 
-- when `issue-work` supplies a current pre-PR `pr-self-review` summary, validate
-  that artifact against the candidate;
+- when `issue-work` supplies a current pre-PR `pr-self-review` state directory, run
+  `pr-self-review/scripts/check_self_review.py --state-dir {state-dir} --worktree
+  {worktree} --base {base}` and require exit 0;
 - otherwise, run the integrated review contract in `pr-self-review`'s
   `references/review-contract.md` against immutable base/head SHAs:
   Standards and Spec, conditional Risk, then mandatory Ponytail in one review
@@ -92,6 +93,9 @@ publication.
 If a caller supplies already-current verification and review artifacts, inspect
 them and avoid rerunning unchanged expensive checks. Any failed or missing
 required check or review blocks publication.
+
+A PR for authored work is created only through this skill; a `gh pr create` or
+`tea` call outside this skill skips this gate.
 
 ### 3. Draft the PR body
 

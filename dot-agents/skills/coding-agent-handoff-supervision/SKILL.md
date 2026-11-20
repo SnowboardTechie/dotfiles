@@ -413,16 +413,11 @@ record.
 ### 5. Treat completion as a claim
 
 Inspect the real branch, diff, worktree, and background agent report. Run targeted checks
-needed to validate the implementation. Then follow `pr-self-review`:
-
-- the orchestrator performs one integrated Standards, Spec, conditional Risk, and
-  Ponytail review plus the acceptance-criteria sweep;
-- all validated blockers are batched into one correction;
-- correction returns to this same background agent identity;
-- the orchestrator performs one complete rereview of the corrected candidate;
-- one conditional second correction is allowed only for a newly introduced or
-  newly exposed bounded implementation blocker; and
-- there is never a third correction.
+needed to validate the implementation. Inspecting the diff and rerunning checks is
+not that review: now load `pr-self-review` and read it in full, then run it on the
+exact candidate. It owns the integrated review, the acceptance-criteria sweep, and
+the one-plus-one correction bound; corrections return to this same background
+agent identity.
 
 For security, persistence, migration, protocol, concurrency, public-contract, or
 deployment changes, add one targeted Risk reviewer only after the orchestrator gate has
@@ -440,7 +435,8 @@ correction and report it to Bryan as the orchestrator's error.
 Missing verification or an unresolved blocker means do not publish. A stop is
 not permission to lower quality or switch providers.
 
-Complete when the orchestrator has independently accepted one exact candidate.
+Complete when `pr-self-review/scripts/check_self_review.py --state-dir {state-dir}
+--worktree {worktree} --base {base}` exits 0 for the exact candidate.
 
 ### 6. Release the pane promptly
 
@@ -672,7 +668,7 @@ resume a visible Rex background agent's identity.
 - [ ] Every background agent turn in flight had a watch that wakes the orchestrator (Pi: `watch_background_agent`) until its completion report was read
 - [ ] Rejected or uncertain submissions were inspected and recovered without bypass or duplicate delivery
 - [ ] Orchestrator read a substantive completion report, worked through remaining gates in order, and tested the actual changes
-- [ ] One integrated orchestrator review and AC sweep completed
+- [ ] `pr-self-review` was loaded and run, and `check_self_review.py` exited 0 for the exact candidate before publication
 - [ ] Corrections stayed within the one-plus-one bound
 - [ ] High-risk change received one targeted Risk review when required
 - [ ] Pane closed as soon as the background agent had no concrete next turn

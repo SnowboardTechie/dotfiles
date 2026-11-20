@@ -22,6 +22,7 @@ PI_FILES=(
     extensions/pi-rex.ts
     extensions/pi-split.ts
     extensions/pi-subscription.ts
+    extensions/self-review-gate.ts
     extensions/stream-rules.ts
 )
 # Old names, relative to dot-pi/agent and ~/.pi/agent, of files renamed above.
