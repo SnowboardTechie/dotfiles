@@ -16,6 +16,10 @@
 // a placeholder: Rex's generated label, or the /split launcher's `split-ab12`. A label set
 // by hand or by a launcher is never replaced. The session has one more guard: the first Pi
 // to name it leaves a marker, and no Pi names that session again.
+// An interactive Pi in a Rex pane also sets PI_CLIPBOARD_OSC52=1, so its copies go out as OSC 52
+// too and reach the clipboard of the Mac whose Rex app shows the pane, not only the server Mac's.
+// It is set here, not only in a shell profile, because Pis that Rex starts directly (splits,
+// launchers, resumes after a server restart) never run one. Pi reads it on every copy.
 // Headless Pis (`pi -p`) a session starts inherit REX_BLOCK from its pane, so everything
 // here is limited to the TUI.
 import { execFile } from "node:child_process";
@@ -329,6 +333,7 @@ export default function (
 	pi.on("session_start", async (_event, ctx) => {
 		interactive = ctx.mode === "tui";
 		if (!interactive) return;
+		env.PI_CLIPBOARD_OSC52 = "1";
 		directory = basename(ctx.cwd ?? process.cwd());
 		await labelPaneFromSessionName();
 	});

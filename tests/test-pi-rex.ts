@@ -156,6 +156,20 @@ test("a headless Pi in a Rex pane gets no tool, no briefing and renames nothing"
 	assert.deepEqual(rex.calls, []);
 });
 
+test("an interactive Pi in a Rex pane copies through OSC 52 too; a headless one does not", async () => {
+	const tui = fakePi();
+	const tuiEnv: NodeJS.ProcessEnv = { REX_SESSION: S, REX_BLOCK: B };
+	init(tui.pi, fakeRex(view("a", "b", "c")).run, memoryClaims(), tuiEnv);
+	await tui.handlers.session_start({}, { mode: "tui" });
+	assert.equal(tuiEnv.PI_CLIPBOARD_OSC52, "1");
+
+	const headless = fakePi("headless");
+	const headlessEnv: NodeJS.ProcessEnv = { REX_SESSION: S, REX_BLOCK: B };
+	init(headless.pi, fakeRex(view("a", "b", "c")).run, memoryClaims(), headlessEnv);
+	await headless.handlers.session_start({}, { mode: "print" });
+	assert.equal(headlessEnv.PI_CLIPBOARD_OSC52, undefined, "OSC 52 would corrupt print-mode output");
+});
+
 test("an interactive Pi gets Rex's briefing and the naming note as one prompt section", async () => {
 	const fake = fakePi();
 	const rex = fakeRex(view("dawn-canyon", "Window 1bd453b0", "shell"));
