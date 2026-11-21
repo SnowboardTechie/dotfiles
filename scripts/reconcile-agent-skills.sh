@@ -108,7 +108,7 @@ fi
 # dot-agents/skill-sources/pstack-claude.json), so every harness, Pi included, receives it.
 COMMON_SKILLS=(ship worktrunk update-pr-description pr-self-review teammate-pr-review
     vault-pkm knowledge-capture session-handoff
-    black-box-verification)
+    black-box-verification watch-video)
 
 # Claude dropped these on 2026-09-28 (no recorded use); OpenCode, Pi, and Codex keep them.
 NON_CLAUDE_COMMON=(skill-retrospective obsidian)
@@ -186,7 +186,7 @@ HERMES_SKILLS=(
     catalog-review dependency-review dependency-triage sprint-deliverable-update
     technical-demo-preparation
     yunohost-updates hex-meeting-notes superwhisper-meetings bot-planning bot-reminders
-    rex
+    rex watch-video
 )
 
 # Print an operation line. Operations mutate only under --apply; check mode
