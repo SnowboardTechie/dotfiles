@@ -1,14 +1,15 @@
 ---
 name: server-update-checks
-description: Use when Bryan asks to look over or check the server updates Steve's YunoHost report marked "needs a check", or invokes this skill. Settles each one with read-only checks, then upgrades what he approves in this chat and posts the result in the report's thread as Steve.
+description: Use when Bryan asks to look over or check the server updates Steve's YunoHost report marked "needs a check" or "hold", or invokes this skill. Settles each one with read-only checks, then upgrades what he approves in this chat and posts the result in the report's thread as Steve.
 ---
 
 # Server update checks
 
 Steve (pi-bots) posts the YunoHost update report in Bryan's Server Updates room each morning. Its model has no tools
 and never touches the server, so an item whose safety depends on the server's own setup comes out **needs a check**,
-with the command that would settle it. This skill is the check: read the latest report, settle every needs-a-check
-item from the change itself and from the server's state, read only, and tell Bryan what to approve. When he
+with the command that would settle it, and an item it judged risky from the notes alone comes out **hold**. This skill
+is the check: read the latest report, settle every needs-a-check item and recheck every hold, from the change itself,
+from upstream's current state and from the server's state, read only, and tell Bryan what to approve. When he
 approves here, run those upgrades and post the outcome in the report's Matrix thread, under Steve's name.
 
 Upgrades run only on Bryan's own approval in this chat, naming what to upgrade (step 5). Until then everything on the
@@ -54,14 +55,18 @@ needs one of those, it needs root: give Bryan the exact command to run himself a
    The assistant text is the post. The user text holds the collected data: the pending set, the apps'
    `releaseNotes` and the system packages' `systemReleaseNotes` (changelog entries, links, `errors`). If Bryan means a
    different post (one sent by hand), ask him to paste it. Done when you have every item the post marked **needs a
-   check**, each with its reason and the check it named.
+   check** or **hold**, each with its reason and the check it named.
 
 2. **Confirm it is still pending**, in case the server has moved since the morning:
    `ynh 'sudo -n /usr/bin/yunohost tools update --output-as json'`. Drop an item that is no longer pending and say
    so.
 
-3. **Settle each item.** For each needs-a-check item, find exactly what the upgrade changes, then check the server
-   for the conditions that change touches:
+3. **Settle each item.** Every needs-a-check item and every hold, even one that has been held for weeks: a hold rests
+   on facts that go stale, and Steve's report only repeats it. For a hold, check whether its reason still stands: an
+   upstream advisory lifted or still shown, the regression's issue closed and in which release the fix shipped (read
+   its last comments), a newer release in the range, and the installed line's end-of-life date (an unsupported line
+   stops getting security fixes, so holding becomes the risk). Then, as for needs-a-check items, find exactly what
+   the upgrade changes and check the server for the conditions that change touches:
    - **YunoHost core** (`yunohost`, `moulinette`, `ssowat`): compare the two tags on GitHub to see every
      configuration file and hook the release changes. The tags are `debian/<version>`:
      `https://api.github.com/repos/YunoHost/yunohost/compare/debian/<current>...debian/<new>`, with
@@ -93,8 +98,9 @@ needs one of those, it needs root: give Bryan the exact command to run himself a
    ```
 
    `system` goes in only when every system package is now safe, because they upgrade together. Items the report
-   called safe or on hold keep their verdicts, unless your check found something that changes one: say which and
-   why. Say he can approve here instead, and you'll run it and post the result in the thread.
+   called safe keep their verdicts, unless your check found something that changes one: say which and why. Every
+   hold gets a verdict from step 3, lifted or kept, with the fact that decided it. Say he can approve here instead,
+   and you'll run it and post the result in the thread.
 
 5. **Upgrade what Bryan approves here.** His message in this chat is the approval for the targets it names or plainly
    points at ("go ahead with those" means the approval line you just gave), and nothing more. A target on hold needs

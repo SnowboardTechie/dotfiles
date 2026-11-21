@@ -214,8 +214,12 @@ curl -sS -o /dev/null -w '%{http_code} %{url_effective}\n' -L https://<domain_pa
 ```
 
 Check every upgraded app's URL. For Forgejo also run
-`git ls-remote git@git.snowboardtechie.com:<owner>/<repo>.git` and, with
-Bryan's go-ahead, a real push to a scratch repo, because v17-era regressions hit pushes and merges. For Synapse
+`git ls-remote ssh://forgejo@git.snowboardtechie.com:5518/<owner>/<repo>.git HEAD` (Git over SSH is user
+`forgejo` on port 5518; `git@…:` is refused) and, with Bryan's go-ahead, a real push and merge, because v17-era
+regressions hit pushes and merges: create a private scratch repo with `tea api --login git.snowboardtechie.com -d
+'{"name":"<scratch>","private":true}' /user/repos`, push `main` twice and a second branch, open a pull request
+and merge it through the API (`/repos/<owner>/<scratch>/pulls`, then `.../pulls/<n>/merge` with `{"Do":"merge"}`),
+compare the refs with `git ls-remote`, then delete it with `tea api ... -X DELETE /repos/<owner>/<scratch>`. For Synapse
 check `https://matrix.snowboardtechie.com/_matrix/client/versions`. Ask Bryan
 to run `sudo yunohost diagnosis run` (or wait for the twice-daily diagnosis
 email) for a whole-server health readback. Report only what you verified.
