@@ -139,13 +139,16 @@ NON_CLAUDE_COMMON=(skill-retrospective obsidian)
 # hex-meeting-notes (2026-11-19): Hex is Bryan's meeting recorder; agents kept
 # missing it because its only guide was a Hermes-profile skill. Every harness
 # that reads meetings gets it beside superwhisper-meetings.
+# personal-calendar (2026-11-20): Bryan's personal schedule is in iCloud
+# Calendar; an agent searched his work Google Calendar for his flights. Every
+# harness that answers personal questions gets it.
 PI_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}" next-session
     manual-merge issue-create issue-plan issue-work loop-issue
     coding-agent-handoff-supervision dx-target
     multiagent-pr-review dx-preview proven-cores sprint-deliverable-update
     technical-demo-preparation draw-it pre-review-cleanup
     server-update-checks yunohost-updates
-    hex-meeting-notes superwhisper-meetings)
+    hex-meeting-notes superwhisper-meetings personal-calendar)
 
 # Codex uses the supported user scope (~/.agents/skills), not its bundled
 # ~/.codex/skills/.system directory. Share the portable coding/planning core;
@@ -157,13 +160,14 @@ CODEX_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
     manual-merge issue-create issue-plan issue-work loop-issue
     adr-and-spec-coach conforming-tech-specs voice-bryan
     catalog-review dependency-review dependency-triage
-    hex-meeting-notes superwhisper-meetings)
+    hex-meeting-notes superwhisper-meetings personal-calendar)
 
 CLAUDE_SKILLS=("${COMMON_SKILLS[@]}"
     manual-merge issue-create issue-plan issue-work
     adr-and-spec-coach dx-target conforming-tech-specs proven-cores
     catalog-review dependency-review dependency-triage
-    voice-bryan hex-meeting-notes superwhisper-meetings pre-review-cleanup)
+    voice-bryan hex-meeting-notes superwhisper-meetings pre-review-cleanup
+    personal-calendar)
 
 OPENCODE_SKILLS=("${COMMON_SKILLS[@]}" "${NON_CLAUDE_COMMON[@]}"
     manual-merge issue-create issue-plan issue-work loop-issue
@@ -186,7 +190,7 @@ HERMES_SKILLS=(
     catalog-review dependency-review dependency-triage sprint-deliverable-update
     technical-demo-preparation
     yunohost-updates hex-meeting-notes superwhisper-meetings bot-planning bot-reminders
-    rex watch-video
+    rex watch-video personal-calendar
 )
 
 # Print an operation line. Operations mutate only under --apply; check mode
