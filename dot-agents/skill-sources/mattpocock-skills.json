@@ -1,11 +1,11 @@
 {
   "upstream": "https://github.com/mattpocock/skills",
   "version": "1.3.2",
-  "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+  "commit": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
   "license": "MIT",
   "licenseFile": "mattpocock-skills-LICENSE",
   "attribution": "Portions adapted from Matt Pocock's agent skills, MIT licensed, Copyright (c) 2026 Matt Pocock. Retained in mattpocock-skills-LICENSE.",
-  "verifiedOn": "2026-11-16",
+  "verifiedOn": "2026-11-23",
   "notes": [
     "Every harness loads his promoted skills unmodified at `commit` from one checkout, kept by `scripts/reconcile-mattpocock-skills.sh` at `~/.local/share/mattpocock-skills`. The promoted skills are the directories with a `SKILL.md` directly under the checkout's `skills/engineering` and `skills/productivity`; `skills/in-progress`, `skills/misc` and `skills/deprecated` are not promoted and do not load.",
     "Pi lists the two directories in `skills` of `~/.pi/agent/settings.json`. Claude Code (`~/.claude/skills`) and OpenCode (`~/.config/opencode/skills`) get one symlink per promoted skill, named for the skill, pointing into the checkout. His Claude Code plugin is not used: it namespaces every skill and moves its own pin.",
