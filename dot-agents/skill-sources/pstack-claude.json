@@ -1,11 +1,11 @@
 {
   "upstream": "https://github.com/michael-denyer/pstack-claude",
-  "version": "0.9.138",
-  "commit": "a12b04786023e762f12f5de7bb5fafb8c23f8c36",
+  "version": "0.9.153",
+  "commit": "66181d3c70fb605a670578a1b46c23ff0f3caebb",
   "license": "MIT",
   "licenseFile": "pstack-claude-LICENSE",
   "attribution": "Concepts adapted from pstack-claude, MIT licensed, Copyright (c) 2026 Lauren Tan and Copyright (c) 2026 Michael Denyer. The skill source's NOTICE.md credits create-verification-skill to cursor/plugins/pstack (Lauren Tan); blast-radius is a port-authored skill. Retained in pstack-claude-LICENSE.",
-  "verifiedOn": "2026-11-16",
+  "verifiedOn": "2026-11-23",
   "notes": [
     "Concept adaptation, not a vendored copy: the local skill is rewritten prose that folds two of the skill source's skills into one lean skill with two disclosed references.",
     "The pstack plugin, its poteto-mode coordinator, hooks, commands, and the rest of its skills are deliberately not adopted.",
@@ -59,7 +59,8 @@
         "Fixing a broken checkout or creating scaffolding assets before generating a recipe without separate authority.",
         "The `maintain-verification-skill` loop and a feature-map directory per project as a default; a recipe stays as small as the project's real need.",
         "Writing the report through `unslop` and the poteto-mode playbooks, autonomy, and shipping flow that surround these skills in the skill source.",
-        "Plugin installation, slash-command stubs, and hooks; distribution is the local skill reconciler only."
+        "Plugin installation, slash-command stubs, and hooks; distribution is the local skill reconciler only.",
+        "Pulling the PR and its commits as the investigation's own first step; the owning workflow (`issue-plan`, `issue-work`, `pr-self-review`) already hands over the change, so the change-impact reference starts at the load-bearing fact."
       ],
       "watchedFiles": [
         "plugins/pstack/skills/blast-radius/SKILL.md",
@@ -94,6 +95,35 @@
           "change": "The skill source now ships the plugin's MIT licence beside the plugin.",
           "decision": "accepted",
           "reason": "Same text as pstack-claude-LICENSE (checked with diff); nothing to change."
+        }
+      ]
+    },
+    {
+      "on": "2026-11-23",
+      "from": "a12b04786023e762f12f5de7bb5fafb8c23f8c36",
+      "to": "66181d3c70fb605a670578a1b46c23ff0f3caebb",
+      "commitsBehind": 45,
+      "changes": [
+        {
+          "upstream": "e36d113",
+          "file": "plugins/pstack/skills/blast-radius/SKILL.md",
+          "change": "Step 4 drops \"Same rules as `why`\" and states the citing rules in place (a real `file:line`, a search that finds nothing is an answer, never invent a caller or an API).",
+          "decision": "accepted",
+          "reason": "Already the local rule: the accepted rule on reporting confirmed and cleared risks, stated in references/change-impact.md's Report section. No text change needed."
+        },
+        {
+          "upstream": "e36d113",
+          "file": "plugins/pstack/skills/blast-radius/SKILL.md",
+          "change": "Step 1 replaces \"Use `why` step 2 to pull the PR and commits\" with \"Pull the PR and its commits\".",
+          "decision": "rejected",
+          "reason": "The local skill has no read-the-change step: the owning workflow supplies the change, so pulling the PR stays with it. Recorded in rejectedUpstreamRules."
+        },
+        {
+          "upstream": "none",
+          "file": "plugins/pstack/skills/create-verification-skill/SKILL.md",
+          "change": "Unchanged between the pins.",
+          "decision": "none",
+          "reason": "Nothing to adopt."
         }
       ]
     }

@@ -440,8 +440,13 @@ class AdaptedSourceRecordTest(unittest.TestCase):
 
     def test_every_refresh_decides_each_change_with_a_reason(self) -> None:
         for name, record in self.records.items():
-            for refresh in record.get("refreshes", []):
-                self.assertEqual(refresh["to"], record["commit"])
+            refreshes = record.get("refreshes", [])
+            if refreshes:
+                # The refreshes chain, oldest first, and the last one ends at the pin.
+                self.assertEqual(refreshes[-1]["to"], record["commit"])
+                for earlier, later in zip(refreshes, refreshes[1:]):
+                    self.assertEqual(later["from"], earlier["to"])
+            for refresh in refreshes:
                 for change in refresh["changes"]:
                     with self.subTest(record=name, change=change["change"][:40]):
                         self.assertIn(change["decision"], ("accepted", "rejected", "none"))

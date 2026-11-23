@@ -24,7 +24,7 @@ SKILL = SKILL_DIR / "SKILL.md"
 REFERENCES = ("change-impact.md", "project-recipe.md")
 UPSTREAMS = REPO_ROOT / "dot-agents" / "skill-sources"
 SOURCE_RECORD_PATH = UPSTREAMS / "pstack-claude.json"
-PINNED_COMMIT = "a12b04786023e762f12f5de7bb5fafb8c23f8c36"
+PINNED_COMMIT = "66181d3c70fb605a670578a1b46c23ff0f3caebb"
 RECONCILER = REPO_ROOT / "scripts" / "reconcile-agent-skills.sh"
 CURATED_FOR = ("CLAUDE_SKILLS", "CODEX_SKILLS", "PI_SKILLS", "OPENCODE_SKILLS", "HERMES_SKILLS")
 

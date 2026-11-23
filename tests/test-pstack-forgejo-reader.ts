@@ -3,6 +3,9 @@
 // replies, so nothing here reaches a forge.
 // Run: node --test tests/test-pstack-forgejo-reader.ts
 import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import {
 	checkFromStatus,
@@ -187,4 +190,32 @@ test("tea is told which login to use, found from the origin's host", async () =>
 	assert.equal(await forgejo.defaultBranch(context), "main");
 	assert.ok(calls.includes(`tea api --login example ${R}`));
 	assert.equal(forgejo.webBase(), "https://git.example.test");
+});
+
+test("Forgejo has no check suites, so none is unsettled", async () => {
+	const { reader: forgejo, calls } = reader({});
+	assert.deepEqual(await forgejo.unsettledSuites(context, HEAD, "reported", ["azure-pipelines"]), {
+		checks: [],
+		queuedWithoutRuns: [],
+	});
+	assert.deepEqual(calls, []);
+});
+
+// pstack's watcher calls every method of its GitHubReader interface. When pstack
+// adds one (0.9.153 added unsettledSuites), the watcher crashes on Forgejo until
+// this reader has it too. Checked against PSTACK_WATCH_PR_DIR when set (point it
+// at a checkout of a new pin before advancing it), else the installed pstack,
+// where reconcile-pi-pstack.sh puts the pinned commit.
+test("the reader has every method the installed pstack watcher calls", (t) => {
+	const watchPr =
+		process.env.PSTACK_WATCH_PR_DIR ||
+		join(homedir(), ".pi/pstack/git/github.com/michael-denyer/pstack-claude/plugins/pstack/skills/poteto-mode/scripts/watch-pr");
+	const types = join(watchPr, "types.ts");
+	if (!existsSync(types)) return t.skip(`pstack's watcher is not at ${watchPr}`);
+	const body = /export interface GitHubReader \{([\s\S]*?)\n\}/.exec(readFileSync(types, "utf8"))?.[1];
+	assert.ok(body, "GitHubReader interface not found");
+	const methods = [...body.matchAll(/^\s{2}(\w+)\(/gm)].map((match) => match[1]);
+	assert.ok(methods.length >= 9, methods.join(","));
+	const { reader: forgejo } = reader({});
+	for (const method of methods) assert.equal(typeof (forgejo as Record<string, unknown>)[method], "function", method);
 });

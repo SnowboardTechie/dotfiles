@@ -1,7 +1,7 @@
 // A Forgejo reader for pstack's pull request watcher.
 //
 // pstack's watcher (skills/poteto-mode/scripts/watch-pr in the pstack package)
-// decides READY, BLOCKER and WAITING from a reader with nine methods, and ships
+// decides READY, BLOCKER and WAITING from a reader with ten methods, and ships
 // one reader, for GitHub. This file is the same reader for Forgejo, through
 // `tea api`. It declares the shapes it returns itself, so it has no import from
 // the pstack package and its mapping can be tested without it; `watch-pr-forgejo`
@@ -16,6 +16,8 @@
 //   first comment has a resolver. Forgejo 16's Resolve button marks only that
 //   comment; replies keep a null resolver.
 // - A commit status of `warning` is reported as failed.
+// - There are no check suites (a GitHub App's queued CI); commit statuses are
+//   the only checks, so `unsettledSuites` always reports none.
 
 export interface CommandResult {
 	code: number;
@@ -327,6 +329,12 @@ export function createForgejoReader(options: ReaderOptions) {
 			const rollups = [];
 			for (const oid of shas) rollups.push({ oid, state: rollupState(await combined(context, oid)) });
 			return rollups;
+		},
+		// GitHub reads the head's check suites here to catch CI an app queued but
+		// never started. Forgejo has no check suites: the statuses read above are
+		// all the checks there are.
+		async unsettledSuites(_context: PrContext, _head: string, _checksRead: string, _expectedApps: readonly string[]) {
+			return { checks: [] as const, queuedWithoutRuns: [] as const };
 		},
 	};
 }
