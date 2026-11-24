@@ -7,7 +7,7 @@
 # are read as the same two states. Turn ended: the last assistant message stopped without a tool call (Pi `stop`,
 # `error` or `aborted`; Claude `end_turn`). Unanswered: the last message is the user's or a tool result.
 #
-# Settled: the turn ended, the completion report ends with its `Divergence:` line and, when a marker is given (a correction
+# Settled: the turn ended, the completion report's last section has its `Divergence:` line and, when a marker is given (a correction
 # turn's new section heading, e.g. "Correction 1"), the completion report contains it. Exit 0 settled; 2 when the turn has
 # stayed ended ~10 polls with no completion report (a background agent waiting on a question or stopped early: read the pane); 3 when
 # the last record is unanswered and the transcript has been silent ~8 min: the turn halted without ending (a
@@ -37,9 +37,11 @@ for l in sys.stdin:
 print(st)')
   fi
   if [ "$st" = ended ]; then
-    # The completion report's last paragraph starts with `Divergence:`; a long one wraps over several lines, so look at the
-    # last non-blank paragraph rather than the last few lines.
-    if [ -f "$H" ] && awk 'NF{p=(p==""||blank)?$0:p; blank=0; next} {blank=1} END{exit !(p ~ /^Divergence:/)}' "$H" && { [ -z "$M" ] || grep -q "$M" "$H"; }; then
+    # The completion report's last section (everything after its last Markdown heading outside a code fence, or the whole
+    # file when it has none) has a `Divergence:` line, plain or bold. Background agents often follow that line with a list
+    # of differences, so it need not be the last paragraph; a correction appends a new section, so an earlier section's
+    # line doesn't count.
+    if [ -f "$H" ] && awk '/^[ \t]*(```|~~~)/{fence=!fence; next} !fence && /^#{1,6}[ \t]/{found=0; next} !fence && /^(\*\*)?Divergence:/{found=1} END{exit !found}' "$H" && { [ -z "$M" ] || grep -q "$M" "$H"; }; then
       echo "SETTLED $H $(date)"; exit 0
     fi
     n=$((n+1)); [ $n -ge "$ENDED_POLLS" ] && { echo "ENDTURN-NO-COMPLETION-REPORT $H $(date)"; exit 2; }

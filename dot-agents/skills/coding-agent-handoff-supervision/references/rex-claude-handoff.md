@@ -171,11 +171,11 @@ predicted next prompt into the input line (`capture --format=html` shows it at
 **A Hermes background agent** uses the same placement with
 `hermes chat --query-file "$S/<workstream>-prompt.md"` as the background agent command, as
 `next-session` starts Hermes in Rex. It has no transcript `rex_wait.sh` reads,
-so settle it on the completion report file plus `capture`. Wait on the completion report's last
-paragraph, read in paragraph mode, as a background job with `notify=true` (from
+so settle it on the completion report file plus `capture`. Wait for a `Divergence:` line in the completion report's
+last section, with `rex_wait.sh`'s test, as a background job with `notify=true` (from
 a Pi orchestrator, run this loop in the foreground with a `bash` timeout; `watch_background_agent`
 needs a transcript):
-`until test -f "$H" && awk 'BEGIN{RS=""} {p=$0} END{exit !(p ~ /^Divergence:/)}' "$H"; do sleep 60; done`
+`until test -f "$H" && awk '/^[ \t]*(```|~~~)/{fence=!fence; next} !fence && /^#{1,6}[ \t]/{found=0; next} !fence && /^(\*\*)?Divergence:/{found=1} END{exit !found}' "$H"; do sleep 60; done`
 (add a cap). Independently check its smart approvals and no yolo mode first. A
 Hermes background agent still notifies Bryan: OSC 7501, the bell and an OSC 9 desktop
 notification at turn end and on prompts. No per-process switch exists; Bryan
@@ -186,8 +186,8 @@ accepted that for rare Hermes background agents (2026-11-03).
 - Read the pane: `"$REX" capture -s "$REX_SESSION" -b <block> --trim | tail -40`.
 - **Settled** means both: the transcript's last message is an assistant one
   that stopped without a tool call (`stopReason` `stop`; `error` and `aborted`
-  also end the turn), and the assignment's completion report file ends with its
-  `Divergence:` line. A turn that ends with a background shell still running
+  also end the turn), and the last section of the assignment's completion report file
+  has its `Divergence:` line. A turn that ends with a background shell still running
   can end before the completion report exists, so the completion report is the deciding signal.
 
   ```sh
@@ -221,19 +221,20 @@ accepted that for rare Hermes background agents (2026-11-03).
 - **Watch a read-only reviewer the same way.** Its "completion report" is the summary
   file its assignment names; pass that path to `rex_wait.sh`, so exit 3 covers a
   halted review too.
-- **Keep `Divergence:` one paragraph, last.** `rex_wait.sh` settles only when
-  the completion report's last paragraph begins with `Divergence:`. Wrapped lines, or a
-  list directly under it, still pass. A blank line before that list, or
-  anything written after the line, makes the last paragraph start with
-  something else. The wait then exits 2 "no completion report" though the report is
-  complete. A `Divergence:` line glued to the paragraph above it (no blank line
-  before it) fails the same way. Say "on its own line, last, with a blank line
-  before it and nothing after it" in every assignment's and correction's completion report
-  list, reviewer summaries included. When it happens anyway, read the completion report
-  by hand rather than resending.
+- **Where `Divergence:` goes.** `rex_wait.sh` settles when the completion report's last
+  section (everything after its last Markdown heading outside a code fence, or the whole
+  file when it has none) has a line starting `Divergence:` or `**Divergence:**`. A list
+  of differences under it, with or without a blank line, is fine, and so is a wrapped
+  line. A `Divergence:` line above a later heading doesn't count: that is how a
+  correction's new section stays unsettled until its own line is written. Until
+  2026-11-24 the line had to be the report's last paragraph, and reports that put a
+  bulleted list after `Divergence:` sat unsettled until the ten-minute fallback (exit 2).
+  When a wait still exits 2 on a finished report, read the completion report by hand
+  rather than resending.
 - **A correction turn needs the marker** (its new section's heading, such as
-  `"Correction 1"`): the completion report already ends with the first turn's
-  `Divergence:` line, so without it the wait settles on the old turn.
+  `"Correction 1"`): the wait needs the new section to exist before the old turn's
+  `Divergence:` line stops counting, so without the marker it can settle on the old
+  turn before the background agent has appended anything.
 - Background shells load the interactive profile: use `test -f`, never `ls`,
   to check a path there, because an alias can swap `ls` for a tool that rejects
   the argument and kills the wait before it starts.

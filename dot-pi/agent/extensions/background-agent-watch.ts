@@ -36,7 +36,7 @@ export function startsOrPromptsBackgroundAgent(command: string): boolean {
 }
 
 export const OUTCOMES: Record<number, string> = {
-	0: "settled: the turn ended and the completion report ends with its Divergence: line. Read the completion report and the changes now.",
+	0: "settled: the turn ended and the completion report's last section has its Divergence: line. Read the completion report and the changes now.",
 	1: "reached its cap without settling. Read the background agent's pane and decide; arm a new watch if it is still working.",
 	2: "the turn ended with no finished completion report for ten minutes: the background agent is asking something or stopped early. Read its pane.",
 	3: "the turn halted without ending (unanswered for eight minutes, often a safety-filter stop). Read its pane and send one short continuation.",

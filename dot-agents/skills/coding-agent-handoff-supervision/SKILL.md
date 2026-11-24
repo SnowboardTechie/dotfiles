@@ -383,7 +383,7 @@ timed out. Do not invent which actor resolved it.
 Wait on the completion report, not on a turn's end alone. A background agent turn can end while its
 own background test shell is still running and its completion report is unwritten.
 `scripts/rex_wait.sh` settles only when the transcript shows the turn ended
-*and* the assignment's completion report section ends with its `Divergence:` line. Never
+*and* the last section of the assignment's completion report has its `Divergence:` line. Never
 re-send a prompt to recover a completion signal.
 
 **Every background agent turn in flight has a watch, from the moment it starts until the
